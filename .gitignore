@@ -1,0 +1,6 @@
+*.exe
+bin/
+coverage.out
+kubeconfig*
+*.kubeconfig
+.env

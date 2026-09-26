@@ -1,0 +1,14 @@
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: ${RUNTIME_NAME}-source-only
+  namespace: ${NS}
+spec:
+  resourceSelectors:
+  - apiVersion: training.dcnlab.com/v1alpha1
+    kind: TrainingRuntime
+    name: ${RUNTIME_NAME}
+  placement:
+    clusterAffinity:
+      clusterNames:
+      - ${SOURCE_CLUSTER}

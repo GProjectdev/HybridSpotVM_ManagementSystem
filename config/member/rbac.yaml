@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: runtime-collector
+  namespace: hybridspot-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spot-watcher
+  namespace: hybridspot-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hybridspot-runtime
+rules:
+- apiGroups: [training.dcnlab.com]
+  resources: [trainingruntimes]
+  verbs: [get, list, watch]
+- apiGroups: [training.dcnlab.com]
+  resources: [trainingruntimes/status]
+  verbs: [get, patch, update]
+- apiGroups: [apps]
+  resources: [statefulsets]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, watch]
+- apiGroups: [coordination.k8s.io]
+  resources: [leases]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [""]
+  resources: [events]
+  verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hybridspot-runtime
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hybridspot-runtime
+subjects:
+- kind: ServiceAccount
+  name: runtime-collector
+  namespace: hybridspot-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hybridspot-watcher
+rules:
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
+- apiGroups: [ml.dcn.ssu.ac.kr]
+  resources: [nodeprovisions]
+  verbs: [get, list, watch]
+- apiGroups: [ml.dcn.ssu.ac.kr]
+  resources: [nodeprovisions/status]
+  verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hybridspot-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hybridspot-watcher
+subjects:
+- kind: ServiceAccount
+  name: spot-watcher
+  namespace: hybridspot-system

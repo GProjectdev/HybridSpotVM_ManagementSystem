@@ -1,0 +1,26 @@
+apiVersion: config.karmada.io/v1alpha1
+kind: ResourceInterpreterCustomization
+metadata:
+  name: training-runtime
+spec:
+  target:
+    apiVersion: training.dcnlab.com/v1alpha1
+    kind: TrainingRuntime
+  customizations:
+    statusReflection:
+      luaScript: |
+        function ReflectStatus(observedObj)
+          return observedObj.status or {}
+        end
+    statusAggregation:
+      luaScript: |
+        function AggregateStatus(desiredObj, statusItems)
+          desiredObj.status = {clusters = {}}
+          for _, item in ipairs(statusItems or {}) do
+            table.insert(desiredObj.status.clusters, {
+              clusterName = item.clusterName,
+              status = item.status or {}
+            })
+          end
+          return desiredObj
+        end

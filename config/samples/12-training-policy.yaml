@@ -1,0 +1,52 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: TrainingPolicy
+metadata:
+  name: ${POLICY_NAME}
+  namespace: ${NS}
+spec:
+  workloadRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: ${APP}
+    uid: ${WORKLOAD_UID}
+  sourceCluster: ${SOURCE_CLUSTER}
+  expectedWorldSize: 2
+  targetWorkers: 2
+  runtimeRef:
+    name: ${RUNTIME_NAME}
+  riskProfileRef:
+    name: ${APP}-risk
+  policy:
+    alpha: 0.8
+    forecastHorizonSeconds: 3600
+    minOnDemand: 1
+  checkpoint:
+    minIntervalSeconds: 60
+    maxIntervalSeconds: 600
+    candidateIntervalSeconds: [60, 120, 300, 600]
+    riskBands:
+    - maxLambdaPerHour: 0.02
+      intervalSeconds: 600
+    - maxLambdaPerHour: 0.05
+      intervalSeconds: 300
+    - maxLambdaPerHour: 0.10
+      intervalSeconds: 120
+    resume: true
+  capacity:
+    aws:
+      karmadaCluster: ${AWS_CLUSTER}
+      region: __REPLACE_AWS_REGION__
+      availabilityZone: __REPLACE_AWS_AZ__
+      instanceType: __REPLACE_AWS_INSTANCE_TYPE__
+      ami: __REPLACE_AWS_AMI_ID__
+      subnetId: __REPLACE_AWS_SUBNET_ID__
+      vpcId: __REPLACE_AWS_VPC_ID__
+      securityGroupIds:
+      - __REPLACE_AWS_SECURITY_GROUP_ID__
+      iamInstanceProfile: __REPLACE_AWS_IAM_INSTANCE_PROFILE__
+      rootVolumeSizeGB: 100
+      hardwareType: gpu
+      nodeLabel: gpu
+      credentialsRef:
+        name: __REPLACE_AWS_CREDENTIAL_SECRET_NAME__
+        namespace: ${NS}

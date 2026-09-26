@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: spot-watcher
+  namespace: hybridspot-system
+spec:
+  selector:
+    matchLabels: {app: spot-watcher}
+  template:
+    metadata:
+      labels: {app: spot-watcher}
+    spec:
+      serviceAccountName: spot-watcher
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        ml.dcn.ssu.ac.kr/provider: AWS
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: watcher
+        image: ghcr.io/gprojectdev/hybridspot-management:dev
+        args: [--mode=spot-watcher, --metrics-bind-address=0, --health-probe-bind-address=0]
+        env:
+        - name: NODE_NAME
+          valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+        resources:
+          requests: {cpu: 10m, memory: 32Mi}
+          limits: {cpu: 100m, memory: 128Mi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}

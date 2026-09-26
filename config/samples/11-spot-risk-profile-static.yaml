@@ -1,0 +1,11 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: SpotRiskProfile
+metadata:
+  name: ${APP}-risk
+  namespace: ${NS}
+spec:
+  # Static hazard is for controlled experiments only.
+  # For production, replace this with spec.endpoint per docs/risk-feed.md.
+  staticLambdaPerHour: 0.05
+  maxAgeSeconds: 3600
+  pollSeconds: 300

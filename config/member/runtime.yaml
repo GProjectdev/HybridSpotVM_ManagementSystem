@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training-runtime-collector
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: training-runtime-collector}
+  template:
+    metadata:
+      labels: {app: training-runtime-collector}
+    spec:
+      serviceAccountName: runtime-collector
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/hybridspot-management:dev
+        args: [--mode=runtime]
+        env:
+        - name: POD_NAMESPACE
+          valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {cpu: "1", memory: 256Mi}
+        readinessProbe:
+          httpGet: {path: /readyz, port: 8081}
+        livenessProbe:
+          httpGet: {path: /healthz, port: 8081}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}

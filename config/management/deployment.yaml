@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hybridspot-management
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: hybridspot-management}
+  template:
+    metadata:
+      labels: {app: hybridspot-management}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/hybridspot-management:dev
+        args: [--mode=management, --kubeconfig=/etc/karmada/kubeconfig]
+        env:
+        - name: POD_NAMESPACE
+          value: hybridspot-system
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: "1", memory: 512Mi}
+        volumeMounts:
+        - name: karmada
+          mountPath: /etc/karmada
+          readOnly: true
+        readinessProbe:
+          httpGet: {path: /readyz, port: 8081}
+        livenessProbe:
+          httpGet: {path: /healthz, port: 8081}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+      volumes:
+      - name: karmada
+        secret: {secretName: hybridspot-karmada-kubeconfig}

@@ -1,0 +1,15 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: TrainingRuntime
+metadata:
+  name: ${RUNTIME_NAME}
+  namespace: ${NS}
+spec:
+  workloadRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: ${APP}
+    uid: ${WORKLOAD_UID}
+  sourceCluster: ${SOURCE_CLUSTER}
+  expectedWorldSize: 2
+  port: 8298
+  container: trainer

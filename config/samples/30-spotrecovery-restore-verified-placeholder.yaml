@@ -1,0 +1,34 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: SpotRecovery
+metadata:
+  name: ${APP}-${RESTORE_REQUEST_NAME}
+  namespace: ${NS}
+spec:
+  policyRef:
+    name: ${POLICY_NAME}
+    uid: ${POLICY_UID}
+    generation: ${POLICY_GENERATION}
+  requestUID: ${RESTORE_REQUEST_UID}
+  operation: ${OPERATION}
+  sourceCluster: ${SOURCE_CLUSTER}
+  targetCluster: ${TARGET_CLUSTER}
+  workloadRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: ${APP}
+    uid: ${WORKLOAD_UID}
+  trainingRuntimeRef:
+    name: ${RUNTIME_NAME}
+    uid: ${RUNTIME_UID}
+  checkpointID: ${CHECKPOINT_ID}
+  eventID: ${EVENT_ID}
+  restoreRequestRef:
+    name: ${RESTORE_REQUEST_NAME}
+    uid: ${RESTORE_REQUEST_UID}
+    generation: ${RESTORE_REQUEST_GENERATION}
+  oldNodeProvisionRef:
+    name: ${OLD_NODEPROVISION_NAME}
+    uid: ${OLD_NODEPROVISION_UID}
+  replacementNodeProvisionRef:
+    name: ${REPLACEMENT_NODEPROVISION_NAME}
+    uid: ${REPLACEMENT_NODEPROVISION_UID}

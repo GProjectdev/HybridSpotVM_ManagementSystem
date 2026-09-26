@@ -1,0 +1,13 @@
+name: validate
+on: [push, pull_request]
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - run: go test -mod=readonly ./...
+    - run: go vet ./...
+    - run: go build ./cmd/manager

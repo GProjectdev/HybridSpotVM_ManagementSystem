@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hybridspot-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hybridspot-management
+  namespace: hybridspot-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hybridspot-management
+rules:
+- apiGroups: [training.dcnlab.com]
+  resources: [trainingpolicies, spotriskprofiles, trainingruntimes, spotrecoveries]
+  verbs: [get, list, watch, create, patch, update]
+- apiGroups: [training.dcnlab.com]
+  resources: [trainingpolicies/status, spotriskprofiles/status, spotrecoveries/status]
+  verbs: [get, patch, update]
+- apiGroups: [ml.dcn.ssu.ac.kr]
+  resources: [nodeprovisions]
+  verbs: [get, list, watch, create, delete]
+- apiGroups: [fluidcr.dcnlab.com]
+  resources: [fluidcrmigrations]
+  verbs: [get, list, watch, create]
+- apiGroups: [migration.dcnlab.com]
+  resources: [restorerequests, restoreplans, pvmigrations]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [statefulsets]
+  verbs: [get, list, watch]
+- apiGroups: [policy.karmada.io]
+  resources: [propagationpolicies]
+  verbs: [get, list, watch, create]
+- apiGroups: [work.karmada.io]
+  resources: [resourcebindings]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: [get]
+- apiGroups: [""]
+  resources: [events]
+  verbs: [create, patch]
+- apiGroups: [coordination.k8s.io]
+  resources: [leases]
+  verbs: [get, list, watch, create, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hybridspot-management
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hybridspot-management
+subjects:
+- kind: ServiceAccount
+  name: hybridspot-management
+  namespace: hybridspot-system
