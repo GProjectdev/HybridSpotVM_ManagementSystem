@@ -1,0 +1,17 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: SpotRiskProfile
+metadata:
+  name: aws-risk-feed
+  namespace: fluidcr-demo
+spec:
+  provider: aws
+  region: ap-northeast-2
+  instanceType: g4dn.xlarge
+  # Supply a real reviewed feed; this example does not deploy a risk estimator.
+  endpoint: https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge
+  pollSeconds: 300
+  maxAgeSeconds: 3600
+  # Optional bearer token Secret in this namespace on the Karmada API:
+  # credentialSecretRef:
+  #   name: risk-feed-token
+  #   key: token

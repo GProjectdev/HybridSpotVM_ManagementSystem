@@ -43,8 +43,9 @@ class GuideTests(unittest.TestCase):
         self.assertEqual(storage[1]["spec"]["volumeName"], storage[0]["metadata"]["name"])
 
     def test_all_bash_blocks_parse_without_execution(self):
-        text = (ROOT / "docs/from-existing-mgmt-validation-guide.md").read_text(encoding="utf-8")
-        blocks = re.findall(r"~~~bash\n(.*?)\n~~~", text, re.S)
+        paths = [ROOT / "README.md"] + sorted((ROOT / "docs").glob("*.md"))
+        text = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        blocks = re.findall(r"(?:```|~~~)bash\n(.*?)\n(?:```|~~~)", text, re.S)
         self.assertGreater(len(blocks), 20)
         bash = "C:/msys64/usr/bin/bash.exe" if os.name == "nt" else shutil.which("bash")
         self.assertTrue(bash, "bash required for guide syntax verification")

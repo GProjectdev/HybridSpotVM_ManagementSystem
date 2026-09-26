@@ -3,7 +3,7 @@
 ## 제어 경로
 
 ```text
-External risk feed -> Public Cloud VM Collector -> SpotRiskProfile.status
+External risk feed -> VM Spot Risk Collector -> SpotRiskProfile.status
                                                   |
                               Policy Manager / CheckpointCoordinator
                                                   |
@@ -21,9 +21,11 @@ External risk feed -> Public Cloud VM Collector -> SpotRiskProfile.status
 
 MGMT 컨트롤러는 Karmada kubeconfig만 사용합니다. Member의 Pod, Node, IMDS, 파일시스템 접근은 Member에 설치한 컴포넌트가 담당합니다. RIC는 이미 전파된 CR의 상태를 반환하는 규칙이며, Member에만 존재하는 CR을 자동으로 MGMT에 등록하지 않습니다.
 
+System은 6개 고정 entrypoint 이미지로 나뉩니다. MGMT에는 `vm-spot-risk-collector`, `policy-manager`, `checkpoint-coordinator`, `spot-recovery-controller` Deployment를 배포하고, AWS Member에는 `training-runtime-collector` Deployment와 `spot-watcher` DaemonSet을 배포합니다. MGMT Deployment들은 기존 `hybridspot-karmada-kubeconfig` Secret과 shared Karmada RBAC identity를 계속 사용합니다. 이 분리는 보안 격리가 아니며, 각 controller의 rollout과 leader-election ID를 분리하기 위한 운영 경계입니다. legacy `hybridspot-management` Deployment가 남아 있으면 먼저 scale 0하고 Pod 종료를 기다린 뒤 split controller를 시작하여 old/new lease가 겹치지 않게 합니다. runtime collector도 leader-election ID가 `hybridspot-runtime`에서 `hybridspot-training-runtime-collector`로 바뀌므로 upgrade 때 AWS `training-runtime-collector` Deployment를 scale 0하고 Pod 종료를 기다린 뒤 새 manifest/image로 교체합니다. `spot-watcher` DaemonSet 이름은 그대로라서 일반 rolling update 경로를 사용합니다.
+
 | 책임 | 담당 |
 | --- | --- |
-| 위험률 입력 수집, 유효기간 확인 | Public Cloud VM Collector |
+| 위험률 입력 수집, 유효기간 확인 | VM Spot Risk Collector |
 | 고정 Worker 수의 Spot/On-Demand 구성 결정 | Policy Manager |
 | 시간 단위 주기, 중복 방지, Checkpoint CR 생성 | CheckpointCoordinator |
 | 학습 step/rank/world size 수집 | Member TrainingRuntime Collector |
@@ -53,6 +55,8 @@ Checkpoint 주기 `tau`는 초 단위입니다. 초기에는 설정 가능한 �
 주기 변경은 TrainingPolicy의 checkpoint 설정 갱신으로 반영합니다. 진행 중인 Checkpoint는 중복 생성하지 않으며, 재시작 시 누락된 과거 주기를 몰아서 실행하지 않습니다. 실제 Spot 이벤트는 주기와 별도로 긴급 요청을 만들지만 runtime이 준비되지 않은 경우에는 실행을 강제하지 않습니다.
 
 ## Spot 알림 운영
+
+VM Spot Risk Collector는 `internal/collector`에 구현된 수집기로 외부 HTTPS hazard feed 또는 static 실험 입력을 소비합니다. AWS Spot 가격, placement score, IMDS 이벤트를 hazard로 추정하지 않으며 AWS hazard estimation을 구현하지 않습니다. HTTPS feed sample은 `config/samples/11-spot-risk-profile-https.yaml`의 `aws-risk-feed`입니다. 이 sample의 `https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge` endpoint는 placeholder이며, 운영자는 실제 feed로 바꾸고 `TrainingPolicy`의 risk reference가 이 객체를 가리키는지 확인해야 합니다.
 
 SpotWatcher는 IMDSv2를 5초마다 조회합니다. interruption notice와 rebalance recommendation은 확률 입력과 별개인 실제 이벤트이며, 사전 경고 시간과 도착이 항상 보장되는 복구 수단으로 취급하지 않습니다. 마지막 위험 이벤트는 metadata의 404 응답만으로 지우지 않습니다. NodeProvision UID와 EC2 instance ID가 일치해야 상태를 기록합니다.
 

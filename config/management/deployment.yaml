@@ -1,26 +1,146 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hybridspot-management
+  name: vm-spot-risk-collector
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: hybridspot-management}
+    matchLabels: {app: vm-spot-risk-collector}
   template:
     metadata:
-      labels: {app: hybridspot-management}
+      labels: {app: vm-spot-risk-collector}
     spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/hybridspot-management:dev
-        args: [--mode=management, --kubeconfig=/etc/karmada/kubeconfig]
+        image: ghcr.io/gprojectdev/vm-spot-risk-collector:dev
+        args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE
           value: hybridspot-system
         resources:
-          requests: {cpu: 100m, memory: 128Mi}
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {cpu: "1", memory: 512Mi}
+        volumeMounts:
+        - name: karmada
+          mountPath: /etc/karmada
+          readOnly: true
+        readinessProbe:
+          httpGet: {path: /readyz, port: 8081}
+        livenessProbe:
+          httpGet: {path: /healthz, port: 8081}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+      volumes:
+      - name: karmada
+        secret: {secretName: hybridspot-karmada-kubeconfig}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-manager
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: policy-manager}
+  template:
+    metadata:
+      labels: {app: policy-manager}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/policy-manager:dev
+        args: [--kubeconfig=/etc/karmada/kubeconfig]
+        env:
+        - name: POD_NAMESPACE
+          value: hybridspot-system
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {cpu: "1", memory: 512Mi}
+        volumeMounts:
+        - name: karmada
+          mountPath: /etc/karmada
+          readOnly: true
+        readinessProbe:
+          httpGet: {path: /readyz, port: 8081}
+        livenessProbe:
+          httpGet: {path: /healthz, port: 8081}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+      volumes:
+      - name: karmada
+        secret: {secretName: hybridspot-karmada-kubeconfig}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkpoint-coordinator
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: checkpoint-coordinator}
+  template:
+    metadata:
+      labels: {app: checkpoint-coordinator}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/checkpoint-coordinator:dev
+        args: [--kubeconfig=/etc/karmada/kubeconfig]
+        env:
+        - name: POD_NAMESPACE
+          value: hybridspot-system
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {cpu: "1", memory: 512Mi}
+        volumeMounts:
+        - name: karmada
+          mountPath: /etc/karmada
+          readOnly: true
+        readinessProbe:
+          httpGet: {path: /readyz, port: 8081}
+        livenessProbe:
+          httpGet: {path: /healthz, port: 8081}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+      volumes:
+      - name: karmada
+        secret: {secretName: hybridspot-karmada-kubeconfig}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spot-recovery-controller
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: spot-recovery-controller}
+  template:
+    metadata:
+      labels: {app: spot-recovery-controller}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/spot-recovery-controller:dev
+        args: [--kubeconfig=/etc/karmada/kubeconfig]
+        env:
+        - name: POD_NAMESPACE
+          value: hybridspot-system
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
           limits: {cpu: "1", memory: 512Mi}
         volumeMounts:
         - name: karmada

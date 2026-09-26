@@ -2,12 +2,14 @@ package management
 
 import ctrl "sigs.k8s.io/controller-runtime"
 
-func Setup(mgr ctrl.Manager) error {
-	if err := (&PolicyReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr); err != nil {
-		return err
-	}
-	if err := (&CheckpointReconciler{Client: mgr.GetClient(), Clock: defaultClock}).SetupWithManager(mgr); err != nil {
-		return err
-	}
+func SetupPolicy(mgr ctrl.Manager) error {
+	return (&PolicyReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr)
+}
+
+func SetupCheckpoint(mgr ctrl.Manager) error {
+	return (&CheckpointReconciler{Client: mgr.GetClient(), Clock: defaultClock}).SetupWithManager(mgr)
+}
+
+func SetupRecovery(mgr ctrl.Manager) error {
 	return (&RecoveryReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr)
 }

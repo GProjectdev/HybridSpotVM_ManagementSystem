@@ -45,16 +45,35 @@ def main():
     parser.add_argument("--control-plane-tolerations", action="store_true")
     args = parser.parse_args()
     names = {
-        "ghcr.io/gprojectdev/hybridspot-management:dev": "SYSTEM_IMAGE",
+        "ghcr.io/gprojectdev/vm-spot-risk-collector:dev": "SPOT_RISK_COLLECTOR_IMAGE",
+        "ghcr.io/gprojectdev/policy-manager:dev": "POLICY_MANAGER_IMAGE",
+        "ghcr.io/gprojectdev/checkpoint-coordinator:dev": "CHECKPOINT_COORDINATOR_IMAGE",
+        "ghcr.io/gprojectdev/spot-recovery-controller:dev": "SPOT_RECOVERY_IMAGE",
+        "ghcr.io/gprojectdev/training-runtime-collector:dev": "RUNTIME_COLLECTOR_IMAGE",
+        "ghcr.io/gprojectdev/spot-watcher:dev": "SPOT_WATCHER_IMAGE",
         "ghcr.io/gprojectdev/pv-migration-system:dev": "PV_IMAGE",
         "ghcr.io/gprojectdev/stateful-migration-system:dev": "STATEFUL_IMAGE",
         "docker.io/lehuannhatrang/fluidcr-webhook:v0.2": "INJECTOR_IMAGE",
         "payload": "PAYLOAD_IMAGE",
     }
-    images = {old: os.environ[var] for old, var in names.items()}
+    documents = list(yaml.safe_load_all(sys.stdin))
+    needed = set()
+    for obj in documents:
+        if not obj or obj.get("kind") not in ("Deployment", "DaemonSet"):
+            continue
+        pod = obj["spec"]["template"]["spec"]
+        for container in pod.get("containers", []) + pod.get("initContainers", []):
+            if container.get("image") in names:
+                needed.add(container["image"])
+            if any(a.startswith("--payload-image=") for a in container.get("args", [])):
+                needed.add("payload")
+    missing = [var for old, var in names.items() if old in needed and not os.environ.get(var)]
+    if missing:
+        parser.error("set image variables: " + ", ".join(missing))
+    images = {old: os.environ[var] for old, var in names.items() if old in needed}
     if any(not value or "__REPLACE" in value for value in images.values()):
         parser.error("all image variables must be filled before rendering")
-    json.dump(render(yaml.safe_load_all(sys.stdin), images, args.cluster,
+    json.dump(render(documents, images, args.cluster,
                      args.control_plane_tolerations), sys.stdout, indent=2)
     print()
 

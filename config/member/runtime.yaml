@@ -14,8 +14,7 @@ spec:
       serviceAccountName: runtime-collector
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/hybridspot-management:dev
-        args: [--mode=runtime]
+        image: ghcr.io/gprojectdev/training-runtime-collector:dev
         env:
         - name: POD_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}

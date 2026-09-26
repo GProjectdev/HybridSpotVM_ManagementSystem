@@ -19,8 +19,8 @@ spec:
       - operator: Exists
       containers:
       - name: watcher
-        image: ghcr.io/gprojectdev/hybridspot-management:dev
-        args: [--mode=spot-watcher, --metrics-bind-address=0, --health-probe-bind-address=0]
+        image: ghcr.io/gprojectdev/spot-watcher:dev
+        args: [--metrics-bind-address=0, --health-probe-bind-address=0]
         env:
         - name: NODE_NAME
           valueFrom: {fieldRef: {fieldPath: spec.nodeName}}

@@ -1,9 +1,11 @@
 # Public Cloud VM Risk Feed
 
-The collector consumes an externally supplied hourly preemption hazard. It does
-not call a cloud-provider "interruption probability" API, and it does not infer
-or pretend to predict that value. Providers, experiments, or offline models must
-publish the normalized HTTPS contract below.
+The VM Spot Risk Collector is implemented in `internal/collector` and consumes
+an externally supplied hourly preemption hazard, or a static value for controlled experiments.
+It does not call a cloud-provider "interruption probability" API, does not use
+AWS Spot price or placement score as a hazard estimate, and does not implement
+AWS hazard estimation. Providers, experiments, or offline models must publish
+the normalized HTTPS contract below.
 
 ## SpotRiskProfile Shape
 
@@ -38,7 +40,16 @@ fields from status.
 
 Use either `spec.endpoint` or `spec.staticLambdaPerHour`. Static values are only
 for controlled experiments and are reported with `source.type: static` plus
-`source.provenance: static-experiment-spec`.
+`source.provenance: static-experiment-spec`. Do not document static values as
+live provider telemetry.
+
+The HTTPS sample is `config/samples/11-spot-risk-profile-https.yaml`. It creates
+`SpotRiskProfile` named `aws-risk-feed` in namespace `fluidcr-demo` and contains
+the placeholder endpoint `https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge`.
+Replace that endpoint with a real provider, experiment, or offline-model feed before applying
+it. Also update the `TrainingPolicy` risk reference to point at `aws-risk-feed`;
+applying the HTTPS sample next to the static sample does not automatically switch
+an existing policy from one profile to the other.
 
 ## Endpoint Contract
 

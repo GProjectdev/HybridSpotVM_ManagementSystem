@@ -2,7 +2,7 @@
 
 이 문서는 `docs/installation.md`로 System 컨트롤러를 설치한 뒤, Karmada에서 2개 Pod StatefulSet 학습 workload를 운영하면서 TrainingRuntime, TrainingPolicy, Risk, RestorePlan, RestoreRequest, SpotRecovery를 연결하는 절차입니다.
 
-공개된 운영 이미지가 있다고 가정하지 않습니다. 실제 학습 이미지와 System controller/member 이미지는 접근 가능한 registry에 직접 build/push한 뒤 `docs/installation.md` 절차로 배포해야 합니다. 이 문서는 예시 manifest와 실행 순서를 제공하며, 실제 클러스터 적용 테스트를 수행했다고 주장하지 않습니다.
+공개된 운영 이미지가 있다고 가정하지 않습니다. 실제 학습 이미지와 System controller/member 이미지는 접근 가능한 registry에 직접 build/push한 뒤 `docs/installation.md`와 `docs/component-images.md` 절차로 배포해야 합니다. System은 단일 `SYSTEM_IMAGE`가 아니라 `vm-spot-risk-collector`, `policy-manager`, `checkpoint-coordinator`, `spot-recovery-controller`, `training-runtime-collector`, `spot-watcher` 6개 이미지로 배포합니다. 이 문서는 예시 manifest와 실행 순서를 제공하며, 실제 클러스터 적용 테스트를 수행했다고 주장하지 않습니다.
 
 ## 관련 문서
 
@@ -21,6 +21,7 @@
 - source fencing은 자동이 아닙니다. 실제 source writer 정지/fence와 ResourceBinding dispatch pause가 모두 필요합니다. dispatch pause만으로 이미 실행 중인 writer가 멈추지 않습니다.
 - `RestoreRequest.status.phase=Verified`와 checkpoint/restore 증거가 확인되기 전에는 old `NodeProvision` 또는 source node를 삭제하지 않습니다.
 - `SpotRecovery`는 검증된 RestoreRequest 증거를 참조해서 AWS Spot old NodeProvision cleanup을 수행하는 operation입니다. `SpotRecovery.status.phase=Completed`는 cleanup 종료 상태일 수 있지만 restore 검증 입력으로 사용하지 않습니다.
+- split MGMT controller는 기존 shared `hybridspot-karmada-kubeconfig` Secret과 Karmada RBAC identity를 사용합니다. 컴포넌트 분리는 보안 격리가 아니며 workload placement 권한을 추가하지 않습니다.
 
 ## 사전 변수
 
@@ -106,7 +107,7 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get nodeprovisions
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get propagationpolicy
 ```
 
-주의: `SpotRiskProfile.spec.staticLambdaPerHour`는 통제된 실험용입니다. 실제 운영에서는 위험 feed 계약을 별도로 연결하세요.
+주의: `SpotRiskProfile.spec.staticLambdaPerHour`는 통제된 실험용입니다. 실제 운영에서는 `config/samples/11-spot-risk-profile-https.yaml`의 `aws-risk-feed`를 복사해 endpoint `https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge`를 실제 HTTPS feed로 바꾸고, `TrainingPolicy`의 risk reference도 `aws-risk-feed`를 가리키게 수정하세요. static sample과 HTTPS sample을 함께 apply해도 Policy가 자동 전환되지 않습니다.
 
 GPU DDP demo는 `TrainingPolicy.spec.capacity.aws.hardwareType=gpu`와 `nodeLabel=gpu`를 명시합니다. System은 GPU-ready AMI, NVIDIA driver, CUDA runtime, container image dependency를 제공하지 않으므로 운영자가 AMI와 workload image에 맞춰 준비해야 합니다.
 

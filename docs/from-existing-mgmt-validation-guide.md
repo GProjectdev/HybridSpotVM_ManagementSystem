@@ -81,7 +81,7 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" get clusterpropagationpolicies
 
 | 입력 | 조건 |
 |---|---|
-| SYSTEM_IMAGE, PROVISIONER_IMAGE, PV_IMAGE, STATEFUL_IMAGE | 직접 빌드하여 pull 가능한 고유 태그/가능하면 digest |
+| SPOT_RISK_COLLECTOR_IMAGE, POLICY_MANAGER_IMAGE, CHECKPOINT_COORDINATOR_IMAGE, SPOT_RECOVERY_IMAGE, RUNTIME_COLLECTOR_IMAGE, SPOT_WATCHER_IMAGE, PROVISIONER_IMAGE, PV_IMAGE, STATEFUL_IMAGE | 직접 빌드하여 pull 가능한 고유 태그/가능하면 digest |
 | FLUIDCR_ROOT | 현재 FluidCR 소스 폴더를 Linux 관리 터미널에 복사한 절대 경로 |
 | INJECTOR_IMAGE, PAYLOAD_BASE_IMAGE, PAYLOAD_IMAGE | webhook, 원본 payload, Stateful overlay payload의 서로 다른 태그 |
 | TRAINER_IMAGE | /workspace/train.py가 있는 실제 2-rank DDP + FluidCR hook 이미지 |
@@ -94,7 +94,9 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" get clusterpropagationpolicies
 아래 빈 값을 실제 환경값으로 채웁니다. secret은 Git이나 evidence에 저장하지 않습니다.
 
 ~~~bash
-export SYSTEM_IMAGE='' PROVISIONER_IMAGE='' PV_IMAGE='' STATEFUL_IMAGE=''
+export SPOT_RISK_COLLECTOR_IMAGE='' POLICY_MANAGER_IMAGE='' CHECKPOINT_COORDINATOR_IMAGE=''
+export SPOT_RECOVERY_IMAGE='' RUNTIME_COLLECTOR_IMAGE='' SPOT_WATCHER_IMAGE=''
+export PROVISIONER_IMAGE='' PV_IMAGE='' STATEFUL_IMAGE=''
 export FLUIDCR_ROOT='' INJECTOR_IMAGE='' PAYLOAD_BASE_IMAGE='' PAYLOAD_IMAGE=''
 export TRAINER_IMAGE='' GPU_RUNTIME_CLASS=''
 export NFS_SERVER='' NFS_EXPORT_0='' NFS_EXPORT_1='' ARTIFACT_EXPORT=''
@@ -109,12 +111,24 @@ export KUBELET_CA_FILE=''
 
 ~~~bash
 # 하나라도 비어 있으면 빌드 전에 중단합니다.
-for value in "$SYSTEM_IMAGE" "$PROVISIONER_IMAGE" "$PV_IMAGE" "$STATEFUL_IMAGE" \
+for value in "$SPOT_RISK_COLLECTOR_IMAGE" "$POLICY_MANAGER_IMAGE" "$CHECKPOINT_COORDINATOR_IMAGE" \
+  "$SPOT_RECOVERY_IMAGE" "$RUNTIME_COLLECTOR_IMAGE" "$SPOT_WATCHER_IMAGE" \
+  "$PROVISIONER_IMAGE" "$PV_IMAGE" "$STATEFUL_IMAGE" \
   "$FLUIDCR_ROOT" "$INJECTOR_IMAGE" "$PAYLOAD_BASE_IMAGE" "$PAYLOAD_IMAGE"; do
   test -n "$value" || { echo 'Fill all image/source inputs first'; exit 1; }
 done
-docker build -t "$SYSTEM_IMAGE" "$SYSTEM"
-docker push "$SYSTEM_IMAGE"
+docker build --build-arg COMPONENT=vm-spot-risk-collector -t "$SPOT_RISK_COLLECTOR_IMAGE" "$SYSTEM"
+docker build --build-arg COMPONENT=policy-manager -t "$POLICY_MANAGER_IMAGE" "$SYSTEM"
+docker build --build-arg COMPONENT=checkpoint-coordinator -t "$CHECKPOINT_COORDINATOR_IMAGE" "$SYSTEM"
+docker build --build-arg COMPONENT=spot-recovery-controller -t "$SPOT_RECOVERY_IMAGE" "$SYSTEM"
+docker build --build-arg COMPONENT=training-runtime-collector -t "$RUNTIME_COLLECTOR_IMAGE" "$SYSTEM"
+docker build --build-arg COMPONENT=spot-watcher -t "$SPOT_WATCHER_IMAGE" "$SYSTEM"
+docker push "$SPOT_RISK_COLLECTOR_IMAGE"
+docker push "$POLICY_MANAGER_IMAGE"
+docker push "$CHECKPOINT_COORDINATOR_IMAGE"
+docker push "$SPOT_RECOVERY_IMAGE"
+docker push "$RUNTIME_COLLECTOR_IMAGE"
+docker push "$SPOT_WATCHER_IMAGE"
 make -C "$PROVISIONER" docker-build docker-push IMG="$PROVISIONER_IMAGE"
 make -C "$PV" docker-build docker-push IMG="$PV_IMAGE"
 make -C "$ST" docker-build docker-push IMG="$STATEFUL_IMAGE"
@@ -200,7 +214,7 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -k "$ST/config/karmada"
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" get resourceinterpretercustomizations
 ~~~
 
-이미지와 Member 이름을 **apply 전에** 렌더링합니다. helper는 로컬 YAML→JSON 변환만 수행합니다. 선택적 control-plane toleration은 worker가 없는 환경에서 **controller Deployment만** control-plane에 배치 가능하게 합니다. taint를 제거하거나 trainer에 toleration을 넣지 않습니다. 여유 자원이 없으면 별도 management worker가 필요합니다.
+이미지와 Member 이름을 **apply 전에** 렌더링합니다. renderer는 `SYSTEM_IMAGE`가 아니라 `SPOT_RISK_COLLECTOR_IMAGE`, `POLICY_MANAGER_IMAGE`, `CHECKPOINT_COORDINATOR_IMAGE`, `SPOT_RECOVERY_IMAGE`, `RUNTIME_COLLECTOR_IMAGE`, `SPOT_WATCHER_IMAGE`를 요구합니다. helper는 로컬 YAML→JSON 변환만 수행합니다. 선택적 control-plane toleration은 worker가 없는 환경에서 **controller Deployment만** control-plane에 배치 가능하게 합니다. taint를 제거하거나 trainer에 toleration을 넣지 않습니다. 여유 자원이 없으면 별도 management worker가 필요합니다.
 
 ~~~bash
 render_bundle() {
@@ -214,16 +228,33 @@ kubectl --kubeconfig="$MGMT_KUBECONFIG" apply -f "$SYSTEM/config/management/name
 kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system create secret generic hybridspot-karmada-kubeconfig \
   --from-file=kubeconfig="$OUTPUT_KUBECONFIG" --dry-run=client -o yaml |
   kubectl --kubeconfig="$MGMT_KUBECONFIG" apply -f -
+LEGACY_DEPLOYMENT="$(kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system get deployment/hybridspot-management --ignore-not-found -o json)"
+if test -n "$LEGACY_DEPLOYMENT"; then
+  LEGACY_SELECTOR="$(printf '%s' "$LEGACY_DEPLOYMENT" | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')"
+  kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/hybridspot-management --replicas=0
+  kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system wait \
+    --for=delete pod -l "$LEGACY_SELECTOR" --timeout=180s
+fi
 render_bundle "$SYSTEM/config/management" aws "$ROOT/rendered/system-management.json"
 kubectl --kubeconfig="$MGMT_KUBECONFIG" apply -f "$ROOT/rendered/system-management.json"
 render_bundle "$SYSTEM/config/member" aws "$ROOT/rendered/system-aws.json"
+RUNTIME_DEPLOYMENT="$(kubectl --kubeconfig="$AWS_KUBECONFIG" -n hybridspot-system get deployment/training-runtime-collector --ignore-not-found -o json)"
+if test -n "$RUNTIME_DEPLOYMENT"; then
+  RUNTIME_SELECTOR="$(printf '%s' "$RUNTIME_DEPLOYMENT" | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')"
+  kubectl --kubeconfig="$AWS_KUBECONFIG" -n hybridspot-system scale deployment/training-runtime-collector --replicas=0
+  kubectl --kubeconfig="$AWS_KUBECONFIG" -n hybridspot-system wait \
+    --for=delete pod -l "$RUNTIME_SELECTOR" --timeout=180s
+fi
 kubectl --kubeconfig="$AWS_KUBECONFIG" apply -f "$ROOT/rendered/system-aws.json"
-kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system rollout status deployment/hybridspot-management --timeout=180s
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system rollout status deployment/vm-spot-risk-collector --timeout=180s
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system rollout status deployment/policy-manager --timeout=180s
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system rollout status deployment/checkpoint-coordinator --timeout=180s
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system rollout status deployment/spot-recovery-controller --timeout=180s
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n hybridspot-system rollout status deployment/training-runtime-collector --timeout=180s
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n hybridspot-system get daemonset spot-watcher
 ~~~
 
-**통과:** management/runtime Deployment Ready. worker 0개일 때 SpotWatcher desired=0은 정상입니다. Karmada endpoint는 MGMT Pod에서 접근 가능해야 하며 localhost 주소이면 안 됩니다. token은 요청 24시간보다 짧게 발급될 수도 있습니다. 만료 전 kubeconfig Secret 갱신 후 Deployment를 restart합니다. member admin kubeconfig를 MGMT Pod에 넣지 않습니다.
+**통과:** 4개 MGMT Deployment와 runtime Deployment Ready. worker 0개일 때 SpotWatcher desired=0은 정상입니다. MGMT split Deployment는 기존 `hybridspot-karmada-kubeconfig` Secret과 기존 shared Karmada RBAC identity를 사용합니다. 이는 보안 격리가 아니며, 각 Deployment의 leader-election ID만 독립적이어야 합니다. runtime collector leader-election ID는 `hybridspot-runtime`에서 `hybridspot-training-runtime-collector`로 바뀌므로 upgrade에서는 AWS `training-runtime-collector`도 scale 0 후 Pod 종료를 기다려야 합니다. `spot-watcher` DaemonSet 이름은 그대로이므로 rolling update가 가능합니다. Karmada endpoint는 MGMT Pod에서 접근 가능해야 하며 localhost 주소이면 안 됩니다. token은 요청 24시간보다 짧게 발급될 수도 있습니다. 만료 전 kubeconfig Secret 갱신 후 Deployment를 restart합니다. member admin kubeconfig를 MGMT Pod에 넣지 않습니다.
 
 ## 5. PV·Stateful·FluidCR 컴포넌트 설치
 
@@ -286,6 +317,13 @@ kubectl --kubeconfig="$MEMBER_KC" -n pv-migration-system rollout status deployme
 
 # namespace/RBAC/runtime를 각각 적용: target에는 AWS SpotWatcher를 설치하지 않음
 kubectl --kubeconfig="$MEMBER_KC" apply -f "$SYSTEM/config/member/namespace.yaml" -f "$SYSTEM/config/member/rbac.yaml"
+RUNTIME_DEPLOYMENT="$(kubectl --kubeconfig="$MEMBER_KC" -n hybridspot-system get deployment/training-runtime-collector --ignore-not-found -o json)"
+if test -n "$RUNTIME_DEPLOYMENT"; then
+  RUNTIME_SELECTOR="$(printf '%s' "$RUNTIME_DEPLOYMENT" | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')"
+  kubectl --kubeconfig="$MEMBER_KC" -n hybridspot-system scale deployment/training-runtime-collector --replicas=0
+  kubectl --kubeconfig="$MEMBER_KC" -n hybridspot-system wait \
+    --for=delete pod -l "$RUNTIME_SELECTOR" --timeout=180s
+fi
 python3 "$SYSTEM/scripts/render-validation-manifests.py" --control-plane-tolerations \
   < "$SYSTEM/config/member/runtime.yaml" > "$ROOT/rendered/runtime-$MEMBER_NAME.json"
 kubectl --kubeconfig="$MEMBER_KC" apply -f "$ROOT/rendered/runtime-$MEMBER_NAME.json"
@@ -400,7 +438,7 @@ done
 envsubst < "$SYSTEM/config/samples/12-training-policy.yaml" > "$ROOT/rendered/training-policy.yaml"
 ~~~
 
-training-policy.yaml의 모든 __REPLACE... 값을 실제 AWS 값으로 바꿉니다. credential name=aws-node-credentials, namespace=fluidcr-demo, hardwareType/nodeLabel=gpu, source/karmadaCluster=aws입니다. targetWorkers=2, expectedWorldSize=2, minOnDemand=1을 유지합니다. staticLambdaPerHour=0.05는 **시험 입력**이며 AWS 실측 선점률이 아닙니다. 실제 feed는 [위험률 계약](risk-feed.md)으로 연결합니다.
+training-policy.yaml의 모든 __REPLACE... 값을 실제 AWS 값으로 바꿉니다. credential name=aws-node-credentials, namespace=fluidcr-demo, hardwareType/nodeLabel=gpu, source/karmadaCluster=aws입니다. targetWorkers=2, expectedWorldSize=2, minOnDemand=1을 유지합니다. staticLambdaPerHour=0.05는 **시험 입력**이며 AWS 실측 선점률이 아닙니다. 실제 feed는 [위험률 계약](risk-feed.md)과 `config/samples/11-spot-risk-profile-https.yaml`의 `aws-risk-feed`로 연결합니다. endpoint `https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge`를 실제 HTTPS feed로 바꾸고 TrainingPolicy risk reference가 `aws-risk-feed`를 가리키게 수정하세요. static sample과 HTTPS sample을 함께 apply해도 자동 전환되지 않습니다.
 
 ~~~bash
 if grep -n '__REPLACE' "$ROOT/rendered/training-policy.yaml"; then
@@ -551,10 +589,13 @@ done
 
 ### 9.2 새 round 생성을 멈추고 dispatch pause
 
-초기 단일 실험 환경에서는 System management를 잠시 scale 0하여 새 checkpoint와 capacity/recovery 조정을 함께 멈춥니다. 이는 per-job pause가 아닙니다. 다른 운영 job이 있다면 이 방법을 사용하지 말고 별도 유지보수 창을 잡습니다. **PV/Stateful management와 Member controller는 계속 실행**합니다.
+초기 단일 실험 환경에서는 split System MGMT controller를 잠시 scale 0하여 새 checkpoint와 capacity/recovery 조정을 함께 멈춥니다. 이는 per-job pause가 아닙니다. 다른 운영 job이 있다면 이 방법을 사용하지 말고 별도 유지보수 창을 잡습니다. **PV/Stateful management와 Member controller는 계속 실행**합니다.
 
 ~~~bash
-kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/hybridspot-management --replicas=0
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/vm-spot-risk-collector --replicas=0
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/policy-manager --replicas=0
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/checkpoint-coordinator --replicas=0
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/spot-recovery-controller --replicas=0
 kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system get pods
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get fluidcrmigrations -o yaml
 ~~~
@@ -764,7 +805,7 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get restorerequest "$RESTORE
 
 추가로 모델/optimizer/step 및 결과를 무중단 기준 실행과 비교합니다. /runtime 보고만으로 모델 수치적 정합성이나 NCCL 정상성을 모두 증명하지 않습니다. source 중지→target 첫 advancing step 시간을 downtime으로 기록합니다.
 
-이 시점에 System management는 여전히 정지 상태입니다. 원래 Policy는 source=aws를 가리킵니다. target에서 계속 주기 checkpoint하려면 target checkpoint controller와 새로운 정책/용량 소유권 계약을 별도로 준비해야 하며, sourceCluster만 바꾸어 자동 전환되는 것으로 보지 않습니다. 복구 정리 작업을 수행하기 전 기존 AWS NP와 Policy의 상태를 검토합니다.
+이 시점에 split System MGMT controller는 여전히 정지 상태입니다. 원래 Policy는 source=aws를 가리킵니다. target에서 계속 주기 checkpoint하려면 target checkpoint controller와 새로운 정책/용량 소유권 계약을 별도로 준비해야 하며, sourceCluster만 바꾸어 자동 전환되는 것으로 보지 않습니다. 복구 정리 작업을 수행하기 전 기존 AWS NP와 Policy의 상태를 검토합니다.
 
 ## 11. SpotWatcher·긴급 checkpoint·Policy cleanup 검증
 
@@ -787,7 +828,7 @@ AWS 관리자가 **테스트용 Spot 인스턴스만** 선택하여 조직에서
 검증 순서:
 
 1. source의 두 rank Running, 최신 durable checkpoint, target 2개 GPU 및 storage 준비.
-2. System management 실행 상태에서 실제 신호 수신.
+2. split System MGMT controller 실행 상태에서 실제 신호 수신.
 3. SpotWatcher가 status.spot에 signalType/eventID/instanceID/atRisk를 기록.
 4. RIC가 이를 Karmada에 반영. CheckpointCoordinator가 새 긴급 round를 만들거나 inflight round를 중복 없이 재사용.
 5. deadline 안에 새 archive가 durable해졌는지 확인. 실패 시 마지막 유효 checkpoint를 사용하며 RPO 손실을 기록.
@@ -846,10 +887,13 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply --dry-run=server -f "$ROOT/rend
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f "$ROOT/rendered/spot-recovery.json"
 ~~~
 
-Policy/NP UID, sourceNode, checkpoint/restore/runtime identity의 모든 최종 검사는 controller가 수행합니다. 위 Python은 전체 controller gate의 대체물이 아닙니다. 9단계에서 System management를 멈췄다면 기존 policy가 불필요한 AWS VM을 새로 만들지 않을지 확인한 뒤 복구합니다. source가 fenced 상태면 runtime_not_ready로 새 checkpoint가 막혀야 합니다.
+Policy/NP UID, sourceNode, checkpoint/restore/runtime identity의 모든 최종 검사는 controller가 수행합니다. 위 Python은 전체 controller gate의 대체물이 아닙니다. 9단계에서 split System MGMT controller를 멈췄다면 기존 policy가 불필요한 AWS VM을 새로 만들지 않을지 확인한 뒤 복구합니다. source가 fenced 상태면 runtime_not_ready로 새 checkpoint가 막혀야 합니다.
 
 ~~~bash
-kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/hybridspot-management --replicas=1
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/vm-spot-risk-collector --replicas=1
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/policy-manager --replicas=1
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/checkpoint-coordinator --replicas=1
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system scale deployment/spot-recovery-controller --replicas=1
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get spotrecovery "$OPERATION" -o yaml
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get nodeprovisions
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get nodeprovisions
@@ -865,8 +909,14 @@ SpotRecovery 이력은 **TrainingPolicy 수명 동안 유지**합니다. Rejecte
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get \
   trainingpolicies,trainingruntimes,spotriskprofiles,fluidcrmigrations,pvmetadata,pvmigrations,restorerequests,restoreplans,spotrecoveries \
   -o yaml > "$ROOT/evidence/final-state.yaml"
-kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system logs deployment/hybridspot-management --tail=300 \
-  > "$ROOT/evidence/system.log"
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system logs deployment/vm-spot-risk-collector --tail=300 \
+  > "$ROOT/evidence/system-vm-spot-risk-collector.log"
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system logs deployment/policy-manager --tail=300 \
+  > "$ROOT/evidence/system-policy-manager.log"
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system logs deployment/checkpoint-coordinator --tail=300 \
+  > "$ROOT/evidence/system-checkpoint-coordinator.log"
+kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system logs deployment/spot-recovery-controller --tail=300 \
+  > "$ROOT/evidence/system-spot-recovery-controller.log"
 kubectl --kubeconfig="$MGMT_KUBECONFIG" -n stateful-migration-system logs deployment/stateful-management --tail=300 \
   > "$ROOT/evidence/stateful.log"
 ~~~
