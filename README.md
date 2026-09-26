@@ -12,6 +12,8 @@ Karmada가 RIC에 따라 Member status를 MGMT로 반영합니다. workload plac
 
 ## 설치와 실행
 
+[기존 MGMT/Karmada + AWS Member, worker 0개에서 시작하는 단계별 설치·검증 가이드](docs/from-existing-mgmt-validation-guide.md)를 먼저 사용하세요. NodeProvisioner 갱신, 최초 VM 2개 생성, GPU/NFS, checkpoint, 사용자 placement, restore와 Spot cleanup을 통과 기준과 함께 설명합니다.
+
 [설치 가이드](docs/installation.md)와 [두 Worker 운영 가이드](docs/two-worker-runbook.md)를 순서대로 사용하세요. [위험률 입력 계약](docs/risk-feed.md)을 공급자에 맞춰 설정하고, [컴포넌트 책임과 검증 경계](docs/architecture.md)를 확인하세요.
 
 이 저장소의 이미지 태그는 빌드 대상 예시입니다. 이미지가 이미 게시되어 있다고 가정하지 않습니다. 사용자가 접근 가능한 registry에 빌드 및 push한 뒤 Deployment와 DaemonSet 이미지를 변경합니다.

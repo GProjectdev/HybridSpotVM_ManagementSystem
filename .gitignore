@@ -4,3 +4,4 @@ coverage.out
 kubeconfig*
 *.kubeconfig
 .env
+__pycache__/

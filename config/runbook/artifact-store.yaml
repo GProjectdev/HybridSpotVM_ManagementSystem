@@ -1,0 +1,29 @@
+# Apply independently to each member, using the SAME server/export.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: stateful-migration-artifacts
+spec:
+  capacity: {storage: 200Gi}
+  accessModes: [ReadWriteMany]
+  volumeMode: Filesystem
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: stateful-migration-system
+    name: stateful-migration-artifacts
+  nfs:
+    server: ${NFS_SERVER}
+    path: ${ARTIFACT_EXPORT}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stateful-migration-artifacts
+  namespace: stateful-migration-system
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: ""
+  volumeName: stateful-migration-artifacts
+  resources:
+    requests: {storage: 200Gi}

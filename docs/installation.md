@@ -1,5 +1,7 @@
 # 설치 가이드
 
+MGMT/Karmada가 있고 AWS에는 이전 NodeProvisioner만 설치한 상태라면 [처음부터 따라 하는 설치·검증 가이드](from-existing-mgmt-validation-guide.md)를 사용하세요. 아래 문서는 개별 System 설치 참고용입니다.
+
 명령은 Linux 관리 단말에서 실행합니다. Kubernetes/Karmada 관리 권한, kubectl, Docker, registry 접근 권한이 필요합니다. AWS Member `aws`와 MGMT 실행 클러스터는 별도 kubeconfig로 구분합니다.
 
 ```bash
@@ -47,10 +49,10 @@ kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -k config/karmada
 Provisioner의 NodeProvision RIC도 Karmada에 적용합니다. TrainingRuntime RIC는 이 저장소에 포함되어 있습니다. Checkpoint 및 Restore RIC는 Stateful Migration 설치에서 제공합니다. on-prem Member에서도 TrainingRuntime이 필요하면 같은 CRD와 runtime Deployment를 설치하되 SpotWatcher는 AWS에만 배포합니다.
 
 ```bash
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n default apply -f ../provisioner/config/karmada/nodeprovision-aws-status.yaml
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f config/runbook/nodeprovision-status.yaml
 ```
 
-위 파일의 PropagationPolicy는 적용 namespace의 NodeProvision을 `aws`에 고정합니다. 다른 Member에서 VM을 만드는 NodeProvision과 같은 namespace에 적용하지 마세요. 작업 namespace가 `default`가 아니라면 해당 namespace에 적용하고, 새 System이 만드는 개별 NodeProvision policy도 같은 `aws` 배치인지 확인합니다. 기존의 충돌하는 PropagationPolicy는 적용 전에 정리해야 합니다.
+이 파일은 status RIC만 설치하며 PropagationPolicy를 추가하지 않습니다. System이 만드는 개별 NodeProvision policy가 `aws`를 선택합니다. 기존의 광범위한 PropagationPolicy와 충돌하지 않는지 적용 전에 확인하세요.
 
 ## 4. MGMT Controller의 Karmada 연결
 

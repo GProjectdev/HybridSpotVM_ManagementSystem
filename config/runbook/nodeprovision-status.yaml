@@ -1,0 +1,33 @@
+apiVersion: config.karmada.io/v1alpha1
+kind: ResourceInterpreterCustomization
+metadata:
+  name: nodeprovision-status
+spec:
+  target:
+    apiVersion: ml.dcn.ssu.ac.kr/v1alpha1
+    kind: NodeProvision
+  customizations:
+    statusReflection:
+      luaScript: |
+        function ReflectStatus(observedObj)
+          if observedObj == nil or observedObj.status == nil then return {} end
+          return observedObj.status
+        end
+    statusAggregation:
+      luaScript: |
+        function AggregateStatus(desiredObj, statusItems)
+          desiredObj.status = {}
+          if statusItems == nil then return desiredObj end
+          local count = 0
+          local selected = nil
+          for i = 1, #statusItems do
+            if statusItems[i].clusterName == "aws" then
+              count = count + 1
+              selected = statusItems[i].status
+            end
+          end
+          if count ~= 1 or selected == nil then return desiredObj end
+          desiredObj.status = selected
+          desiredObj.status.observedCluster = "aws"
+          return desiredObj
+        end
