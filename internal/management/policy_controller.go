@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -251,9 +252,32 @@ func (r *PolicyReconciler) createIfMissing(ctx context.Context, desired *unstruc
 }
 
 func samePlacementSpec(existing, desired *unstructured.Unstructured) bool {
-	existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
-	desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
-	return fmt.Sprintf("%#v", existingSpec) == fmt.Sprintf("%#v", desiredSpec)
+	return reflect.DeepEqual(normalizedPlacementSpec(existing), normalizedPlacementSpec(desired))
+}
+
+func normalizedPlacementSpec(obj *unstructured.Unstructured) map[string]interface{} {
+	spec, _, _ := unstructured.NestedMap(obj.Object, "spec")
+	if spec == nil {
+		return nil
+	}
+	// Normalize only known admission defaults; retain every other field for drift checks.
+	for key, value := range map[string]interface{}{
+		"conflictResolution": "Abort", "preemption": "Never",
+		"priority": int64(0), "schedulerName": "default-scheduler",
+	} {
+		if _, exists := spec[key]; !exists {
+			spec[key] = value
+		}
+	}
+	selectors, _ := spec["resourceSelectors"].([]interface{})
+	for _, item := range selectors {
+		if selector, ok := item.(map[string]interface{}); ok {
+			if _, exists := selector["namespace"]; !exists {
+				selector["namespace"] = obj.GetNamespace()
+			}
+		}
+	}
+	return spec
 }
 
 func (r *PolicyReconciler) now() time.Time {
