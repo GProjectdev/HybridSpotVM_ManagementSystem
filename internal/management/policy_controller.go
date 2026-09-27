@@ -200,12 +200,19 @@ func (r *PolicyReconciler) riskSnapshot(ctx context.Context, input trainingpolic
 }
 
 func (r *PolicyReconciler) ensureNodeProvisions(ctx context.Context, input trainingpolicy.PolicyInput, decision trainingpolicy.Decision) error {
-	retired, err := r.retiredGeneratedSlots(ctx, input)
+	successors, err := r.completedReplacementSuccessors(ctx, input)
+	if err != nil {
+		return err
+	}
+	retired, err := r.retiredGeneratedSlots(ctx, input, successors)
 	if err != nil {
 		return err
 	}
 	for i := int64(0); i < decision.DesiredWorkers; i++ {
 		desired := trainingpolicy.NewNodeProvision(input, i, desiredMarketForOrdinal(i, decision))
+		if successors[desired.GetName()] != "" {
+			continue
+		}
 		if retired[desired.GetName()] {
 			continue
 		}

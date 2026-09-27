@@ -5,3 +5,4 @@ resources:
 - spotriskprofiles.yaml
 - trainingruntimes.yaml
 - spotrecoveries.yaml
+- spotreplacements.yaml

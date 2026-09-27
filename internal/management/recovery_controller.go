@@ -114,6 +114,9 @@ func (r *RecoveryReconciler) recover(ctx context.Context, recovery *unstructured
 	if err := r.verifyRuntime(ctx, recovery.GetNamespace(), spec); err != nil {
 		return "Rejected", err
 	}
+	if err := r.verifySpotReplacement(ctx, recovery.GetNamespace(), spec); err != nil {
+		return "Rejected", err
+	}
 	freshRecovery, err := r.freshSpotRecovery(ctx, recovery)
 	if err != nil {
 		return "Pending", err
@@ -186,8 +189,8 @@ func (s recoverySpec) validateStaticContract() error {
 	if s.SourceCluster != awsNodeProvisionCluster {
 		return fmt.Errorf("sourceCluster must be aws for SpotRecovery node deletion")
 	}
-	if s.SourceCluster == s.TargetCluster {
-		return fmt.Errorf("sourceCluster and targetCluster must differ")
+	if s.SourceCluster == s.TargetCluster && !s.sameClusterReplacement() {
+		return fmt.Errorf("same-cluster restore is allowed only for explicit replacement operations")
 	}
 	if s.OldNodeProvisionName == "" || s.OldNodeProvisionUID == "" {
 		return fmt.Errorf("old NodeProvision name/uid ref is required")
@@ -199,6 +202,10 @@ func (s recoverySpec) validateStaticContract() error {
 		return fmt.Errorf("old and replacement NodeProvision must not be the same node")
 	}
 	return nil
+}
+
+func (s recoverySpec) sameClusterReplacement() bool {
+	return s.SourceCluster == s.TargetCluster && s.ReplacementNodeProvisionName != "" && s.ReplacementNodeProvisionUID != ""
 }
 
 func (r *RecoveryReconciler) verifyPolicy(ctx context.Context, ns string, spec recoverySpec) error {
@@ -235,6 +242,80 @@ func (r *RecoveryReconciler) verifyRuntime(ctx context.Context, ns string, spec 
 	return nil
 }
 
+func (r *RecoveryReconciler) verifySpotReplacement(ctx context.Context, ns string, spec recoverySpec) error {
+	if spec.ReplacementNodeProvisionName == "" {
+		return nil
+	}
+	replacement := newSpotReplacementObject()
+	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.Operation}, replacement); err != nil {
+		return fmt.Errorf("get SpotReplacement operation: %w", err)
+	}
+	if !replacement.GetDeletionTimestamp().IsZero() {
+		return fmt.Errorf("SpotReplacement operation is deleting")
+	}
+	checks := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"policyRef.uid", stringField(replacement.Object, "spec", "policyRef", "uid"), spec.PolicyUID},
+		{"operation", stringField(replacement.Object, "spec", "operation"), spec.Operation},
+		{"sourceCluster", stringField(replacement.Object, "spec", "sourceCluster"), spec.SourceCluster},
+		{"targetCluster", stringField(replacement.Object, "spec", "targetCluster"), spec.TargetCluster},
+		{"oldNodeProvisionRef.name", stringField(replacement.Object, "spec", "oldNodeProvisionRef", "name"), spec.OldNodeProvisionName},
+		{"oldNodeProvisionRef.uid", stringField(replacement.Object, "spec", "oldNodeProvisionRef", "uid"), spec.OldNodeProvisionUID},
+		{"replacementNodeProvisionRef.name", stringField(replacement.Object, "spec", "replacementNodeProvisionRef", "name"), spec.ReplacementNodeProvisionName},
+		{"desiredMarketType", stringField(replacement.Object, "spec", "desiredMarketType"), "OnDemand"},
+	}
+	for _, check := range checks {
+		if check.got == "" || check.got != check.want {
+			return fmt.Errorf("SpotReplacement %s mismatch", check.name)
+		}
+	}
+	if uid := stringField(replacement.Object, "status", "replacementNodeProvisionRef", "uid"); uid != "" && uid != spec.ReplacementNodeProvisionUID {
+		return fmt.Errorf("SpotReplacement replacementNodeProvisionRef uid mismatch")
+	}
+	targetRanks, ok, _ := unstructured.NestedSlice(replacement.Object, "spec", "partialCheckpoint", "targetRanks")
+	if !ok || len(targetRanks) == 0 {
+		return fmt.Errorf("SpotReplacement partialCheckpoint.targetRanks required")
+	}
+	ranks := map[int64]bool{}
+	for _, item := range targetRanks {
+		rank, ok := int64Value(item)
+		if !ok || rank < 0 {
+			return fmt.Errorf("SpotReplacement partialCheckpoint target rank invalid")
+		}
+		ranks[rank] = true
+	}
+	pods, ok, _ := unstructured.NestedSlice(replacement.Object, "spec", "pods")
+	if !ok || len(pods) == 0 {
+		return fmt.Errorf("SpotReplacement pods rank/sourcePodUID evidence required")
+	}
+	seenPods := map[int64]bool{}
+	for _, item := range pods {
+		pod, ok := item.(map[string]interface{})
+		rank := intField(pod, "rank")
+		if !ok || !ranks[rank] || stringField(pod, "sourcePodUID") == "" {
+			return fmt.Errorf("SpotReplacement pods rank/sourcePodUID evidence incomplete")
+		}
+		seenPods[rank] = true
+	}
+	for rank := range ranks {
+		if !seenPods[rank] {
+			return fmt.Errorf("SpotReplacement missing pod evidence for target rank")
+		}
+	}
+	if !boolField(replacement.Object, "spec", "partialRestore", "preventPeriodicResume") {
+		return fmt.Errorf("SpotReplacement partialRestore.preventPeriodicResume required")
+	}
+	if partialRanks, ok, _ := unstructured.NestedSlice(replacement.Object, "spec", "partialRestore", "targetRanks"); ok && len(partialRanks) > 0 {
+		if len(partialRanks) != len(targetRanks) {
+			return fmt.Errorf("SpotReplacement partialRestore.targetRanks must match partialCheckpoint.targetRanks")
+		}
+	}
+	return nil
+}
+
 type restoreEvidence struct {
 	SourceNodes map[string]bool
 }
@@ -256,8 +337,8 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 	if intField(req.Object, "status", "observedGeneration") != spec.RestoreRequestGeneration {
 		return restoreEvidence{}, fmt.Errorf("RestoreRequest observedGeneration mismatch")
 	}
-	if ok, _, _ := unstructured.NestedBool(req.Object, "spec", "sourceFenced"); !ok {
-		return restoreEvidence{}, fmt.Errorf("RestoreRequest spec.sourceFenced must be true")
+	if err := verifyRestoreEvidenceContract(req, spec); err != nil {
+		return restoreEvidence{}, err
 	}
 	checks := []struct {
 		name string
@@ -301,6 +382,54 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 		return restoreEvidence{}, fmt.Errorf("RestoreRequest spec.pods sourceNode evidence required")
 	}
 	return restoreEvidence{SourceNodes: sourceNodes}, nil
+}
+
+func verifyRestoreEvidenceContract(req *unstructured.Unstructured, spec recoverySpec) error {
+	if spec.Operation != "" && stringField(req.Object, "status", "verification", "operation") != spec.Operation {
+		return fmt.Errorf("RestoreRequest verification operation mismatch")
+	}
+	if spec.sameClusterReplacement() {
+		fence, ok, _ := unstructured.NestedMap(req.Object, "status", "verification", "sourceFence")
+		if !ok || !boolField(map[string]interface{}{"sourceFence": fence}, "sourceFence", "fenced") || stringField(fence, "evidenceID") == "" || stringField(fence, "observedAt") == "" {
+			return fmt.Errorf("RestoreRequest sourceFence durable evidence required")
+		}
+		if spec.Operation != "" && stringField(fence, "operation") != spec.Operation {
+			return fmt.Errorf("RestoreRequest sourceFence operation mismatch")
+		}
+		if boolField(req.Object, "spec", "sourceFenced") && stringField(fence, "evidenceID") == "" {
+			return fmt.Errorf("RestoreRequest sourceFenced boolean cannot replace sourceFence evidence")
+		}
+		if boolField(req.Object, "spec", "sourceFenced") {
+			return fmt.Errorf("same-cluster replacement requires sourceFenced=false until member actuator evidence is bound")
+		}
+		if !boolField(req.Object, "spec", "volumesReady") {
+			return fmt.Errorf("same-cluster replacement volumesReady evidence required")
+		}
+		if !boolField(req.Object, "spec", "partialRestore", "preventPeriodicResume") && !boolField(req.Object, "status", "verification", "partialRestore", "preventPeriodicResume") {
+			return fmt.Errorf("RestoreRequest partialRestore.preventPeriodicResume contract evidence required")
+		}
+		targetRanks, ok, _ := unstructured.NestedSlice(req.Object, "status", "verification", "partialRestore", "targetRanks")
+		if !ok || len(targetRanks) == 0 {
+			return fmt.Errorf("RestoreRequest partialRestore target rank evidence required")
+		}
+		for _, item := range targetRanks {
+			rank, ok := item.(map[string]interface{})
+			if !ok || intField(rank, "rank") < 0 || stringField(rank, "targetPodUID") == "" || stringField(rank, "checkpointID") != spec.CheckpointID || (stringField(rank, "archiveEvidenceID") == "" && (stringField(rank, "durableRef") == "" || stringField(rank, "sha256") == "")) {
+				return fmt.Errorf("RestoreRequest partialRestore target rank evidence incomplete")
+			}
+		}
+		survivors, ok, _ := unstructured.NestedSlice(req.Object, "status", "verification", "survivors")
+		if !ok || len(survivors) == 0 {
+			return fmt.Errorf("RestoreRequest survivor UID preservation evidence required")
+		}
+		for _, item := range survivors {
+			survivor, ok := item.(map[string]interface{})
+			if !ok || intField(survivor, "rank") < 0 || stringField(survivor, "podUID") == "" || stringField(survivor, "stateEvidence", "kind") == "" || stringField(survivor, "stateEvidence", "observedAt") == "" {
+				return fmt.Errorf("RestoreRequest survivor UID preservation evidence incomplete")
+			}
+		}
+	}
+	return nil
 }
 
 func (r *RecoveryReconciler) verifyAndDeleteNodeProvision(ctx context.Context, recovery *unstructured.Unstructured, spec recoverySpec, restore restoreEvidence) (string, error) {
@@ -416,8 +545,8 @@ func verifyReplacementReady(np *unstructured.Unstructured, spec recoverySpec) er
 	if np.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
 		return fmt.Errorf("replacement NodeProvision policy uid mismatch")
 	}
-	if stringField(np.Object, "spec", "marketType") == "" {
-		return fmt.Errorf("replacement NodeProvision marketType required")
+	if market := stringField(np.Object, "spec", "marketType"); market != "OnDemand" {
+		return fmt.Errorf("replacement NodeProvision marketType must be OnDemand")
 	}
 	if phase := stringField(np.Object, "status", "phase"); phase != "Ready" {
 		return fmt.Errorf("replacement NodeProvision is not Ready")
@@ -470,6 +599,11 @@ func intField(obj map[string]interface{}, fields ...string) int64 {
 		return int64(value)
 	}
 	return 0
+}
+
+func boolField(obj map[string]interface{}, fields ...string) bool {
+	value, _, _ := unstructured.NestedBool(obj, fields...)
+	return value
 }
 
 func firstString(obj map[string]interface{}, paths [][]string) string {

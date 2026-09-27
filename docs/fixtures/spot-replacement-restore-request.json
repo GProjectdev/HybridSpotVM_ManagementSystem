@@ -1,0 +1,113 @@
+{
+  "apiVersion": "migration.dcnlab.com/v1alpha1",
+  "kind": "RestoreRequest",
+  "metadata": {
+    "name": "old-replace-restore",
+    "namespace": "default",
+    "labels": {
+      "training.dcnlab.com/managed-by": "hybridspotvm-system",
+      "training.dcnlab.com/policy": "policy",
+      "training.dcnlab.com/policy-uid": "policy-uid",
+      "training.dcnlab.com/role": "replacement-restore"
+    },
+    "annotations": {
+      "training.dcnlab.com/recovery-operation": "old-replace"
+    }
+  },
+  "spec": {
+    "sourceCluster": "aws",
+    "targetCluster": "aws",
+    "sourceFenced": false,
+    "volumesReady": true,
+    "workloadRef": {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "name": "trainer",
+      "uid": "workload-uid"
+    },
+    "checkpointRef": {
+      "name": "old-replace-partial-checkpoint",
+      "uid": "checkpoint-uid",
+      "generation": 3,
+      "checkpointID": "old-replace-partial-checkpoint"
+    },
+    "partialRestore": {
+      "preventPeriodicResume": true,
+      "targetRanks": [1],
+      "preservedSurvivors": [
+        {
+          "rank": 0,
+          "podName": "trainer-0",
+          "podUID": "survivor-pod-uid",
+          "nodeName": "survivor-node",
+          "generation": 9,
+          "pauseLockPath": "/var/lib/fluidcr/pause-locks/trainer-0/pause-lock"
+        }
+      ]
+    },
+    "pods": [
+      {
+        "rank": 1,
+        "sourcePod": "trainer-1",
+        "sourcePodUID": "old-pod-uid",
+        "sourceNode": "old-node",
+        "targetPod": "trainer-1",
+        "targetNode": "new-node",
+        "archives": [
+          {
+            "containerName": "trainer",
+            "sourcePath": "/var/lib/kubelet/checkpoints/checkpoint-trainer-1.tar",
+            "targetPath": "/var/lib/kubelet/checkpoints/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.tar",
+            "checkpointID": "old-replace-partial-checkpoint",
+            "durableRef": "file-store:default/sha256/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    ]
+  },
+  "status": {
+    "phase": "Verified",
+    "observedGeneration": 1,
+    "verification": {
+      "requestUID": "restore-uid",
+      "operation": "old-replace",
+      "checkpointID": "old-replace-partial-checkpoint",
+      "sourceCluster": "aws",
+      "targetCluster": "aws",
+      "sourceFenced": false,
+      "sourceFence": {
+        "fenced": true,
+        "operation": "old-replace",
+        "evidenceID": "old-pod-uid-gone",
+        "observedAt": "2026-09-26T00:00:30Z"
+      },
+      "partialRestore": {
+        "preventPeriodicResume": true,
+        "targetRanks": [
+          {
+            "rank": 1,
+            "targetPodUID": "new-pod-uid",
+            "checkpointID": "old-replace-partial-checkpoint",
+            "archiveEvidenceID": "archive-rank-1"
+          }
+        ]
+      },
+      "survivors": [
+        {
+          "rank": 0,
+          "podUID": "survivor-pod-uid",
+          "stateEvidence": {
+            "kind": "pause-lock",
+            "observedAt": "2026-09-26T00:00:00Z"
+          }
+        }
+      ],
+      "trainingRuntimeRef": {
+        "name": "runtime",
+        "uid": "runtime-uid"
+      },
+      "verifiedAt": "2026-09-26T00:01:00Z"
+    }
+  }
+}

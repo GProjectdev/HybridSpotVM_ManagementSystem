@@ -3,32 +3,22 @@ package management
 import (
 	"context"
 	"fmt"
+
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"testing"
+	"time"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-	"time"
 )
 
-func discoveryFixture(t *testing.T, cluster string) (*DiscoveryReconciler, *unstructured.Unstructured, *unstructured.Unstructured) {
-	t.Helper()
-	scheme := testScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	sts := workloadFixture("workload-uid")
-	sts.Object["spec"] = map[string]interface{}{"replicas": int64(2), "template": map[string]interface{}{"spec": map[string]interface{}{"containers": []interface{}{map[string]interface{}{"name": "trainer", "image": "test"}}}}}
-	rb := bindingObject()
-	rb.SetName("trainer-statefulset")
-	rb.SetNamespace("default")
-	rb.SetUID("rb-uid")
-	rb.Object["spec"] = map[string]interface{}{"resource": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "namespace": "default", "uid": "workload-uid"}, "clusters": []interface{}{map[string]interface{}{"name": cluster, "replicas": int64(2)}}}
-	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: defaultsName, Namespace: "hybridspot-system"}, Data: map[string]string{"spec.yaml": `riskProfileRef:
+func discoveryDefaultsYAML(extra string) string {
+	return `riskProfileRef:
   name: train-risk
 policy:
   alpha: 0.8
@@ -44,10 +34,40 @@ capacity:
     subnetId: subnet-test
     credentialsRef:
       name: creds
-`}}
+` + extra
+}
+
+func discoveryFixture(t *testing.T, cluster string) (*DiscoveryReconciler, *unstructured.Unstructured, *unstructured.Unstructured) {
+	t.Helper()
+	scheme := testScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+	sts := workloadFixture("workload-uid")
+	sts.Object["spec"] = map[string]interface{}{"replicas": int64(2), "template": map[string]interface{}{"spec": map[string]interface{}{"containers": []interface{}{map[string]interface{}{"name": "trainer", "image": "test"}}}}}
+	rb := bindingObject()
+	rb.SetName("trainer-statefulset")
+	rb.SetNamespace("default")
+	rb.SetUID("rb-uid")
+	rb.Object["spec"] = map[string]interface{}{"resource": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "namespace": "default", "uid": "workload-uid"}, "clusters": []interface{}{map[string]interface{}{"name": cluster, "replicas": int64(2)}}}
+	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: defaultsName, Namespace: "hybridspot-system"}, Data: map[string]string{"spec.yaml": discoveryDefaultsYAML("")}}
 	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(p.NewObject("TrainingPolicy")).WithObjects(sts, rb, cm).Build()
 	return &DiscoveryReconciler{Client: c, Reader: c}, sts, rb
 }
+
+func setDiscoveryDefaults(t *testing.T, r *DiscoveryReconciler, specYAML string) {
+	t.Helper()
+	ctx := context.Background()
+	cm := &corev1.ConfigMap{}
+	if err := r.Get(ctx, types.NamespacedName{Namespace: "hybridspot-system", Name: defaultsName}, cm); err != nil {
+		t.Fatal(err)
+	}
+	cm.Data["spec.yaml"] = specYAML
+	if err := r.Update(ctx, cm); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func discover(t *testing.T, r *DiscoveryReconciler, sts *unstructured.Unstructured) *unstructured.Unstructured {
 	t.Helper()
 	ctx := context.Background()
@@ -72,6 +92,29 @@ func discover(t *testing.T, r *DiscoveryReconciler, sts *unstructured.Unstructur
 	}
 	return obj
 }
+
+func TestAutomaticPolicyReplacementDefaults(t *testing.T) {
+	t.Run("omitted stays disabled", func(t *testing.T) {
+		r, sts, _ := discoveryFixture(t, "aws")
+		obj := discover(t, r, sts)
+		if _, ok, _ := unstructured.NestedMap(obj.Object, "spec", "replacement"); ok {
+			t.Fatal("omitted replacement defaults created an opt-in block")
+		}
+		if boolField(obj.Object, "spec", "replacement", "enabled") {
+			t.Fatal("omitted replacement defaults enabled replacement")
+		}
+	})
+
+	t.Run("explicit opt-in preserved", func(t *testing.T) {
+		r, sts, _ := discoveryFixture(t, "aws")
+		setDiscoveryDefaults(t, r, discoveryDefaultsYAML("replacement:\n  enabled: true\n"))
+		obj := discover(t, r, sts)
+		if !boolField(obj.Object, "spec", "replacement", "enabled") {
+			t.Fatal("explicit replacement default was not preserved")
+		}
+	})
+}
+
 func TestAutomaticPolicyCreatesOneSpotOneOnDemand(t *testing.T) {
 	r, sts, _ := discoveryFixture(t, "aws")
 	obj := discover(t, r, sts)
@@ -205,8 +248,8 @@ func TestVerifiedTransitionRequiresCurrentRestoreAndLiveRuntime(t *testing.T) {
 	req.SetUID("restore-uid")
 	req.SetGeneration(1)
 	req.SetCreationTimestamp(metav1.NewTime(now))
-	req.Object["spec"] = map[string]interface{}{"sourceFenced": true, "sourceCluster": "onpre1", "targetCluster": "aws", "workloadRef": map[string]interface{}{"uid": "workload-uid"}, "checkpointRef": map[string]interface{}{"checkpointID": "ckpt-1"}, "pods": []interface{}{map[string]interface{}{"sourceNode": "old-node"}}}
-	req.Object["status"] = map[string]interface{}{"phase": "Verified", "observedGeneration": int64(1), "verification": map[string]interface{}{"requestUID": "restore-uid", "checkpointID": "ckpt-1", "verifiedAt": now.Format(time.RFC3339), "trainingRuntimeRef": map[string]interface{}{"name": rt.GetName(), "uid": "target-runtime-uid"}, "sourceCluster": "onpre1", "targetCluster": "aws"}}
+	req.Object["spec"] = map[string]interface{}{"sourceCluster": "onpre1", "targetCluster": "aws", "workloadRef": map[string]interface{}{"uid": "workload-uid"}, "checkpointRef": map[string]interface{}{"checkpointID": "ckpt-1"}, "pods": []interface{}{map[string]interface{}{"sourceNode": "old-node"}}}
+	req.Object["status"] = map[string]interface{}{"phase": "Verified", "observedGeneration": int64(1), "verification": map[string]interface{}{"requestUID": "restore-uid", "checkpointID": "ckpt-1", "verifiedAt": now.Format(time.RFC3339), "trainingRuntimeRef": map[string]interface{}{"name": rt.GetName(), "uid": "target-runtime-uid"}, "sourceCluster": "onpre1", "targetCluster": "aws", "sourceFence": map[string]interface{}{"fenced": true, "evidenceID": "fence-1", "observedAt": now.Format(time.RFC3339)}}}
 	if err := r.Create(ctx, req); err != nil {
 		t.Fatal(err)
 	}

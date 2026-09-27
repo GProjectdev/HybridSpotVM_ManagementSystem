@@ -2,6 +2,9 @@
 
 Automatic RB-based policy enrollment and upgrade guide: [Automatic StatefulSet discovery](docs/automatic-policy-discovery.md).
 
+Coordinated controller/runtime upgrade: [Build and validation order](docs/integrated-upgrade-validation.md).
+Partial replacement safety contract: [SpotReplacement](docs/spot-replacement-contract.md).
+
 고정된 DDP Worker 수를 유지하면서 Spot/On-Demand 구성을 선택하고, 시간 기반 Checkpoint를 요청하는 Kubernetes Controller 모음입니다. MGMT의 Controller는 Karmada API를 사용합니다.
 
 | 실행 위치 | 컴포넌트 | 역할 |
@@ -29,17 +32,17 @@ Karmada가 RIC에 따라 Member status를 MGMT로 반영합니다. workload plac
 - [Stateful Migration](https://github.com/GProjectdev/Stateful-Migration-Operator-with-PV): FluidCR 실행 확장, archive 전송, Restore 검증과 suspension.
 - [PV Migration](https://github.com/GProjectdev/Karmada_with_PVMigration): PV metadata 수집과 PV Work 생성/분리.
 
-FluidCR 원본 다운로드 폴더는 독립 Git 저장소가 아니므로 이번 확장은 Stateful Migration 저장소의 runtime 배포 경로에 포함합니다.
+FluidCR payload/webhook은 별도 `My_FluidCR` 저장소에서 빌드합니다. Stateful Migration의 payload overlay도 같은 계약 버전으로 빌드해야 합니다. 이미지 변경만으로 기존 학습 Pod 안의 payload가 갱신되지는 않습니다.
 
 ## 상태와 책임
 
 Spot 위험률은 외부 공급자의 시간당 hazard를 받습니다. AWS Spot 가격이나 placement score를 hazard로 간주하지 않습니다. 실험용 static 입력은 실험용임을 status에 표시합니다.
 
-VM Spot Risk Collector는 `internal/collector`에 구현된 위험 입력 수집기입니다. 외부 HTTPS feed 또는 static 실험 입력을 소비하며, AWS hazard estimation을 구현하지 않습니다. HTTPS feed 예시는 `config/samples/11-spot-risk-profile-https.yaml`의 `aws-risk-feed`이며, placeholder endpoint `https://risk-feed.example.invalid/aws/ap-northeast-2/g4dn.xlarge`는 반드시 실제 feed로 바꾸고 `TrainingPolicy`가 같은 `SpotRiskProfile`을 참조하게 해야 합니다.
+VM Spot Risk Collector는 `internal/collector`의 위험 입력 수집기입니다. static, trace 기반 실험 입력과 외부 HTTPS feed를 지원하며, 논문 방식 SARIMA feed는 별도 Python 서비스로 실행합니다. 가용성 감소로 얻은 proxy와 실제 VM 선점 사건의 hazard는 동일한 관측값이 아닙니다. 입력 의미, 추정 방법, 배포 및 유효기간은 [위험률 입력 계약](docs/risk-feed.md)을 확인하세요. placeholder endpoint는 실제 feed로 교체하고 `TrainingPolicy`가 해당 `SpotRiskProfile`을 참조해야 합니다.
 
 Checkpoint 주기는 초 단위입니다. 요청 시각과 실제 안전한 optimizer-step에서 저장되는 시각은 다를 수 있습니다. DDP rank의 Checkpoint 동기화와 통신 재구성은 FluidCR이 담당합니다.
 
-초기 정책은 전달받은 위험률과 안정성 기준으로 Spot/On-Demand 목표 수를 선택합니다. 아직 측정하지 않은 손실 비용을 0으로 가정하지 않으며, 금액 기반 fallback은 `costEvaluated=false`로 구분합니다. 이미 생성된 VM의 시장 유형은 즉시 변경하지 않고 명시적인 교체 절차가 필요합니다. Checkpoint 주기는 초기 위험 구간 정책을 사용하고, 측정된 저장·복사 시간을 설정하면 시간 기반 비용 최소화로 전환합니다.
+초기 정책은 위험률과 안정성 기준으로 Spot/On-Demand 목표 수를 선택합니다. 금액 기반 fallback은 명시적으로 활성화하고 유효한 손실 비용과 가격이 있을 때만 평가하며, 정보가 없으면 `costEvaluated=false`입니다. 기존 VM의 시장 유형을 덮어쓰지 않고 검증된 교체 절차를 사용합니다. Checkpoint 주기는 초기 위험 구간 정책을 사용하고, 완료된 체크포인트의 검증 가능한 시간·아카이브 증거가 있으면 실측 비용을 반영합니다.
 
 원본 실행 차단, PV 준비, archive 준비, 실제 복원 검증은 서로 다른 증거입니다. PVMigration Completed와 Pod Ready만으로 원본 노드 삭제를 허용하지 않습니다. Source fencing과 사용자 placement 단계를 완료해야 복원이 진행됩니다.
 

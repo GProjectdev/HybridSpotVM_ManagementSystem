@@ -99,6 +99,8 @@ spec:
                       type: string
                     uid:
                       type: string
+                    nodeName:
+                      type: string
                     rank:
                       type: integer
                       format: int64
@@ -164,6 +166,8 @@ spec:
                               name:
                                 type: string
                               uid:
+                                type: string
+                              nodeName:
                                 type: string
                               rank:
                                 type: integer

@@ -33,6 +33,7 @@ const (
 	defaultSecretKey    = "token"
 	staticSourceType    = "static"
 	endpointSourceType  = "https"
+	paperSourceType     = "paper-sarima"
 )
 
 var spotRiskProfileGVK = schema.GroupVersionKind{
@@ -50,6 +51,7 @@ type Reconciler struct {
 
 type profileSpec struct {
 	Endpoint            string
+	PaperEndpoint       string
 	StaticLambdaPerHour *float64
 	MaxAge              time.Duration
 	Poll                time.Duration
@@ -63,11 +65,12 @@ type credentialRef struct {
 }
 
 type feedResponse struct {
-	LambdaPerHour        *float64 `json:"lambdaPerHour"`
-	ObservedAt           string   `json:"observedAt"`
-	ValidUntil           string   `json:"validUntil"`
-	SpotPricePerHour     *float64 `json:"spotPricePerHour,omitempty"`
-	OnDemandPricePerHour *float64 `json:"onDemandPricePerHour,omitempty"`
+	LambdaPerHour        *float64               `json:"lambdaPerHour"`
+	ObservedAt           string                 `json:"observedAt"`
+	ValidUntil           string                 `json:"validUntil"`
+	SpotPricePerHour     *float64               `json:"spotPricePerHour,omitempty"`
+	OnDemandPricePerHour *float64               `json:"onDemandPricePerHour,omitempty"`
+	Source               map[string]interface{} `json:"source,omitempty"`
 }
 
 type normalizedRisk struct {
@@ -150,8 +153,12 @@ func (r *Reconciler) collect(ctx context.Context, obj *unstructured.Unstructured
 	spec := parseSpec(obj)
 	now := r.now()
 	_, hasTrace, _ := unstructured.NestedMap(obj.Object, "spec", "trace")
+	_, hasPaperEstimator, _ := unstructured.NestedMap(obj.Object, "spec", "paperEstimator")
 	sources := 0
 	if hasTrace {
+		sources++
+	}
+	if hasPaperEstimator {
 		sources++
 	}
 	if spec.Endpoint != "" {
@@ -161,10 +168,27 @@ func (r *Reconciler) collect(ctx context.Context, obj *unstructured.Unstructured
 		sources++
 	}
 	if sources != 1 {
-		return normalizedRisk{}, errors.New("exactly one of trace, endpoint, staticLambdaPerHour is required")
+		return normalizedRisk{}, errors.New("exactly one of trace, endpoint, staticLambdaPerHour, or paperEstimator is required")
 	}
 	if hasTrace {
 		return r.collectTrace(ctx, obj, now, spec.MaxAge)
+	}
+	if hasPaperEstimator {
+		if spec.PaperEndpoint == "" {
+			return normalizedRisk{}, errors.New("spec.paperEstimator.feedEndpoint is required")
+		}
+		token, err := r.bearerToken(ctx, obj.GetNamespace(), spec.Credential)
+		if err != nil {
+			return normalizedRisk{}, err
+		}
+		risk, err := fetchEndpointRisk(ctx, r.httpClient(), spec.PaperEndpoint, token, spec.MaxAge, now)
+		if err != nil {
+			return normalizedRisk{}, err
+		}
+		if err := validatePaperRiskSource(obj, &risk); err != nil {
+			return normalizedRisk{}, err
+		}
+		return risk, nil
 	}
 
 	if spec.StaticLambdaPerHour != nil {
@@ -193,13 +217,92 @@ func (r *Reconciler) collect(ctx context.Context, obj *unstructured.Unstructured
 	return fetchEndpointRisk(ctx, r.httpClient(), spec.Endpoint, token, spec.MaxAge, now)
 }
 
+func validatePaperRiskSource(obj *unstructured.Unstructured, risk *normalizedRisk) error {
+	feedSource, ok := risk.Source["feed"].(map[string]interface{})
+	if !ok || len(feedSource) == 0 {
+		return errors.New("paperEstimator feed source metadata is required")
+	}
+	if sourceType, _ := feedSource["type"].(string); sourceType != paperSourceType {
+		return fmt.Errorf("paperEstimator feed source.type = %q, want %q", sourceType, paperSourceType)
+	}
+	if provenance, _ := feedSource["provenance"].(string); provenance != "paper-availability-count-sarima" {
+		return errors.New("paperEstimator feed provenance must be paper-availability-count-sarima")
+	}
+	if err := requirePaperParam(feedSource, "rollingMeanHours", paperParam(obj, 3, "rollingMeanHours")); err != nil {
+		return err
+	}
+	if err := requirePaperParam(feedSource, "retrainWindowWeeks", paperParam(obj, 4, "retrainWindowWeeks")); err != nil {
+		return err
+	}
+	if err := requirePaperParam(feedSource, "seasonalPeriodHours", paperParam(obj, 24, "seasonalPeriodHours")); err != nil {
+		return err
+	}
+	riskPopulation, ok := sourceNumber(feedSource, "riskPopulation")
+	if !ok || riskPopulation <= 0 || !finiteNumber(riskPopulation) {
+		return errors.New("paperEstimator feed source.riskPopulation must be finite and positive")
+	}
+	aggregate, ok := sourceNumber(feedSource, "aggregateForecastPreemptionsPerHour")
+	if !ok || aggregate < 0 || !finiteNumber(aggregate) {
+		return errors.New("paperEstimator feed source.aggregateForecastPreemptionsPerHour must be finite and nonnegative")
+	}
+	approx, _ := feedSource["perInstanceLambdaApproximation"].(string)
+	if approx == "" {
+		return errors.New("paperEstimator feed source.perInstanceLambdaApproximation is required")
+	}
+	if risk.LambdaPerHour > aggregate/riskPopulation+1e-9 {
+		return errors.New("paperEstimator lambdaPerHour exceeds aggregateForecastPreemptionsPerHour/riskPopulation")
+	}
+	if host, ok := risk.Source["host"].(string); ok && host != "" {
+		feedSource["host"] = host
+	}
+	risk.Source = feedSource
+	return nil
+}
+
+func paperParam(obj *unstructured.Unstructured, fallback int64, field string) int64 {
+	value := resource.Int(obj, "spec", "paperEstimator", field)
+	if value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func requirePaperParam(source map[string]interface{}, field string, expected int64) error {
+	actual, ok := sourceNumber(source, field)
+	if !ok || !finiteNumber(actual) || actual != float64(expected) {
+		return fmt.Errorf("paperEstimator feed source.%s = %v, want %d", field, source[field], expected)
+	}
+	return nil
+}
+
+func sourceNumber(source map[string]interface{}, field string) (float64, bool) {
+	switch value := source[field].(type) {
+	case float64:
+		return value, true
+	case int64:
+		return float64(value), true
+	case int:
+		return float64(value), true
+	case json.Number:
+		parsed, err := value.Float64()
+		return parsed, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func finiteNumber(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
+}
+
 func parseSpec(obj *unstructured.Unstructured) profileSpec {
 	maxAge := secondsDuration(obj, defaultMaxAge, "spec", "maxAgeSeconds")
 	poll := secondsDuration(obj, defaultPoll, "spec", "pollSeconds")
 	spec := profileSpec{
-		Endpoint: resource.String(obj, "spec", "endpoint"),
-		MaxAge:   maxAge,
-		Poll:     poll,
+		Endpoint:      resource.String(obj, "spec", "endpoint"),
+		PaperEndpoint: resource.String(obj, "spec", "paperEstimator", "feedEndpoint"),
+		MaxAge:        maxAge,
+		Poll:          poll,
 	}
 	if v, ok := nestedNumber(obj, "spec", "staticLambdaPerHour"); ok {
 		spec.StaticLambdaPerHour = &v
@@ -346,11 +449,19 @@ func normalizeFeed(raw feedResponse, endpointHost string, maxAge time.Duration, 
 		ValidUntil:           validUntil.UTC(),
 		SpotPricePerHour:     raw.SpotPricePerHour,
 		OnDemandPricePerHour: raw.OnDemandPricePerHour,
-		Source: map[string]interface{}{
-			"type": endpointSourceType,
-			"host": endpointHost,
-		},
+		Source:               endpointSource(endpointHost, raw.Source),
 	}, nil
+}
+
+func endpointSource(endpointHost string, feedSource map[string]interface{}) map[string]interface{} {
+	source := map[string]interface{}{
+		"type": endpointSourceType,
+		"host": endpointHost,
+	}
+	if len(feedSource) > 0 {
+		source["feed"] = feedSource
+	}
+	return source
 }
 
 func validateFiniteNonNegative(name string, value float64) error {

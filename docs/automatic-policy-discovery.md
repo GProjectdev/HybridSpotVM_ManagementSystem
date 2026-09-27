@@ -19,6 +19,11 @@ No Member kubeconfig or direct Member API access is added.
 - Defaults are snapshotted at policy creation. Editing the ConfigMap affects NEW
   policies only. Existing policy constraints may be edited intentionally, but
   capacity shape/placement changes are not implemented by deleting live VMs.
+- Spot-to-OnDemand replacement remains opt-in. For an existing TrainingPolicy,
+  set `spec.replacement.enabled=true` on that policy. For future automatically
+  discovered policies, put `replacement.enabled: true` in
+  `hybridspot-system/automatic-policy-defaults` before creation. If omitted,
+  replacement stays disabled by default.
 - Each namespace needs its referenced SpotRiskProfile. AWS namespaces need the
   credentials Secret and matching NodeProvisionNetConfig. Secrets are not copied.
 - Names are deterministic: workload prefix plus name hash. Discovery refuses
@@ -156,16 +161,19 @@ When the RB target becomes aws:
 3. Target TrainingRuntime is created and propagated separately. Existing source
    Checkpoint orchestration keeps using the old source while runtime remains valid.
 4. Use existing Migration/PVMigration/Restore components to perform the operation.
-   This release does NOT auto-create a migration operation/RestorePlan, fence the
-   source, copy artifacts, write placement, release suspension or delete nodes.
+   Cross-cluster placement migration still does NOT auto-create a migration
+   operation/RestorePlan, fence the source, copy artifacts, write placement,
+   release suspension or delete nodes. Spot-to-OnDemand replacement inside AWS
+   uses the separate `SpotReplacement` contract in `spot-replacement-contract.md`.
    PVMigration's target-not-selected preparation rule still applies: prepare PVs
    BEFORE adding the target to RB.clusters. Discovery is not a replacement for
    that ordered migration workflow.
 5. Restore verification must reference the auto-created TARGET TrainingRuntime
    name and UID. Discovery accepts only a current-generation Verified RestoreRequest,
-   with sourceFenced, matching workload/source/target/checkpoint/request/runtime
-   evidence, created after transitionStartedAt. Historical restore evidence is
-   not accepted. Complete any earlier source checkpoint before switching.
+   with durable sourceFence evidence plus matching workload/source/target/
+   checkpoint/request/runtime evidence, created after transitionStartedAt.
+   Historical restore evidence is not accepted. Complete any earlier source
+   checkpoint before switching.
 6. After the existing migration controller releases dispatch suspension, fresh
    target runtime evidence plus that restore proof allow automatic sourceCluster
    and runtimeRef switching. Subsequent checkpoints use the new source.
@@ -177,9 +185,11 @@ not be adopted as new proof. Plan this handoff explicitly, not by forging status
 Cold-start discovery after an untracked migration cannot reconstruct old source
 history from target intent alone. Keep discovery active before migration.
 
-Multiple target clusters, dynamic worker-count changes, GPU compatibility,
-capacity replacement and economic optimization require separate supported
-workflows. NodeReady alone never proves DDP restore correctness.
+Multiple target clusters, dynamic worker-count changes, GPU compatibility and
+economic optimization require separate supported workflows. Spot-to-OnDemand
+capacity replacement is supported only through UID-bound SpotReplacement plus
+verified RestoreRequest evidence. NodeReady alone never proves DDP restore
+correctness.
 
 ## Verification Performed
 

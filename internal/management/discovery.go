@@ -149,7 +149,7 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		for k := range spec {
 			switch k {
-			case "capacity", "policy", "checkpoint", "riskProfileRef":
+			case "capacity", "policy", "checkpoint", "riskProfileRef", "replacement":
 			default:
 				return report("unsupported defaults key: " + k)
 			}
@@ -282,7 +282,7 @@ func (r *DiscoveryReconciler) ensureRuntime(ctx context.Context, policy, sts *un
 
 func (r *DiscoveryReconciler) verifiedTransition(ctx context.Context, policy *unstructured.Unstructured, target, started string) (bool, error) {
 	cp := &CheckpointReconciler{Client: r.Client}
-	if _, inflight, _, err := cp.checkpointState(ctx, p.ReadPolicySpec(policy)); err != nil {
+	if _, inflight, _, _, err := cp.checkpointState(ctx, p.ReadPolicySpec(policy)); err != nil {
 		return false, err
 	} else if inflight {
 		return false, nil

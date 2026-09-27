@@ -1,0 +1,162 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: spotreplacements.training.dcnlab.com
+spec:
+  group: training.dcnlab.com
+  names:
+    kind: SpotReplacement
+    listKind: SpotReplacementList
+    plural: spotreplacements
+    singular: spotreplacement
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        type: object
+        required: [spec]
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-validations:
+            - rule: self == oldSelf
+              message: SpotReplacement operations are immutable; create a new operation
+            required:
+            - operation
+            - policyRef
+            - workloadRef
+            - sourceCluster
+            - targetCluster
+            - oldNodeProvisionRef
+            - replacementNodeProvisionRef
+            - desiredMarketType
+            - partialCheckpoint
+            - pods
+            - partialRestore
+            properties:
+              operation:
+                type: string
+                minLength: 1
+                maxLength: 128
+              policyRef:
+                type: object
+                required: [name, uid, generation]
+                properties:
+                  name: {type: string, minLength: 1, maxLength: 253}
+                  uid: {type: string, minLength: 1, maxLength: 128}
+                  generation: {type: integer, format: int64, minimum: 1}
+              workloadRef:
+                type: object
+                required: [apiVersion, kind, name, uid]
+                properties:
+                  apiVersion: {type: string, enum: [apps/v1]}
+                  kind: {type: string, enum: [StatefulSet]}
+                  name: {type: string, minLength: 1, maxLength: 253}
+                  uid: {type: string, minLength: 1, maxLength: 128}
+              sourceCluster:
+                type: string
+                enum: [aws]
+              targetCluster:
+                type: string
+                enum: [aws]
+              oldNodeProvisionRef:
+                type: object
+                required: [name, uid]
+                properties:
+                  name: {type: string, minLength: 1, maxLength: 253}
+                  uid: {type: string, minLength: 1, maxLength: 128}
+              replacementNodeProvisionRef:
+                type: object
+                required: [name]
+                properties:
+                  name: {type: string, minLength: 1, maxLength: 253}
+              desiredMarketType:
+                type: string
+                enum: [OnDemand]
+              partialCheckpoint:
+                type: object
+                required: [targetRanks]
+                properties:
+                  targetRanks:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: integer
+                      format: int64
+                      minimum: 0
+              pods:
+                type: array
+                minItems: 1
+                items:
+                  type: object
+                  required: [rank, sourcePod, sourcePodUID, sourceNode]
+                  properties:
+                    rank: {type: integer, format: int64, minimum: 0}
+                    sourcePod: {type: string, minLength: 1, maxLength: 253}
+                    sourcePodUID: {type: string, minLength: 1, maxLength: 128}
+                    sourcePodName: {type: string, maxLength: 253}
+                    sourceNode: {type: string, minLength: 1, maxLength: 253}
+              partialRestore:
+                type: object
+                required: [preventPeriodicResume]
+                properties:
+                  preventPeriodicResume:
+                    type: boolean
+                    enum: [true]
+                  targetRanks:
+                    type: array
+                    items:
+                      type: integer
+                      format: int64
+                      minimum: 0
+                  preservedSurvivors:
+                    type: array
+                    items:
+                      type: object
+                      required: [rank, podName, podUID, nodeName]
+                      properties:
+                        rank: {type: integer, format: int64, minimum: 0}
+                        podName: {type: string, minLength: 1, maxLength: 253}
+                        podUID: {type: string, minLength: 1, maxLength: 128}
+                        nodeName: {type: string, minLength: 1, maxLength: 253}
+          status:
+            type: object
+            properties:
+              phase:
+                type: string
+                enum: [Pending, AwaitingReplacementReady, AwaitingPartialCheckpoint, AwaitingRestoreEvidence, CleanupRequested, Completed, Rejected]
+              observedGeneration:
+                type: integer
+                format: int64
+              observedAt:
+                type: string
+                format: date-time
+              replacementNodeProvisionRef:
+                type: object
+                properties:
+                  name: {type: string}
+                  uid: {type: string}
+              partialCheckpointRef:
+                type: object
+                properties:
+                  name: {type: string}
+                  checkpointID: {type: string}
+              restoreRequestRef:
+                type: object
+                properties:
+                  name: {type: string}
+                  uid: {type: string}
+                  generation: {type: integer, format: int64}
+              message:
+                type: string

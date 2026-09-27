@@ -146,6 +146,133 @@ func TestPolicyReconcileBlocksProvisioningWhenLiveWorkloadUIDStale(t *testing.T)
 	}
 }
 
+func TestPolicyReconcileReportsReplacementRequiredWithoutSideEffects(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := checkpointPolicyFixture(now)
+	_ = unstructured.SetNestedField(policy.Object, int64(1), "spec", "policy", "minOnDemand")
+	old := trainingpolicy.NewNodeProvision(trainingpolicy.ReadPolicySpec(policy), 0, "Spot")
+	old.SetUID(types.UID("old-node-uid"))
+	runtimeObj := runtimeFixture(now)
+	risk := riskFixture(now)
+	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"), old)
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}); err != nil {
+		t.Fatalf("policy reconcile: %v", err)
+	}
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00-replacement"}, replacement); err == nil {
+		t.Fatal("policy reconcile created replacement NodeProvision without explicit SpotReplacement opt-in")
+	}
+	operation := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00-replace"}, operation); err == nil {
+		t.Fatal("policy reconcile created SpotReplacement without explicit opt-in")
+	}
+	updated := trainingpolicy.NewObject("TrainingPolicy")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
+		t.Fatalf("get policy: %v", err)
+	}
+	if reason := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "reason"); reason != "replacement_required" {
+		t.Fatalf("policy reason = %q, want replacement_required", reason)
+	}
+	if op := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "replacementOperation"); op != "train-worker-00-old-node-uid-replace" {
+		t.Fatalf("replacement operation = %q, want train-worker-00-old-node-uid-replace", op)
+	}
+	if name := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "replacementNodeProvision"); name != "train-worker-00-replacement" {
+		t.Fatalf("replacement node provision = %q, want train-worker-00-replacement", name)
+	}
+}
+
+func TestPolicyReconcileCreatesAutomaticReplacementWithSurvivorBaseline(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := checkpointPolicyFixture(now)
+	_ = unstructured.SetNestedField(policy.Object, int64(2), "spec", "targetWorkers")
+	_ = unstructured.SetNestedField(policy.Object, int64(2), "spec", "policy", "minOnDemand")
+	_ = unstructured.SetNestedField(policy.Object, true, "spec", "replacement", "enabled")
+	old := trainingpolicy.NewNodeProvision(trainingpolicy.ReadPolicySpec(policy), 1, "Spot")
+	old.SetUID(types.UID("old-node-uid"))
+	old.Object["status"] = map[string]interface{}{"nodeName": "train-worker-01"}
+	runtimeObj := runtimeFixtureWithPods(now, []interface{}{
+		map[string]interface{}{"name": "trainer-0", "uid": "survivor-pod-uid", "rank": int64(0), "nodeName": "train-worker-00", "checkpointID": "ckpt-1", "observedAt": now.Format(time.RFC3339)},
+		map[string]interface{}{"name": "trainer-1", "uid": "target-pod-uid", "rank": int64(1), "nodeName": "train-worker-01", "checkpointID": "ckpt-1", "observedAt": now.Format(time.RFC3339)},
+	})
+	risk := riskFixture(now)
+	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"), old)
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}); err != nil {
+		t.Fatalf("policy reconcile: %v", err)
+	}
+	op := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-01-old-node-uid-replace"}, op); err != nil {
+		t.Fatalf("get automatic SpotReplacement: %v", err)
+	}
+	survivors, ok, _ := unstructured.NestedSlice(op.Object, "spec", "partialRestore", "preservedSurvivors")
+	if !ok || len(survivors) != 1 {
+		t.Fatalf("preservedSurvivors = %#v, want one survivor baseline", survivors)
+	}
+	survivor := survivors[0].(map[string]interface{})
+	if stringField(survivor, "podUID") != "survivor-pod-uid" || stringField(survivor, "nodeName") != "train-worker-00" {
+		t.Fatalf("survivor baseline = %#v", survivor)
+	}
+	if _, ok, _ := unstructured.NestedString(survivor, "pauseLockPath"); ok {
+		t.Fatal("automatic producer populated post-checkpoint pauseLockPath proof")
+	}
+}
+
+func TestPolicyReconcileAdoptsCompletedReplacementSuccessor(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := checkpointPolicyFixture(now)
+	_ = unstructured.SetNestedField(policy.Object, int64(2), "spec", "targetWorkers")
+	_ = unstructured.SetNestedField(policy.Object, int64(1), "spec", "policy", "minOnDemand")
+	runtimeObj := runtimeFixture(now)
+	risk := riskFixture(now)
+	worker1 := trainingpolicy.NewNodeProvision(trainingpolicy.ReadPolicySpec(policy), 1, "Spot")
+	worker1.SetUID(types.UID("worker-01-uid"))
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	replacement.SetNamespace("default")
+	replacement.SetName("train-worker-00-replacement")
+	replacement.SetUID(types.UID("replacement-uid"))
+	replacement.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "replacement"})
+	replacement.Object["spec"] = map[string]interface{}{"marketType": "OnDemand", "hostname": "train-worker-00-replacement"}
+	recovery := trainingpolicy.NewObject("SpotRecovery")
+	recovery.SetNamespace("default")
+	recovery.SetName("train-worker-00-old-node-uid-replace-cleanup")
+	recovery.SetUID(types.UID("recovery-uid"))
+	recovery.Object["spec"] = map[string]interface{}{
+		"policyRef":                   map[string]interface{}{"name": "train", "uid": "policy-uid", "generation": int64(1)},
+		"oldNodeProvisionRef":         map[string]interface{}{"name": "train-worker-00", "uid": "old-node-uid"},
+		"replacementNodeProvisionRef": map[string]interface{}{"name": "train-worker-00-replacement", "uid": "replacement-uid"},
+		"restoreRequestRef":           map[string]interface{}{"name": "restore", "uid": "restore-uid", "generation": int64(1)},
+		"requestUID":                  "restore-uid",
+		"operation":                   "train-worker-00-old-node-uid-replace",
+		"sourceCluster":               "aws",
+		"targetCluster":               "aws",
+		"workloadRef":                 map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "uid": "workload-uid"},
+		"trainingRuntimeRef":          map[string]interface{}{"name": "train-runtime", "uid": "runtime-uid"},
+		"checkpointID":                "ckpt-1",
+		"eventID":                     "event-1",
+	}
+	recovery.Object["status"] = map[string]interface{}{"phase": "Completed"}
+	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"), worker1, replacement, recovery)
+	req := ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}
+
+	for i := 0; i < 2; i++ {
+		if _, err := reconciler.Reconcile(context.Background(), req); err != nil {
+			t.Fatalf("policy reconcile %d: %v", i, err)
+		}
+	}
+	list := trainingpolicy.NewList("NodeProvision")
+	if err := reconciler.List(context.Background(), list, client.InNamespace("default")); err != nil {
+		t.Fatalf("list node provisions: %v", err)
+	}
+	if len(list.Items) != 2 {
+		t.Fatalf("live NodeProvision count = %d, want 2", len(list.Items))
+	}
+	old := trainingpolicy.NewObject("NodeProvision")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00"}, old); err == nil {
+		t.Fatal("old generated slot was recreated after completed replacement cleanup")
+	}
+}
+
 func TestIsTerminalPhaseUsesSourceClusterStatus(t *testing.T) {
 	migration := trainingpolicy.NewObject("FluidCRMigration")
 	migration.SetGeneration(3)
@@ -306,12 +433,16 @@ func checkpointPolicyFixture(now time.Time) *unstructured.Unstructured {
 }
 
 func runtimeFixture(now time.Time) *unstructured.Unstructured {
+	return runtimeFixtureWithPods(now, []interface{}{map[string]interface{}{"name": "rank-0", "uid": "pod-uid", "rank": int64(0), "nodeName": "train-worker-00", "checkpointID": "ckpt-1", "observedAt": now.Format(time.RFC3339)}})
+}
+
+func runtimeFixtureWithPods(now time.Time, pods []interface{}) *unstructured.Unstructured {
 	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")
 	runtimeObj.SetNamespace("default")
 	runtimeObj.SetName("train-runtime")
 	runtimeObj.SetGeneration(1)
-	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}, "sourceCluster": "source", "expectedWorldSize": int64(1), "port": int64(8298)}
-	runtimeObj.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": "source", "status": map[string]interface{}{"phase": "Running", "workloadUID": "workload-uid", "memberWorkloadUID": "workload-uid", "observedGeneration": int64(1), "observedAt": now.Format(time.RFC3339), "readyRanks": int64(1), "worldSize": int64(1), "pods": []interface{}{map[string]interface{}{"name": "rank-0", "uid": "pod-uid", "rank": int64(0), "checkpointID": "ckpt-1", "observedAt": now.Format(time.RFC3339)}}}}}}
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}, "sourceCluster": "source", "expectedWorldSize": int64(len(pods)), "port": int64(8298)}
+	runtimeObj.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": "source", "status": map[string]interface{}{"phase": "Running", "workloadUID": "workload-uid", "memberWorkloadUID": "workload-uid", "observedGeneration": int64(1), "observedAt": now.Format(time.RFC3339), "readyRanks": int64(len(pods)), "worldSize": int64(len(pods)), "pods": pods}}}}
 	return runtimeObj
 }
 
@@ -403,6 +534,7 @@ func testScheme() *runtime.Scheme {
 	register(trainingpolicy.TrainingRuntimeGVK)
 	register(trainingpolicy.SpotRiskProfileGVK)
 	register(trainingpolicy.SpotRecoveryGVK)
+	register(spotReplacementGVK)
 	register(trainingpolicy.NodeProvisionGVK)
 	register(trainingpolicy.FluidMigrationGVK)
 	register(trainingpolicy.PropagationPolicyGVK)

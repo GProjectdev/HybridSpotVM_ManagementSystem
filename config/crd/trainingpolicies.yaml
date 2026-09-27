@@ -88,6 +88,12 @@ spec:
                 properties:
                   name:
                     type: string
+              replacement:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
               policy:
                 type: object
                 properties:
@@ -104,6 +110,24 @@ spec:
                     format: int64
                     minimum: 0
                     default: 0
+                  economics:
+                    type: object
+                    required: [enabled, lossCostPerEviction, observedAt]
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: false
+                      lossCostPerEviction:
+                        type: number
+                        minimum: 0
+                      observedAt:
+                        type: string
+                        format: date-time
+                      maxAgeSeconds:
+                        type: integer
+                        minimum: 1
+                        maximum: 86400
+                        default: 600
               checkpoint:
                 type: object
                 properties:

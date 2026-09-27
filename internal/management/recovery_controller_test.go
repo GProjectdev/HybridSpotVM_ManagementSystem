@@ -45,7 +45,7 @@ func TestRecoveryDeletesOldNodeProvisionOnlyAfterVerifiedEvidence(t *testing.T) 
 	setAtRiskSpot(oldNP)
 	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
 
-	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement)
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, spotReplacement())
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != phaseCleanupRequested {
 		t.Fatalf("first recover phase/error = %q/%v, want CleanupRequested error", phase, err)
@@ -62,6 +62,50 @@ func TestRecoveryDeletesOldNodeProvisionOnlyAfterVerifiedEvidence(t *testing.T) 
 	err = reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old"}, got)
 	if !apierrors.IsNotFound(err) {
 		t.Fatalf("old NodeProvision get error = %v, want not found", err)
+	}
+}
+
+func TestRecoveryCrossClusterDoesNotRequirePartialSourceFenceEvidence(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	verification := restore.Object["status"].(map[string]interface{})["verification"].(map[string]interface{})
+	delete(verification, "sourceFence")
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	setAtRiskSpot(oldNP)
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, spotReplacement())
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != phaseCleanupRequested {
+		t.Fatalf("recover phase/error = %q/%v, want CleanupRequested without sourceFence", phase, err)
+	}
+}
+
+func TestRecoveryAllowsSameClusterReplacementWithPartialAndSurvivorEvidence(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	r.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	addSameClusterRestoreEvidence(restore)
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	setAtRiskSpot(oldNP)
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+
+	reconciler := recoveryReconciler(t, r, restore, operation, policy, runtimeObj, oldNP, replacement)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != phaseCleanupRequested {
+		t.Fatalf("recover phase/error = %q/%v, want CleanupRequested", phase, err)
 	}
 }
 
@@ -109,7 +153,7 @@ func TestRecoveryDoesNotDeleteWhenReplacementNotReady(t *testing.T) {
 	setAtRiskSpot(oldNP)
 	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "target", "Provisioning")
 
-	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement)
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, spotReplacement())
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != "Pending" {
 		t.Fatalf("recover() phase/error = %q/%v, want Pending error", phase, err)
@@ -146,7 +190,7 @@ func TestRecoveryRejectsInventedSpotSourceEvidence(t *testing.T) {
 	oldNP.Object["status"].(map[string]interface{})["spot"] = map[string]interface{}{"eventID": "event-1", "instanceID": "i-old", "source": "IMDSv2"}
 	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
 
-	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement)
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, spotReplacement())
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != "Pending" || !strings.Contains(err.Error(), "atRisk") {
 		t.Fatalf("recover() phase/error = %q/%v, want actual spot RIC rejection", phase, err)
@@ -166,7 +210,7 @@ func TestRecoveryDoesNotCompleteWhileNodeProvisionStillDeleting(t *testing.T) {
 	setAtRiskSpot(oldNP)
 	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
 
-	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement)
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, spotReplacement())
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != phaseCleanupRequested {
 		t.Fatalf("first recover phase/error = %q/%v, want CleanupRequested", phase, err)
@@ -187,7 +231,7 @@ func TestRecoveryRejectsDeletingRestoreRequest(t *testing.T) {
 	policy := trainingPolicy()
 	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
 	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
-	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj)
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, spotReplacement())
 
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != "Pending" || !strings.Contains(err.Error(), "RestoreRequest is deleting") {
@@ -240,6 +284,38 @@ func addFullRecoverySpec(obj *unstructured.Unstructured) {
 	obj.Object["status"] = map[string]interface{}{}
 }
 
+func spotReplacement() *unstructured.Unstructured {
+	obj := newSpotReplacementObject()
+	obj.SetNamespace("default")
+	obj.SetName("op-1")
+	obj.SetUID(types.UID("operation-uid"))
+	obj.Object["spec"] = map[string]interface{}{
+		"operation": "op-1",
+		"policyRef": map[string]interface{}{
+			"name":       "policy",
+			"uid":        "policy-uid",
+			"generation": int64(3),
+		},
+		"workloadRef":                 map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "uid": "workload-uid"},
+		"sourceCluster":               "aws",
+		"targetCluster":               "onprem",
+		"oldNodeProvisionRef":         map[string]interface{}{"name": "old", "uid": "old-uid"},
+		"replacementNodeProvisionRef": map[string]interface{}{"name": "new"},
+		"desiredMarketType":           "OnDemand",
+		"partialCheckpoint":           map[string]interface{}{"targetRanks": []interface{}{int64(0)}},
+		"pods":                        []interface{}{map[string]interface{}{"rank": int64(0), "sourcePodUID": "old-pod-uid", "sourcePodName": "trainer-0"}},
+		"partialRestore": map[string]interface{}{
+			"preventPeriodicResume": true,
+			"targetRanks":           []interface{}{int64(0)},
+			"preservedSurvivors": []interface{}{map[string]interface{}{
+				"rank": int64(1), "podUID": "survivor-pod-uid", "stateEvidence": map[string]interface{}{"kind": "pause-lock", "observedAt": "2026-09-26T00:00:00Z"},
+			}},
+		},
+	}
+	obj.Object["status"] = map[string]interface{}{"replacementNodeProvisionRef": map[string]interface{}{"name": "new", "uid": "new-uid"}}
+	return obj
+}
+
 func restoreRequest(name, uid string, generation int64, sourceNode string) *unstructured.Unstructured {
 	obj := newRestoreRequest()
 	obj.SetNamespace("default")
@@ -247,7 +323,6 @@ func restoreRequest(name, uid string, generation int64, sourceNode string) *unst
 	obj.SetUID(types.UID(uid))
 	obj.SetGeneration(generation)
 	obj.Object["spec"] = map[string]interface{}{
-		"sourceFenced":  true,
 		"sourceCluster": "aws",
 		"targetCluster": "onprem",
 		"workloadRef":   map[string]interface{}{"uid": "workload-uid"},
@@ -262,13 +337,25 @@ func restoreRequest(name, uid string, generation int64, sourceNode string) *unst
 		"verification": map[string]interface{}{
 			"requestUID":         "restore-uid",
 			"checkpointID":       "ckpt-1",
+			"operation":          "op-1",
 			"verifiedAt":         "2026-09-26T00:00:00Z",
 			"trainingRuntimeRef": map[string]interface{}{"name": "runtime", "uid": "runtime-uid"},
 			"sourceCluster":      "aws",
 			"targetCluster":      "onprem",
+			"sourceFence":        map[string]interface{}{"fenced": true, "operation": "op-1", "evidenceID": "fence-1", "observedAt": "2026-09-26T00:00:00Z"},
 		},
 	}
 	return obj
+}
+
+func addSameClusterRestoreEvidence(obj *unstructured.Unstructured) {
+	obj.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	obj.Object["spec"].(map[string]interface{})["volumesReady"] = true
+	obj.Object["spec"].(map[string]interface{})["partialRestore"] = map[string]interface{}{"preventPeriodicResume": true}
+	verification := obj.Object["status"].(map[string]interface{})["verification"].(map[string]interface{})
+	verification["targetCluster"] = "aws"
+	verification["partialRestore"] = map[string]interface{}{"preventPeriodicResume": true, "targetRanks": []interface{}{map[string]interface{}{"rank": int64(0), "targetPodUID": "target-pod-uid", "checkpointID": "ckpt-1", "durableRef": "file-store:default/sha256/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}
+	verification["survivors"] = []interface{}{map[string]interface{}{"rank": int64(1), "podUID": "survivor-pod-uid", "stateEvidence": map[string]interface{}{"kind": "pause-lock", "observedAt": "2026-09-26T00:00:00Z"}}}
 }
 
 func trainingPolicy() *unstructured.Unstructured {
@@ -292,6 +379,9 @@ func nodeProvision(name, uid, policyUID, operation, observedCluster, phase strin
 	obj.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: policyUID})
 	obj.SetAnnotations(map[string]string{"training.dcnlab.com/recovery-operation": operation})
 	obj.Object["spec"] = map[string]interface{}{"marketType": "Spot"}
+	if name == "new" {
+		obj.Object["spec"] = map[string]interface{}{"marketType": "OnDemand"}
+	}
 	obj.Object["status"] = map[string]interface{}{"observedCluster": observedCluster, "phase": phase, "instanceId": "i-" + name}
 	return obj
 }
@@ -314,6 +404,8 @@ func recoveryReconciler(t *testing.T, objects ...client.Object) *RecoveryReconci
 		listGVK.Kind += "List"
 		scheme.AddKnownTypeWithName(listGVK, &unstructured.UnstructuredList{})
 	}
+	scheme.AddKnownTypeWithName(spotReplacementGVK, &unstructured.Unstructured{})
+	scheme.AddKnownTypeWithName(spotReplacementGVK.GroupVersion().WithKind("SpotReplacementList"), &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(restoreRequestGVK, &unstructured.Unstructured{})
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objects...).Build()
 	return &RecoveryReconciler{Client: c, Clock: func() time.Time { return time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC) }}

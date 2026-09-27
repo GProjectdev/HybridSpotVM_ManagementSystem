@@ -147,6 +147,7 @@ type PolicyInput struct {
 	ForecastSeconds int64
 	Capacity        CapacityDefaults
 	Checkpoint      CheckpointPolicy
+	Economics       EconomicsPolicy
 }
 
 type Decision struct {
@@ -181,6 +182,12 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 		MinOnDemand:     nestedIntDefault(obj.Object, 0, "spec", "policy", "minOnDemand"),
 		Alpha:           clampAlpha(nestedFloatDefault(obj.Object, DefaultAlpha, "spec", "policy", "alpha")),
 		ForecastSeconds: maxInt64(1, nestedIntDefault(obj.Object, DefaultForecastHorizonSeconds, "spec", "policy", "forecastHorizonSeconds")),
+		Economics: EconomicsPolicy{
+			Enabled:             nestedBoolDefault(obj.Object, false, "spec", "policy", "economics", "enabled"),
+			LossCostPerEviction: nestedFloatDefault(obj.Object, -1, "spec", "policy", "economics", "lossCostPerEviction"),
+			ObservedAt:          nestedStringDefault(obj.Object, "", "spec", "policy", "economics", "observedAt"),
+			MaxAgeSeconds:       nestedIntDefault(obj.Object, 600, "spec", "policy", "economics", "maxAgeSeconds"),
+		},
 		Capacity: CapacityDefaults{
 			AWSCluster:         nestedStringDefault(obj.Object, DefaultAWSCluster, "spec", "capacity", "aws", "karmadaCluster"),
 			Region:             nestedStringDefault(obj.Object, "", "spec", "capacity", "aws", "region"),
@@ -202,12 +209,8 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 			MaxIntervalSeconds: nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "maxIntervalSeconds"),
 			CandidateIntervals: nestedIntSlice(obj.Object, "spec", "checkpoint", "candidateIntervalSeconds"),
 			RiskBands:          nestedRiskBands(obj.Object, "spec", "checkpoint", "riskBands"),
-			MeasuredCosts: MeasuredCosts{
-				CheckpointSeconds: nestedFloatDefault(obj.Object, 0, "spec", "checkpoint", "measuredCosts", "checkpointSeconds"),
-				CopySeconds:       nestedFloatDefault(obj.Object, 0, "spec", "checkpoint", "measuredCosts", "copySeconds"),
-				ObservedAt:        nestedStringDefault(obj.Object, "", "spec", "checkpoint", "measuredCosts", "observedAt"),
-			},
-			Resume: resume,
+			MeasuredCosts:      readMeasuredCosts(obj.Object),
+			Resume:             resume,
 		},
 	}
 }
@@ -278,9 +281,16 @@ func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decis
 		onDemand = input.MinOnDemand
 		spot = desired - onDemand
 	}
-	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, time.Now().UTC())
+	now := time.Now().UTC()
+	fallback, costEvaluated := economicFallback(input, risk, now)
+	reason := "independent_spot_survival"
+	if fallback {
+		spot, onDemand = 0, desired
+		reason = "expected_eviction_loss_exceeds_od_cost"
+	}
+	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, now)
 	interval = applyIntervalBounds(interval, input.Checkpoint)
-	return Decision{DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: false, IntervalCostEvaluated: intervalEvaluated, Reason: "independent_spot_survival"}
+	return Decision{DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
 }
 
 func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot, spotWorkers int64, now time.Time) (int64, bool) {
@@ -533,6 +543,21 @@ func nestedRiskBands(obj map[string]interface{}, fields ...string) []RiskBand {
 	return bands
 }
 
+func readMeasuredCosts(obj map[string]interface{}) MeasuredCosts {
+	costs := MeasuredCosts{
+		CheckpointSeconds: nestedFloatDefault(obj, 0, "spec", "checkpoint", "measuredCosts", "checkpointSeconds"),
+		CopySeconds:       nestedFloatDefault(obj, 0, "spec", "checkpoint", "measuredCosts", "copySeconds"),
+		ObservedAt:        nestedStringDefault(obj, "", "spec", "checkpoint", "measuredCosts", "observedAt"),
+	}
+	if _, ok, _ := unstructured.NestedMap(obj, "status", StatusCheckpointPath, "measuredCosts"); !ok {
+		return costs
+	}
+	return MeasuredCosts{
+		CheckpointSeconds: nestedFloatDefault(obj, 0, "status", StatusCheckpointPath, "measuredCosts", "checkpointSeconds"),
+		CopySeconds:       nestedFloatDefault(obj, 0, "status", StatusCheckpointPath, "measuredCosts", "copySeconds"),
+		ObservedAt:        nestedStringDefault(obj, "", "status", StatusCheckpointPath, "measuredCosts", "observedAt"),
+	}
+}
 func riskBandsOrDefault(checkpoint CheckpointPolicy) []RiskBand {
 	if len(checkpoint.RiskBands) > 0 {
 		return checkpoint.RiskBands

@@ -15,10 +15,10 @@ metadata:
   name: hybridspot-management
 rules:
 - apiGroups: [training.dcnlab.com]
-  resources: [trainingpolicies, spotriskprofiles, trainingruntimes, spotrecoveries]
+  resources: [trainingpolicies, spotriskprofiles, trainingruntimes, spotrecoveries, spotreplacements]
   verbs: [get, list, watch, create, patch, update]
 - apiGroups: [training.dcnlab.com]
-  resources: [trainingpolicies/status, spotriskprofiles/status, spotrecoveries/status]
+  resources: [trainingpolicies/status, spotriskprofiles/status, spotrecoveries/status, spotreplacements/status]
   verbs: [get, patch, update]
 - apiGroups: [ml.dcn.ssu.ac.kr]
   resources: [nodeprovisions]
@@ -28,7 +28,7 @@ rules:
   verbs: [get, list, watch, create]
 - apiGroups: [migration.dcnlab.com]
   resources: [restorerequests, restoreplans, pvmigrations]
-  verbs: [get, list, watch]
+  verbs: [get, list, watch, create]
 - apiGroups: [apps]
   resources: [statefulsets]
   verbs: [get, list, watch, patch]

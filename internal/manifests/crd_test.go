@@ -70,12 +70,26 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 			if errs := structural.ValidateStructural(field.NewPath("schema"), s); len(errs) != 0 {
 				t.Fatal(errs.ToAggregate())
 			}
+			if crd.Spec.Names.Kind == "TrainingPolicy" {
+				obj := map[string]interface{}{"spec": map[string]interface{}{
+					"policy": map[string]interface{}{"economics": map[string]interface{}{
+						"enabled": true, "lossCostPerEviction": float64(12.5),
+						"observedAt": "2026-09-27T00:00:00Z", "maxAgeSeconds": int64(600),
+					}},
+				}}
+				before := runtime.DeepCopyJSON(obj)
+				pruning.Prune(obj, s, true)
+				if !reflect.DeepEqual(before, obj) {
+					t.Fatalf("API prunes economics contract: before=%v after=%v", before, obj)
+				}
+			}
 			if crd.Spec.Names.Kind == "TrainingRuntime" {
 				obj := map[string]interface{}{"status": map[string]interface{}{
 					"phase": "Running", "message": "", "observedGeneration": int64(2),
 					"observedAt": "2026-09-26T00:00:00Z", "workloadUID": "mgmt-uid", "memberWorkloadUID": "member-uid",
 					"readyRanks": int64(2), "worldSize": int64(2), "globalStep": int64(10), "checkpointID": "round-1",
-					"pods": []interface{}{map[string]interface{}{"name": "train-0", "uid": "pod-uid", "rank": int64(0), "globalStep": int64(10), "checkpointID": "round-1", "observedAt": "2026-09-26T00:00:00Z"}},
+					"pods":     []interface{}{map[string]interface{}{"name": "train-0", "uid": "pod-uid", "nodeName": "worker-0", "rank": int64(0), "globalStep": int64(10), "checkpointID": "round-1", "observedAt": "2026-09-26T00:00:00Z"}},
+					"clusters": []interface{}{map[string]interface{}{"clusterName": "aws", "status": map[string]interface{}{"pods": []interface{}{map[string]interface{}{"name": "train-0", "uid": "pod-uid", "nodeName": "worker-0", "rank": int64(0), "globalStep": int64(10), "checkpointID": "round-1", "observedAt": "2026-09-26T00:00:00Z"}}}}},
 				}}
 				before := runtime.DeepCopyJSON(obj)
 				pruning.Prune(obj, s, true)
@@ -127,7 +141,7 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 			}
 		})
 	}
-	for _, kind := range []string{"TrainingPolicy", "SpotRiskProfile", "TrainingRuntime", "SpotRecovery"} {
+	for _, kind := range []string{"TrainingPolicy", "SpotRiskProfile", "TrainingRuntime", "SpotRecovery", "SpotReplacement"} {
 		if !found[kind] {
 			t.Errorf("missing CRD %s", kind)
 		}

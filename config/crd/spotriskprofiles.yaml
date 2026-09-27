@@ -60,6 +60,32 @@ spec:
                     format: int64
                     minimum: 1
                     maximum: 99999
+              paperEstimator:
+                type: object
+                description: External paper-method SARIMA estimator feed. The in-cluster collector fetches feedEndpoint and records SARIMA metadata; the Python estimator service performs fitting outside the Go controller image.
+                required: [method, feedEndpoint]
+                properties:
+                  method:
+                    type: string
+                    enum: [sarima]
+                  feedEndpoint:
+                    type: string
+                    pattern: ^https://
+                  rollingMeanHours:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    default: 3
+                  retrainWindowWeeks:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    default: 4
+                  seasonalPeriodHours:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    default: 24
               staticLambdaPerHour:
                 type: number
                 minimum: 0
@@ -87,8 +113,8 @@ spec:
               instanceType:
                 type: string
             x-kubernetes-validations:
-            - rule: '(has(self.endpoint) ? 1 : 0) + (has(self.staticLambdaPerHour) ? 1 : 0) + (has(self.trace) ? 1 : 0) == 1'
-              message: set exactly one of endpoint, staticLambdaPerHour, or trace
+            - rule: '(has(self.endpoint) ? 1 : 0) + (has(self.staticLambdaPerHour) ? 1 : 0) + (has(self.trace) ? 1 : 0) + (has(self.paperEstimator) ? 1 : 0) == 1'
+              message: set exactly one of endpoint, staticLambdaPerHour, trace, or paperEstimator
           status:
             type: object
             properties:

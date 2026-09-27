@@ -224,3 +224,94 @@ func TestParseSpecUsesProposedFields(t *testing.T) {
 		t.Fatalf("credential = %#v, want name with default key", spec.Credential)
 	}
 }
+
+func TestCollectPaperEstimatorFetchesSARIMAFeed(t *testing.T) {
+	now := time.Date(2026, 9, 26, 4, 0, 0, 0, time.UTC)
+	observedAt := now.Add(-2 * time.Minute).Format(time.RFC3339)
+	validUntil := now.Add(30 * time.Minute).Format(time.RFC3339)
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"lambdaPerHour":0.25,"observedAt":%q,"validUntil":%q,"source":{"type":"paper-sarima","provenance":"paper-availability-count-sarima","rollingMeanHours":3,"retrainWindowWeeks":4,"seasonalPeriodHours":24,"riskPopulation":8,"aggregateForecastPreemptionsPerHour":2,"perInstanceLambdaApproximation":"approximate aggregateForecastPreemptionsPerHour/riskPopulation"}}`, observedAt, validUntil)
+	}))
+	defer server.Close()
+
+	obj := resource.Object(spotRiskProfileKind)
+	obj.SetNamespace("default")
+	obj.Object["spec"] = map[string]interface{}{
+		"paperEstimator": map[string]interface{}{
+			"method":              "sarima",
+			"feedEndpoint":        server.URL,
+			"rollingMeanHours":    int64(3),
+			"retrainWindowWeeks":  int64(4),
+			"seasonalPeriodHours": int64(24),
+		},
+	}
+	r := &Reconciler{HTTPClient: server.Client(), Clock: func() time.Time { return now }}
+
+	risk, err := r.collect(context.Background(), obj)
+	if err != nil {
+		t.Fatalf("collect() error = %v", err)
+	}
+	if risk.LambdaPerHour != 0.25 {
+		t.Fatalf("lambdaPerHour = %v, want 0.25", risk.LambdaPerHour)
+	}
+	if risk.Source["type"] != paperSourceType || risk.Source["provenance"] != "paper-availability-count-sarima" {
+		t.Fatalf("source = %#v, want producer paper SARIMA provenance", risk.Source)
+	}
+	if risk.Source["aggregateForecastPreemptionsPerHour"] != float64(2) || risk.Source["riskPopulation"] != float64(8) {
+		t.Fatalf("source = %#v, want preserved aggregate and population metadata", risk.Source)
+	}
+	if _, ok := risk.Source["method"]; ok {
+		t.Fatalf("source = %#v, did not expect fabricated method", risk.Source)
+	}
+}
+
+func TestCollectPaperEstimatorRejectsPlainOrMismatchedFeeds(t *testing.T) {
+	now := time.Date(2026, 9, 26, 4, 0, 0, 0, time.UTC)
+	observedAt := now.Add(-2 * time.Minute).Format(time.RFC3339)
+	validUntil := now.Add(30 * time.Minute).Format(time.RFC3339)
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{"plain feed", fmt.Sprintf(`{"lambdaPerHour":0.25,"observedAt":%q,"validUntil":%q}`, observedAt, validUntil), "source metadata"},
+		{"wrong type", fmt.Sprintf(`{"lambdaPerHour":0.25,"observedAt":%q,"validUntil":%q,"source":{"type":"https","provenance":"paper-availability-count-sarima","rollingMeanHours":3,"retrainWindowWeeks":4,"seasonalPeriodHours":24,"riskPopulation":8,"aggregateForecastPreemptionsPerHour":2,"perInstanceLambdaApproximation":"approximate"}}`, observedAt, validUntil), "source.type"},
+		{"mismatched rolling", fmt.Sprintf(`{"lambdaPerHour":0.25,"observedAt":%q,"validUntil":%q,"source":{"type":"paper-sarima","provenance":"paper-availability-count-sarima","rollingMeanHours":6,"retrainWindowWeeks":4,"seasonalPeriodHours":24,"riskPopulation":8,"aggregateForecastPreemptionsPerHour":2,"perInstanceLambdaApproximation":"approximate"}}`, observedAt, validUntil), "rollingMeanHours"},
+		{"missing population", fmt.Sprintf(`{"lambdaPerHour":0.25,"observedAt":%q,"validUntil":%q,"source":{"type":"paper-sarima","provenance":"paper-availability-count-sarima","rollingMeanHours":3,"retrainWindowWeeks":4,"seasonalPeriodHours":24,"aggregateForecastPreemptionsPerHour":2,"perInstanceLambdaApproximation":"approximate"}}`, observedAt, validUntil), "riskPopulation"},
+		{"lambda exceeds normalized aggregate", fmt.Sprintf(`{"lambdaPerHour":0.5,"observedAt":%q,"validUntil":%q,"source":{"type":"paper-sarima","provenance":"paper-availability-count-sarima","rollingMeanHours":3,"retrainWindowWeeks":4,"seasonalPeriodHours":24,"riskPopulation":8,"aggregateForecastPreemptionsPerHour":2,"perInstanceLambdaApproximation":"approximate"}}`, observedAt, validUntil), "exceeds"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, tt.body)
+			}))
+			defer server.Close()
+			obj := resource.Object(spotRiskProfileKind)
+			obj.SetNamespace("default")
+			obj.Object["spec"] = map[string]interface{}{"paperEstimator": map[string]interface{}{"method": "sarima", "feedEndpoint": server.URL, "rollingMeanHours": int64(3), "retrainWindowWeeks": int64(4), "seasonalPeriodHours": int64(24)}}
+			r := &Reconciler{HTTPClient: server.Client(), Clock: func() time.Time { return now }}
+			_, err := r.collect(context.Background(), obj)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("collect() error = %v, want containing %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCollectPaperEstimatorRequiresFeedEndpoint(t *testing.T) {
+	obj := resource.Object(spotRiskProfileKind)
+	obj.SetNamespace("default")
+	obj.Object["spec"] = map[string]interface{}{
+		"paperEstimator": map[string]interface{}{
+			"method": "sarima",
+		},
+	}
+	r := &Reconciler{Clock: func() time.Time { return time.Date(2026, 9, 26, 4, 0, 0, 0, time.UTC) }}
+
+	_, err := r.collect(context.Background(), obj)
+	if err == nil || !strings.Contains(err.Error(), "paperEstimator.feedEndpoint") {
+		t.Fatalf("collect() error = %v, want feedEndpoint rejection", err)
+	}
+}

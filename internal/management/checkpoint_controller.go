@@ -41,7 +41,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		status["message"] = err.Error()
 		return ctrl.Result{}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
-	lastStarted, inflight, inflightObj, err := r.checkpointState(ctx, input)
+	lastStarted, inflight, inflightObj, measuredCosts, err := r.checkpointState(ctx, input)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -51,25 +51,40 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, err
 		}
 		status := trainingpolicy.CheckpointStatus(inflightObj.GetName(), trainingpolicy.DefaultCheckpointSeconds, r.now(), "inflight_checkpoint")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	runtimeSnapshot, err := r.runtimeSnapshot(ctx, input)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	now := r.now()
+	replacement, err := r.activeSpotReplacement(ctx, input)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if replacement != nil {
+		status := trainingpolicy.CheckpointStatus("", trainingpolicy.DefaultCheckpointSeconds, now, "replacement_operation_active")
+		applyMeasuredCostsStatus(status, measuredCosts)
+		status["replacementOperation"] = replacement.GetName()
+		status["periodicQuiesced"] = true
+		status["message"] = "periodic checkpoints quiesced while SpotReplacement reconciler owns the typed partial-rank checkpoint"
+		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
+	}
 	emergency, err := r.unhandledEmergencySpotEvent(ctx, input)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	now := r.now()
 	if emergency != nil {
 		interval := trainingpolicy.Decide(input, runtimeSnapshot, trainingpolicy.RiskSnapshot{}).CheckpointIntervalSeconds
 		if !trainingpolicy.RuntimeReadyForCheckpoint(input, runtimeSnapshot, now) {
 			status := trainingpolicy.CheckpointStatus("", interval, now, "runtime_not_ready")
+			applyMeasuredCostsStatus(status, measuredCosts)
 			return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 		}
 		if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 			status := trainingpolicy.CheckpointStatus("", interval, now, "stale_workload_uid")
+			applyMeasuredCostsStatus(status, measuredCosts)
 			status["message"] = err.Error()
 			return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 		}
@@ -81,6 +96,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				return ctrl.Result{}, err
 			}
 			status := trainingpolicy.CheckpointStatus(existing.GetName(), interval, now, "emergency_checkpoint_deduped")
+			applyMeasuredCostsStatus(status, measuredCosts)
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 		}
 		migration := newEmergencyCheckpoint(input, runtimeSnapshot, *emergency, now, interval)
@@ -92,6 +108,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, err
 		}
 		status := trainingpolicy.CheckpointStatus(migration.GetName(), interval, now, "emergency_checkpoint_created")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -104,19 +121,23 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	decision := trainingpolicy.Decide(input, runtimeSnapshot, riskSnapshot)
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, nowOr(r.Clock)) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, r.now(), "risk_not_fresh")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	if !trainingpolicy.RuntimeReadyForCheckpoint(input, runtimeSnapshot, now) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, now, "runtime_not_ready")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, now, "stale_workload_uid")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		status["message"] = err.Error()
 		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	if !trainingpolicy.NextCheckpointDue(now, lastStarted, decision.CheckpointIntervalSeconds) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, now, "waiting_for_interval")
+		applyMeasuredCostsStatus(status, measuredCosts)
 		return ctrl.Result{RequeueAfter: checkpointWaitRequeue(now, lastStarted, decision.CheckpointIntervalSeconds)}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	startedAt := now
@@ -129,6 +150,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 	status := trainingpolicy.CheckpointStatus(migration.GetName(), decision.CheckpointIntervalSeconds, now, "checkpoint_created")
+	applyMeasuredCostsStatus(status, measuredCosts)
 	if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -145,28 +167,68 @@ func (r *CheckpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
 		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
+		Watches(newSpotReplacementObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "replacement"))).
 		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "binding"))).
 		Complete(r)
 }
 
-func (r *CheckpointReconciler) checkpointState(ctx context.Context, input trainingpolicy.PolicyInput) (string, bool, *unstructured.Unstructured, error) {
+func (r *CheckpointReconciler) activeSpotReplacement(ctx context.Context, input trainingpolicy.PolicyInput) (*unstructured.Unstructured, error) {
+	list := newSpotReplacementList()
+	labels := client.MatchingLabels{trainingpolicy.LabelPolicyUID: string(input.PolicyUID)}
+	if err := r.List(ctx, list, client.InNamespace(input.Namespace), labels); err != nil {
+		return nil, fmt.Errorf("list SpotReplacement operations: %w", err)
+	}
+	for i := range list.Items {
+		item := list.Items[i].DeepCopy()
+		phase, _, _ := unstructured.NestedString(item.Object, "status", "phase")
+		if phase == "Completed" || phase == "Rejected" {
+			continue
+		}
+		policyUID, _, _ := unstructured.NestedString(item.Object, "spec", "policyRef", "uid")
+		if policyUID == string(input.PolicyUID) {
+			return item, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *CheckpointReconciler) checkpointState(ctx context.Context, input trainingpolicy.PolicyInput) (string, bool, *unstructured.Unstructured, *trainingpolicy.MeasuredCosts, error) {
 	list := trainingpolicy.NewList("FluidCRMigration")
 	labels := client.MatchingLabels{trainingpolicy.LabelPolicyUID: string(input.PolicyUID), trainingpolicy.LabelRole: "checkpoint"}
 	if err := r.List(ctx, list, client.InNamespace(input.Namespace), labels); err != nil {
-		return "", false, nil, fmt.Errorf("list FluidCRMigration checkpoints: %w", err)
+		return "", false, nil, nil, fmt.Errorf("list FluidCRMigration checkpoints: %w", err)
 	}
 	lastStarted := ""
+	var latestMeasured *trainingpolicy.MeasuredCosts
 	for i := range list.Items {
 		item := &list.Items[i]
 		if !isTerminalPhase(item, input.SourceCluster) {
-			return lastStarted, true, item, nil
+			return lastStarted, true, item, latestMeasured, nil
+		}
+		if measured, ok, _ := measuredCostsFromMigration(item, input.SourceCluster, r.now()); ok {
+			costs := measured
+			if latestMeasured == nil || costs.ObservedAt > latestMeasured.ObservedAt {
+				latestMeasured = &costs
+			}
 		}
 		started := item.GetAnnotations()["training.dcnlab.com/started-at"]
 		if started > lastStarted {
 			lastStarted = started
 		}
 	}
-	return lastStarted, false, nil, nil
+	return lastStarted, false, nil, latestMeasured, nil
+}
+
+func applyMeasuredCostsStatus(status map[string]interface{}, measured *trainingpolicy.MeasuredCosts) {
+	if measured == nil {
+		return
+	}
+	status["measuredCosts"] = map[string]interface{}{
+		"checkpointSeconds": measured.CheckpointSeconds,
+		"copySeconds":       measured.CopySeconds,
+		"observedAt":        measured.ObservedAt,
+		"source":            "fluidcr-status",
+	}
 }
 
 func (r *CheckpointReconciler) runtimeSnapshot(ctx context.Context, input trainingpolicy.PolicyInput) (trainingpolicy.RuntimeSnapshot, error) {

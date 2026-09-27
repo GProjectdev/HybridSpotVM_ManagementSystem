@@ -21,7 +21,7 @@ exposureInstanceHours = sum(x[i] * gap_seconds / 3600), start <= i < end
 lambdaPerHour = downwardUnits / exposureInstanceHours
 ```
 
-This is a simple proxy, not a calibrated predictor. Capacity recovery is not
+This is a simple proxy, not a calibrated predictor and not the SARIMA method from the cost-efficient training paper. The paper SARIMA path is the external `internal/collector/paper_sarima_feed.py` service wired through `spec.paperEstimator.feedEndpoint`; trace mode remains a proxy and is not paper-equivalent. Capacity recovery is not
 subtracted from earlier losses. No transitions after endIndex are used.
 Zero exposure, null/negative/fractional counts, invalid JSON and incomplete
 windows fail closed with ready=false. Input is limited to 1 MiB/100000 samples.

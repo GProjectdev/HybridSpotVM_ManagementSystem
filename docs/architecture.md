@@ -48,7 +48,7 @@ Source fencing은 이전 소스가 동일한 학습 작업이나 공유 볼륨�
 
 ## 정책 계산
 
-전체 Worker 수 `N`은 고정합니다. 시간당 위험률 `lambda`와 예측 시간 `h`(시간)를 받아 후보 Spot 수 `Ns`의 독립 사건 근사 생존 확률 `exp(-lambda*h*Ns)`가 `alpha` 이상인 범위에서 Spot 수를 최대화합니다. 실측 손실 비용이 없는 초기 단계에서는 금액 기준 최적화가 수행됐다고 표시하지 않습니다. 기존 VM 비율과 새 목표가 다르면 `replacement_required`로 알리고, 검증되지 않은 VM 자동 삭제는 하지 않습니다.
+전체 Worker 수 `N`은 고정합니다. 시간당 위험률 `lambda`와 예측 시간 `h`(시간)를 받아 후보 Spot 수 `Ns`의 독립 사건 근사 생존 확률 `exp(-lambda*h*Ns)`가 `alpha` 이상인 범위에서 Spot 수를 최대화합니다. 실측 손실 비용이 없는 초기 단계에서는 금액 기준 최적화가 수행됐다고 표시하지 않습니다. 기존 VM 비율과 새 목표가 다르면 `replacement_required`로 알리고, AWS 내부 Spot-to-OnDemand 전환은 `SpotReplacement` 작업, partial-rank checkpoint 요청, Verified RestoreRequest 증거가 모두 맞을 때만 이전 NodeProvision 삭제로 진행합니다. 검증되지 않은 VM 자동 삭제는 하지 않습니다.
 
 Checkpoint 주기 `tau`는 초 단위입니다. 초기에는 설정 가능한 위험 구간과 후보 주기를 사용합니다. 최신 측정값 `C=checkpointSeconds`, `S=copySeconds`가 설정되면 후보별 `C/tau + (lambda*Ns/3600)*tau/2 + max(0,S/tau-1)`을 비교합니다. 이 값은 학습 시간 대비 상대 overhead이며 금액이 아닙니다. 측정 입력의 기본 유효기간은 10분이고, 모르는 측정값을 0으로 간주하지 않습니다.
 

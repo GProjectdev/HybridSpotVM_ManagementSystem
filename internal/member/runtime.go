@@ -174,7 +174,7 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 			}
 		}
 		seen[sample.Rank] = true
-		entry := map[string]interface{}{"name": pod.Name, "uid": string(pod.UID), "rank": sample.Rank, "globalStep": sample.GlobalStep, "checkpointID": sample.CheckpointID, "observedAt": sample.ObservedAt}
+		entry := map[string]interface{}{"name": pod.Name, "uid": string(pod.UID), "rank": sample.Rank, "nodeName": pod.Spec.NodeName, "globalStep": sample.GlobalStep, "checkpointID": sample.CheckpointID, "observedAt": sample.ObservedAt}
 		samples = append(samples, entry)
 	}
 	if int64(len(samples)) != expected {

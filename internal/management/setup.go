@@ -14,5 +14,8 @@ func SetupCheckpoint(mgr ctrl.Manager) error {
 }
 
 func SetupRecovery(mgr ctrl.Manager) error {
+	if err := (&ReplacementReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr); err != nil {
+		return err
+	}
 	return (&RecoveryReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr)
 }
