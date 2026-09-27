@@ -3,6 +3,9 @@ package management
 import ctrl "sigs.k8s.io/controller-runtime"
 
 func SetupPolicy(mgr ctrl.Manager) error {
+	if err := (&DiscoveryReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {
+		return err
+	}
 	return (&PolicyReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr)
 }
 

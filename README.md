@@ -1,5 +1,7 @@
 # Hybrid Spot VM Management System
 
+Automatic RB-based policy enrollment and upgrade guide: [Automatic StatefulSet discovery](docs/automatic-policy-discovery.md).
+
 고정된 DDP Worker 수를 유지하면서 Spot/On-Demand 구성을 선택하고, 시간 기반 Checkpoint를 요청하는 Kubernetes Controller 모음입니다. MGMT의 Controller는 Karmada API를 사용합니다.
 
 | 실행 위치 | 컴포넌트 | 역할 |

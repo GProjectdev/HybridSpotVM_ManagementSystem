@@ -193,6 +193,9 @@ spec:
           status:
             type: object
             properties:
+              discovery:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               policy:
                 type: object
                 properties:

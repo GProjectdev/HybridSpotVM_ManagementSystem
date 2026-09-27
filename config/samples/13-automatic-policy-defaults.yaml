@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automatic-policy-defaults
+  namespace: hybridspot-system
+data:
+  spec.yaml: |
+    riskProfileRef:
+      name: trainer-risk-01
+    policy:
+      alpha: 0.8
+      forecastHorizonSeconds: 3600
+      minOnDemand: 1
+    checkpoint:
+      minIntervalSeconds: 60
+      maxIntervalSeconds: 600
+      candidateIntervalSeconds: [60, 120, 300, 600]
+      resume: true
+    capacity:
+      aws:
+        karmadaCluster: aws
+        region: __REPLACE_AWS_REGION__
+        availabilityZone: __REPLACE_AWS_AZ__
+        instanceType: __REPLACE_AWS_INSTANCE_TYPE__
+        ami: __REPLACE_AWS_AMI_ID__
+        subnetId: __REPLACE_AWS_SUBNET_ID__
+        vpcId: __REPLACE_AWS_VPC_ID__
+        securityGroupIds: [__REPLACE_AWS_SECURITY_GROUP_ID__]
+        rootVolumeSizeGB: 100
+        hardwareType: gpu
+        nodeLabel: gpu
+        credentialsRef:
+          name: aws-node-credentials

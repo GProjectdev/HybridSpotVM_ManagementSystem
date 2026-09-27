@@ -1,0 +1,37 @@
+# Capacity-only probe, NOT a DDP training/restore workload.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trainer
+  namespace: fluidcr-demo
+spec:
+  serviceName: trainer
+  replicas: 2
+  selector:
+    matchLabels: {app: trainer}
+  template:
+    metadata:
+      labels: {app: trainer}
+    spec:
+      nodeSelector:
+        ml.dcn.ssu.ac.kr/provider: AWS
+      containers:
+      - name: trainer
+        image: registry.k8s.io/pause:3.10
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+---
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: trainer-source-only
+  namespace: fluidcr-demo
+spec:
+  resourceSelectors:
+  - apiVersion: apps/v1
+    kind: StatefulSet
+    name: trainer
+  placement:
+    clusterAffinity:
+      clusterNames: [aws]

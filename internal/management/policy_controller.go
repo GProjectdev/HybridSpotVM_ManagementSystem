@@ -10,7 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -30,6 +32,23 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	input := trainingpolicy.ReadPolicySpec(policyObj)
+	if policyObj.GetLabels()[autoLabel] == "true" {
+		target, err := automaticPlacement(ctx, r.reader(), policyObj)
+		ready, _, _ := unstructured.NestedBool(policyObj.Object, "status", "discovery", "ready")
+		reason := ""
+		if err != nil {
+			reason = err.Error()
+		} else if !ready {
+			reason = "waiting for workload discovery"
+		} else if target != input.Capacity.AWSCluster {
+			reason = "target cluster does not require AWS capacity"
+		}
+		if reason != "" {
+			status := trainingpolicy.PolicyStatus(trainingpolicy.Decision{ProvisioningBlocked: true, Reason: "automatic_placement_gate"}, r.now())
+			status["message"] = reason
+			return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
+		}
+	}
 	if err := validatePolicyInput(input); err != nil {
 		status := trainingpolicy.PolicyStatus(trainingpolicy.Decision{ProvisioningBlocked: true, Reason: "invalid_spec"}, r.now())
 		status["message"] = err.Error()
@@ -112,8 +131,9 @@ func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-policy-management").
-		For(trainingpolicy.NewObject("TrainingPolicy")).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
+		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "binding"))).
 		Complete(r)
 }
 

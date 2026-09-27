@@ -10,7 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -28,6 +30,12 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 	input := trainingpolicy.ReadPolicySpec(policyObj)
+	if policyObj.GetLabels()[autoLabel] == "true" {
+		ready, _, _ := unstructured.NestedBool(policyObj.Object, "status", "discovery", "ready")
+		if !ready {
+			return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, trainingpolicy.CheckpointStatus("", 0, r.now(), "waiting_for_discovery"))
+		}
+	}
 	if err := validatePolicyInput(input); err != nil {
 		status := trainingpolicy.CheckpointStatus("", 0, r.now(), "invalid_spec")
 		status["message"] = err.Error()
@@ -134,8 +142,10 @@ func (r *CheckpointReconciler) validateLiveWorkloadUID(ctx context.Context, inpu
 func (r *CheckpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-checkpoint-management").
-		For(trainingpolicy.NewObject("TrainingPolicy")).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
+		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
+		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "binding"))).
 		Complete(r)
 }
 

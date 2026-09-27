@@ -31,7 +31,7 @@ rules:
   verbs: [get, list, watch]
 - apiGroups: [apps]
   resources: [statefulsets]
-  verbs: [get, list, watch]
+  verbs: [get, list, watch, patch]
 - apiGroups: [policy.karmada.io]
   resources: [propagationpolicies]
   verbs: [get, list, watch, create]
