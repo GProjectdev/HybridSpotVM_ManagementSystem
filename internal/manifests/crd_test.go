@@ -77,10 +77,15 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 						"observedAt": "2026-09-27T00:00:00Z", "maxAgeSeconds": int64(600),
 					}},
 				}}
+				obj["status"] = map[string]interface{}{"policy": map[string]interface{}{
+					"capacityOwnedWorkers": int64(3), "capacityTargetWorkers": int64(2),
+					"capacityOvershoot": true, "replacementRequired": true,
+					"replacementOperation": "replacement-1", "replacementNodeProvision": "worker-new",
+				}}
 				before := runtime.DeepCopyJSON(obj)
 				pruning.Prune(obj, s, true)
 				if !reflect.DeepEqual(before, obj) {
-					t.Fatalf("API prunes economics contract: before=%v after=%v", before, obj)
+					t.Fatalf("API prunes TrainingPolicy contract: before=%v after=%v", before, obj)
 				}
 			}
 			if crd.Spec.Names.Kind == "TrainingRuntime" {

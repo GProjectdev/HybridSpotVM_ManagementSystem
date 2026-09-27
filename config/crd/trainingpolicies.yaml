@@ -251,6 +251,20 @@ spec:
                     type: boolean
                   provisioningBlocked:
                     type: boolean
+                  capacityOwnedWorkers:
+                    type: integer
+                    format: int64
+                  capacityTargetWorkers:
+                    type: integer
+                    format: int64
+                  capacityOvershoot:
+                    type: boolean
+                  replacementRequired:
+                    type: boolean
+                  replacementOperation:
+                    type: string
+                  replacementNodeProvision:
+                    type: string
                   reason:
                     type: string
                   message:
