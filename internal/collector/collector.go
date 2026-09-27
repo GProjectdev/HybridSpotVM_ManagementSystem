@@ -149,6 +149,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *Reconciler) collect(ctx context.Context, obj *unstructured.Unstructured) (normalizedRisk, error) {
 	spec := parseSpec(obj)
 	now := r.now()
+	_, hasTrace, _ := unstructured.NestedMap(obj.Object, "spec", "trace")
+	sources := 0
+	if hasTrace {
+		sources++
+	}
+	if spec.Endpoint != "" {
+		sources++
+	}
+	if spec.StaticLambdaPerHour != nil {
+		sources++
+	}
+	if sources != 1 {
+		return normalizedRisk{}, errors.New("exactly one of trace, endpoint, staticLambdaPerHour is required")
+	}
+	if hasTrace {
+		return r.collectTrace(ctx, obj, now, spec.MaxAge)
+	}
 
 	if spec.StaticLambdaPerHour != nil {
 		if err := validateFiniteNonNegative("staticLambdaPerHour", *spec.StaticLambdaPerHour); err != nil {

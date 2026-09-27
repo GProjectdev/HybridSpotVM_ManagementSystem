@@ -33,6 +33,33 @@ spec:
               endpoint:
                 type: string
                 pattern: ^https://
+              trace:
+                type: object
+                required: [configMapRef, allowAvailabilityProxy, windowSamples, endIndex]
+                properties:
+                  configMapRef:
+                    type: object
+                    required: [name, key]
+                    properties:
+                      name:
+                        type: string
+                        minLength: 1
+                      key:
+                        type: string
+                        minLength: 1
+                  allowAvailabilityProxy:
+                    type: boolean
+                    enum: [true]
+                  windowSamples:
+                    type: integer
+                    format: int64
+                    minimum: 2
+                    maximum: 100000
+                  endIndex:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    maximum: 99999
               staticLambdaPerHour:
                 type: number
                 minimum: 0
@@ -60,8 +87,8 @@ spec:
               instanceType:
                 type: string
             x-kubernetes-validations:
-            - rule: has(self.endpoint) != has(self.staticLambdaPerHour)
-              message: set exactly one of endpoint or staticLambdaPerHour
+            - rule: '(has(self.endpoint) ? 1 : 0) + (has(self.staticLambdaPerHour) ? 1 : 0) + (has(self.trace) ? 1 : 0) == 1'
+              message: set exactly one of endpoint, staticLambdaPerHour, or trace
           status:
             type: object
             properties:

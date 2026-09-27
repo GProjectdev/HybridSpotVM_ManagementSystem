@@ -1,7 +1,10 @@
 # Public Cloud VM Risk Feed
 
 The VM Spot Risk Collector is implemented in `internal/collector` and consumes
-an externally supplied hourly preemption hazard, or a static value for controlled experiments.
+an externally supplied hourly preemption hazard, a static experimental value,
+or a ConfigMap-backed historical availability trace. See
+[trace calculation and validation](trace-risk-validation.md) for the experimental
+availability-proxy estimator, its limitations, and deployment commands.
 It does not call a cloud-provider "interruption probability" API, does not use
 AWS Spot price or placement score as a hazard estimate, and does not implement
 AWS hazard estimation. Providers, experiments, or offline models must publish
@@ -38,7 +41,7 @@ can tell whether `ready` reflects the current spec generation. Price fields are
 intentionally nested under `status.prices`; consumers should not read flat price
 fields from status.
 
-Use either `spec.endpoint` or `spec.staticLambdaPerHour`. Static values are only
+Use exactly one of `spec.endpoint`, `spec.staticLambdaPerHour`, or `spec.trace`. Static values are only
 for controlled experiments and are reported with `source.type: static` plus
 `source.provenance: static-experiment-spec`. Do not document static values as
 live provider telemetry.

@@ -1,0 +1,15 @@
+apiVersion: training.dcnlab.com/v1alpha1
+kind: SpotRiskProfile
+metadata:
+  name: trainer-risk-trace
+  namespace: fluidcr-demo
+spec:
+  pollSeconds: 30
+  maxAgeSeconds: 120
+  trace:
+    configMapRef:
+      name: skypilot-availability
+      key: trace.json
+    allowAvailabilityProxy: true
+    windowSamples: 4736
+    endIndex: 4735

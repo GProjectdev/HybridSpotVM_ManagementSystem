@@ -39,7 +39,7 @@ rules:
   resources: [resourcebindings]
   verbs: [get, list, watch]
 - apiGroups: [""]
-  resources: [secrets]
+  resources: [secrets, configmaps]
   verbs: [get]
 - apiGroups: [""]
   resources: [events]
