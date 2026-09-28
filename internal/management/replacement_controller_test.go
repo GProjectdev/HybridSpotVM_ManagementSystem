@@ -169,6 +169,28 @@ func TestReplacementWaitsForExistingFullCheckpointBeforePartial(t *testing.T) {
 	}
 }
 
+func TestPlannedReplacementWaitsForCheckpointQuiesceReceipt(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := replacementPolicyFixture()
+	delete(policy.Object, "status")
+	reconciler := replacementReconcilerFixture(t, now, replacementOperationFixture(), policy, replacementOldNodeProvisionFixture(), replacementReadyNodeProvisionFixture())
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
+		t.Fatalf("replacement reconcile: %v", err)
+	}
+	migration := trainingpolicy.NewObject("FluidCRMigration")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old-replace-partial-checkpoint"}, migration); err == nil {
+		t.Fatal("partial checkpoint was created before checkpoint quiesce receipt")
+	}
+	updated := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old-replace"}, updated); err != nil {
+		t.Fatal(err)
+	}
+	if msg := stringField(updated.Object, "status", "message"); !strings.Contains(msg, "quiesce periodic checkpoints") {
+		t.Fatalf("message = %q", msg)
+	}
+}
+
 func TestReplacementReconcileRepairsPlacementForExistingReplacementNode(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	reconciler := replacementReconcilerFixture(t, now, replacementOperationFixture(), replacementPolicyFixture(), replacementOldNodeProvisionFixture(), replacementReadyNodeProvisionFixture())
@@ -518,6 +540,12 @@ func replacementPolicyFixture() *unstructured.Unstructured {
 	policy.SetUID(types.UID("policy-uid"))
 	policy.SetGeneration(3)
 	policy.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}, "runtimeRef": map[string]interface{}{"name": "runtime"}}
+	policy.Object["status"] = map[string]interface{}{
+		trainingpolicy.StatusCheckpointPath: map[string]interface{}{
+			"periodicQuiesced":     true,
+			"replacementOperation": "old-replace",
+		},
+	}
 	return policy
 }
 

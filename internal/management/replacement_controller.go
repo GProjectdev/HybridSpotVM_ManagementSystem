@@ -547,6 +547,17 @@ func verifyPartialCheckpointEvidence(migration *unstructured.Unstructured, spec 
 }
 
 func (r *ReplacementReconciler) waitForExistingCheckpointsTerminal(ctx context.Context, ns string, spec replacementSpec) error {
+	if spec.EmergencyEventID == "" {
+		policy := trainingpolicy.NewObject("TrainingPolicy")
+		if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
+			return fmt.Errorf("get TrainingPolicy checkpoint quiesce receipt: %w", err)
+		}
+		quiesced := boolField(policy.Object, "status", trainingpolicy.StatusCheckpointPath, "periodicQuiesced")
+		operation := stringField(policy.Object, "status", trainingpolicy.StatusCheckpointPath, "replacementOperation")
+		if !quiesced || operation != spec.Operation {
+			return fmt.Errorf("waiting for checkpoint controller to quiesce periodic checkpoints for replacement %s", spec.Operation)
+		}
+	}
 	list := trainingpolicy.NewList("FluidCRMigration")
 	labels := client.MatchingLabels{trainingpolicy.LabelPolicyUID: spec.PolicyUID, trainingpolicy.LabelRole: "checkpoint"}
 	if err := r.reader().List(ctx, list, client.InNamespace(ns), labels); err != nil {
