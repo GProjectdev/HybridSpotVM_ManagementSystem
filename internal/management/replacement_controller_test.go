@@ -35,6 +35,9 @@ func TestReplacementReconcileCreatesOnDemandCapacityOnlyForExplicitOperation(t *
 	if market := stringField(replacement.Object, "spec", "marketType"); market != "OnDemand" {
 		t.Fatalf("marketType = %q, want OnDemand", market)
 	}
+	if keyPair := stringField(replacement.Object, "spec", "awsConfig", "keyPairName"); keyPair != "" {
+		t.Fatalf("replacement inherited source keyPairName %q", keyPair)
+	}
 	if role := replacement.GetLabels()[trainingpolicy.LabelRole]; role != "replacement" {
 		t.Fatalf("role = %q, want replacement", role)
 	}
@@ -555,7 +558,15 @@ func replacementOldNodeProvisionFixture() *unstructured.Unstructured {
 	np.SetName("old")
 	np.SetUID(types.UID("old-uid"))
 	np.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid"})
-	np.Object["spec"] = map[string]interface{}{"marketType": "Spot", "hostname": "old", "instanceType": "m5.large"}
+	np.Object["spec"] = map[string]interface{}{
+		"marketType":   "Spot",
+		"hostname":     "old",
+		"instanceType": "m5.large",
+		"awsConfig": map[string]interface{}{
+			"keyPairName": "nodeprovision-old",
+			"subnetId":    "subnet-1",
+		},
+	}
 	np.Object["status"] = map[string]interface{}{"spot": map[string]interface{}{"eventID": "event-1"}}
 	return np
 }

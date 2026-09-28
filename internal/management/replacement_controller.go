@@ -444,6 +444,9 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 	newSpec := deepCopyMap(sourceSpec)
 	newSpec["marketType"] = spec.DesiredMarketType
 	newSpec["hostname"] = spec.ReplacementNodeProvisionName
+	if awsConfig, ok := newSpec["awsConfig"].(map[string]interface{}); ok {
+		delete(awsConfig, "keyPairName")
+	}
 	desired.Object["spec"] = newSpec
 	if err := r.Create(ctx, desired); err != nil {
 		return nil, false, err
