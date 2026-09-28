@@ -96,6 +96,67 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 	}
 }
 
+func TestGroupCheckpointVolumePrefersExplicitRootOverPerRankPath(t *testing.T) {
+	_, input := groupCheckpointFixture()
+	sts := p.NewObject("StatefulSet")
+	sts.SetNamespace(input.Namespace)
+	sts.SetName(input.WorkloadRef.Name)
+	sts.SetUID(input.WorkloadRef.UID)
+	sts.Object["spec"] = map[string]interface{}{"template": map[string]interface{}{"spec": map[string]interface{}{
+		"containers": []interface{}{map[string]interface{}{
+			"name": "trainer",
+			"env": []interface{}{
+				map[string]interface{}{"name": "FLUIDCR_CHECKPOINT_PATH", "value": "/checkpoint/$(POD_NAME)/latest.pt"},
+				map[string]interface{}{"name": "FLUIDCR_CHECKPOINT_DIR", "value": "/checkpoint"},
+			},
+			"volumeMounts": []interface{}{map[string]interface{}{"name": "checkpoint", "mountPath": "/checkpoint"}},
+		}},
+		"volumes": []interface{}{map[string]interface{}{"name": "checkpoint", "persistentVolumeClaim": map[string]interface{}{"claimName": "fluidcr-checkpoint-shared"}}},
+	}}}
+	fixture := checkpointReconcilerFixture(t, time.Now, sts)
+	r := &PolicyReconciler{Client: fixture.Client, APIReader: fixture.Client}
+
+	pvc, root, err := r.groupCheckpointVolume(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pvc != "fluidcr-checkpoint-shared" || root != "/checkpoint" {
+		t.Fatalf("pvc=%q root=%q", pvc, root)
+	}
+}
+
+func TestGroupCheckpointVolumeAcceptsWebhookInjectedClaim(t *testing.T) {
+	_, input := groupCheckpointFixture()
+	sts := p.NewObject("StatefulSet")
+	sts.SetNamespace(input.Namespace)
+	sts.SetName(input.WorkloadRef.Name)
+	sts.SetUID(input.WorkloadRef.UID)
+	sts.Object["spec"] = map[string]interface{}{"template": map[string]interface{}{
+		"metadata": map[string]interface{}{"annotations": map[string]interface{}{
+			"fluidcr.dcnlab.com/inject":           "true",
+			"fluidcr.dcnlab.com/checkpoint-claim": "fluidcr-checkpoint-shared",
+		}},
+		"spec": map[string]interface{}{
+			"containers": []interface{}{map[string]interface{}{
+				"name": "trainer",
+				"env": []interface{}{map[string]interface{}{
+					"name": "FLUIDCR_CHECKPOINT_PATH", "value": "/checkpoint/$(POD_NAME)/latest.pt",
+				}},
+			}},
+		},
+	}}
+	fixture := checkpointReconcilerFixture(t, time.Now, sts)
+	r := &PolicyReconciler{Client: fixture.Client, APIReader: fixture.Client}
+
+	pvc, root, err := r.groupCheckpointVolume(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pvc != "fluidcr-checkpoint-shared" || root != "/checkpoint" {
+		t.Fatalf("pvc=%q root=%q", pvc, root)
+	}
+}
+
 func TestGroupReleaseRejectsNonPreparedTarget(t *testing.T) {
 	req, plan := groupReleaseFixture(false)
 	targetReport(plan)["phase"] = "Running"

@@ -225,18 +225,28 @@ func (r *PolicyReconciler) groupCheckpointVolume(ctx context.Context, input p.Po
 	if !ok {
 		return "", "", fmt.Errorf("invalid container")
 	}
+	templateAnnotations, _, _ := unstructured.NestedStringMap(sts.Object, "spec", "template", "metadata", "annotations")
+	injectedClaim := ""
+	if templateAnnotations["fluidcr.dcnlab.com/inject"] == "true" {
+		injectedClaim = templateAnnotations["fluidcr.dcnlab.com/checkpoint-claim"]
+	}
 	root := "/checkpoint"
 	env, _, _ := unstructured.NestedSlice(c, "env")
+	explicitRoot := injectedClaim != ""
 	for _, raw := range env {
 		e := raw.(map[string]interface{})
-		switch stringField(e, "name") {
-		case "FLUIDCR_CHECKPOINT_DIR":
+		if stringField(e, "name") == "FLUIDCR_CHECKPOINT_DIR" {
 			if stringField(e, "value") == "" {
 				return "", "", fmt.Errorf("literal checkpoint root required")
 			}
 			root = stringField(e, "value")
-		case "FLUIDCR_CHECKPOINT_PATH":
-			if root == "/checkpoint" && stringField(e, "value") != "" {
+			explicitRoot = true
+		}
+	}
+	if !explicitRoot {
+		for _, raw := range env {
+			e := raw.(map[string]interface{})
+			if stringField(e, "name") == "FLUIDCR_CHECKPOINT_PATH" && stringField(e, "value") != "" {
 				root = path.Dir(stringField(e, "value"))
 			}
 		}
@@ -264,6 +274,9 @@ func (r *PolicyReconciler) groupCheckpointVolume(ctx context.Context, input p.Po
 				return pvc, root, nil
 			}
 		}
+	}
+	if injectedClaim != "" {
+		return injectedClaim, root, nil
 	}
 	return "", "", fmt.Errorf("shared checkpoint PVC mount at %s required", root)
 }
