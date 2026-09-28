@@ -104,15 +104,25 @@ func (h *PlacementAdmission) validateRelease(ctx context.Context, policy, old, n
 	if stringField(request.Object, "spec", "workloadRef", "uid") != stringField(old.Object, "spec", "resource", "uid") || len(actual) != 1 {
 		return fmt.Errorf("restore workload mismatch")
 	}
- if old.GetUID()=="" || stringField(request.Object,"spec","groupRestore","operationUID")!=string(old.GetUID()){return fmt.Errorf("restore operation is not bound to this ResourceBinding")}
- before,_,_:=unstructured.NestedSlice(old.Object,"spec","clusters")
- if len(before)!=1{return fmt.Errorf("source placement missing")}
- source,ok:=before[0].(map[string]interface{});if !ok||stringField(source,"name")!=stringField(request.Object,"spec","sourceCluster"){return fmt.Errorf("restore source cluster mismatch")}
+	if old.GetUID() == "" || stringField(request.Object, "spec", "groupRestore", "operationUID") != string(old.GetUID()) {
+		return fmt.Errorf("restore operation is not bound to this ResourceBinding")
+	}
+	before, _, _ := unstructured.NestedSlice(old.Object, "spec", "clusters")
+	if len(before) != 1 {
+		return fmt.Errorf("source placement missing")
+	}
+	source, ok := before[0].(map[string]interface{})
+	if !ok || stringField(source, "name") != stringField(request.Object, "spec", "sourceCluster") {
+		return fmt.Errorf("restore source cluster mismatch")
+	}
 	target, ok := actual[0].(map[string]interface{})
 	if !ok || stringField(target, "name") != stringField(request.Object, "spec", "targetCluster") {
 		return fmt.Errorf("restore target mismatch")
 	}
-	return validateGroupRelease(ctx, h.Reader, request)
+	if err := validateGroupRelease(ctx, h.Reader, request); err != nil {
+		return err
+	}
+	return validateGroupVolumes(ctx, h.Reader, old, request)
 }
 
 func holdPlacement(old, next *unstructured.Unstructured) error {

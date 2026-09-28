@@ -165,8 +165,20 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	if e := validateGroupRelease(ctx, r.Reader, request); e != nil {
 		return again, nil
 	}
+	if ready, e := r.ensureGroupVolumes(ctx, binding, request); e != nil {
+		return again, e
+	} else if !ready {
+		return again, nil
+	}
+	if e := validateGroupVolumes(ctx, r.Reader, binding, request); e != nil {
+		return again, nil
+	}
 	before := binding.DeepCopy()
 	delete(a, pendingPlacementAnnotation)
+	if a[groupVolumeHold] == string(request.GetUID()) {
+		unstructured.RemoveNestedField(binding.Object, "spec", "suspension", "dispatching")
+		delete(a, groupVolumeHold)
+	}
 	binding.SetAnnotations(a)
 	_ = unstructured.SetNestedSlice(binding.Object, clusters, "spec", "clusters")
 	if reflect.DeepEqual(before.Object, binding.Object) {

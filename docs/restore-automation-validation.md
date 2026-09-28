@@ -1,5 +1,10 @@
 # Restore automation: rollout and validation
 
+> Historical rollout notes below include earlier implementation gaps.
+> For current routing and acceptance use
+> [Restore Routing And Volume Revalidation](restore-routing-volume-revalidation.md)
+> and [Full Group Rollout](full-group-rollout.md).
+
 ## Current implementation boundary
 
 This guide distinguishes implemented controller paths from live validation.
@@ -8,11 +13,11 @@ Passing unit tests does not establish CUDA/DDP restore compatibility.
 | Scenario | Current support |
 | --- | --- |
 | Periodic coordinated checkpoint and durable archive export | Existing implementation; verify every rank's exported archive |
-| Policy-driven Spot to OnDemand | Same AWS cluster, nonzero target ranks, preserved survivors |
+| Policy-driven Spot to OnDemand | Same AWS cluster, live target ranks including rank zero, preserved survivors |
 | Policy-driven OnDemand to Spot | Same restrictions; successor chains retain logical worker slots |
 | Spot interruption notice | With replacement enabled and fresh runtime evidence, creates an OnDemand replacement operation |
 | On-prem to AWS by directly changing PropagationPolicy | NOT end-to-end automated; do not use this as a restore trigger |
-| Rank 0 replacement, complete group loss, notice arriving after source loss | NOT supported by the partial-rank replacement path |
+| Complete group loss, notice arriving after source loss | Requires fenced full-group fallback, not live partial |
 
 The last two rows are implementation gaps, not merely unexecuted tests. Do not
 report all three requested recovery scenarios as complete. The current member
@@ -80,8 +85,8 @@ because the new images build.
 - Durable checkpoint store reachable from replacement nodes; identical required
   workload volumes available. No assumption that NFS path existence proves the
   application state is consistent.
-- Current TrainingRuntime rank/Pod UID/node/checkpoint evidence and a supported
-  surviving rank. Keep rank 0 on a node that this partial test will not replace.
+- Current TrainingRuntime rank/Pod UID/node/checkpoint evidence and a preserved
+  surviving rank. Include rank-zero replacement in the current acceptance suite.
 - Controllers must be running; earlier cleanup scaled them to zero.
 - Budget for one temporary extra EC2 worker during a replacement.
 

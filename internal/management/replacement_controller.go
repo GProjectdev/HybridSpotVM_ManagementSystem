@@ -329,9 +329,6 @@ func readReplacementSpec(op *unstructured.Unstructured) (replacementSpec, error)
 func verifyReplacementPodEvidence(spec replacementSpec) error {
 	ranks := map[int64]bool{}
 	for _, rank := range spec.TargetRanks {
-		if rank == 0 {
-			return fmt.Errorf("UnsupportedRankZero: partial replacement of rank 0 is not supported")
-		}
 		if rank < 0 {
 			return fmt.Errorf("partialCheckpoint target rank must be non-negative")
 		}

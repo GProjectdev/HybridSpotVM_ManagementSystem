@@ -15,8 +15,8 @@ node, and non-target survivor rank/pod UID/node baselines. It does not populate
 future paused proof; survivor generation and pause-lock evidence are copied only
 after the partial checkpoint completes.
 
-Rank 0 partial replacement is rejected before replacement capacity, pause, or
-checkpoint creation with `UnsupportedRankZero`. The operation name includes the
+Rank 0 partial replacement follows the same owned checkpoint and resume
+contract as other targets. The operation name includes the
 old NodeProvision UID to prevent replay or slot-name collision.
 
 For an accepted operation, SpotRecoveryController's replacement reconciler
@@ -106,8 +106,8 @@ NS=fluidcr-demo
 POLICY=trainer-auto
 RISK="$(kubectl --kubeconfig="$K" -n "$NS" get trainingpolicy "$POLICY" -o jsonpath='{.spec.riskProfileRef.name}')"
 
-# Precheck before opt-in. If the current Spot target candidate is rank 0, stop;
-# System must reject rank-0 replacement before capacity or checkpoint creation.
+# Check current rank/UID evidence before enabling replacement. Rank 0 is
+# supported; all targets and preserved survivors must form a live world.
 kubectl --kubeconfig="$K" -n "$NS" get trainingruntime \
   "$(kubectl --kubeconfig="$K" -n "$NS" get trainingpolicy "$POLICY" -o jsonpath='{.spec.runtimeRef.name}')" \
   -o jsonpath='{range .status.clusters[*].status.pods[*]}{.rank}{" "}{.name}{" "}{.uid}{" "}{.nodeName}{"\n"}{end}'
@@ -133,8 +133,8 @@ OP="$(kubectl --kubeconfig="$K" -n "$NS" get trainingpolicy "$POLICY" -o jsonpat
 kubectl --kubeconfig="$K" -n "$NS" get spotreplacement "$OP" \
   -o jsonpath='{.spec.oldNodeProvisionRef.uid}{" "}{.spec.partialCheckpoint.targetRanks}{" "}{.spec.pods[*].sourcePodUID}{" "}{.spec.partialRestore.preservedSurvivors[*].podUID}{"\n"}'
 
-# If targetRanks includes 0, the operation must be Rejected with
-# UnsupportedRankZero and no replacement NodeProvision should exist.
+# Rank zero is allowed. Verify checkpoint/resume evidence rather than
+# treating successful capacity creation as successful recovery.
 kubectl --kubeconfig="$K" -n "$NS" get spotreplacement "$OP" \
   -o jsonpath='{.status.phase}{" "}{.status.message}{"\n"}'
 

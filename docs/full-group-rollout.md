@@ -1,10 +1,12 @@
 # Full-group Rollout And Acceptance
 
 This is the current automation guide for branch `restore-automation-20260928`.
-The older partial replacement activation instructions are not applicable to
-automatic policy or interruption recovery. Manual partial operations remain
-supported separately; finish them before upgrading. Do not run partial and
-group recovery concurrently for one world.
+Automatic same-cluster replacement prefers partial when the complete live world
+and source identities are current, including rank zero and live interruptions.
+Unavailable sources and full-world moves retain the full-group recovery path.
+See [routing and volume revalidation](restore-routing-volume-revalidation.md).
+Finish active partial operations before upgrading. Never run partial and group
+recovery concurrently for one world.
 
 ## Scope And Prerequisites
 

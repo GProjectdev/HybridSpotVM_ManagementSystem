@@ -117,8 +117,13 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarketType) || oldMarket == desiredMarketType {
 		return false, fmt.Errorf("replacement requires old and desired marketType to differ and be Spot/OnDemand")
 	}
-	// Automatic operations use one full-world protocol even if a notice arrives
-	// after provisioning has begun; manual partial operations remain separate.
+	// A live, coordinated world can preserve survivors, including when rank 0 moves.
+	if policyObj.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
+		selected, created, err := r.ensurePlannedPartialReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
+		if selected || err != nil {
+			return created, err
+		}
+	}
 	return r.ensureGroupReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
 }
 

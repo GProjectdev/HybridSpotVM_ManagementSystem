@@ -29,9 +29,13 @@ func TestEmergencyReplacementNeedsDurableGroupRoundAndNoPeriodicCheckpoint(t *te
 	if len(list.Items) != 0 {
 		t.Fatalf("operations: %d", len(list.Items))
 	}
- updated:=p.NewObject("TrainingPolicy")
- if err:=r.Get(context.Background(),client.ObjectKeyFromObject(policy),updated);err!=nil{t.Fatal(err)}
- if !strings.Contains(stringField(updated.Object,"status","checkpoint","message"),"no complete durable full-group checkpoint"){t.Fatalf("missing group checkpoint not reported: %#v",updated.Object["status"])}
+	updated := p.NewObject("TrainingPolicy")
+	if err := r.Get(context.Background(), client.ObjectKeyFromObject(policy), updated); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stringField(updated.Object, "status", "checkpoint", "message"), "no complete durable full-group checkpoint") {
+		t.Fatalf("missing group checkpoint not reported: %#v", updated.Object["status"])
+	}
 	assertMigrationCount(t, r.Client, 0)
 }
 
@@ -107,6 +111,26 @@ func TestEmergencyNodeWatchMapsOnlyOwningPolicy(t *testing.T) {
 	node.SetLabels(map[string]string{p.LabelPolicyUID: "foreign"})
 	if got := mapPolicies(r.Client, "node")(context.Background(), node); len(got) != 0 {
 		t.Fatalf("foreign requests: %#v", got)
+	}
+}
+
+func TestInterruptionDuringPartialIsExplicitlyBlocked(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy, runtime, node := emergencyReplacementFixtures(now)
+	op := replacementOperationFixture()
+	op.SetNamespace(policy.GetNamespace())
+	op.SetLabels(map[string]string{p.LabelPolicyUID: string(policy.GetUID())})
+	_ = unstructured.SetNestedField(op.Object, string(policy.GetUID()), "spec", "policyRef", "uid")
+	for _, phase := range []string{"AwaitingPartialCheckpoint", "Failed"} {
+		_ = unstructured.SetNestedField(op.Object, phase, "status", "phase")
+		r := checkpointReconcilerFixture(t, func() time.Time { return now }, policy.DeepCopy(), runtime.DeepCopy(), node.DeepCopy())
+		if err := r.Create(context.Background(), op.DeepCopy()); err != nil {
+			t.Fatal(err)
+		}
+		name, err := r.ensureEmergencyReplacement(context.Background(), policy, p.ReadPolicySpec(policy))
+		if name != op.GetName() || err == nil || !strings.Contains(err.Error(), "verified actuator handoff") {
+			t.Fatalf("phase=%s name=%s err=%v", phase, name, err)
+		}
 	}
 }
 

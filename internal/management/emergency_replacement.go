@@ -16,13 +16,9 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 	if !boolField(policy.Object, "spec", "replacement", "enabled") {
 		return "", nil
 	}
-	if active, err := r.activeSpotReplacement(ctx, input); err != nil {
+	active, err := r.activeSpotReplacement(ctx, input)
+	if err != nil {
 		return "", err
-	} else if active != nil {
-		if active.GetAnnotations()[annotationEmergencyEventID] != "" {
-			return active.GetName(), nil
-		}
-		return "", nil
 	}
 	nodes := trainingpolicy.NewList("NodeProvision")
 	if err := r.List(ctx, nodes, client.InNamespace(input.Namespace), client.MatchingLabels{trainingpolicy.LabelPolicyUID: string(input.PolicyUID)}); err != nil {
@@ -37,6 +33,12 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 		}
 		if !validSpotSignalType(stringField(node.Object, "status", "spot", "signalType")) {
 			return "", fmt.Errorf("emergency replacement requires an interruption or rebalance signal")
+		}
+		if active != nil {
+			if active.GetAnnotations()[annotationEmergencyEventID] == event.EventID && stringField(active.Object, "spec", "oldNodeProvisionRef", "uid") == event.NodeUID {
+				return active.GetName(), nil
+			}
+			return active.GetName(), fmt.Errorf("partial operation %s owns this world; interruption %s requires verified actuator handoff before group recovery", active.GetName(), event.EventID)
 		}
 		if input.SourceCluster != input.Capacity.AWSCluster || event.NodeUID == "" || !node.GetDeletionTimestamp().IsZero() || stringField(node.Object, "spec", "marketType") != "Spot" {
 			return "", fmt.Errorf("emergency recovery requires a live UID-bound Spot NodeProvision in the AWS source cluster")

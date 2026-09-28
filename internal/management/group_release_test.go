@@ -25,9 +25,9 @@ func groupReleaseFixture(cross bool) (*unstructured.Unstructured, *unstructured.
 	src := []interface{}{map[string]interface{}{"rank": int64(0), "podName": "trainer-0", "podUID": "CURRENT", "nodeName": "old"}}
 	req.Object["spec"] = map[string]interface{}{
 		"sourceCluster": source, "targetCluster": "aws", "sourceFenced": false, "volumesReady": true,
-		"workloadRef":   map[string]interface{}{"uid": "world"},
+		"workloadRef":   map[string]interface{}{"name": "trainer", "uid": "world"},
 		"checkpointRef": map[string]interface{}{"checkpointID": "round"},
-		"pods":          []interface{}{map[string]interface{}{"sourcePodUID": "HISTORICAL"}},
+		"pods":          []interface{}{map[string]interface{}{"sourcePod": "trainer-0", "sourcePodUID": "HISTORICAL"}},
 		"groupRestore":  map[string]interface{}{"operationUID": "operation", "sourceWorldUID": "world", "worldSize": int64(1), "sourcePods": src},
 	}
 	control := map[string]interface{}{"operationUID": "operation", "checkpointID": "round", "checkpointGeneration": int64(7), "prepareJobUID": "job", "preparedAt": "2026-09-28T00:01:00Z", "volumeServer": "nfs", "volumePath": "/shared", "volumePVCUID": "pvc", "volumePVUID": "pv"}
@@ -45,7 +45,7 @@ func groupReleaseFixture(cross bool) (*unstructured.Unstructured, *unstructured.
 	plan.Object["spec"] = spec
 	fences := []interface{}{map[string]interface{}{"podName": "trainer-0", "sourcePodUID": "CURRENT", "phase": "SourceGone", "observedGeneration": int64(3), "deleteRequestedAt": "2026-09-28T00:00:00Z", "goneObservedAt": "2026-09-28T00:00:10Z"}}
 	report := map[string]interface{}{"observedGeneration": int64(3), "phase": "Prepared", "groupControl": runtime.DeepCopyJSONValue(control), "sourceFences": fences}
- report["clusterName"]="aws"
+	report["clusterName"] = "aws"
 	plan.Object["status"] = map[string]interface{}{"clusters": []interface{}{report}}
 	if cross {
 		receipt := map[string]interface{}{"requestUID": "request-uid", "operationUID": "operation", "sourceWorldUID": "world", "sourceCluster": source, "volumeServer": "nfs", "volumePath": "/shared", "fences": fences}
@@ -65,11 +65,13 @@ func TestGroupReleaseEvidence(t *testing.T) {
 	}
 }
 
-func TestGroupReleaseAcceptsTypedPlanOmittedRankZero(t *testing.T){
- req,plan:=groupReleaseFixture(true)
- req.Object["spec"].(map[string]interface{})["pods"].([]interface{})[0].(map[string]interface{})["rank"]=int64(0)
- reader:=fake.NewClientBuilder().WithObjects(plan).Build()
- if err:=validateGroupRelease(context.Background(),reader,req);err!=nil{t.Fatal(err)}
+func TestGroupReleaseAcceptsTypedPlanOmittedRankZero(t *testing.T) {
+	req, plan := groupReleaseFixture(true)
+	req.Object["spec"].(map[string]interface{})["pods"].([]interface{})[0].(map[string]interface{})["rank"] = int64(0)
+	reader := fake.NewClientBuilder().WithObjects(plan).Build()
+	if err := validateGroupRelease(context.Background(), reader, req); err != nil {
+		t.Fatal(err)
+	}
 }
 func TestGroupReleaseRejectsStaleOrUnboundEvidence(t *testing.T) {
 	cases := map[string]func(*unstructured.Unstructured, *unstructured.Unstructured){

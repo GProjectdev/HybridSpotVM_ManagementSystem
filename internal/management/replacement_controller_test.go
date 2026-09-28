@@ -427,9 +427,11 @@ func TestReplacementReconcileRejectsMissingSourcePodUID(t *testing.T) {
 	}
 }
 
-func TestReplacementReconcileRejectsRankZeroBeforeCapacity(t *testing.T) {
+func TestReplacementReconcileAcceptsRankZero(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	op := replacementOperationFixture()
+	_ = unstructured.SetNestedSlice(op.Object, []interface{}{int64(0)}, "spec", "partialRestore", "targetRanks")
+	_ = unstructured.SetNestedSlice(op.Object, []interface{}{map[string]interface{}{"rank": int64(1), "podName": "trainer-1", "podUID": "survivor-uid", "nodeName": "survivor-node"}}, "spec", "partialRestore", "preservedSurvivors")
 	_ = unstructured.SetNestedSlice(op.Object, []interface{}{int64(0)}, "spec", "partialCheckpoint", "targetRanks")
 	_ = unstructured.SetNestedSlice(op.Object, []interface{}{map[string]interface{}{"rank": int64(0), "sourcePod": "trainer-0", "sourcePodUID": "old-pod-uid", "sourceNode": "old-node", "targetNode": "new-node"}}, "spec", "pods")
 	reconciler := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), replacementOldNodeProvisionFixture())
@@ -441,12 +443,12 @@ func TestReplacementReconcileRejectsRankZeroBeforeCapacity(t *testing.T) {
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old-replace"}, updated); err != nil {
 		t.Fatalf("get operation: %v", err)
 	}
-	if msg := stringField(updated.Object, "status", "message"); !strings.Contains(msg, "UnsupportedRankZero") {
-		t.Fatalf("message = %q, want UnsupportedRankZero", msg)
+	if phase := stringField(updated.Object, "status", "phase"); phase == "Rejected" || phase == "Failed" {
+		t.Fatalf("rank zero rejected: %#v", updated.Object["status"])
 	}
 	replacement := trainingpolicy.NewObject("NodeProvision")
-	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "new"}, replacement); err == nil {
-		t.Fatal("rank-0 replacement created capacity before rejection")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "new"}, replacement); err != nil {
+		t.Fatalf("rank-0 replacement capacity missing: %v", err)
 	}
 }
 

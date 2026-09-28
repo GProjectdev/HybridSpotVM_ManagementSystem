@@ -20,10 +20,12 @@ func TestPlacementReleaseAdmissionJSONRoundTrip(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		username string
+		vct      bool
 		mutate   func(*unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured)
 		deny     string
 	}{
 		{name: "authorized replicas", username: controller},
+		{name: "VCT missing volume receipt", username: controller, vct: true, deny: "VCT group restore requires UID-bound PVMigration"},
 		{name: "unauthorized user", username: "ordinary-user", deny: "only the placement controller"},
 		{name: "stale plan generation", username: controller, mutate: func(_, plan, _ *unstructured.Unstructured) {
 			plan.SetGeneration(plan.GetGeneration() + 1)
@@ -102,7 +104,14 @@ func TestPlacementReleaseAdmissionJSONRoundTrip(t *testing.T) {
 			if !strings.Contains(string(nextJSON), `"replicas":1`) {
 				t.Fatal("replicas missing from admission JSON")
 			}
-			handler := &PlacementAdmission{Reader: fake.NewClientBuilder().WithObjects(policy, request, plan).Build(), ReleaseUsername: controller}
+			sts := p.NewObject("StatefulSet")
+			sts.SetName("trainer")
+			sts.SetNamespace("demo")
+			sts.SetUID("world")
+			if tc.vct {
+				sts.Object["spec"] = map[string]interface{}{"volumeClaimTemplates": []interface{}{map[string]interface{}{"metadata": map[string]interface{}{"name": "data"}}}}
+			}
+			handler := &PlacementAdmission{Reader: fake.NewClientBuilder().WithObjects(policy, request, plan, sts).Build(), ReleaseUsername: controller}
 			response := handler.Handle(context.Background(), admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{
 				Namespace: "demo", Name: old.GetName(), Operation: admissionv1.Update,
 				UserInfo:  authenticationv1.UserInfo{Username: tc.username},
