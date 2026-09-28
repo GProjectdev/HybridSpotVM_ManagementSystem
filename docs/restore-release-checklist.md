@@ -34,6 +34,8 @@ the checkout succeed. Record all four commits alongside image digests.
 | Stateful controllers | Stateful-Migration-Operator-with-PV | Dockerfile |
 | Node provisioning | PublicCloud-VM-Provisioner_test | Dockerfile |
 | Injected Python payload | My_FluidCR | Dockerfile.payload |
+| FluidCR admission webhook | My_FluidCR | Dockerfile.webhook |
+| Independent group control (experimental, no automatic caller) | My_FluidCR | Dockerfile.group-control |
 | Runtime .deb | custom-crio + provisioner package builder | Provisioner runtime rollout guide |
 
 The runtime .deb is a separate versioned artifact installed on new workers.
@@ -63,10 +65,19 @@ buildah push "$PROVISIONER_REPO:$TAG"
 buildah bud -f "$FLUIDCR_SRC/Dockerfile.payload" \
   -t "$FLUIDCR_REPO:payload-$TAG" "$FLUIDCR_SRC"
 buildah push "$FLUIDCR_REPO:payload-$TAG"
+buildah bud -f "$FLUIDCR_SRC/Dockerfile.webhook" \
+  -t "$FLUIDCR_REPO:webhook-$TAG" "$FLUIDCR_SRC"
+buildah push "$FLUIDCR_REPO:webhook-$TAG"
 ```
 
 Match the payload Python version to the training image using PYTHON_VERSION
 when needed. Registry authentication uses the existing Buildah login.
+
+The independent group-control image is an experimental bootstrap tool, not a
+replacement controller. Build it separately using My_FluidCR's
+`docs/full-group-prepare.md`; no controller currently creates its Job or
+validates the fence assertion for it. Do not run prepare/resume against live
+training solely because its image builds.
 
 ## Deployment order
 
@@ -76,10 +87,18 @@ when needed. Registry authentication uses the existing Buildah login.
    resources are stored, including AWS and Karmada when propagated.
 3. Apply Stateful CRDs/RBAC on their existing management/member clusters.
    Preserve each Deployment's mode, arguments, credentials and volume mounts.
-4. Update provisioner and Stateful images, then the FluidCR webhook's existing
-   --payload-image argument. Preserve its port/certificate arguments. Already
+4. Apply My_FluidCR `deploy/webhook/rbac.yaml` (now includes read-only
+   StatefulSet access), update provisioner, Stateful and FluidCR webhook images,
+   then the webhook's existing --payload-image argument.
+   Preserve its port/certificate arguments. Already
    running Pods retain their old injected payload: update only at a controlled
    workload restart with recoverable checkpoints preserved.
+   New injected managed Pods inherit `FLUIDCR_SOURCE_WORLD_UID` only when
+   their verified owner StatefulSet has the management-origin
+   `training.dcnlab.com/workload-uid` label. Unlabelled parents retain legacy
+   behavior. Inspect every rank's producer metadata before considering a round
+   eligible for whole-group recovery; old checkpoints do not gain metadata
+   retroactively.
 5. Publish the new runtime .deb at a stable HTTPS URL. Update NetConfig package
    digest and commit metadata together; qualify one isolated new GPU worker.
    Never add capability labels to bypass failed verification.

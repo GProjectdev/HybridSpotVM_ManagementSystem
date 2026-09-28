@@ -36,6 +36,15 @@ scenario rows above into end-to-end support:
   whole-world contract. Older payloads fail closed; there is no fallback to
   unscoped resume. Producer metadata, source-world identity and artifact hashes
   are required; old artifacts without that metadata are rejected.
+- New injected Pods can obtain source-world identity from their UID-verified
+  StatefulSet owner's management-origin label. Existing Pods are not restarted,
+  and unlabelled parents do not enable producer metadata automatically.
+- FluidCR's independent group-control CLI/image can prepare shared checkpoint
+  state without reaching the lost rank's HTTP server. It remains a tool awaiting
+  an operation-owned Job/controller caller, not a completed recovery path.
+- The Stateful group HTTP client requires the expected world size and immutable
+  producer generation and rejects smaller worlds or stale success responses.
+  The producer generation is not a Kubernetes resource generation.
 
 The resume endpoint releases the prepared world's operation-owned locks, not
 one rank at a time. Call prepare only after the old world is fenced and keep
