@@ -41,7 +41,6 @@ spec:
             - workloadRef
             - trainingRuntimeRef
             - checkpointID
-            - eventID
             - restoreRequestRef
             - oldNodeProvisionRef
             properties:
@@ -116,6 +115,16 @@ spec:
                 type: string
                 minLength: 1
                 maxLength: 256
+              emergencyEventID:
+                type: string
+                minLength: 1
+                maxLength: 256
+              oldMarketType:
+                type: string
+                enum: [Spot, OnDemand]
+              desiredMarketType:
+                type: string
+                enum: [Spot, OnDemand]
               restoreRequestRef:
                 type: object
                 required: [name, uid, generation]

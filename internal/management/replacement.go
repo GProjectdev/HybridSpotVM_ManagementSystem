@@ -24,17 +24,30 @@ func newSpotReplacementList() *unstructured.UnstructuredList {
 }
 
 func replacementOperationName(oldNodeProvisionName, oldNodeProvisionUID string) string {
+	return boundedReplacementName(oldNodeProvisionName, oldNodeProvisionUID, "replace")
+}
+
+func replacementNodeProvisionName(oldNodeProvisionName, oldNodeProvisionUID string) string {
+	return boundedReplacementName(oldNodeProvisionName, oldNodeProvisionUID, "replacement")
+}
+
+func boundedReplacementName(oldNodeProvisionName, oldNodeProvisionUID, suffix string) string {
 	uid := strings.ToLower(oldNodeProvisionUID)
 	uid = strings.ReplaceAll(uid, "_", "-")
 	if len(uid) > 12 {
 		uid = uid[:12]
 	}
-	if uid == "" {
-		return fmt.Sprintf("%s-replace", oldNodeProvisionName)
+	fullSuffix := "-" + suffix
+	if uid != "" {
+		fullSuffix = "-" + uid + fullSuffix
 	}
-	return fmt.Sprintf("%s-%s-replace", oldNodeProvisionName, uid)
+	prefix := dnsLabelPrefix(oldNodeProvisionName, 63-len(fullSuffix))
+	if prefix == "" {
+		prefix = "node"
+	}
+	return fmt.Sprintf("%s%s", prefix, fullSuffix)
 }
 
-func replacementNodeProvisionName(oldNodeProvisionName string) string {
-	return fmt.Sprintf("%s-replacement", oldNodeProvisionName)
+func validReplacementMarket(market string) bool {
+	return market == "Spot" || market == "OnDemand"
 }

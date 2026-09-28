@@ -52,6 +52,9 @@ type recoverySpec struct {
 	RequestUID                   string
 	CheckpointID                 string
 	EventID                      string
+	EmergencyEventID             string
+	OldMarketType                string
+	DesiredMarketType            string
 	Operation                    string
 	SourceCluster                string
 	TargetCluster                string
@@ -154,6 +157,9 @@ func readRecoverySpec(obj *unstructured.Unstructured) recoverySpec {
 		RequestUID:                   stringField(obj.Object, "spec", "requestUID"),
 		CheckpointID:                 stringField(obj.Object, "spec", "checkpointID"),
 		EventID:                      stringField(obj.Object, "spec", "eventID"),
+		EmergencyEventID:             stringField(obj.Object, "spec", "emergencyEventID"),
+		OldMarketType:                stringField(obj.Object, "spec", "oldMarketType"),
+		DesiredMarketType:            stringField(obj.Object, "spec", "desiredMarketType"),
 		Operation:                    stringField(obj.Object, "spec", "operation"),
 		SourceCluster:                stringField(obj.Object, "spec", "sourceCluster"),
 		TargetCluster:                stringField(obj.Object, "spec", "targetCluster"),
@@ -180,8 +186,8 @@ func (s recoverySpec) validateStaticContract() error {
 	if s.RequestUID != s.RestoreRequestUID {
 		return fmt.Errorf("requestUID must match restoreRequestRef.uid")
 	}
-	if s.CheckpointID == "" || s.EventID == "" || s.WorkloadUID == "" || s.TrainingRuntimeName == "" || s.TrainingRuntimeUID == "" {
-		return fmt.Errorf("checkpointID, eventID, workloadRef.uid, and trainingRuntimeRef name/uid are required")
+	if s.CheckpointID == "" || s.WorkloadUID == "" || s.TrainingRuntimeName == "" || s.TrainingRuntimeUID == "" {
+		return fmt.Errorf("checkpointID, workloadRef.uid, and trainingRuntimeRef name/uid are required")
 	}
 	if s.Operation == "" || s.SourceCluster == "" || s.TargetCluster == "" {
 		return fmt.Errorf("operation, sourceCluster, and targetCluster are required")
@@ -197,6 +203,20 @@ func (s recoverySpec) validateStaticContract() error {
 	}
 	if (s.ReplacementNodeProvisionName == "") != (s.ReplacementNodeProvisionUID == "") {
 		return fmt.Errorf("replacement NodeProvision ref must include both name and uid when provided")
+	}
+	if s.ReplacementNodeProvisionName != "" {
+		if !validReplacementMarket(s.OldMarketType) || !validReplacementMarket(s.DesiredMarketType) || s.OldMarketType == s.DesiredMarketType {
+			return fmt.Errorf("oldMarketType and desiredMarketType must be Spot/OnDemand and differ for replacement cleanup")
+		}
+	}
+	if s.EventID == "" && !s.sameClusterReplacement() {
+		return fmt.Errorf("eventID is required for restore-only SpotRecovery cleanup")
+	}
+	if s.EmergencyEventID != "" && s.EventID == "" {
+		return fmt.Errorf("eventID is required for emergency replacement cleanup")
+	}
+	if s.EmergencyEventID != "" && (s.OldMarketType != "Spot" || s.DesiredMarketType != "OnDemand") {
+		return fmt.Errorf("emergency replacement cleanup requires Spot to OnDemand market transition")
 	}
 	if s.ReplacementNodeProvisionUID != "" && (s.OldNodeProvisionUID == s.ReplacementNodeProvisionUID || s.OldNodeProvisionName == s.ReplacementNodeProvisionName) {
 		return fmt.Errorf("old and replacement NodeProvision must not be the same node")
@@ -265,7 +285,7 @@ func (r *RecoveryReconciler) verifySpotReplacement(ctx context.Context, ns strin
 		{"oldNodeProvisionRef.name", stringField(replacement.Object, "spec", "oldNodeProvisionRef", "name"), spec.OldNodeProvisionName},
 		{"oldNodeProvisionRef.uid", stringField(replacement.Object, "spec", "oldNodeProvisionRef", "uid"), spec.OldNodeProvisionUID},
 		{"replacementNodeProvisionRef.name", stringField(replacement.Object, "spec", "replacementNodeProvisionRef", "name"), spec.ReplacementNodeProvisionName},
-		{"desiredMarketType", stringField(replacement.Object, "spec", "desiredMarketType"), "OnDemand"},
+		{"desiredMarketType", stringField(replacement.Object, "spec", "desiredMarketType"), spec.DesiredMarketType},
 	}
 	for _, check := range checks {
 		if check.got == "" || check.got != check.want {
@@ -274,6 +294,9 @@ func (r *RecoveryReconciler) verifySpotReplacement(ctx context.Context, ns strin
 	}
 	if uid := stringField(replacement.Object, "status", "replacementNodeProvisionRef", "uid"); uid != "" && uid != spec.ReplacementNodeProvisionUID {
 		return fmt.Errorf("SpotReplacement replacementNodeProvisionRef uid mismatch")
+	}
+	if eventID := replacement.GetAnnotations()[annotationEmergencyEventID]; eventID != spec.EmergencyEventID {
+		return fmt.Errorf("SpotReplacement emergencyEventID annotation mismatch")
 	}
 	targetRanks, ok, _ := unstructured.NestedSlice(replacement.Object, "spec", "partialCheckpoint", "targetRanks")
 	if !ok || len(targetRanks) == 0 {
@@ -518,14 +541,36 @@ func verifyOldNodeRIC(np *unstructured.Unstructured, spec recoverySpec, restore 
 	if observed := stringField(np.Object, "status", "observedCluster"); observed != spec.SourceCluster {
 		return fmt.Errorf("old NodeProvision observedCluster must match sourceCluster")
 	}
-	spot, _, _ := unstructured.NestedMap(np.Object, "status", "spot")
-	if spot == nil {
-		return fmt.Errorf("old NodeProvision status.spot RIC evidence required")
+	oldMarket := stringField(np.Object, "spec", "marketType")
+	if spec.OldMarketType != "" && oldMarket != spec.OldMarketType {
+		return fmt.Errorf("old NodeProvision marketType mismatch")
+	}
+	if !validReplacementMarket(oldMarket) {
+		return fmt.Errorf("old NodeProvision marketType evidence required")
+	}
+	if spec.DesiredMarketType != "" && oldMarket == spec.DesiredMarketType {
+		return fmt.Errorf("old NodeProvision marketType must differ from desiredMarketType")
+	}
+	if oldMarket == "OnDemand" && !spec.sameClusterReplacement() {
+		return fmt.Errorf("OnDemand old NodeProvision cleanup requires explicit same-cluster replacement")
 	}
 	instanceID := stringField(np.Object, "status", "instanceId")
-	atRisk, _, _ := unstructured.NestedBool(map[string]interface{}{"spot": spot}, "spot", "atRisk")
-	if stringField(spot, "eventID") != spec.EventID || instanceID == "" || stringField(spot, "instanceID") != instanceID || !atRisk || !validSpotSignalType(stringField(spot, "signalType")) {
-		return fmt.Errorf("old NodeProvision eventID, instanceID, atRisk, and signalType evidence required")
+	if instanceID == "" {
+		return fmt.Errorf("old NodeProvision instanceId evidence required")
+	}
+	requireSpotEvent := oldMarket == "Spot" && (!spec.sameClusterReplacement() || spec.EmergencyEventID != "")
+	if requireSpotEvent {
+		spot, _, _ := unstructured.NestedMap(np.Object, "status", "spot")
+		if spot == nil {
+			return fmt.Errorf("old NodeProvision status.spot RIC evidence required")
+		}
+		atRisk, _, _ := unstructured.NestedBool(map[string]interface{}{"spot": spot}, "spot", "atRisk")
+		if stringField(spot, "eventID") != spec.EventID || stringField(spot, "instanceID") != instanceID || !atRisk || !validSpotSignalType(stringField(spot, "signalType")) {
+			return fmt.Errorf("old NodeProvision eventID, instanceID, atRisk, and signalType evidence required")
+		}
+		if spec.EmergencyEventID != "" && stringField(spot, "eventID") != spec.EmergencyEventID {
+			return fmt.Errorf("old NodeProvision eventID, instanceID, atRisk, and signalType evidence required")
+		}
 	}
 	nodeName := firstString(np.Object, [][]string{{"status", "nodeName"}, {"spec", "nodeName"}, {"spec", "hostname"}})
 	if nodeName == "" || !restore.SourceNodes[nodeName] {
@@ -545,8 +590,8 @@ func verifyReplacementReady(np *unstructured.Unstructured, spec recoverySpec) er
 	if np.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
 		return fmt.Errorf("replacement NodeProvision policy uid mismatch")
 	}
-	if market := stringField(np.Object, "spec", "marketType"); market != "OnDemand" {
-		return fmt.Errorf("replacement NodeProvision marketType must be OnDemand")
+	if market := stringField(np.Object, "spec", "marketType"); market != spec.DesiredMarketType {
+		return fmt.Errorf("replacement NodeProvision marketType must be %s", spec.DesiredMarketType)
 	}
 	if phase := stringField(np.Object, "status", "phase"); phase != "Ready" {
 		return fmt.Errorf("replacement NodeProvision is not Ready")

@@ -182,6 +182,78 @@ func TestCapacityGateFixedTargetChangeKeepsHistoricalBaselineAcrossReconciles(t 
 	}
 }
 
+func TestCapacityLifecycleCreatesOnDemandToSpotReplacementOperation(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := policyFixtureForCapacity(now, 1)
+	policy.Object["spec"].(map[string]interface{})["replacement"] = map[string]interface{}{"enabled": true}
+	runtimeObj := runtimeFixtureWithPods(now, []interface{}{
+		map[string]interface{}{"name": "trainer-0", "uid": "survivor-pod-uid", "rank": int64(0), "nodeName": "survivor-node"},
+		map[string]interface{}{"name": "trainer-1", "uid": "target-pod-uid", "rank": int64(1), "nodeName": "train-worker-00"},
+	})
+	oldNP := trainingpolicy.NewObject("NodeProvision")
+	oldNP.SetNamespace("default")
+	oldNP.SetName("train-worker-00")
+	oldNP.SetUID(types.UID("old-worker-uid"))
+	oldNP.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "worker"})
+	oldNP.Object["spec"] = map[string]interface{}{"marketType": "OnDemand", "hostname": "train-worker-00"}
+	oldNP.Object["status"] = map[string]interface{}{"nodeName": "train-worker-00", "instanceId": "i-old"}
+	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, workloadFixture("workload-uid"), oldNP)
+	input := trainingpolicy.ReadPolicySpec(policy)
+	decision := trainingpolicy.Decision{DesiredWorkers: 1, OnDemandWorkers: 0}
+
+	capacity, err := reconciler.checkCapacityLifecycle(context.Background(), policy, input, decision)
+	if err != nil {
+		t.Fatalf("checkCapacityLifecycle: %v", err)
+	}
+	if !capacity.ReplacementRequired || capacity.OperationName == "" || capacity.ReplacementName == "" {
+		t.Fatalf("capacity decision = %#v, want replacement operation", capacity)
+	}
+	op := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: capacity.OperationName}, op); err != nil {
+		t.Fatalf("automatic SpotReplacement: %v", err)
+	}
+	if desired := stringField(op.Object, "spec", "desiredMarketType"); desired != "Spot" {
+		t.Fatalf("desiredMarketType = %q, want Spot", desired)
+	}
+	if oldUID := stringField(op.Object, "spec", "oldNodeProvisionRef", "uid"); oldUID != "old-worker-uid" {
+		t.Fatalf("old uid = %q, want old-worker-uid", oldUID)
+	}
+}
+
+func TestCompletedReplacementSuccessorsFollowsLatestReplacementChain(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := policyFixtureForCapacity(now, 1)
+	first := spotRecoveryFixture("first", "policy-uid", "train-worker-00", "old-worker-uid", "Completed")
+	first.Object["spec"].(map[string]interface{})["replacementNodeProvisionRef"] = map[string]interface{}{"name": "train-worker-00-old-worker-u-replacement", "uid": "first-uid"}
+	second := spotRecoveryFixture("second", "policy-uid", "train-worker-00-old-worker-u-replacement", "first-uid", "Completed")
+	second.Object["spec"].(map[string]interface{})["replacementNodeProvisionRef"] = map[string]interface{}{"name": "train-worker-00-first-uid-replacement", "uid": "second-uid"}
+	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, first, second)
+
+	successors, err := reconciler.completedReplacementSuccessors(context.Background(), trainingpolicy.ReadPolicySpec(policy))
+	if err != nil {
+		t.Fatalf("completedReplacementSuccessors: %v", err)
+	}
+	if got := successors["train-worker-00"]; got != "train-worker-00-first-uid-replacement" {
+		t.Fatalf("successor = %q, want latest replacement", got)
+	}
+	if len(successors) != 1 {
+		t.Fatalf("intermediate replacements must not become logical slots: %v", successors)
+	}
+}
+
+func TestCompletedReplacementSuccessorsRejectsRecreatedIntermediate(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := policyFixtureForCapacity(now, 1)
+	first := spotRecoveryFixture("first", "policy-uid", "train-worker-00", "old", "Completed")
+	first.Object["spec"].(map[string]interface{})["replacementNodeProvisionRef"] = map[string]interface{}{"name": "middle", "uid": "original-middle"}
+	second := spotRecoveryFixture("second", "policy-uid", "middle", "recreated-middle", "Completed")
+	second.Object["spec"].(map[string]interface{})["replacementNodeProvisionRef"] = map[string]interface{}{"name": "last", "uid": "last-uid"}
+	r := policyReconcilerFixture(t, func() time.Time { return now }, policy, first, second)
+	if _, err := r.completedReplacementSuccessors(context.Background(), trainingpolicy.ReadPolicySpec(policy)); err == nil || !strings.Contains(err.Error(), "UID discontinuity") {
+		t.Fatalf("expected UID discontinuity rejection, got %v", err)
+	}
+}
+
 func TestNewNodeProvisionUsesGPUCapacityTemplate(t *testing.T) {
 	input := trainingpolicy.PolicyInput{
 		Namespace:  "default",

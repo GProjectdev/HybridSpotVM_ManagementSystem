@@ -41,6 +41,7 @@ type replacementSpec struct {
 	OldNodeProvisionUID          string
 	ReplacementNodeProvisionName string
 	DesiredMarketType            string
+	EmergencyEventID             string
 	TargetRanks                  []int64
 	Pods                         []interface{}
 	PreservedSurvivors           []interface{}
@@ -187,21 +188,28 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err != nil {
 		return "Pending", err
 	}
+	var migration *unstructured.Unstructured
+	if spec.EmergencyEventID != "" {
+		migration, _, err = r.ensureReplacementPartialCheckpoint(ctx, op.GetNamespace(), spec)
+		if err != nil {
+			return replacementPhaseAwaitingPartialCheckpoint, err
+		}
+	}
 	if created {
 		return replacementPhaseAwaitingReplacementReady, nil
 	}
 	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
 		return replacementPhaseAwaitingReplacementReady, err
 	}
-	if err := r.waitForExistingCheckpointsTerminal(ctx, op.GetNamespace(), spec); err != nil {
-		return replacementPhaseAwaitingPartialCheckpoint, err
-	}
-	migration, created, err := r.ensurePartialCheckpoint(ctx, op.GetNamespace(), spec)
-	if err != nil {
-		return replacementPhaseAwaitingPartialCheckpoint, err
-	}
-	if created {
-		return replacementPhaseAwaitingPartialCheckpoint, nil
+	if migration == nil {
+		var checkpointCreated bool
+		migration, checkpointCreated, err = r.ensureReplacementPartialCheckpoint(ctx, op.GetNamespace(), spec)
+		if err != nil {
+			return replacementPhaseAwaitingPartialCheckpoint, err
+		}
+		if checkpointCreated {
+			return replacementPhaseAwaitingPartialCheckpoint, nil
+		}
 	}
 	if err := verifyPartialCheckpointEvidence(migration, spec); err != nil {
 		return replacementPhaseAwaitingPartialCheckpoint, err
@@ -276,6 +284,7 @@ func readReplacementSpec(op *unstructured.Unstructured) (replacementSpec, error)
 		OldNodeProvisionUID:          stringField(op.Object, "spec", "oldNodeProvisionRef", "uid"),
 		ReplacementNodeProvisionName: stringField(op.Object, "spec", "replacementNodeProvisionRef", "name"),
 		DesiredMarketType:            stringField(op.Object, "spec", "desiredMarketType"),
+		EmergencyEventID:             op.GetAnnotations()["training.dcnlab.com/emergency-event-id"],
 	}
 	rawRanks, ok, _ := unstructured.NestedSlice(op.Object, "spec", "partialCheckpoint", "targetRanks")
 	if ok {
@@ -302,8 +311,8 @@ func readReplacementSpec(op *unstructured.Unstructured) (replacementSpec, error)
 	if spec.OldNodeProvisionName == spec.ReplacementNodeProvisionName {
 		return spec, fmt.Errorf("old and replacement NodeProvision names must differ")
 	}
-	if spec.DesiredMarketType != "OnDemand" {
-		return spec, fmt.Errorf("desiredMarketType must be OnDemand")
+	if !validReplacementMarket(spec.DesiredMarketType) {
+		return spec, fmt.Errorf("desiredMarketType must be Spot or OnDemand")
 	}
 	if !boolField(op.Object, "spec", "partialRestore", "preventPeriodicResume") {
 		return spec, fmt.Errorf("partialRestore.preventPeriodicResume=true is required")
@@ -366,6 +375,12 @@ func (r *ReplacementReconciler) verifyReplacementPolicy(ctx context.Context, ns 
 }
 
 func verifyReplacementOldNode(oldNP *unstructured.Unstructured, spec replacementSpec) error {
+	if _, requested, _ := unstructured.NestedMap(oldNP.Object, "spec", "fence"); requested {
+		return fmt.Errorf("partial replacement cannot use an infrastructure-fenced source")
+	}
+	if _, recorded, _ := unstructured.NestedMap(oldNP.Object, "status", "fence"); recorded {
+		return fmt.Errorf("partial replacement cannot use a source with infrastructure fence evidence")
+	}
 	if !oldNP.GetDeletionTimestamp().IsZero() {
 		return fmt.Errorf("old NodeProvision is deleting")
 	}
@@ -375,8 +390,22 @@ func verifyReplacementOldNode(oldNP *unstructured.Unstructured, spec replacement
 	if oldNP.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
 		return fmt.Errorf("old NodeProvision policy uid mismatch")
 	}
-	if market := stringField(oldNP.Object, "spec", "marketType"); market != "Spot" {
-		return fmt.Errorf("old NodeProvision marketType must be Spot")
+	if market := stringField(oldNP.Object, "spec", "marketType"); !validReplacementMarket(market) || market == spec.DesiredMarketType {
+		return fmt.Errorf("old NodeProvision marketType must be Spot/OnDemand and differ from desiredMarketType")
+	}
+	if spec.EmergencyEventID != "" {
+		if spec.DesiredMarketType != "OnDemand" || stringField(oldNP.Object, "spec", "marketType") != "Spot" {
+			return fmt.Errorf("emergency replacement requires Spot to OnDemand replacement")
+		}
+		if spec.Operation != replacementOperationName(spec.OldNodeProvisionName, spec.OldNodeProvisionUID) {
+			return fmt.Errorf("emergency replacement operation must be UID-bound to old NodeProvision")
+		}
+		instanceID := stringField(oldNP.Object, "status", "instanceId")
+		spot, ok, _ := unstructured.NestedMap(oldNP.Object, "status", "spot")
+		atRisk, _, _ := unstructured.NestedBool(map[string]interface{}{"spot": spot}, "spot", "atRisk")
+		if !ok || instanceID == "" || stringField(spot, "eventID") != spec.EmergencyEventID || stringField(spot, "instanceID") != instanceID || !atRisk || !validSpotSignalType(stringField(spot, "signalType")) {
+			return fmt.Errorf("emergency replacement requires old NodeProvision status.spot event evidence matching annotation")
+		}
 	}
 	return nil
 }
@@ -416,7 +445,7 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 		return nil, false, fmt.Errorf("old NodeProvision spec required")
 	}
 	newSpec := deepCopyMap(sourceSpec)
-	newSpec["marketType"] = "OnDemand"
+	newSpec["marketType"] = spec.DesiredMarketType
 	newSpec["hostname"] = spec.ReplacementNodeProvisionName
 	desired.Object["spec"] = newSpec
 	if err := r.Create(ctx, desired); err != nil {
@@ -430,8 +459,8 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 }
 
 func verifyReplacementReadyForOperation(replacement *unstructured.Unstructured, spec replacementSpec) error {
-	if stringField(replacement.Object, "spec", "marketType") != "OnDemand" {
-		return fmt.Errorf("replacement NodeProvision marketType must be OnDemand")
+	if stringField(replacement.Object, "spec", "marketType") != spec.DesiredMarketType {
+		return fmt.Errorf("replacement NodeProvision marketType must be %s", spec.DesiredMarketType)
 	}
 	if string(replacement.GetUID()) == spec.OldNodeProvisionUID {
 		return fmt.Errorf("replacement NodeProvision uid must differ from old uid")
@@ -446,6 +475,13 @@ func verifyReplacementReadyForOperation(replacement *unstructured.Unstructured, 
 		return fmt.Errorf("replacement NodeProvision operation mismatch")
 	}
 	return nil
+}
+
+func (r *ReplacementReconciler) ensureReplacementPartialCheckpoint(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, bool, error) {
+	if err := r.waitForExistingCheckpointsTerminal(ctx, ns, spec); err != nil {
+		return nil, false, err
+	}
+	return r.ensurePartialCheckpoint(ctx, ns, spec)
 }
 
 func (r *ReplacementReconciler) ensurePartialCheckpoint(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, bool, error) {
@@ -775,6 +811,9 @@ func replacementRecoverySpec(spec replacementSpec, runtimeObj, restore, migratio
 		RequestUID:                   string(restore.GetUID()),
 		CheckpointID:                 migration.GetAnnotations()["training.dcnlab.com/checkpoint-id"],
 		EventID:                      stringField(oldNP.Object, "status", "spot", "eventID"),
+		EmergencyEventID:             spec.EmergencyEventID,
+		OldMarketType:                stringField(oldNP.Object, "spec", "marketType"),
+		DesiredMarketType:            spec.DesiredMarketType,
 		Operation:                    spec.Operation,
 		SourceCluster:                spec.SourceCluster,
 		TargetCluster:                spec.TargetCluster,
@@ -813,7 +852,7 @@ func (r *ReplacementReconciler) ensureSpotRecovery(ctx context.Context, ns strin
 		trainingpolicy.LabelPolicyUID: spec.PolicyUID,
 		trainingpolicy.LabelRole:      "replacement-cleanup",
 	})
-	desired.Object["spec"] = map[string]interface{}{
+	desiredSpec := map[string]interface{}{
 		"policyRef":                   map[string]interface{}{"name": spec.PolicyName, "uid": spec.PolicyUID, "generation": spec.PolicyGeneration},
 		"requestUID":                  spec.RequestUID,
 		"operation":                   spec.Operation,
@@ -822,11 +861,19 @@ func (r *ReplacementReconciler) ensureSpotRecovery(ctx context.Context, ns strin
 		"workloadRef":                 map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": replacement.WorkloadName, "uid": spec.WorkloadUID},
 		"trainingRuntimeRef":          map[string]interface{}{"name": spec.TrainingRuntimeName, "uid": spec.TrainingRuntimeUID},
 		"checkpointID":                spec.CheckpointID,
-		"eventID":                     spec.EventID,
+		"oldMarketType":               spec.OldMarketType,
+		"desiredMarketType":           spec.DesiredMarketType,
 		"restoreRequestRef":           map[string]interface{}{"name": spec.RestoreRequestName, "uid": spec.RestoreRequestUID, "generation": spec.RestoreRequestGeneration},
 		"oldNodeProvisionRef":         map[string]interface{}{"name": spec.OldNodeProvisionName, "uid": spec.OldNodeProvisionUID},
 		"replacementNodeProvisionRef": map[string]interface{}{"name": spec.ReplacementNodeProvisionName, "uid": spec.ReplacementNodeProvisionUID},
 	}
+	if spec.EventID != "" {
+		desiredSpec["eventID"] = spec.EventID
+	}
+	if spec.EmergencyEventID != "" {
+		desiredSpec["emergencyEventID"] = spec.EmergencyEventID
+	}
+	desired.Object["spec"] = desiredSpec
 	if err := r.Create(ctx, desired); err != nil {
 		return nil, false, err
 	}

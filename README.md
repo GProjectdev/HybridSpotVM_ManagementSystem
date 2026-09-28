@@ -4,6 +4,8 @@ Automatic RB-based policy enrollment and upgrade guide: [Automatic StatefulSet d
 
 Coordinated controller/runtime upgrade: [Build and validation order](docs/integrated-upgrade-validation.md).
 Partial replacement safety contract: [SpotReplacement](docs/spot-replacement-contract.md).
+Implemented paths, remaining gaps and rollout: [Restore automation validation](docs/restore-automation-validation.md).
+Image/package deployment order: [Restore integration release checklist](docs/restore-release-checklist.md).
 
 고정된 DDP Worker 수를 유지하면서 Spot/On-Demand 구성을 선택하고, 시간 기반 Checkpoint를 요청하는 Kubernetes Controller 모음입니다. MGMT의 Controller는 Karmada API를 사용합니다.
 

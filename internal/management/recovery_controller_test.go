@@ -28,7 +28,7 @@ func TestRecoveryFailsClosedWithoutExtendedDeletionContract(t *testing.T) {
 	if phase != "Rejected" {
 		t.Fatalf("phase = %q, want Rejected", phase)
 	}
-	if !strings.Contains(err.Error(), "eventID") {
+	if !strings.Contains(err.Error(), "trainingRuntimeRef") {
 		t.Fatalf("error = %v, want missing extended contract", err)
 	}
 }
@@ -106,6 +106,54 @@ func TestRecoveryAllowsSameClusterReplacementWithPartialAndSurvivorEvidence(t *t
 	phase, err := reconciler.recover(context.Background(), r)
 	if err == nil || phase != phaseCleanupRequested {
 		t.Fatalf("recover phase/error = %q/%v, want CleanupRequested", phase, err)
+	}
+}
+
+func TestRecoveryAllowsPlannedSameClusterSpotReplacementWithoutEmergencyRIC(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	spec := r.Object["spec"].(map[string]interface{})
+	spec["targetCluster"] = "aws"
+	delete(spec, "eventID")
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	addSameClusterRestoreEvidence(restore)
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+
+	reconciler := recoveryReconciler(t, r, restore, operation, policy, runtimeObj, oldNP, replacement)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != phaseCleanupRequested {
+		t.Fatalf("recover phase/error = %q/%v, want planned CleanupRequested without emergency RIC", phase, err)
+	}
+}
+
+func TestRecoveryRejectsEmergencyAnnotationStrippedFromCleanupSpec(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	r.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	addSameClusterRestoreEvidence(restore)
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	operation.SetAnnotations(map[string]string{annotationEmergencyEventID: "event-1"})
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	setAtRiskSpot(oldNP)
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+
+	reconciler := recoveryReconciler(t, r, restore, operation, policy, runtimeObj, oldNP, replacement)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != "Rejected" || !strings.Contains(err.Error(), "emergencyEventID") {
+		t.Fatalf("recover phase/error = %q/%v, want emergency annotation mismatch rejection", phase, err)
 	}
 }
 
@@ -279,9 +327,66 @@ func addFullRecoverySpec(obj *unstructured.Unstructured) {
 	spec["sourceCluster"] = "aws"
 	spec["targetCluster"] = "onprem"
 	spec["trainingRuntimeRef"] = map[string]interface{}{"name": "runtime", "uid": "runtime-uid"}
+	spec["oldMarketType"] = "Spot"
+	spec["desiredMarketType"] = "OnDemand"
 	spec["oldNodeProvisionRef"] = map[string]interface{}{"name": "old", "uid": "old-uid"}
 	spec["replacementNodeProvisionRef"] = map[string]interface{}{"name": "new", "uid": "new-uid"}
 	obj.Object["status"] = map[string]interface{}{}
+}
+
+func TestRecoveryAllowsOnDemandOldNodeWithoutSpotRICEvidence(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	spec := r.Object["spec"].(map[string]interface{})
+	spec["targetCluster"] = "aws"
+	spec["oldMarketType"] = "OnDemand"
+	spec["desiredMarketType"] = "Spot"
+	delete(spec, "eventID")
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	addSameClusterRestoreEvidence(restore)
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["marketType"] = "OnDemand"
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+	replacement.Object["spec"].(map[string]interface{})["marketType"] = "Spot"
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	operation.Object["spec"].(map[string]interface{})["desiredMarketType"] = "Spot"
+
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, operation)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != phaseCleanupRequested {
+		t.Fatalf("recover phase/error = %q/%v, want CleanupRequested without Spot RIC", phase, err)
+	}
+}
+
+func TestRecoveryRejectsOnDemandOldNodeOutsideSameClusterReplacement(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	spec := r.Object["spec"].(map[string]interface{})
+	spec["oldMarketType"] = "OnDemand"
+	spec["desiredMarketType"] = "Spot"
+	spec["eventID"] = "planned-od"
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["marketType"] = "OnDemand"
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+	replacement.Object["spec"].(map[string]interface{})["marketType"] = "Spot"
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["desiredMarketType"] = "Spot"
+
+	reconciler := recoveryReconciler(t, r, restore, policy, runtimeObj, oldNP, replacement, operation)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != "Pending" || !strings.Contains(err.Error(), "same-cluster replacement") {
+		t.Fatalf("recover phase/error = %q/%v, want same-cluster replacement rejection", phase, err)
+	}
 }
 
 func spotReplacement() *unstructured.Unstructured {

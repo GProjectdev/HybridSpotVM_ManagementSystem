@@ -357,6 +357,9 @@ func mapPolicies(c client.Client, kind string) handler.MapFunc {
 		var out []reconcile.Request
 		for _, item := range list.Items {
 			match := kind == "binding" || (kind == "risk" && stringField(item.Object, "spec", "riskProfileRef", "name") == obj.GetName()) || (kind == "runtime" && stringField(item.Object, "spec", "runtimeRef", "name") == obj.GetName())
+			if kind == "node" || kind == "replacement" {
+				match = item.GetUID() != "" && obj.GetLabels()[p.LabelPolicyUID] == string(item.GetUID())
+			}
 			if match {
 				out = append(out, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
 			}

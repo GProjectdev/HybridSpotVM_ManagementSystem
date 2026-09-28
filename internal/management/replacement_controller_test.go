@@ -44,6 +44,111 @@ func TestReplacementReconcileCreatesOnDemandCapacityOnlyForExplicitOperation(t *
 	}
 }
 
+func TestReplacementReconcileCreatesSpotCapacityForOnDemandSource(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	op := replacementOperationFixture()
+	op.Object["spec"].(map[string]interface{})["desiredMarketType"] = "Spot"
+	oldNP := replacementOldNodeProvisionFixture()
+	oldNP.Object["spec"].(map[string]interface{})["marketType"] = "OnDemand"
+	delete(oldNP.Object["status"].(map[string]interface{}), "spot")
+	reconciler := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), oldNP)
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
+		t.Fatalf("replacement reconcile: %v", err)
+	}
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "new"}, replacement); err != nil {
+		t.Fatalf("replacement NodeProvision: %v", err)
+	}
+	if market := stringField(replacement.Object, "spec", "marketType"); market != "Spot" {
+		t.Fatalf("marketType = %q, want Spot", market)
+	}
+}
+
+func TestPartialReplacementRejectsInfrastructureFencedSource(t *testing.T) {
+	for _, field := range []string{"spec", "status"} {
+		t.Run(field, func(t *testing.T) {
+			now := mustParseTime(t, "2026-09-26T00:00:00Z")
+			op := replacementOperationFixture()
+			old := replacementOldNodeProvisionFixture()
+			_ = unstructured.SetNestedMap(old.Object, map[string]interface{}{"operationUID": "another-operation", "instanceID": "i-old"}, field, "fence")
+			r := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), old)
+			if _, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(op)}); err != nil {
+				t.Fatal(err)
+			}
+			if err := r.Get(context.Background(), client.ObjectKeyFromObject(op), op); err != nil {
+				t.Fatal(err)
+			}
+			if stringField(op.Object, "status", "phase") != "Rejected" {
+				t.Fatal("partial recovery must not continue after infrastructure fencing")
+			}
+			nodes := trainingpolicy.NewList("NodeProvision")
+			if err := r.List(context.Background(), nodes); err != nil || len(nodes.Items) != 1 {
+				t.Fatalf("unexpected replacement capacity: %v, nodes=%d", err, len(nodes.Items))
+			}
+		})
+	}
+}
+
+func TestReplacementEmergencyCreatesPartialCheckpointBeforeReplacementReady(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	op := replacementOperationFixture()
+	op.SetName(replacementOperationName("old", "old-uid"))
+	op.Object["spec"].(map[string]interface{})["operation"] = op.GetName()
+	op.SetAnnotations(map[string]string{"training.dcnlab.com/emergency-event-id": "event-1"})
+	oldNP := replacementOldNodeProvisionFixture()
+	setEmergencyReplacementSpotEvidence(oldNP, "event-1")
+	reconciler := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), oldNP)
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: op.GetName()}}); err != nil {
+		t.Fatalf("replacement reconcile: %v", err)
+	}
+	migration := trainingpolicy.NewObject("FluidCRMigration")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName() + "-partial-checkpoint"}, migration); err != nil {
+		t.Fatalf("emergency partial checkpoint: %v", err)
+	}
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "new"}, replacement); err != nil {
+		t.Fatalf("replacement NodeProvision: %v", err)
+	}
+	updated := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName()}, updated); err != nil {
+		t.Fatalf("get operation: %v", err)
+	}
+	if phase := stringField(updated.Object, "status", "phase"); phase != replacementPhaseAwaitingReplacementReady {
+		t.Fatalf("phase = %q, want AwaitingReplacementReady", phase)
+	}
+}
+
+func TestReplacementEmergencyRejectsAnnotationEventSpoof(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	op := replacementOperationFixture()
+	op.SetName(replacementOperationName("old", "old-uid"))
+	op.Object["spec"].(map[string]interface{})["operation"] = op.GetName()
+	op.SetAnnotations(map[string]string{"training.dcnlab.com/emergency-event-id": "spoof"})
+	oldNP := replacementOldNodeProvisionFixture()
+	setEmergencyReplacementSpotEvidence(oldNP, "event-1")
+	reconciler := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), oldNP)
+
+	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: op.GetName()}}); err != nil {
+		t.Fatalf("replacement reconcile: %v", err)
+	}
+	updated := newSpotReplacementObject()
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName()}, updated); err != nil {
+		t.Fatalf("get operation: %v", err)
+	}
+	if phase := stringField(updated.Object, "status", "phase"); phase != "Rejected" {
+		t.Fatalf("phase = %q, want Rejected", phase)
+	}
+	if msg := stringField(updated.Object, "status", "message"); !strings.Contains(msg, "matching annotation") {
+		t.Fatalf("message = %q, want annotation mismatch rejection", msg)
+	}
+	migration := trainingpolicy.NewObject("FluidCRMigration")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName() + "-partial-checkpoint"}, migration); err == nil {
+		t.Fatal("partial checkpoint created for spoofed emergency annotation")
+	}
+}
+
 func TestReplacementWaitsForExistingFullCheckpointBeforePartial(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	op := replacementOperationFixture()
@@ -148,6 +253,12 @@ func TestReplacementPhaseSequenceProducesRestoreAndCompletesAfterOldNodeDeletion
 	recovery := trainingpolicy.NewObject("SpotRecovery")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old-replace-cleanup"}, recovery); err != nil {
 		t.Fatalf("spot recovery cleanup: %v", err)
+	}
+	if oldMarket := stringField(recovery.Object, "spec", "oldMarketType"); oldMarket != "Spot" {
+		t.Fatalf("cleanup oldMarketType = %q, want Spot", oldMarket)
+	}
+	if desiredMarket := stringField(recovery.Object, "spec", "desiredMarketType"); desiredMarket != "OnDemand" {
+		t.Fatalf("cleanup desiredMarketType = %q, want OnDemand", desiredMarket)
 	}
 	if err := reconciler.Delete(context.Background(), oldNP); err != nil {
 		t.Fatalf("delete old fixture node: %v", err)
@@ -339,6 +450,24 @@ func TestReplacementReconcileRejectsRankZeroBeforeCapacity(t *testing.T) {
 	}
 }
 
+func TestReplacementCleanupOmitsAbsentEventID(t *testing.T) {
+	for _, eventID := range []string{"", "notice-1"} {
+		t.Run("event-"+eventID, func(t *testing.T) {
+			r := replacementReconcilerFixture(t, time.Now())
+			obj, created, err := r.ensureSpotRecovery(context.Background(), "default", replacementSpec{}, recoverySpec{
+				Operation: "replacement", EventID: eventID,
+			})
+			if err != nil || !created {
+				t.Fatalf("create cleanup: created=%v err=%v", created, err)
+			}
+			value, found, err := unstructured.NestedString(obj.Object, "spec", "eventID")
+			if err != nil || value != eventID || found != (eventID != "") {
+				t.Fatalf("eventID=%q present=%v err=%v; empty eventID violates CRD minLength", value, found, err)
+			}
+		})
+	}
+}
+
 func replacementReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *ReplacementReconciler {
 	t.Helper()
 	scheme := runtime.NewScheme()
@@ -399,6 +528,19 @@ func replacementOldNodeProvisionFixture() *unstructured.Unstructured {
 	np.Object["spec"] = map[string]interface{}{"marketType": "Spot", "hostname": "old", "instanceType": "m5.large"}
 	np.Object["status"] = map[string]interface{}{"spot": map[string]interface{}{"eventID": "event-1"}}
 	return np
+}
+
+func setEmergencyReplacementSpotEvidence(np *unstructured.Unstructured, eventID string) {
+	np.Object["status"] = map[string]interface{}{
+		"instanceId": "i-old",
+		"nodeName":   "old-node",
+		"spot": map[string]interface{}{
+			"atRisk":     true,
+			"signalType": "InterruptionNotice",
+			"eventID":    eventID,
+			"instanceID": "i-old",
+		},
+	}
 }
 
 func replacementReadyNodeProvisionFixture() *unstructured.Unstructured {

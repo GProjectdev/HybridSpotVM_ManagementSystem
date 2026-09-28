@@ -83,7 +83,7 @@ spec:
                   name: {type: string, minLength: 1, maxLength: 253}
               desiredMarketType:
                 type: string
-                enum: [OnDemand]
+                enum: [OnDemand, Spot]
               partialCheckpoint:
                 type: object
                 required: [targetRanks]

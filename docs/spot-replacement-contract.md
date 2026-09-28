@@ -1,10 +1,10 @@
-# Spot to On-Demand replacement contract
+# Same-cluster market replacement contract
 
 System management owns only Karmada-visible orchestration. It never calls a member
 process API directly and never treats a boolean as proof that a rank was stopped.
 
-When a generated policy slot is currently `Spot` but the policy decision requires
-`OnDemand`, PolicyManager stays fail-closed by default. It records
+When a generated policy slot's market differs from the policy decision
+(`Spot` or `OnDemand`), PolicyManager stays fail-closed by default. It records
 `status.policy.reason=replacement_required`, `replacementOperation`, and
 `replacementNodeProvision`, but it does not create replacement capacity or
 checkpoint objects. Replacement orchestration starts automatically only when the
@@ -22,14 +22,20 @@ old NodeProvision UID to prevent replay or slot-name collision.
 For an accepted operation, SpotRecoveryController's replacement reconciler
 creates:
 
-- Replacement `NodeProvision` named `<old-nodeprovision>-replacement` with
-  `spec.marketType=OnDemand`.
+- Replacement `NodeProvision` with a bounded old-name/UID-derived name and
+  `spec.marketType` matching the operation's desired market.
 - A Karmada `PropagationPolicy` for the replacement node.
 - After the replacement NodeProvision is Ready with instance evidence, a
   replacement `FluidCRMigration` with `spec.resume=false` and
   `spec.partialCheckpoint.targetRanks[]` only.
 
-`SpotReplacement.spec.oldNodeProvisionRef.{name,uid}` binds the old Spot slot.
+For an interruption/rebalance event with replacement enabled, the checkpoint
+coordinator creates a UID-bound emergency operation targeting OnDemand.
+Emergency operations request the partial checkpoint immediately after capacity
+creation rather than waiting for node readiness. An existing checkpoint must
+still finish first. Event handling is independent of periodic-checkpoint dedupe.
+
+`SpotReplacement.spec.oldNodeProvisionRef.{name,uid}` binds the old worker.
 `SpotReplacement.status.replacementNodeProvisionRef.{name,uid}` records the
 replacement UID after creation. The replacement NodeProvision carries
 `training.dcnlab.com/recovery-operation=<operation>`.
@@ -60,7 +66,7 @@ used:
 - Current TrainingPolicy and TrainingRuntime UID/generation checks.
 - Current SpotReplacement typed partial checkpoint/restore contract.
 - Replacement NodeProvision UID match, Ready phase, instance evidence, operation
-  annotation match, and `spec.marketType=OnDemand`.
+  annotation match, and the operation's desired market.
 - RestoreRequest `status.phase=Verified` with matching request, checkpoint,
   workload, source, target, operation, and runtime evidence.
 - `status.verification.sourceFence` object with actuator fence evidence ID and
@@ -70,6 +76,15 @@ used:
   `partialRestore.targetRanks[]` with target pod UID, checkpoint ID, archive
   `durableRef` and `sha256`, plus `survivors[]` with rank, preserved pod UID, and state
   evidence such as `SurvivorPaused`/pause-lock state.
+
+Planned market replacement does not require an AWS interruption notice.
+Emergency cleanup additionally requires the operation-bound event and instance
+signal. Both paths retain the same Verified restore and source-fence gates.
+Completed successor chains preserve the original policy slot across repeated
+market changes; original slot names are not recreated.
+
+See [validation and remaining gaps](restore-automation-validation.md) before
+claiming cross-cluster or whole-group recovery support.
 
 Unsupported automation is intentionally not faked. If Stateful/FluidCR do not
 publish the fence, partial-rank checkpoint/archive, target readiness, and survivor

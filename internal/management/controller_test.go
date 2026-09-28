@@ -160,7 +160,7 @@ func TestPolicyReconcileReportsReplacementRequiredWithoutSideEffects(t *testing.
 		t.Fatalf("policy reconcile: %v", err)
 	}
 	replacement := trainingpolicy.NewObject("NodeProvision")
-	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00-replacement"}, replacement); err == nil {
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00-old-node-uid-replacement"}, replacement); err == nil {
 		t.Fatal("policy reconcile created replacement NodeProvision without explicit SpotReplacement opt-in")
 	}
 	operation := newSpotReplacementObject()
@@ -177,8 +177,8 @@ func TestPolicyReconcileReportsReplacementRequiredWithoutSideEffects(t *testing.
 	if op := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "replacementOperation"); op != "train-worker-00-old-node-uid-replace" {
 		t.Fatalf("replacement operation = %q, want train-worker-00-old-node-uid-replace", op)
 	}
-	if name := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "replacementNodeProvision"); name != "train-worker-00-replacement" {
-		t.Fatalf("replacement node provision = %q, want train-worker-00-replacement", name)
+	if name := stringField(updated.Object, "status", trainingpolicy.StatusPolicyPath, "replacementNodeProvision"); name != "train-worker-00-old-node-uid-replacement" {
+		t.Fatalf("replacement node provision = %q, want train-worker-00-old-node-uid-replacement", name)
 	}
 }
 

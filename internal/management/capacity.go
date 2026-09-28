@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -79,18 +80,18 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 			result.Reason = "replacement_required"
 			result.ReplacementRequired = true
 			result.OperationName = replacementOperationName(existing.GetName(), oldUID)
-			result.ReplacementName = replacementNodeProvisionName(existing.GetName())
+			result.ReplacementName = replacementNodeProvisionName(existing.GetName(), oldUID)
 			if boolField(policyObj.Object, "spec", "replacement", "enabled") {
-				created, err := r.ensureAutomaticSpotReplacement(ctx, policyObj, input, existing, result.OperationName, result.ReplacementName)
+				created, err := r.ensureAutomaticSpotReplacement(ctx, policyObj, input, existing, result.OperationName, result.ReplacementName, desiredMarket, "")
 				if err != nil {
 					result.Reason = "replacement_unsupported"
 					result.Message = err.Error()
 					return result, nil
 				}
 				if created {
-					result.Message = fmt.Sprintf("created UID-bound SpotReplacement %s for NodeProvision %s/%s uid=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID)
+					result.Message = fmt.Sprintf("created UID-bound SpotReplacement %s for NodeProvision %s/%s uid=%s desiredMarketType=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID, desiredMarket)
 				} else {
-					result.Message = fmt.Sprintf("UID-bound SpotReplacement %s exists for NodeProvision %s/%s uid=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID)
+					result.Message = fmt.Sprintf("UID-bound SpotReplacement %s exists for NodeProvision %s/%s uid=%s desiredMarketType=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID, desiredMarket)
 				}
 			} else {
 				result.Message = fmt.Sprintf("existing NodeProvision %s/%s uid=%s has immutable marketType=%s; desired=%s; replacement orchestration requires spec.replacement.enabled=true and an explicit UID-bound SpotReplacement", existing.GetNamespace(), existing.GetName(), oldUID, existingMarket, desiredMarket)
@@ -109,9 +110,13 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 	return result, nil
 }
 
-func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, policyObj *unstructured.Unstructured, input trainingpolicy.PolicyInput, oldNP *unstructured.Unstructured, operationName, replacementName string) (bool, error) {
+func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, policyObj *unstructured.Unstructured, input trainingpolicy.PolicyInput, oldNP *unstructured.Unstructured, operationName, replacementName, desiredMarketType, emergencyEventID string) (bool, error) {
 	if oldNP.GetUID() == "" {
 		return false, fmt.Errorf("replacement requires old NodeProvision UID evidence")
+	}
+	oldMarket := stringField(oldNP.Object, "spec", "marketType")
+	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarketType) || oldMarket == desiredMarketType {
+		return false, fmt.Errorf("replacement requires old and desired marketType to differ and be Spot/OnDemand")
 	}
 	pods, survivors, err := r.replacementRuntimeBaselines(ctx, input, oldNP)
 	if err != nil {
@@ -129,7 +134,7 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 	existing := newSpotReplacementObject()
 	err = r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: operationName}, existing)
 	if err == nil {
-		if stringField(existing.Object, "spec", "oldNodeProvisionRef", "uid") != string(oldNP.GetUID()) || stringField(existing.Object, "spec", "policyRef", "uid") != string(input.PolicyUID) {
+		if stringField(existing.Object, "spec", "oldNodeProvisionRef", "uid") != string(oldNP.GetUID()) || stringField(existing.Object, "spec", "policyRef", "uid") != string(input.PolicyUID) || stringField(existing.Object, "spec", "desiredMarketType") != desiredMarketType {
 			return false, fmt.Errorf("existing SpotReplacement %s collision does not match old NodeProvision/policy UID", operationName)
 		}
 		return false, nil
@@ -146,6 +151,9 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 		trainingpolicy.LabelPolicyUID: string(input.PolicyUID),
 		trainingpolicy.LabelRole:      "replacement-operation",
 	})
+	if emergencyEventID != "" {
+		op.SetAnnotations(map[string]string{"training.dcnlab.com/emergency-event-id": emergencyEventID})
+	}
 	op.Object["spec"] = map[string]interface{}{
 		"operation":                   operationName,
 		"policyRef":                   map[string]interface{}{"name": input.PolicyName, "uid": string(input.PolicyUID), "generation": input.Generation},
@@ -154,7 +162,7 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 		"targetCluster":               input.Capacity.AWSCluster,
 		"oldNodeProvisionRef":         map[string]interface{}{"name": oldNP.GetName(), "uid": string(oldNP.GetUID())},
 		"replacementNodeProvisionRef": map[string]interface{}{"name": replacementName},
-		"desiredMarketType":           "OnDemand",
+		"desiredMarketType":           desiredMarketType,
 		"partialCheckpoint":           map[string]interface{}{"targetRanks": targetRanks},
 		"pods":                        pods,
 		"partialRestore":              map[string]interface{}{"preventPeriodicResume": true, "targetRanks": targetRanks, "preservedSurvivors": survivors},
@@ -263,7 +271,9 @@ func (r *PolicyReconciler) retiredGeneratedSlots(ctx context.Context, input trai
 }
 
 func (r *PolicyReconciler) completedReplacementSuccessors(ctx context.Context, input trainingpolicy.PolicyInput) (map[string]string, error) {
-	successors := map[string]string{}
+	edges := map[string]string{}
+	oldUIDs := map[string]string{}
+	newUIDs := map[string]string{}
 	list := trainingpolicy.NewList("SpotRecovery")
 	if err := r.reader().List(ctx, list, client.InNamespace(input.Namespace)); err != nil {
 		return nil, fmt.Errorf("list SpotRecovery successors: %w", err)
@@ -280,13 +290,36 @@ func (r *PolicyReconciler) completedReplacementSuccessors(ctx context.Context, i
 		oldUID := stringField(item.Object, "spec", "oldNodeProvisionRef", "uid")
 		replacementName := stringField(item.Object, "spec", "replacementNodeProvisionRef", "name")
 		replacementUID := stringField(item.Object, "spec", "replacementNodeProvisionRef", "uid")
-		if oldName == "" || oldUID == "" || replacementName == "" || replacementUID == "" || !isGeneratedWorkerName(input, oldName) {
+		if oldName == "" || oldUID == "" || replacementName == "" || replacementUID == "" {
 			continue
 		}
-		if existing := successors[oldName]; existing != "" && existing != replacementName {
+		if existing := edges[oldName]; existing != "" && (existing != replacementName || oldUIDs[oldName] != oldUID || newUIDs[oldName] != replacementUID) {
 			return nil, fmt.Errorf("multiple replacement successors recorded for %s", oldName)
 		}
-		successors[oldName] = replacementName
+		edges[oldName] = replacementName
+		oldUIDs[oldName] = oldUID
+		newUIDs[oldName] = replacementUID
+	}
+	successors := map[string]string{}
+	for oldName := range edges {
+		if !isGeneratedWorkerName(input, oldName) {
+			continue
+		}
+		seen := map[string]bool{oldName: true}
+		leaf := oldName
+		for edges[leaf] != "" {
+			if next := edges[leaf]; edges[next] != "" && newUIDs[leaf] != oldUIDs[next] {
+				return nil, fmt.Errorf("replacement successor UID discontinuity at %s", next)
+			}
+			leaf = edges[leaf]
+			if seen[leaf] {
+				return nil, fmt.Errorf("replacement successor cycle recorded for %s", oldName)
+			}
+			seen[leaf] = true
+		}
+		if leaf != oldName {
+			successors[oldName] = leaf
+		}
 	}
 	return successors, nil
 }
@@ -315,7 +348,12 @@ func applyCapacityStatus(status map[string]interface{}, capacity capacityDecisio
 }
 
 func isGeneratedWorkerName(input trainingpolicy.PolicyInput, name string) bool {
-	return strings.HasPrefix(name, fmt.Sprintf("%s-worker-", input.PolicyName))
+	prefix := input.PolicyName + "-worker-"
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+	ordinal, err := strconv.ParseInt(strings.TrimPrefix(name, prefix), 10, 64)
+	return err == nil && ordinal >= 0 && name == fmt.Sprintf("%s%02d", prefix, ordinal)
 }
 
 func firstMapKey(values map[string]bool) string {

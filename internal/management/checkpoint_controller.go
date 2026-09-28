@@ -46,6 +46,22 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 	if inflight {
+		if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, inflightObj, input.SourceCluster)); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+	operation, emergencyErr := r.ensureEmergencyReplacement(ctx, policyObj, input)
+	if operation != "" || emergencyErr != nil {
+		status := trainingpolicy.CheckpointStatus("", 0, r.now(), "emergency_replacement_active")
+		status["periodicQuiesced"] = true
+		status["replacementOperation"] = operation
+		if emergencyErr != nil {
+			status["reason"] = "emergency_replacement_blocked"
+			status["message"] = emergencyErr.Error()
+		}
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
+	}
+	if inflight {
 		placement := trainingpolicy.NewPropagationPolicyFor(input, inflightObj, input.SourceCluster)
 		if err := r.createIfMissing(ctx, placement); err != nil {
 			return ctrl.Result{}, err
@@ -167,6 +183,7 @@ func (r *CheckpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
 		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
+		Watches(trainingpolicy.NewObject("NodeProvision"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "node"))).
 		Watches(newSpotReplacementObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "replacement"))).
 		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "binding"))).
 		Complete(r)
