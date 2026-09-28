@@ -526,7 +526,6 @@ func (r *ReplacementReconciler) ensurePartialCheckpoint(ctx context.Context, ns 
 		"partialCheckpoint": map[string]interface{}{
 			"targetRanks": int64SliceToInterface(spec.TargetRanks),
 		},
-		"pods": spec.Pods,
 	}
 	if err := r.Create(ctx, desired); err != nil {
 		return nil, false, err

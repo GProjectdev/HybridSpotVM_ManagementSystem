@@ -422,6 +422,9 @@ func TestReplacementReconcileEmitsTypedPartialCheckpointAfterReplacementReady(t 
 	if !ok || len(ranks) != 1 || ranks[0].(int64) != 1 {
 		t.Fatalf("targetRanks = %#v, want [1]", ranks)
 	}
+	if _, ok, _ := unstructured.NestedSlice(migration.Object, "spec", "pods"); ok {
+		t.Fatal("partial checkpoint emitted unsupported spec.pods field")
+	}
 	if _, ok, _ := unstructured.NestedBool(migration.Object, "spec", "partialRankCheckpointRequired"); ok {
 		t.Fatal("emitted stale partialRankCheckpointRequired field")
 	}
