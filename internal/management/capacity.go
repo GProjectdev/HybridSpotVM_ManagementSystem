@@ -55,7 +55,21 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 		return result, err
 	}
 	result.OwnedWorkers = int64(len(owned))
-	if result.OwnedWorkers > input.TargetWorkers {
+	if boolField(policyObj.Object, "spec", "replacement", "enabled") {
+		for i := int64(0); i < decision.DesiredWorkers; i++ {
+			slot := trainingpolicy.NewNodeProvision(input, i, desiredMarketForOrdinal(i, decision))
+			old := owned[slot.GetName()]
+			if old == nil || old.GetUID() == "" || !old.GetDeletionTimestamp().IsZero() || stringField(old.Object, "spec", "marketType") != "Spot" || desiredMarketForOrdinal(i, decision) != "OnDemand" {
+				continue
+			}
+			name := replacementNodeProvisionName(old.GetName(), string(old.GetUID()))
+			if reusableCapacityReplacement(owned[name], old, input) {
+				// Preserve the source slot while reusing its UID-bound temporary capacity.
+				delete(owned, name)
+			}
+		}
+	}
+	if int64(len(owned)) > input.TargetWorkers {
 		result.Blocked = true
 		result.Reason = "capacity_overshoot"
 		result.Overshoot = true
@@ -98,7 +112,7 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 			return result, nil
 		}
 	}
-	if projected := result.OwnedWorkers + missingGenerated; projected > input.TargetWorkers {
+	if projected := int64(len(owned)) + missingGenerated; projected > input.TargetWorkers {
 		result.Blocked = true
 		result.Reason = "capacity_inventory_full"
 		result.Overshoot = true
