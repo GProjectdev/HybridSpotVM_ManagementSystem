@@ -19,6 +19,10 @@
     "targetCluster": "aws",
     "sourceFenced": false,
     "volumesReady": true,
+    "trainingRuntimeRef": {
+      "name": "runtime",
+      "uid": "runtime-uid"
+    },
     "workloadRef": {
       "apiVersion": "apps/v1",
       "kind": "StatefulSet",

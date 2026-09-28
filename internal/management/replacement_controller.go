@@ -218,7 +218,7 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err != nil {
 		return replacementPhaseAwaitingRestoreEvidence, err
 	}
-	restore, created, err := r.ensureRestoreRequest(ctx, op.GetNamespace(), spec, migration, replacement)
+	restore, created, err := r.ensureRestoreRequest(ctx, op.GetNamespace(), spec, runtimeObj, migration, replacement)
 	if err != nil {
 		return replacementPhaseAwaitingRestoreEvidence, err
 	}
@@ -590,13 +590,21 @@ func (r *ReplacementReconciler) replacementPolicyAndRuntime(ctx context.Context,
 	return policy, runtimeObj, nil
 }
 
-func (r *ReplacementReconciler) ensureRestoreRequest(ctx context.Context, ns string, spec replacementSpec, migration, replacement *unstructured.Unstructured) (*unstructured.Unstructured, bool, error) {
+func (r *ReplacementReconciler) ensureRestoreRequest(ctx context.Context, ns string, spec replacementSpec, runtimeObj, migration, replacement *unstructured.Unstructured) (*unstructured.Unstructured, bool, error) {
 	name := spec.Operation + "-restore"
+	runtimeName := runtimeObj.GetName()
+	runtimeUID := string(runtimeObj.GetUID())
+	if runtimeName == "" || runtimeUID == "" {
+		return nil, false, fmt.Errorf("TrainingRuntime name and UID are required for RestoreRequest")
+	}
 	existing := newRestoreRequest()
 	err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, existing)
 	if err == nil {
 		if existing.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID || existing.GetLabels()[trainingpolicy.LabelRole] != "replacement-restore" {
 			return nil, false, fmt.Errorf("existing RestoreRequest ownership mismatch")
+		}
+		if stringField(existing.Object, "spec", "trainingRuntimeRef", "name") != runtimeName || stringField(existing.Object, "spec", "trainingRuntimeRef", "uid") != runtimeUID {
+			return nil, false, fmt.Errorf("existing RestoreRequest TrainingRuntime identity mismatch")
 		}
 		input := trainingpolicy.PolicyInput{Namespace: ns, PolicyName: spec.PolicyName, PolicyUID: types.UID(spec.PolicyUID)}
 		if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, existing, spec.TargetCluster)); err != nil {
@@ -634,6 +642,10 @@ func (r *ReplacementReconciler) ensureRestoreRequest(ctx context.Context, ns str
 		"targetCluster": spec.TargetCluster,
 		"sourceFenced":  false,
 		"volumesReady":  true,
+		"trainingRuntimeRef": map[string]interface{}{
+			"name": runtimeName,
+			"uid":  runtimeUID,
+		},
 		"workloadRef": map[string]interface{}{
 			"apiVersion": spec.WorkloadAPIVersion,
 			"kind":       spec.WorkloadKind,

@@ -229,6 +229,9 @@ func TestReplacementReconcileRepairsPlacementForExistingRestoreRequest(t *testin
 	restore.SetUID(types.UID("restore-uid"))
 	restore.SetGeneration(1)
 	restore.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "replacement-restore"})
+	restore.Object["spec"] = map[string]interface{}{
+		"trainingRuntimeRef": map[string]interface{}{"name": "runtime", "uid": "runtime-uid"},
+	}
 	reconciler := replacementReconcilerFixture(t, now, replacementOperationFixture(), replacementPolicyFixture(), replacementRuntimeFixture(), replacementOldNodeProvisionFixture(), replacementReadyNodeProvisionFixture(), replacementPartialCheckpointFixture(true), restore)
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
@@ -361,6 +364,12 @@ func loadRestoreFixture(t *testing.T) map[string]interface{} {
 
 func assertProducedRestoreMatchesFixtureShape(t *testing.T, restore *unstructured.Unstructured) {
 	t.Helper()
+	if name := stringField(restore.Object, "spec", "trainingRuntimeRef", "name"); name != "runtime" {
+		t.Fatalf("produced RestoreRequest trainingRuntimeRef.name = %q", name)
+	}
+	if uid := stringField(restore.Object, "spec", "trainingRuntimeRef", "uid"); uid != "runtime-uid" {
+		t.Fatalf("produced RestoreRequest trainingRuntimeRef.uid = %q", uid)
+	}
 	if stringField(restore.Object, "spec", "sourceCluster") != stringField(restore.Object, "spec", "targetCluster") {
 		t.Fatal("produced RestoreRequest must be same-cluster")
 	}
