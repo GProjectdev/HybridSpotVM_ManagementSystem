@@ -1,5 +1,10 @@
 # Integrated upgrade and validation
 
+> Historical partial-replacement guide. For this release, use
+> [Full-group rollout and acceptance](full-group-rollout.md) instead.
+> Automatic policy and interruption recovery now use full-group restore,
+> including rank 0. Do not run the partial activation commands below for them.
+
 This coordinated upgrade does not authorize deleting existing NodeProvisions,
 training Pods, checkpoint PVCs, or NFS artifacts. Build and test compatible
 controller and FluidCR payload images before activating replacement.

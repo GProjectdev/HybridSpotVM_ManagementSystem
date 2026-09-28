@@ -182,7 +182,7 @@ func TestPolicyReconcileReportsReplacementRequiredWithoutSideEffects(t *testing.
 	}
 }
 
-func TestPolicyReconcileCreatesAutomaticReplacementWithSurvivorBaseline(t *testing.T) {
+func TestPolicyReconcileCannotReplaceWithOnlySurvivorBaseline(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy := checkpointPolicyFixture(now)
 	_ = unstructured.SetNestedField(policy.Object, int64(2), "spec", "targetWorkers")
@@ -202,20 +202,10 @@ func TestPolicyReconcileCreatesAutomaticReplacementWithSurvivorBaseline(t *testi
 		t.Fatalf("policy reconcile: %v", err)
 	}
 	op := newSpotReplacementObject()
-	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-01-old-node-uid-replace"}, op); err != nil {
-		t.Fatalf("get automatic SpotReplacement: %v", err)
-	}
-	survivors, ok, _ := unstructured.NestedSlice(op.Object, "spec", "partialRestore", "preservedSurvivors")
-	if !ok || len(survivors) != 1 {
-		t.Fatalf("preservedSurvivors = %#v, want one survivor baseline", survivors)
-	}
-	survivor := survivors[0].(map[string]interface{})
-	if stringField(survivor, "podUID") != "survivor-pod-uid" || stringField(survivor, "nodeName") != "train-worker-00" {
-		t.Fatalf("survivor baseline = %#v", survivor)
-	}
-	if _, ok, _ := unstructured.NestedString(survivor, "pauseLockPath"); ok {
-		t.Fatal("automatic producer populated post-checkpoint pauseLockPath proof")
-	}
+ if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:"train-worker-01-old-node-uid-replace"},op);err==nil{t.Fatal("automatic replacement incorrectly selected partial recovery")}
+ updated:=trainingpolicy.NewObject("TrainingPolicy")
+ if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:"train"},updated);err!=nil{t.Fatal(err)}
+ if !boolField(updated.Object,"status","policy","provisioningBlocked"){t.Fatal("missing durable group checkpoint did not block replacement")}
 }
 
 func TestPolicyReconcileAdoptsCompletedReplacementSuccessor(t *testing.T) {

@@ -61,7 +61,9 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			return "", err
 		}
 		if !trainingpolicy.RuntimeReadyForCheckpoint(input, snapshot, r.now()) {
-			return "", fmt.Errorf("emergency replacement requires fresh rank evidence; source may already be lost")
+			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
+			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID)
+			return name, err
 		}
 		if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 			return "", err

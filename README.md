@@ -1,5 +1,9 @@
 # Hybrid Spot VM Management System
 
+Current automatic full-world checkpoint/restore release:
+[Full-group rollout and three-case acceptance](docs/full-group-rollout.md).
+This supersedes the older automatic partial-replacement activation instructions.
+
 Automatic RB-based policy enrollment and upgrade guide: [Automatic StatefulSet discovery](docs/automatic-policy-discovery.md).
 
 Coordinated controller/runtime upgrade: [Build and validation order](docs/integrated-upgrade-validation.md).

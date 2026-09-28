@@ -25,6 +25,7 @@ def render(documents, images, cluster=None, control_plane=False):
             container["args"] = [
                 "--cluster-name=" + cluster if cluster and a.startswith("--cluster-name=")
                 else "--payload-image=" + images["payload"] if a.startswith("--payload-image=")
+                else "--group-control-image=" + images["group-control"] if a.startswith("--group-control-image=")
                 else a for a in args
             ]
         if obj["metadata"]["name"] == "stateful-artifact":
@@ -51,10 +52,12 @@ def main():
         "ghcr.io/gprojectdev/spot-recovery-controller:dev": "SPOT_RECOVERY_IMAGE",
         "ghcr.io/gprojectdev/training-runtime-collector:dev": "RUNTIME_COLLECTOR_IMAGE",
         "ghcr.io/gprojectdev/spot-watcher:dev": "SPOT_WATCHER_IMAGE",
+        "ghcr.io/gprojectdev/placement-webhook:dev": "PLACEMENT_WEBHOOK_IMAGE",
         "ghcr.io/gprojectdev/pv-migration-system:dev": "PV_IMAGE",
         "ghcr.io/gprojectdev/stateful-migration-system:dev": "STATEFUL_IMAGE",
         "docker.io/lehuannhatrang/fluidcr-webhook:v0.2": "INJECTOR_IMAGE",
         "payload": "PAYLOAD_IMAGE",
+        "group-control": "GROUP_CONTROL_IMAGE",
     }
     documents = list(yaml.safe_load_all(sys.stdin))
     needed = set()
@@ -67,6 +70,8 @@ def main():
                 needed.add(container["image"])
             if any(a.startswith("--payload-image=") for a in container.get("args", [])):
                 needed.add("payload")
+            if any(a.startswith("--group-control-image=") for a in container.get("args", [])):
+                needed.add("group-control")
     missing = [var for old, var in names.items() if old in needed and not os.environ.get(var)]
     if missing:
         parser.error("set image variables: " + ", ".join(missing))

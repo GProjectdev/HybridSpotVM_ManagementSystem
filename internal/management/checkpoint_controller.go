@@ -30,6 +30,33 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 	input := trainingpolicy.ReadPolicySpec(policyObj)
+	if operation := policyObj.GetAnnotations()[groupIntentAnnotation]; operation != "" {
+		_, inflight, _, _, err := r.checkpointState(ctx, input)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if !inflight {
+			if _, err := r.ensureEmergencyReplacement(ctx, policyObj, input); err != nil {
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+			}
+		}
+		reason := "group_intent_quiesced"
+		if inflight {
+			reason = "group_intent_waiting_checkpoint"
+		}
+		status := trainingpolicy.CheckpointStatus("", 0, r.now(), reason)
+		status["periodicQuiesced"] = !inflight
+		status["replacementOperation"] = operation
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
+	}
+	if group, err := activeGroupRestore(ctx, r.Client, input); err != nil {
+		return ctrl.Result{}, err
+	} else if group != nil {
+		status := trainingpolicy.CheckpointStatus("", 0, r.now(), "group_restore_active")
+		status["periodicQuiesced"] = true
+		status["replacementOperation"] = group.GetName()
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
+	}
 	if policyObj.GetLabels()[autoLabel] == "true" {
 		ready, _, _ := unstructured.NestedBool(policyObj.Object, "status", "discovery", "ready")
 		if !ready {

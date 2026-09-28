@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [vm-spot-risk-collector, policy-manager, checkpoint-coordinator, spot-recovery-controller, training-runtime-collector, spot-watcher]
+        component: [vm-spot-risk-collector, policy-manager, checkpoint-coordinator, spot-recovery-controller, training-runtime-collector, spot-watcher, placement-webhook]
     steps:
     - uses: actions/checkout@v4
     - run: docker build --build-arg COMPONENT=${{ matrix.component }} -t component:test .

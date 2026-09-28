@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestEmergencyReplacementCreatesOneOperationAndNoPeriodicCheckpoint(t *testing.T) {
+func TestEmergencyReplacementNeedsDurableGroupRoundAndNoPeriodicCheckpoint(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy, runtime, node := emergencyReplacementFixtures(now)
 	r := checkpointReconcilerFixture(t, func() time.Time { return now }, policy, runtime, node, workloadFixture("workload-uid"))
@@ -26,13 +26,12 @@ func TestEmergencyReplacementCreatesOneOperationAndNoPeriodicCheckpoint(t *testi
 	if err := r.List(context.Background(), list); err != nil {
 		t.Fatal(err)
 	}
-	if len(list.Items) != 1 {
+	if len(list.Items) != 0 {
 		t.Fatalf("operations: %d", len(list.Items))
 	}
-	op := &list.Items[0]
-	if op.GetAnnotations()[annotationEmergencyEventID] != "notice" || stringField(op.Object, "spec", "desiredMarketType") != "OnDemand" || stringField(op.Object, "spec", "oldNodeProvisionRef", "uid") != "node-uid" {
-		t.Fatalf("operation: %#v", op.Object)
-	}
+ updated:=p.NewObject("TrainingPolicy")
+ if err:=r.Get(context.Background(),client.ObjectKeyFromObject(policy),updated);err!=nil{t.Fatal(err)}
+ if !strings.Contains(stringField(updated.Object,"status","checkpoint","message"),"no complete durable full-group checkpoint"){t.Fatalf("missing group checkpoint not reported: %#v",updated.Object["status"])}
 	assertMigrationCount(t, r.Client, 0)
 }
 
@@ -44,12 +43,12 @@ func TestEmergencyReplacementRejectsUnsafeEvidence(t *testing.T) {
 	}{
 		{"rank-zero", func(_, runtime, node *unstructured.Unstructured) {
 			_ = unstructured.SetNestedField(node.Object, "node-0", "status", "nodeName")
-		}, "UnsupportedRankZero"},
+		}, "no complete durable full-group checkpoint"},
 		{"stale", func(_, runtime, _ *unstructured.Unstructured) {
 			clusters, _, _ := unstructured.NestedSlice(runtime.Object, "status", "clusters")
 			clusters[0].(map[string]interface{})["status"].(map[string]interface{})["observedAt"] = "2020-01-01T00:00:00Z"
 			_ = unstructured.SetNestedSlice(runtime.Object, clusters, "status", "clusters")
-		}, "fresh rank"},
+		}, "no complete durable full-group checkpoint"},
 		{"on-demand-signal", func(_, _, node *unstructured.Unstructured) {
 			_ = unstructured.SetNestedField(node.Object, "OnDemand", "spec", "marketType")
 		}, "Spot NodeProvision"},

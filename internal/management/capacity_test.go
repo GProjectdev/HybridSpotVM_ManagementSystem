@@ -182,7 +182,7 @@ func TestCapacityGateFixedTargetChangeKeepsHistoricalBaselineAcrossReconciles(t 
 	}
 }
 
-func TestCapacityLifecycleCreatesOnDemandToSpotReplacementOperation(t *testing.T) {
+func TestCapacityLifecycleRequiresGroupRoundForOnDemandToSpot(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy := policyFixtureForCapacity(now, 1)
 	policy.Object["spec"].(map[string]interface{})["replacement"] = map[string]interface{}{"enabled": true}
@@ -209,15 +209,8 @@ func TestCapacityLifecycleCreatesOnDemandToSpotReplacementOperation(t *testing.T
 		t.Fatalf("capacity decision = %#v, want replacement operation", capacity)
 	}
 	op := newSpotReplacementObject()
-	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: capacity.OperationName}, op); err != nil {
-		t.Fatalf("automatic SpotReplacement: %v", err)
-	}
-	if desired := stringField(op.Object, "spec", "desiredMarketType"); desired != "Spot" {
-		t.Fatalf("desiredMarketType = %q, want Spot", desired)
-	}
-	if oldUID := stringField(op.Object, "spec", "oldNodeProvisionRef", "uid"); oldUID != "old-worker-uid" {
-		t.Fatalf("old uid = %q, want old-worker-uid", oldUID)
-	}
+ if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:capacity.OperationName},op);err==nil{t.Fatal("automatic partial operation created without full checkpoint")}
+ if !capacity.Blocked{t.Fatal("missing checkpoint did not block replacement")}
 }
 
 func TestCompletedReplacementSuccessorsFollowsLatestReplacementChain(t *testing.T) {

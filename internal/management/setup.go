@@ -3,6 +3,9 @@ package management
 import ctrl "sigs.k8s.io/controller-runtime"
 
 func SetupPolicy(mgr ctrl.Manager) error {
+	if err := (&GroupPlacementReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {
+		return err
+	}
 	if err := (&DiscoveryReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {
 		return err
 	}
@@ -14,6 +17,9 @@ func SetupCheckpoint(mgr ctrl.Manager) error {
 }
 
 func SetupRecovery(mgr ctrl.Manager) error {
+	if err := (&GroupRecoveryReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {
+		return err
+	}
 	if err := (&ReplacementReconciler{Client: mgr.GetClient(), APIReader: mgr.GetAPIReader(), Clock: defaultClock}).SetupWithManager(mgr); err != nil {
 		return err
 	}

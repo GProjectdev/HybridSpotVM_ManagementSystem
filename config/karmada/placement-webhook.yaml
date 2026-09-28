@@ -1,0 +1,21 @@
+# Render URL and CA bundle before applying to the Karmada API server.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: hybridspot-placement
+webhooks:
+- name: placement.training.dcnlab.com
+  admissionReviewVersions: [v1]
+  sideEffects: None
+  failurePolicy: Fail
+  reinvocationPolicy: IfNeeded
+  timeoutSeconds: 10
+  clientConfig:
+    url: https://__MGMT_REACHABLE_HOST__:30443/hold-ddp-placement
+    caBundle: __CA_BUNDLE__
+  rules:
+  - apiGroups: [work.karmada.io]
+    apiVersions: [v1alpha2]
+    resources: [resourcebindings]
+    operations: [UPDATE]
+    scope: Namespaced

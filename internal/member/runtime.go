@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/resource"
@@ -48,6 +49,13 @@ func (r *RuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		status["phase"] = "Unavailable"
 		status["message"] = collectErr.Error()
 		status["readyRanks"] = int64(0)
+		// Identity remains useful for fencing, but must never imply healthy ranks.
+		if _, captured := status["sourcePods"]; !captured && resource.String(o, "status", "sourceWorldUID") == resource.String(o, "spec", "workloadRef", "uid") {
+			if previous, ok, _ := unstructured.NestedSlice(o.Object, "status", "sourcePods"); ok {
+				status["sourcePods"] = previous
+				status["sourceWorldUID"] = resource.String(o, "status", "sourceWorldUID")
+			}
+		}
 	} else {
 		previous, _, _ := unstructured.NestedSlice(o.Object, "status", "pods")
 		attachPreviousObservations(status["pods"].([]interface{}), previous)
@@ -111,6 +119,10 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 	pods := &corev1.PodList{}
 	if err = r.List(ctx, pods, client.InNamespace(ns), client.MatchingLabelsSelector{Selector: sel}); err != nil {
 		return err
+	}
+	if identities := sourcePodIdentities(sts, pods, expected); identities != nil {
+		status["sourcePods"] = identities
+		status["sourceWorldUID"] = originUID
 	}
 	if port == 0 {
 		port = 8298
@@ -189,6 +201,30 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 	status["workloadUID"] = originUID
 	status["memberWorkloadUID"] = string(sts.UID)
 	return nil
+}
+
+func sourcePodIdentities(sts *appsv1.StatefulSet, pods *corev1.PodList, expected int64) []interface{} {
+	byRank := map[int64]interface{}{}
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+		owner := metav1.GetControllerOf(pod)
+		if owner == nil || owner.UID != sts.UID {
+			continue
+		}
+		rank, err := strconv.ParseInt(strings.TrimPrefix(pod.Name, sts.Name+"-"), 10, 64)
+		if err != nil || rank < 0 || rank >= expected || pod.Name != fmt.Sprintf("%s-%d", sts.Name, rank) || pod.UID == "" || pod.Spec.NodeName == "" || byRank[rank] != nil {
+			return nil
+		}
+		byRank[rank] = map[string]interface{}{"name": pod.Name, "uid": string(pod.UID), "nodeName": pod.Spec.NodeName, "rank": rank}
+	}
+	if int64(len(byRank)) != expected {
+		return nil
+	}
+	out := make([]interface{}, 0, expected)
+	for rank := int64(0); rank < expected; rank++ {
+		out = append(out, byRank[rank])
+	}
+	return out
 }
 func SetupRuntime(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).Named("training-runtime").WithEventFilter(predicate.GenerationChangedPredicate{}).For(resource.Object("TrainingRuntime")).Complete(&RuntimeReconciler{Client: mgr.GetClient()})

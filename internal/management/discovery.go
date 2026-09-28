@@ -220,6 +220,25 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			started = time.Now().UTC().Format(time.RFC3339)
 		}
 		status["transitionStartedAt"] = started
+		if name := b.GetAnnotations()[placementRequestAnnotation]; name != "" {
+			request := newRestoreRequest()
+			if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: policy.GetNamespace(), Name: name}, request); err != nil {
+				return again, err
+			}
+			if string(request.GetUID()) != b.GetAnnotations()[placementRequestUIDAnnotation] || request.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) || stringField(request.Object, "spec", "workloadRef", "uid") != string(sts.GetUID()) || stringField(request.Object, "spec", "targetCluster") != target {
+				return report("bound placement restore identity mismatch")
+			}
+			status["ready"] = false
+			status["phase"] = "Restoring"
+			status["transitionStartedAt"] = request.GetCreationTimestamp().UTC().Format(time.RFC3339)
+			if validateGroupVerified(request) == nil {
+				before := policy.DeepCopy()
+				_ = unstructured.SetNestedField(policy.Object, target, "spec", "sourceCluster")
+				_ = unstructured.SetNestedField(policy.Object, runtimeName(policy.GetName(), target), "spec", "runtimeRef", "name")
+				return again, r.Patch(ctx, policy, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
+			}
+			return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", status)
+		}
 		suspended, _, _ := unstructured.NestedBool(b.Object, "spec", "suspension", "dispatching")
 		status["dispatchSuspended"] = suspended
 		if !suspended {

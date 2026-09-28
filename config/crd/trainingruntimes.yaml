@@ -89,6 +89,13 @@ spec:
               observedGeneration:
                 type: integer
                 format: int64
+              sourcePods:
+                type: array
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+              sourceWorldUID:
+                type: string
               pods:
                 type: array
                 items:
@@ -157,6 +164,13 @@ spec:
                         observedGeneration:
                           type: integer
                           format: int64
+                        sourcePods:
+                          type: array
+                          items:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        sourceWorldUID:
+                          type: string
                         pods:
                           type: array
                           items:

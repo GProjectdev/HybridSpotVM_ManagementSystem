@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placement-webhook
+  namespace: hybridspot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: placement-webhook
+  template:
+    metadata:
+      labels:
+        app: placement-webhook
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: manager
+        image: ghcr.io/gprojectdev/placement-webhook:dev
+        args: ["--leader-elect=false"]
+        env:
+        - name: KUBECONFIG
+          value: /etc/karmada/kubeconfig
+        - name: PLACEMENT_RELEASE_USERNAME
+          value: system:serviceaccount:hybridspot-system:hybridspot-management
+        ports:
+        - name: webhook
+          containerPort: 9443
+        - name: health
+          containerPort: 8081
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+        volumeMounts:
+        - name: kubeconfig
+          mountPath: /etc/karmada
+          readOnly: true
+        - name: tls
+          mountPath: /tmp/k8s-webhook-server/serving-certs
+          readOnly: true
+      volumes:
+      - name: kubeconfig
+        secret:
+          secretName: hybridspot-karmada-kubeconfig
+      - name: tls
+        secret:
+          secretName: placement-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: placement-webhook
+  namespace: hybridspot-system
+spec:
+  type: NodePort
+  selector:
+    app: placement-webhook
+  ports:
+  - name: https
+    port: 443
+    targetPort: webhook
+    nodePort: 30443

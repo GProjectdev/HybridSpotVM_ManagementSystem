@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -118,104 +117,9 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarketType) || oldMarket == desiredMarketType {
 		return false, fmt.Errorf("replacement requires old and desired marketType to differ and be Spot/OnDemand")
 	}
-	pods, survivors, err := r.replacementRuntimeBaselines(ctx, input, oldNP)
-	if err != nil {
-		return false, err
-	}
-	targetRanks := make([]interface{}, 0, len(pods))
-	for _, item := range pods {
-		pod := item.(map[string]interface{})
-		rank := intField(pod, "rank")
-		if rank == 0 {
-			return false, fmt.Errorf("UnsupportedRankZero: partial replacement of rank 0 is not supported")
-		}
-		targetRanks = append(targetRanks, rank)
-	}
-	existing := newSpotReplacementObject()
-	err = r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: operationName}, existing)
-	if err == nil {
-		if stringField(existing.Object, "spec", "oldNodeProvisionRef", "uid") != string(oldNP.GetUID()) || stringField(existing.Object, "spec", "policyRef", "uid") != string(input.PolicyUID) || stringField(existing.Object, "spec", "desiredMarketType") != desiredMarketType {
-			return false, fmt.Errorf("existing SpotReplacement %s collision does not match old NodeProvision/policy UID", operationName)
-		}
-		return false, nil
-	}
-	if err != nil && !apierrors.IsNotFound(err) {
-		return false, fmt.Errorf("get SpotReplacement %s: %w", operationName, err)
-	}
-	op := newSpotReplacementObject()
-	op.SetNamespace(input.Namespace)
-	op.SetName(operationName)
-	op.SetLabels(map[string]string{
-		trainingpolicy.LabelManagedBy: "hybridspotvm-system",
-		trainingpolicy.LabelPolicy:    input.PolicyName,
-		trainingpolicy.LabelPolicyUID: string(input.PolicyUID),
-		trainingpolicy.LabelRole:      "replacement-operation",
-	})
-	if emergencyEventID != "" {
-		op.SetAnnotations(map[string]string{"training.dcnlab.com/emergency-event-id": emergencyEventID})
-	}
-	op.Object["spec"] = map[string]interface{}{
-		"operation":                   operationName,
-		"policyRef":                   map[string]interface{}{"name": input.PolicyName, "uid": string(input.PolicyUID), "generation": input.Generation},
-		"workloadRef":                 map[string]interface{}{"apiVersion": input.WorkloadRef.APIVersion, "kind": input.WorkloadRef.Kind, "name": input.WorkloadRef.Name, "uid": string(input.WorkloadRef.UID)},
-		"sourceCluster":               input.Capacity.AWSCluster,
-		"targetCluster":               input.Capacity.AWSCluster,
-		"oldNodeProvisionRef":         map[string]interface{}{"name": oldNP.GetName(), "uid": string(oldNP.GetUID())},
-		"replacementNodeProvisionRef": map[string]interface{}{"name": replacementName},
-		"desiredMarketType":           desiredMarketType,
-		"partialCheckpoint":           map[string]interface{}{"targetRanks": targetRanks},
-		"pods":                        pods,
-		"partialRestore":              map[string]interface{}{"preventPeriodicResume": true, "targetRanks": targetRanks, "preservedSurvivors": survivors},
-	}
-	if err := r.Create(ctx, op); err != nil {
-		return false, fmt.Errorf("create SpotReplacement %s: %w", operationName, err)
-	}
-	return true, nil
-}
-
-func (r *PolicyReconciler) replacementRuntimeBaselines(ctx context.Context, input trainingpolicy.PolicyInput, oldNP *unstructured.Unstructured) ([]interface{}, []interface{}, error) {
-	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")
-	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: input.RuntimeRefName}, runtimeObj); err != nil {
-		return nil, nil, fmt.Errorf("replacement requires live TrainingRuntime: %w", err)
-	}
-	nodeName := firstString(oldNP.Object, [][]string{{"status", "nodeName"}, {"spec", "nodeName"}, {"spec", "hostname"}})
-	if nodeName == "" {
-		return nil, nil, fmt.Errorf("replacement requires old NodeProvision nodeName evidence")
-	}
-	var targets []interface{}
-	var survivors []interface{}
-	for _, cluster := range nestedClusterStatuses(runtimeObj.Object) {
-		name, _, _ := unstructured.NestedString(cluster, "clusterName")
-		if name != input.SourceCluster {
-			continue
-		}
-		pods, _, _ := unstructured.NestedSlice(cluster, "status", "pods")
-		for _, item := range pods {
-			pod, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			podNode := firstString(pod, [][]string{{"nodeName"}, {"sourceNode"}})
-			rank := intField(pod, "rank")
-			podName := firstString(pod, [][]string{{"name"}, {"podName"}})
-			podUID := firstString(pod, [][]string{{"uid"}, {"podUID"}})
-			if podName == "" || podUID == "" || podNode == "" || rank < 0 {
-				return nil, nil, fmt.Errorf("replacement runtime pod evidence incomplete for node %s", nodeName)
-			}
-			if podNode == nodeName {
-				targets = append(targets, map[string]interface{}{"rank": rank, "sourcePod": podName, "sourcePodUID": podUID, "sourceNode": nodeName})
-				continue
-			}
-			survivors = append(survivors, map[string]interface{}{"rank": rank, "podName": podName, "podUID": podUID, "nodeName": podNode})
-		}
-	}
-	if len(targets) == 0 {
-		return nil, nil, fmt.Errorf("replacement found no runtime rank on old NodeProvision node %s", nodeName)
-	}
-	if len(survivors) == 0 {
-		return nil, nil, fmt.Errorf("replacement requires non-target survivor runtime baseline evidence")
-	}
-	return targets, survivors, nil
+	// Automatic operations use one full-world protocol even if a notice arrives
+	// after provisioning has begun; manual partial operations remain separate.
+	return r.ensureGroupReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
 }
 
 func (r *PolicyReconciler) ownedWorkerNodeProvisions(ctx context.Context, input trainingpolicy.PolicyInput, successors map[string]string) (map[string]*unstructured.Unstructured, error) {
@@ -299,6 +203,28 @@ func (r *PolicyReconciler) completedReplacementSuccessors(ctx context.Context, i
 		edges[oldName] = replacementName
 		oldUIDs[oldName] = oldUID
 		newUIDs[oldName] = replacementUID
+	}
+	groups := &unstructured.UnstructuredList{}
+	groups.SetGroupVersionKind(newRestoreRequest().GroupVersionKind().GroupVersion().WithKind("RestoreRequestList"))
+	if err := r.reader().List(ctx, groups, client.InNamespace(input.Namespace), client.MatchingLabels{trainingpolicy.LabelPolicyUID: string(input.PolicyUID), trainingpolicy.LabelRole: groupRestoreRole}); err != nil {
+		return nil, err
+	}
+	for i := range groups.Items {
+		item := &groups.Items[i]
+		if validateGroupVerified(item) != nil {
+			continue
+		}
+		a := item.GetAnnotations()
+		oldName, oldUID, newName, newUID := a[groupOldName], a[groupOldUID], a[groupNewName], a[groupNewUID]
+		if oldName == "" || oldUID == "" || newName == "" || newUID == "" {
+			continue
+		}
+		if existing := edges[oldName]; existing != "" && (existing != newName || oldUIDs[oldName] != oldUID || newUIDs[oldName] != newUID) {
+			return nil, fmt.Errorf("conflicting group replacement successor")
+		}
+		edges[oldName] = newName
+		oldUIDs[oldName] = oldUID
+		newUIDs[oldName] = newUID
 	}
 	successors := map[string]string{}
 	for oldName := range edges {
