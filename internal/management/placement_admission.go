@@ -58,6 +58,17 @@ func (h *PlacementAdmission) Handle(ctx context.Context, req admission.Request) 
 	if policy == nil {
 		return admission.Allowed("unmanaged workload")
 	}
+	stopped, err := h.holdStoppedPlacement(ctx, policy, old, next)
+	if err != nil {
+		return admission.Denied(err.Error())
+	}
+	if stopped {
+		encoded, err := json.Marshal(next.Object)
+		if err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+		return admission.PatchResponseFromRaw(req.Object.Raw, encoded)
+	}
 	if old.GetAnnotations()[pendingPlacementAnnotation] != "" && next.GetAnnotations()[pendingPlacementAnnotation] == "" {
 		if h.ReleaseUsername == "" || req.UserInfo.Username != h.ReleaseUsername {
 			return admission.Denied("only the placement controller may release a pending transition")
