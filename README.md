@@ -1,10 +1,14 @@
 # Hybrid Spot VM Management System
 
+Current release: [redeployment and validation](docs/release-validation-20260929.md),
+[architecture, workflows and PPT claims](docs/architecture-workflows-ppt.md).
+
 Current automatic full-world checkpoint/restore release:
 [Full-group rollout and three-case acceptance](docs/full-group-rollout.md).
 This supersedes the older automatic partial-replacement activation instructions.
 
-Automatic RB-based policy enrollment and upgrade guide: [Automatic StatefulSet discovery](docs/automatic-policy-discovery.md).
+User-owned policy enrollment and architecture realignment: [Ownership and implementation progress](docs/architecture-realignment.md).
+Automatic TrainingPolicy creation from a defaults ConfigMap is no longer enabled.
 
 Coordinated controller/runtime upgrade: [Build and validation order](docs/integrated-upgrade-validation.md).
 Partial replacement safety contract: [SpotReplacement](docs/spot-replacement-contract.md).

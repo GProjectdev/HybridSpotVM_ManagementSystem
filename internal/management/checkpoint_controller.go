@@ -29,7 +29,10 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if !policyObj.GetDeletionTimestamp().IsZero() {
 		return ctrl.Result{}, nil
 	}
-	input := trainingpolicy.ReadPolicySpec(policyObj)
+	input := trainingpolicy.ReadPolicyInput(policyObj)
+	if input.Suspended {
+		return r.reconcileSuspendedPolicy(ctx, policyObj, input)
+	}
 	if operation := policyObj.GetAnnotations()[groupIntentAnnotation]; operation != "" {
 		_, inflight, _, _, err := r.checkpointState(ctx, input)
 		if err != nil {
@@ -57,11 +60,8 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		status["replacementOperation"] = group.GetName()
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
-	if policyObj.GetLabels()[autoLabel] == "true" {
-		ready, _, _ := unstructured.NestedBool(policyObj.Object, "status", "discovery", "ready")
-		if !ready {
-			return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, trainingpolicy.CheckpointStatus("", 0, r.now(), "waiting_for_discovery"))
-		}
+	if !discoveryReady(policyObj) {
+		return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, trainingpolicy.CheckpointStatus("", 0, r.now(), "waiting_for_discovery"))
 	}
 	if err := validatePolicyInput(input); err != nil {
 		status := trainingpolicy.CheckpointStatus("", 0, r.now(), "invalid_spec")
@@ -78,6 +78,13 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 	operation, emergencyErr := r.ensureEmergencyReplacement(ctx, policyObj, input)
+	if operation != "" && emergencyErr == nil {
+		if active, e := r.activeSpotReplacement(ctx, input); e != nil {
+			emergencyErr = e
+		} else if active != nil {
+			emergencyErr = r.coordinateReplacementCheckpoint(ctx, active)
+		}
+	}
 	if operation != "" || emergencyErr != nil {
 		status := trainingpolicy.CheckpointStatus("", 0, r.now(), "emergency_replacement_active")
 		status["periodicQuiesced"] = true
@@ -111,7 +118,10 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		applyMeasuredCostsStatus(status, measuredCosts)
 		status["replacementOperation"] = replacement.GetName()
 		status["periodicQuiesced"] = true
-		status["message"] = "periodic checkpoints quiesced while SpotReplacement reconciler owns the typed partial-rank checkpoint"
+		status["message"] = "periodic checkpoints quiesced; checkpoint coordinator owns replacement checkpoint"
+		if err := r.coordinateReplacementCheckpoint(ctx, replacement); err != nil {
+			status["message"] = err.Error()
+		}
 		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
 	emergency, err := r.unhandledEmergencySpotEvent(ctx, input)
@@ -161,7 +171,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	decision := trainingpolicy.Decide(input, runtimeSnapshot, riskSnapshot)
+	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, now)
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, nowOr(r.Clock)) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, r.now(), "risk_not_fresh")
 		applyMeasuredCostsStatus(status, measuredCosts)
@@ -180,6 +190,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	if !trainingpolicy.NextCheckpointDue(now, lastStarted, decision.CheckpointIntervalSeconds) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, now, "waiting_for_interval")
+		applyPaperIntervalStatus(status, input, decision)
 		applyMeasuredCostsStatus(status, measuredCosts)
 		return ctrl.Result{RequeueAfter: checkpointWaitRequeue(now, lastStarted, decision.CheckpointIntervalSeconds)}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
@@ -193,11 +204,24 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 	status := trainingpolicy.CheckpointStatus(migration.GetName(), decision.CheckpointIntervalSeconds, now, "checkpoint_created")
+	applyPaperIntervalStatus(status, input, decision)
 	applyMeasuredCostsStatus(status, measuredCosts)
 	if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status); err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{RequeueAfter: time.Duration(decision.CheckpointIntervalSeconds) * time.Second}, nil
+}
+
+func applyPaperIntervalStatus(status map[string]interface{}, input trainingpolicy.PolicyInput, decision trainingpolicy.Decision) {
+	status["intervalSource"] = decision.IntervalSource
+	status["intervalCostEvaluated"] = decision.IntervalCostEvaluated
+	if input.Checkpoint.Paper.Enabled {
+		if decision.IntervalCostEvaluated {
+			status["message"] = "paper interval selected from measured inputs"
+		} else {
+			status["message"] = "bootstrap interval selected; paper inputs unavailable or no feasible paper candidate"
+		}
+	}
 }
 
 func (r *CheckpointReconciler) validateLiveWorkloadUID(ctx context.Context, input trainingpolicy.PolicyInput) error {
@@ -207,7 +231,7 @@ func (r *CheckpointReconciler) validateLiveWorkloadUID(ctx context.Context, inpu
 func (r *CheckpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-checkpoint-management").
-		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
 		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
 		Watches(trainingpolicy.NewObject("NodeProvision"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "node"))).
@@ -222,6 +246,7 @@ func (r *CheckpointReconciler) activeSpotReplacement(ctx context.Context, input 
 	if err := r.List(ctx, list, client.InNamespace(input.Namespace), labels); err != nil {
 		return nil, fmt.Errorf("list SpotReplacement operations: %w", err)
 	}
+	var active *unstructured.Unstructured
 	for i := range list.Items {
 		item := list.Items[i].DeepCopy()
 		phase, _, _ := unstructured.NestedString(item.Object, "status", "phase")
@@ -230,10 +255,13 @@ func (r *CheckpointReconciler) activeSpotReplacement(ctx context.Context, input 
 		}
 		policyUID, _, _ := unstructured.NestedString(item.Object, "spec", "policyRef", "uid")
 		if policyUID == string(input.PolicyUID) {
-			return item, nil
+			if active != nil {
+				return nil, fmt.Errorf("multiple active SpotReplacement operations for policy UID %s", input.PolicyUID)
+			}
+			active = item
 		}
 	}
-	return nil, nil
+	return active, nil
 }
 
 func (r *CheckpointReconciler) checkpointState(ctx context.Context, input trainingpolicy.PolicyInput) (string, bool, *unstructured.Unstructured, *trainingpolicy.MeasuredCosts, error) {

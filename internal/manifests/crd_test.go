@@ -71,6 +71,10 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 				t.Fatal(errs.ToAggregate())
 			}
 			if crd.Spec.Names.Kind == "TrainingPolicy" {
+				economics := v.Schema.OpenAPIV3Schema.Properties["spec"].Properties["policy"].Properties["economics"]
+				if !reflect.DeepEqual(economics.Required, []string{"enabled"}) {
+					t.Fatal("automatic recovery calibration must not require manual cost/timestamp")
+				}
 				obj := map[string]interface{}{"spec": map[string]interface{}{
 					"policy": map[string]interface{}{"economics": map[string]interface{}{
 						"enabled": true, "lossCostPerEviction": float64(12.5),
@@ -81,7 +85,19 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 					"capacityOwnedWorkers": int64(3), "capacityTargetWorkers": int64(2),
 					"capacityOvershoot": true, "replacementRequired": true,
 					"replacementOperation": "replacement-1", "replacementNodeProvision": "worker-new",
+					"decisionStage": "Bootstrap", "intervalSource": "risk-band-bootstrap",
+					"priceEvaluated": true, "economicsSource": "operator-calibration",
 				}}
+				obj["status"].(map[string]interface{})["placement"] = map[string]interface{}{
+					"policyUID": "policy-uid", "workloadUID": "workload-uid",
+					"initialSourceCluster": "onprem", "initialRuntimeName": "trainer-runtime",
+					"activeCluster": "aws", "runtimeRef": map[string]interface{}{"name": "trainer-rt-aws"},
+					"verified": true, "verifiedAt": "2026-09-29T00:00:00Z",
+				}
+				obj["status"].(map[string]interface{})["discovery"] = map[string]interface{}{
+					"ready": true, "observedGeneration": int64(1), "workloadUID": "workload-uid",
+					"runtimeRef": map[string]interface{}{"name": "trainer-runtime"},
+				}
 				before := runtime.DeepCopyJSON(obj)
 				pruning.Prune(obj, s, true)
 				if !reflect.DeepEqual(before, obj) {
@@ -100,6 +116,19 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 				pruning.Prune(obj, s, true)
 				if !reflect.DeepEqual(before, obj) {
 					t.Fatalf("API prunes runtime evidence: before=%v after=%v", before, obj)
+				}
+				status := obj["status"].(map[string]interface{})
+				metric := map[string]interface{}{"method": "optimizer-update-window-v1", "aggregation": "max-rank-mean", "startStep": int64(20), "endStep": int64(40), "samples": int64(20), "rankCount": int64(2), "observedAt": "2026-09-29T00:00:00Z"}
+				status["iterationTimeSeconds"], status["iterationMeasurement"] = 1.5, metric
+				status["pods"].([]interface{})[0].(map[string]interface{})["workerSession"] = "worker-1"
+				status["pods"].([]interface{})[0].(map[string]interface{})["iterationMeasurement"] = metric
+				memberStatus := runtime.DeepCopyJSON(status)
+				delete(memberStatus, "clusters")
+				status["clusters"].([]interface{})[0].(map[string]interface{})["status"] = memberStatus
+				before = runtime.DeepCopyJSON(obj)
+				pruning.Prune(obj, s, true)
+				if !reflect.DeepEqual(before, obj) {
+					t.Fatalf("API prunes iteration measurement: before=%v after=%v", before, obj)
 				}
 			}
 			if crd.Spec.Names.Kind == "SpotRiskProfile" {

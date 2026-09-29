@@ -32,23 +32,10 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	input := trainingpolicy.ReadPolicySpec(policyObj)
-	if policyObj.GetLabels()[autoLabel] == "true" {
-		target, err := automaticPlacement(ctx, r.reader(), policyObj)
-		ready, _, _ := unstructured.NestedBool(policyObj.Object, "status", "discovery", "ready")
-		reason := ""
-		if err != nil {
-			reason = err.Error()
-		} else if !ready {
-			reason = "waiting for workload discovery"
-		} else if target != input.Capacity.AWSCluster {
-			reason = "target cluster does not require AWS capacity"
-		}
-		if reason != "" {
-			status := trainingpolicy.PolicyStatus(trainingpolicy.Decision{ProvisioningBlocked: true, Reason: "automatic_placement_gate"}, r.now())
-			status["message"] = reason
-			return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
-		}
+	input := trainingpolicy.ReadPolicyInput(policyObj)
+	if input.Suspended {
+		status := map[string]interface{}{"provisioningBlocked": true, "reason": "policy_suspended", "message": "new capacity and replacement decisions suspended; existing operations may finish", "observedAt": r.now().UTC().Format(time.RFC3339)}
+		return ctrl.Result{}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
 	}
 	if err := validatePolicyInput(input); err != nil {
 		status := trainingpolicy.PolicyStatus(trainingpolicy.Decision{ProvisioningBlocked: true, Reason: "invalid_spec"}, r.now())
@@ -63,7 +50,10 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	decision := trainingpolicy.Decide(input, runtimeSnapshot, riskSnapshot)
+	if err := r.applyRecoveryEconomics(ctx, &input, runtimeSnapshot, riskSnapshot); err != nil {
+		return ctrl.Result{}, err
+	}
+	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, r.now())
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, r.now()) {
 		decision.ProvisioningBlocked = true
 		decision.Reason = "risk_not_fresh"
@@ -92,6 +82,20 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	}
+	target, placementErr := automaticPlacement(ctx, r.reader(), policyObj)
+	reason := ""
+	if placementErr != nil {
+		reason = placementErr.Error()
+	} else if !discoveryReady(policyObj) {
+		reason = "waiting for current workload discovery"
+	} else if target != input.Capacity.AWSCluster {
+		reason = "target cluster does not require AWS capacity"
+	}
+	if reason != "" {
+		// Preserve the last capacity baseline while discovery blocks new actions.
+		status := map[string]interface{}{"provisioningBlocked": true, "reason": "placement_gate", "message": reason, "observedAt": r.now().Format(time.RFC3339)}
+		return ctrl.Result{RequeueAfter: 15 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
 	}
 	capacity, err := r.checkCapacityLifecycle(ctx, policyObj, input, decision)
 	if err != nil {
@@ -132,8 +136,11 @@ func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-policy-management").
-		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
+		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
+		Watches(newRestoreRequest(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "replacement"))).
+		Watches(trainingpolicy.NewObject("FluidCRMigration"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "replacement"))).
 		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "binding"))).
 		Complete(r)
 }

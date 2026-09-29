@@ -1,6 +1,10 @@
 # Automatic StatefulSet Policy Discovery
 
-This supersedes manual TrainingPolicy creation in the capacity validation steps.
+> Historical guide: automatic TrainingPolicy creation was removed during architecture
+> realignment. Do not use the defaults ConfigMap enrollment steps below for the new
+> controller. Follow [user-owned enrollment](architecture-realignment.md) instead.
+
+The former implementation superseded manual TrainingPolicy creation.
 Users still own workload placement. No per-StatefulSet opt-in annotation is used.
 The policy-manager watches all Karmada StatefulSets and ResourceBindings.
 No Member kubeconfig or direct Member API access is added.

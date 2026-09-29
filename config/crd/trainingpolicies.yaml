@@ -112,7 +112,7 @@ spec:
                     default: 0
                   economics:
                     type: object
-                    required: [enabled, lossCostPerEviction, observedAt]
+                    required: [enabled]
                     properties:
                       enabled:
                         type: boolean
@@ -131,6 +131,37 @@ spec:
               checkpoint:
                 type: object
                 properties:
+                  paperProfile:
+                    type: object
+                    required: [enabled, asynchronous, gpuToDramSeconds, storageSeconds, checkpointGiB, bufferGiB, observedAt, candidateIterations]
+                    properties:
+                      enabled:
+                        type: boolean
+                      asynchronous:
+                        type: boolean
+                      gpuToDramSeconds:
+                        type: number
+                        minimum: 0
+                      storageSeconds:
+                        type: number
+                        minimum: 0
+                      checkpointGiB:
+                        type: number
+                        minimum: 0
+                      bufferGiB:
+                        type: number
+                        minimum: 0
+                      observedAt:
+                        type: string
+                        format: date-time
+                      candidateIterations:
+                        type: array
+                        minItems: 1
+                        maxItems: 1000
+                        items:
+                          type: integer
+                          format: int64
+                          minimum: 1
                   minIntervalSeconds:
                     type: integer
                     format: int64
@@ -217,6 +248,33 @@ spec:
           status:
             type: object
             properties:
+              placement:
+                type: object
+                description: Verified execution location; does not rewrite the user's initial sourceCluster or runtimeRef.
+                required: [policyUID, workloadUID, initialSourceCluster, initialRuntimeName, activeCluster, runtimeRef, verified, verifiedAt]
+                properties:
+                  policyUID:
+                    type: string
+                  workloadUID:
+                    type: string
+                  initialSourceCluster:
+                    type: string
+                  initialRuntimeName:
+                    type: string
+                  activeCluster:
+                    type: string
+                  runtimeRef:
+                    type: object
+                    required: [name]
+                    properties:
+                      name:
+                        type: string
+                        minLength: 1
+                  verified:
+                    type: boolean
+                  verifiedAt:
+                    type: string
+                    format: date-time
               discovery:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
@@ -226,6 +284,14 @@ spec:
                   observedAt:
                     type: string
                     format: date-time
+                  decisionStage:
+                    type: string
+                  intervalSource:
+                    type: string
+                  priceEvaluated:
+                    type: boolean
+                  economicsSource:
+                    type: string
                   desiredWorkers:
                     type: integer
                     format: int64

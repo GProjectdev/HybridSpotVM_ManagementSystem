@@ -6,25 +6,20 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	utiljson "k8s.io/apimachinery/pkg/util/json"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/yaml"
 )
-
-const autoLabel = "training.dcnlab.com/automatic"
-const defaultsName = "automatic-policy-defaults"
 
 type DiscoveryReconciler struct {
 	client.Client
@@ -86,12 +81,30 @@ func selectedBinding(ctx context.Context, r client.Reader, sts *unstructured.Uns
 	return found, target, nil
 }
 
-func autoName(name string) string {
-	h := sha256.Sum256([]byte(name))
-	if len(name) > 35 {
-		name = name[:35]
+// A workload has one allocator, explicitly supplied by its owner.
+func workloadPolicy(ctx context.Context, reader client.Reader, sts *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	policies := p.NewList("TrainingPolicy")
+	if err := reader.List(ctx, policies, client.InNamespace(sts.GetNamespace())); err != nil {
+		return nil, err
 	}
-	return name + "-auto-" + hex.EncodeToString(h[:4])
+	var found *unstructured.Unstructured
+	for i := range policies.Items {
+		obj := &policies.Items[i]
+		if stringField(obj.Object, "spec", "workloadRef", "apiVersion") != "apps/v1" ||
+			stringField(obj.Object, "spec", "workloadRef", "kind") != "StatefulSet" ||
+			stringField(obj.Object, "spec", "workloadRef", "name") != sts.GetName() {
+			continue
+		}
+		if found != nil {
+			return nil, fmt.Errorf("multiple TrainingPolicies reference workload; refusing multiple allocators")
+		}
+		found = obj
+	}
+	if found != nil && (found.GetUID() == "" || !found.GetDeletionTimestamp().IsZero() ||
+		stringField(found.Object, "spec", "workloadRef", "uid") != string(sts.GetUID())) {
+		return nil, fmt.Errorf("policy/workload identity is stale or policy is deleting")
+	}
+	return found, nil
 }
 
 func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -103,90 +116,21 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if !sts.GetDeletionTimestamp().IsZero() {
 		return ctrl.Result{}, nil
 	}
-	policy := p.NewObject("TrainingPolicy")
-	key := types.NamespacedName{Namespace: sts.GetNamespace(), Name: autoName(sts.GetName())}
-	err := r.Reader.Get(ctx, key, policy)
-	exists := err == nil
-	if err != nil && !apierrors.IsNotFound(err) {
+	policy, err := workloadPolicy(ctx, r.Reader, sts)
+	if err != nil {
 		return again, err
 	}
-	report := func(reason string) (ctrl.Result, error) {
-		if !exists {
-			ctrl.LoggerFrom(ctx).Info("workload discovery waiting", "workload", req.NamespacedName, "reason", reason)
-			return again, nil
-		}
-		return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", map[string]interface{}{"ready": false, "reason": reason, "observedAt": time.Now().UTC().Format(time.RFC3339)})
+	if policy == nil {
+		return ctrl.Result{}, nil
 	}
-	if exists && (policy.GetLabels()[autoLabel] != "true" || stringField(policy.Object, "spec", "workloadRef", "uid") != string(sts.GetUID())) {
-		return again, fmt.Errorf("automatic policy name collision; refusing adoption or recreated workload")
+	report := func(reason string) (ctrl.Result, error) {
+		return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", map[string]interface{}{"ready": false, "reason": reason, "observedAt": time.Now().UTC().Format(time.RFC3339)})
 	}
 	b, target, err := selectedBinding(ctx, r.Reader, sts)
 	if err != nil {
 		return report(err.Error())
 	}
-	if !exists {
-		// A manually configured policy remains authoritative; never create a second allocator.
-		policies := p.NewList("TrainingPolicy")
-		if err := r.Reader.List(ctx, policies, client.InNamespace(sts.GetNamespace())); err != nil {
-			return again, err
-		}
-		for _, other := range policies.Items {
-			if stringField(other.Object, "spec", "workloadRef", "name") == sts.GetName() {
-				return report("existing workload policy prevents automatic adoption")
-			}
-		}
-		cm := &corev1.ConfigMap{}
-		if err := r.Reader.Get(ctx, types.NamespacedName{Namespace: "hybridspot-system", Name: defaultsName}, cm); err != nil {
-			return report("configure hybridspot-system/" + defaultsName)
-		}
-		var spec map[string]interface{}
-		raw, decodeErr := yaml.YAMLToJSON([]byte(cm.Data["spec.yaml"]))
-		if decodeErr != nil {
-			return report("invalid defaults YAML")
-		}
-		if err := utiljson.Unmarshal(raw, &spec); err != nil || spec == nil {
-			return report("invalid defaults YAML")
-		}
-		for k := range spec {
-			switch k {
-			case "capacity", "policy", "checkpoint", "riskProfileRef", "replacement":
-			default:
-				return report("unsupported defaults key: " + k)
-			}
-		}
-		if stringField(spec, "riskProfileRef", "name") == "" || stringField(spec, "capacity", "aws", "karmadaCluster") == "" {
-			return report("riskProfileRef and AWS cluster defaults required")
-		}
-		if strings.Contains(string(raw), "__REPLACE_") {
-			return report("replace all AWS defaults placeholders before enabling")
-		}
-		for _, field := range []string{"region", "instanceType", "ami", "subnetId", "vpcId"} {
-			if stringField(spec, "capacity", "aws", field) == "" {
-				return report("missing AWS default: " + field)
-			}
-		}
-		if stringField(spec, "capacity", "aws", "credentialsRef", "name") == "" {
-			return report("AWS credentialsRef.name is required")
-		}
-		replicas, ok, _ := unstructured.NestedInt64(sts.Object, "spec", "replicas")
-		if !ok {
-			replicas = 1
-		}
-		spec["workloadRef"] = map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": sts.GetName(), "uid": string(sts.GetUID())}
-		spec["sourceCluster"] = target
-		spec["targetWorkers"] = replicas
-		spec["expectedWorldSize"] = replicas
-		spec["runtimeRef"] = map[string]interface{}{"name": runtimeName(key.Name, target)}
-		policy.SetName(key.Name)
-		policy.SetNamespace(key.Namespace)
-		policy.SetLabels(map[string]string{autoLabel: "true"})
-		policy.Object["spec"] = spec
-		if err := r.Create(ctx, policy); err != nil {
-			return again, err
-		}
-		return again, nil
-	}
-	input := p.ReadPolicySpec(policy)
+	input := p.ReadPolicyInput(policy)
 	replicas, ok, _ := unstructured.NestedInt64(sts.Object, "spec", "replicas")
 	if !ok {
 		replicas = 1
@@ -211,7 +155,7 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return report(err.Error())
 	}
 	phase := "Stable"
-	status := map[string]interface{}{"ready": true, "phase": phase, "sourceCluster": input.SourceCluster, "targetCluster": target, "bindingName": b.GetName(), "bindingUID": string(b.GetUID()), "observedAt": time.Now().UTC().Format(time.RFC3339), "transitionStartedAt": nil, "dispatchSuspended": nil}
+	status := map[string]interface{}{"ready": true, "phase": phase, "observedGeneration": policy.GetGeneration(), "workloadUID": string(sts.GetUID()), "runtimeRef": map[string]interface{}{"name": input.RuntimeRefName}, "reason": nil, "sourceCluster": input.SourceCluster, "targetCluster": target, "bindingName": b.GetName(), "bindingUID": string(b.GetUID()), "observedAt": time.Now().UTC().Format(time.RFC3339), "transitionStartedAt": nil, "dispatchSuspended": nil}
 	if target != input.SourceCluster {
 		status["phase"] = "MigrationRequired"
 		// Keep the first observed transition timestamp stable so old restore evidence cannot match.
@@ -232,10 +176,7 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			status["phase"] = "Restoring"
 			status["transitionStartedAt"] = request.GetCreationTimestamp().UTC().Format(time.RFC3339)
 			if validateGroupVerified(request) == nil {
-				before := policy.DeepCopy()
-				_ = unstructured.SetNestedField(policy.Object, target, "spec", "sourceCluster")
-				_ = unstructured.SetNestedField(policy.Object, runtimeName(policy.GetName(), target), "spec", "runtimeRef", "name")
-				return again, r.Patch(ctx, policy, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
+				return again, r.recordVerifiedPlacement(ctx, policy, target)
 			}
 			return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", status)
 		}
@@ -252,16 +193,24 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return again, err
 		}
 		if verified && !suspended {
-			before := policy.DeepCopy()
-			_ = unstructured.SetNestedField(policy.Object, target, "spec", "sourceCluster")
-			_ = unstructured.SetNestedField(policy.Object, runtimeName(policy.GetName(), target), "spec", "runtimeRef", "name")
-			if err := r.Patch(ctx, policy, client.MergeFrom(before)); err != nil {
-				return again, err
-			}
-			return again, nil
+			return again, r.recordVerifiedPlacement(ctx, policy, target)
 		}
 	}
 	return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", status)
+}
+
+// Placement is controller-owned observation; the user's initial intent is immutable to us.
+func (r *DiscoveryReconciler) recordVerifiedPlacement(ctx context.Context, policy *unstructured.Unstructured, target string) error {
+	input := p.ReadPolicySpec(policy)
+	before := policy.DeepCopy()
+	_ = unstructured.SetNestedMap(policy.Object, map[string]interface{}{
+		"policyUID": string(policy.GetUID()), "workloadUID": string(input.WorkloadRef.UID),
+		"initialSourceCluster": input.SourceCluster, "initialRuntimeName": input.RuntimeRefName,
+		"activeCluster": target, "runtimeRef": map[string]interface{}{"name": runtimeName(policy.GetName(), target)},
+		"verified": true, "verifiedAt": time.Now().UTC().Format(time.RFC3339),
+	}, "status", "placement")
+	// A concurrent spec update must force verification against the new intent.
+	return r.Status().Patch(ctx, policy, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
 }
 
 func runtimeName(policy, cluster string) string {
@@ -269,10 +218,20 @@ func runtimeName(policy, cluster string) string {
 	return policy + "-rt-" + hex.EncodeToString(h[:3])
 }
 
+func discoveryReady(policy *unstructured.Unstructured) bool {
+	return boolField(policy.Object, "status", "discovery", "ready") &&
+		intField(policy.Object, "status", "discovery", "observedGeneration") == policy.GetGeneration() &&
+		stringField(policy.Object, "status", "discovery", "workloadUID") == stringField(policy.Object, "spec", "workloadRef", "uid")
+}
+
 func (r *DiscoveryReconciler) ensureRuntime(ctx context.Context, policy, sts *unstructured.Unstructured, cluster string) error {
-	input := p.ReadPolicySpec(policy)
+	input := p.ReadPolicyInput(policy)
 	obj := p.NewObject("TrainingRuntime")
-	obj.SetName(runtimeName(policy.GetName(), cluster))
+	name := runtimeName(policy.GetName(), cluster)
+	if cluster == input.SourceCluster {
+		name = input.RuntimeRefName
+	}
+	obj.SetName(name)
 	obj.SetNamespace(policy.GetNamespace())
 	obj.SetLabels(map[string]string{p.LabelPolicyUID: string(policy.GetUID())})
 	containers, _, _ := unstructured.NestedSlice(sts.Object, "spec", "template", "spec", "containers")
@@ -301,7 +260,7 @@ func (r *DiscoveryReconciler) ensureRuntime(ctx context.Context, policy, sts *un
 
 func (r *DiscoveryReconciler) verifiedTransition(ctx context.Context, policy *unstructured.Unstructured, target, started string) (bool, error) {
 	cp := &CheckpointReconciler{Client: r.Client}
-	if _, inflight, _, _, err := cp.checkpointState(ctx, p.ReadPolicySpec(policy)); err != nil {
+	if _, inflight, _, _, err := cp.checkpointState(ctx, p.ReadPolicyInput(policy)); err != nil {
 		return false, err
 	} else if inflight {
 		return false, nil
@@ -315,7 +274,7 @@ func (r *DiscoveryReconciler) verifiedTransition(ctx context.Context, policy *un
 	if err := r.Reader.List(ctx, list, client.InNamespace(policy.GetNamespace())); err != nil {
 		return false, err
 	}
-	input := p.ReadPolicySpec(policy)
+	input := p.ReadPolicyInput(policy)
 	for _, req := range list.Items {
 		if req.GetCreationTimestamp().Time.Before(since) || req.GetUID() == "" || req.GetGeneration() < 1 {
 			continue
@@ -337,7 +296,7 @@ func (r *DiscoveryReconciler) verifiedTransition(ctx context.Context, policy *un
 	return false, nil
 }
 
-// Automatic policies recheck live intent before creating any cloud capacity.
+// Every policy rechecks live intent before creating cloud capacity.
 func automaticPlacement(ctx context.Context, r client.Reader, policy *unstructured.Unstructured) (string, error) {
 	sts := p.NewObject("StatefulSet")
 	if err := r.Get(ctx, types.NamespacedName{Namespace: policy.GetNamespace(), Name: stringField(policy.Object, "spec", "workloadRef", "name")}, sts); err != nil {
@@ -345,6 +304,13 @@ func automaticPlacement(ctx context.Context, r client.Reader, policy *unstructur
 	}
 	if string(sts.GetUID()) != stringField(policy.Object, "spec", "workloadRef", "uid") || !sts.GetDeletionTimestamp().IsZero() {
 		return "", fmt.Errorf("workload UID changed or deleting")
+	}
+	owner, err := workloadPolicy(ctx, r, sts)
+	if err != nil {
+		return "", err
+	}
+	if owner == nil || owner.GetUID() != policy.GetUID() {
+		return "", fmt.Errorf("policy is not the unique workload owner")
 	}
 	b, target, err := selectedBinding(ctx, r, sts)
 	if err != nil {
@@ -357,7 +323,7 @@ func automaticPlacement(ctx context.Context, r client.Reader, policy *unstructur
 	if replicas != intField(policy.Object, "spec", "targetWorkers") {
 		return "", fmt.Errorf("replica change requires explicit operation")
 	}
-	if target != stringField(policy.Object, "spec", "sourceCluster") {
+	if target != p.ReadPolicyInput(policy).SourceCluster {
 		suspended, _, _ := unstructured.NestedBool(b.Object, "spec", "suspension", "dispatching")
 		if !suspended {
 			return "", fmt.Errorf("migration target requires pre-established dispatch suspension")
@@ -375,7 +341,8 @@ func mapPolicies(c client.Client, kind string) handler.MapFunc {
 		}
 		var out []reconcile.Request
 		for _, item := range list.Items {
-			match := kind == "binding" || (kind == "risk" && stringField(item.Object, "spec", "riskProfileRef", "name") == obj.GetName()) || (kind == "runtime" && stringField(item.Object, "spec", "runtimeRef", "name") == obj.GetName())
+			input := p.ReadPolicyInput(&item)
+			match := kind == "binding" || (kind == "risk" && input.RiskProfileName == obj.GetName()) || (kind == "runtime" && input.RuntimeRefName == obj.GetName())
 			if kind == "node" || kind == "replacement" {
 				match = item.GetUID() != "" && obj.GetLabels()[p.LabelPolicyUID] == string(item.GetUID())
 			}
@@ -390,6 +357,7 @@ func mapPolicies(c client.Client, kind string) handler.MapFunc {
 func (r *DiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).Named("statefulset-policy-discovery").
 		For(p.NewObject("StatefulSet")).
+		Watches(p.NewObject("TrainingPolicy"), handler.EnqueueRequestsFromMapFunc(mapPolicyWorkload), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 			b, ok := obj.(*unstructured.Unstructured)
 			if !ok || stringField(b.Object, "spec", "resource", "kind") != "StatefulSet" {
@@ -397,4 +365,17 @@ func (r *DiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}
 			return []reconcile.Request{{NamespacedName: types.NamespacedName{Namespace: b.GetNamespace(), Name: stringField(b.Object, "spec", "resource", "name")}}}
 		})).Complete(r)
+}
+
+func mapPolicyWorkload(_ context.Context, obj client.Object) []reconcile.Request {
+	policy, ok := obj.(*unstructured.Unstructured)
+	if !ok || stringField(policy.Object, "spec", "workloadRef", "apiVersion") != "apps/v1" ||
+		stringField(policy.Object, "spec", "workloadRef", "kind") != "StatefulSet" {
+		return nil
+	}
+	name := stringField(policy.Object, "spec", "workloadRef", "name")
+	if name == "" {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: types.NamespacedName{Namespace: obj.GetNamespace(), Name: name}}}
 }

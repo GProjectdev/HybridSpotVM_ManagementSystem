@@ -43,7 +43,7 @@ func TestCapacityGateUsesFreshAPIReaderForRetirement(t *testing.T) {
 	risk := riskFixture(now)
 	recovery := spotRecoveryFixture("recover-worker-00", "policy-uid", "train-worker-00", "old-worker-uid", "Pending")
 	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"))
-	reconciler.APIReader = fake.NewClientBuilder().WithScheme(testScheme()).WithRuntimeObjects(recovery).Build()
+	reconciler.APIReader = freshPolicyReader(t, reconciler, recovery)
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}); err != nil {
 		t.Fatalf("policy reconcile: %v", err)
@@ -64,7 +64,7 @@ func TestCapacityGateCleanupRequestedRetiresSlotAfterRestart(t *testing.T) {
 	risk := riskFixture(now)
 	recovery := spotRecoveryFixture("recover-worker-00", "policy-uid", "train-worker-00", "old-worker-uid", "CleanupRequested")
 	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"))
-	reconciler.APIReader = fake.NewClientBuilder().WithScheme(testScheme()).WithRuntimeObjects(recovery).Build()
+	reconciler.APIReader = freshPolicyReader(t, reconciler, recovery)
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}); err != nil {
 		t.Fatalf("policy reconcile after restart: %v", err)
@@ -139,7 +139,7 @@ func TestCapacityGateProjectedInventoryBlocksUnexpectedWorkerAndMissingGenerated
 	})
 	extra.Object["spec"] = map[string]interface{}{"marketType": "Spot"}
 	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"))
-	reconciler.APIReader = fake.NewClientBuilder().WithScheme(testScheme()).WithRuntimeObjects(extra).Build()
+	reconciler.APIReader = freshPolicyReader(t, reconciler, extra)
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}); err != nil {
 		t.Fatalf("policy reconcile: %v", err)
@@ -158,9 +158,7 @@ func TestCapacityGateProjectedInventoryBlocksUnexpectedWorkerAndMissingGenerated
 func TestCapacityGateFixedTargetChangeKeepsHistoricalBaselineAcrossReconciles(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy := policyFixtureForCapacity(now, 2)
-	policy.Object["status"] = map[string]interface{}{
-		trainingpolicy.StatusPolicyPath: map[string]interface{}{"desiredWorkers": int64(1)},
-	}
+	_ = unstructured.SetNestedField(policy.Object, int64(1), "status", trainingpolicy.StatusPolicyPath, "desiredWorkers")
 	runtimeObj := runtimeFixture(now)
 	risk := riskFixture(now)
 	reconciler := policyReconcilerFixture(t, func() time.Time { return now }, policy, runtimeObj, risk, workloadFixture("workload-uid"))
@@ -209,8 +207,12 @@ func TestCapacityLifecycleRequiresGroupRoundForOnDemandToSpot(t *testing.T) {
 		t.Fatalf("capacity decision = %#v, want replacement operation", capacity)
 	}
 	op := newSpotReplacementObject()
- if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:capacity.OperationName},op);err==nil{t.Fatal("automatic partial operation created without full checkpoint")}
- if !capacity.Blocked{t.Fatal("missing checkpoint did not block replacement")}
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: capacity.OperationName}, op); err == nil {
+		t.Fatal("automatic partial operation created without full checkpoint")
+	}
+	if !capacity.Blocked {
+		t.Fatal("missing checkpoint did not block replacement")
+	}
 }
 
 func TestCompletedReplacementSuccessorsFollowsLatestReplacementChain(t *testing.T) {
@@ -280,6 +282,30 @@ func policyFixtureForCapacity(now time.Time, targetWorkers int64) *unstructured.
 		"aws": map[string]interface{}{"karmadaCluster": "aws", "hardwareType": "gpu", "nodeLabel": "gpu"},
 	}
 	return policy
+}
+
+func freshPolicyReader(t *testing.T, r *PolicyReconciler, extra *unstructured.Unstructured) client.Reader {
+	t.Helper()
+	var objects []client.Object
+	for _, kind := range []string{"StatefulSet", "TrainingPolicy"} {
+		list := trainingpolicy.NewList(kind)
+		if err := r.List(context.Background(), list); err != nil {
+			t.Fatal(err)
+		}
+		for i := range list.Items {
+			objects = append(objects, list.Items[i].DeepCopy())
+		}
+	}
+	bindings := &unstructured.UnstructuredList{}
+	bindings.SetGroupVersionKind(bindingObject().GroupVersionKind().GroupVersion().WithKind("ResourceBindingList"))
+	if err := r.List(context.Background(), bindings); err != nil {
+		t.Fatal(err)
+	}
+	for i := range bindings.Items {
+		objects = append(objects, bindings.Items[i].DeepCopy())
+	}
+	objects = append(objects, extra)
+	return fake.NewClientBuilder().WithScheme(testScheme()).WithObjects(objects...).Build()
 }
 
 func spotRecoveryFixture(name, policyUID, oldName, oldUID, phase string) *unstructured.Unstructured {

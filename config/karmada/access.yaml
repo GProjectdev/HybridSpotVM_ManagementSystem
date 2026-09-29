@@ -15,7 +15,13 @@ metadata:
   name: hybridspot-management
 rules:
 - apiGroups: [training.dcnlab.com]
-  resources: [trainingpolicies, spotriskprofiles, trainingruntimes, spotrecoveries, spotreplacements]
+  resources: [trainingpolicies]
+  verbs: [get, list, watch, patch]
+- apiGroups: [training.dcnlab.com]
+  resources: [spotriskprofiles]
+  verbs: [get, list, watch]
+- apiGroups: [training.dcnlab.com]
+  resources: [trainingruntimes, spotrecoveries, spotreplacements]
   verbs: [get, list, watch, create, patch, update]
 - apiGroups: [training.dcnlab.com]
   resources: [trainingpolicies/status, spotriskprofiles/status, spotrecoveries/status, spotreplacements/status]

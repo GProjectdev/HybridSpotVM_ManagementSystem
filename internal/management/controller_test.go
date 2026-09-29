@@ -202,10 +202,16 @@ func TestPolicyReconcileCannotReplaceWithOnlySurvivorBaseline(t *testing.T) {
 		t.Fatalf("policy reconcile: %v", err)
 	}
 	op := newSpotReplacementObject()
- if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:"train-worker-01-old-node-uid-replace"},op);err==nil{t.Fatal("automatic replacement incorrectly selected partial recovery")}
- updated:=trainingpolicy.NewObject("TrainingPolicy")
- if err:=reconciler.Get(context.Background(),types.NamespacedName{Namespace:"default",Name:"train"},updated);err!=nil{t.Fatal(err)}
- if !boolField(updated.Object,"status","policy","provisioningBlocked"){t.Fatal("missing durable group checkpoint did not block replacement")}
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-01-old-node-uid-replace"}, op); err == nil {
+		t.Fatal("automatic replacement incorrectly selected partial recovery")
+	}
+	updated := trainingpolicy.NewObject("TrainingPolicy")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
+		t.Fatal(err)
+	}
+	if !boolField(updated.Object, "status", "policy", "provisioningBlocked") {
+		t.Fatal("missing durable group checkpoint did not block replacement")
+	}
 }
 
 func TestPolicyReconcileAdoptsCompletedReplacementSuccessor(t *testing.T) {
@@ -361,6 +367,25 @@ func TestCheckpointReconcileBlocksNewCheckpointWhenLiveWorkloadUIDStale(t *testi
 	}
 }
 
+func TestCheckpointPaperMissingMeasurementsStillCreates(t *testing.T) {
+	now := mustParseTime(t, "2026-09-26T00:00:00Z")
+	policy := checkpointPolicyFixture(now)
+	_ = unstructured.SetNestedField(policy.Object, true, "spec", "checkpoint", "paperProfile", "enabled")
+	reconciler := checkpointReconcilerFixture(t, func() time.Time { return now }, policy, runtimeFixture(now), riskFixture(now), workloadFixture("workload-uid"))
+	req := ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "train"}}
+	if _, err := reconciler.Reconcile(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	getOnlyMigration(t, reconciler.Client)
+	if err := reconciler.Get(context.Background(), req.NamespacedName, policy); err != nil {
+		t.Fatal(err)
+	}
+	message, _, _ := unstructured.NestedString(policy.Object, "status", "checkpoint", "message")
+	if !strings.Contains(message, "bootstrap interval") {
+		t.Fatalf("missing bootstrap provenance: %q", message)
+	}
+}
+
 func policyReconcilerFixture(t *testing.T, clock func() time.Time, objects ...*unstructured.Unstructured) *PolicyReconciler {
 	t.Helper()
 	statusObjects := make([]client.Object, 0, len(objects))
@@ -373,6 +398,34 @@ func policyReconcilerFixture(t *testing.T, clock func() time.Time, objects ...*u
 	for _, obj := range objects {
 		if err := c.Create(context.Background(), obj); err != nil {
 			t.Fatalf("create %s/%s fixture: %v", obj.GetKind(), obj.GetName(), err)
+		}
+	}
+	// These fixtures exercise allocation after successful discovery and suspended
+	// capacity preparation. Discovery/gate rejection is covered independently.
+	for _, obj := range objects {
+		if obj.GetKind() != "TrainingPolicy" {
+			continue
+		}
+		sts := trainingpolicy.NewObject("StatefulSet")
+		if err := c.Get(context.Background(), client.ObjectKey{Namespace: obj.GetNamespace(), Name: stringField(obj.Object, "spec", "workloadRef", "name")}, sts); err != nil {
+			continue
+		}
+		input := trainingpolicy.ReadPolicyInput(obj)
+		_ = unstructured.SetNestedField(sts.Object, input.TargetWorkers, "spec", "replicas")
+		if err := c.Update(context.Background(), sts); err != nil {
+			t.Fatal(err)
+		}
+		rb := bindingObject()
+		rb.SetNamespace(sts.GetNamespace())
+		rb.SetName(sts.GetName() + "-statefulset")
+		rb.SetUID("binding-uid")
+		rb.Object["spec"] = map[string]interface{}{
+			"resource":   map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "namespace": sts.GetNamespace(), "name": sts.GetName(), "uid": string(sts.GetUID())},
+			"clusters":   []interface{}{map[string]interface{}{"name": input.Capacity.AWSCluster, "replicas": input.TargetWorkers}},
+			"suspension": map[string]interface{}{"dispatching": input.SourceCluster != input.Capacity.AWSCluster},
+		}
+		if err := c.Create(context.Background(), rb); err != nil {
+			t.Fatal(err)
 		}
 	}
 	return &PolicyReconciler{Client: c, Clock: clock}
@@ -419,6 +472,9 @@ func checkpointPolicyFixture(now time.Time) *unstructured.Unstructured {
 		"targetWorkers": int64(1),
 		"checkpoint":    map[string]interface{}{"candidateIntervalSeconds": []interface{}{int64(60)}, "riskBands": []interface{}{map[string]interface{}{"maxLambdaPerHour": float64(1), "intervalSeconds": int64(60)}}},
 	}
+	policy.Object["status"] = map[string]interface{}{"discovery": map[string]interface{}{
+		"ready": true, "observedGeneration": int64(1), "workloadUID": "workload-uid",
+	}}
 	return policy
 }
 

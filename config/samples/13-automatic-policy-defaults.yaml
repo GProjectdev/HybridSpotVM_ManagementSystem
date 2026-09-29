@@ -1,3 +1,5 @@
+# Legacy example only. Policy discovery no longer reads this ConfigMap.
+# Configure a user-owned TrainingPolicy instead; see docs/architecture-realignment.md.
 apiVersion: v1
 kind: ConfigMap
 metadata:

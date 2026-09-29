@@ -22,13 +22,15 @@ import (
 )
 
 type RuntimeObservation struct {
-	GlobalStep           int64    `json:"globalStep"`
-	CheckpointID         string   `json:"checkpointID"`
-	Rank                 int64    `json:"rank"`
-	WorldSize            int64    `json:"worldSize"`
-	ObservedAt           string   `json:"observedAt"`
-	State                string   `json:"state"`
-	IterationTimeSeconds *float64 `json:"iterationTimeSeconds,omitempty"`
+	GlobalStep           int64                 `json:"globalStep"`
+	CheckpointID         string                `json:"checkpointID"`
+	Rank                 int64                 `json:"rank"`
+	WorldSize            int64                 `json:"worldSize"`
+	ObservedAt           string                `json:"observedAt"`
+	State                string                `json:"state"`
+	IterationTimeSeconds *float64              `json:"iterationTimeSeconds,omitempty"`
+	IterationMeasurement *IterationMeasurement `json:"iterationMeasurement,omitempty"`
+	WorkerSession        string                `json:"workerSession,omitempty"`
 }
 type RuntimeReconciler struct {
 	client.Client
@@ -78,7 +80,7 @@ func attachPreviousObservations(current, previous []interface{}) {
 		p := raw.(map[string]interface{})
 		name, _ := p["name"].(string)
 		old := byName[name]
-		if old == nil || p["uid"] != old["uid"] || p["rank"] != old["rank"] || p["checkpointID"] != old["checkpointID"] {
+		if old == nil || p["uid"] != old["uid"] || p["rank"] != old["rank"] || p["checkpointID"] != old["checkpointID"] || p["workerSession"] != old["workerSession"] {
 			continue
 		}
 		at, e1 := time.Parse(time.RFC3339Nano, p["observedAt"].(string))
@@ -132,6 +134,7 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 	}
 	seen := map[int64]bool{}
 	samples := []interface{}{}
+	timings := []RuntimeObservation{}
 	var minStep int64
 	var checkpoint string
 	h := r.HTTP
@@ -187,6 +190,11 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 		}
 		seen[sample.Rank] = true
 		entry := map[string]interface{}{"name": pod.Name, "uid": string(pod.UID), "rank": sample.Rank, "nodeName": pod.Spec.NodeName, "globalStep": sample.GlobalStep, "checkpointID": sample.CheckpointID, "observedAt": sample.ObservedAt}
+		entry["workerSession"] = sample.WorkerSession
+		if validIterationMeasurement(sample, time.Now()) {
+			entry["iterationMeasurement"] = sample.IterationMeasurement.status()
+		}
+		timings = append(timings, sample)
 		samples = append(samples, entry)
 	}
 	if int64(len(samples)) != expected {
@@ -200,6 +208,7 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 	status["phase"] = "Running"
 	status["workloadUID"] = originUID
 	status["memberWorkloadUID"] = string(sts.UID)
+	aggregateIterationTiming(status, timings, time.Now())
 	return nil
 }
 

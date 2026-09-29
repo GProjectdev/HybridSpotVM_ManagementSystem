@@ -3,19 +3,24 @@ package management
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	utiljson "k8s.io/apimachinery/pkg/util/json"
 	"testing"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/yaml"
 )
+
+const defaultsName = "automatic-policy-defaults"
 
 func discoveryDefaultsYAML(extra string) string {
 	return `riskProfileRef:
@@ -72,16 +77,27 @@ func discover(t *testing.T, r *DiscoveryReconciler, sts *unstructured.Unstructur
 	t.Helper()
 	ctx := context.Background()
 	req := ctrl.Request{NamespacedName: client.ObjectKeyFromObject(sts)}
-	if _, err := r.Reconcile(ctx, req); err != nil {
+	cm := &corev1.ConfigMap{}
+	if err := r.Get(ctx, types.NamespacedName{Namespace: "hybridspot-system", Name: defaultsName}, cm); err != nil {
 		t.Fatal(err)
 	}
-	obj := p.NewObject("TrainingPolicy")
-	if err := r.Get(ctx, types.NamespacedName{Namespace: sts.GetNamespace(), Name: autoName(sts.GetName())}, obj); err != nil {
+	raw, err := yaml.YAMLToJSON([]byte(cm.Data["spec.yaml"]))
+	if err != nil {
 		t.Fatal(err)
 	}
-	obj.SetUID("auto-policy-uid")
-	obj.SetGeneration(1)
-	if err := r.Update(ctx, obj); err != nil {
+	var userSpec map[string]interface{}
+	if err := utiljson.Unmarshal(raw, &userSpec); err != nil {
+		t.Fatal(err)
+	}
+	_, cluster, err := selectedBinding(ctx, r.Reader, sts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	obj := userPolicy(sts, cluster)
+	for key, value := range userSpec {
+		obj.Object["spec"].(map[string]interface{})[key] = value
+	}
+	if err := r.Create(ctx, obj); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.Reconcile(ctx, req); err != nil {
@@ -93,7 +109,7 @@ func discover(t *testing.T, r *DiscoveryReconciler, sts *unstructured.Unstructur
 	return obj
 }
 
-func TestAutomaticPolicyReplacementDefaults(t *testing.T) {
+func TestUserPolicyReplacementOptIn(t *testing.T) {
 	t.Run("omitted stays disabled", func(t *testing.T) {
 		r, sts, _ := discoveryFixture(t, "aws")
 		obj := discover(t, r, sts)
@@ -115,7 +131,7 @@ func TestAutomaticPolicyReplacementDefaults(t *testing.T) {
 	})
 }
 
-func TestAutomaticPolicyCreatesOneSpotOneOnDemand(t *testing.T) {
+func TestUserPolicyCreatesOneSpotOneOnDemand(t *testing.T) {
 	r, sts, _ := discoveryFixture(t, "aws")
 	obj := discover(t, r, sts)
 	ctx := context.Background()
@@ -150,10 +166,13 @@ func TestAutomaticPolicyCreatesOneSpotOneOnDemand(t *testing.T) {
 		t.Fatalf("risk watch mapping: %v", requests)
 	}
 }
-func TestAutomaticNonAWSAndMigrationFreeze(t *testing.T) {
+func TestUserPolicyNonAWSAndMigrationFreeze(t *testing.T) {
 	r, sts, rb := discoveryFixture(t, "onpre1")
 	ctx := context.Background()
 	obj := discover(t, r, sts)
+	if err := r.Create(ctx, riskFixture(time.Now().UTC())); err != nil {
+		t.Fatal(err)
+	}
 	pr := &PolicyReconciler{Client: r.Client, APIReader: r.Reader}
 	if _, err := pr.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(obj)}); err != nil {
 		t.Fatal(err)
@@ -164,6 +183,13 @@ func TestAutomaticNonAWSAndMigrationFreeze(t *testing.T) {
 	}
 	if len(list.Items) != 0 {
 		t.Fatal("non-AWS placement allocated AWS VMs")
+	}
+	current := p.NewObject("TrainingPolicy")
+	if err := r.Get(ctx, client.ObjectKeyFromObject(obj), current); err != nil {
+		t.Fatal(err)
+	}
+	if stringField(current.Object, "status", "policy", "reason") != "placement_gate" {
+		t.Fatal("user policy bypassed placement gate")
 	}
 	if err := r.Get(ctx, client.ObjectKeyFromObject(rb), rb); err != nil {
 		t.Fatal(err)
@@ -266,6 +292,49 @@ func TestVerifiedTransitionRequiresCurrentRestoreAndLiveRuntime(t *testing.T) {
 	}
 	if ok, err := r.verifiedTransition(ctx, policy, "aws", since); err != nil || ok {
 		t.Fatalf("stale generation accepted: %v %v", ok, err)
+	}
+	_ = unstructured.SetNestedField(req.Object, int64(1), "status", "observedGeneration")
+	if err := r.Update(ctx, req); err != nil {
+		t.Fatal(err)
+	}
+	rb := bindingObject()
+	if err := r.Get(ctx, types.NamespacedName{Namespace: "default", Name: "trainer-statefulset"}, rb); err != nil {
+		t.Fatal(err)
+	}
+	_ = unstructured.SetNestedSlice(rb.Object, []interface{}{map[string]interface{}{"name": "aws", "replicas": int64(2)}}, "spec", "clusters")
+	if err := r.Update(ctx, rb); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchStatusSubtree(ctx, r.Client, policy, "discovery", map[string]interface{}{"targetCluster": "aws", "transitionStartedAt": since}); err != nil {
+		t.Fatal(err)
+	}
+	before := policy.DeepCopy()
+	for i := 0; i < 2; i++ {
+		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(sts)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := r.Get(ctx, client.ObjectKeyFromObject(policy), policy); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before.Object["spec"], policy.Object["spec"]) {
+		t.Fatal("verified transition rewrote user spec")
+	}
+	input := p.ReadPolicyInput(policy)
+	if input.SourceCluster != "aws" || input.RuntimeRefName != rt.GetName() {
+		t.Fatal("verified execution placement was not selected")
+	}
+	if stringField(policy.Object, "status", "discovery", "phase") != "Stable" {
+		t.Fatal("placement did not converge")
+	}
+	requests := mapPolicies(r.Client, "runtime")(ctx, rt)
+	if len(requests) != 1 || requests[0].Name != policy.GetName() {
+		t.Fatal("target runtime updates did not map to policy")
+	}
+	cp := &CheckpointReconciler{Client: r.Client}
+	snapshot, err := cp.runtimeSnapshot(ctx, input)
+	if err != nil || snapshot.Name != rt.GetName() || snapshot.SourceCluster != "aws" {
+		t.Fatalf("checkpoint still reads old runtime: %+v %v", snapshot, err)
 	}
 }
 

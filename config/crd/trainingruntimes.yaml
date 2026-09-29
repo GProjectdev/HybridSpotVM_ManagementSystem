@@ -77,6 +77,44 @@ spec:
                 format: int64
               checkpointID:
                 type: string
+              iterationTimeSeconds:
+                type: number
+                minimum: 0
+              workerSession:
+                type: string
+              iterationMeasurement:
+                type: object
+                properties:
+                  method:
+                    type: string
+                    enum: [optimizer-update-window-v1]
+                  aggregation:
+                    type: string
+                    enum: [max-rank-mean]
+                  startStep:
+                    type: integer
+                    format: int64
+                    minimum: 0
+                  endStep:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  samples:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  rankCount:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  meanSeconds:
+                    type: number
+                    minimum: 0
+                  workerSession:
+                    type: string
+                  observedAt:
+                    type: string
+                    format: date-time
               readyRanks:
                 type: integer
                 format: int64
@@ -120,6 +158,44 @@ spec:
                       minimum: 0
                     checkpointID:
                       type: string
+                    iterationTimeSeconds:
+                      type: number
+                      minimum: 0
+                    workerSession:
+                      type: string
+                    iterationMeasurement:
+                      type: object
+                      properties:
+                        method:
+                          type: string
+                          enum: [optimizer-update-window-v1]
+                        aggregation:
+                          type: string
+                          enum: [max-rank-mean]
+                        startStep:
+                          type: integer
+                          format: int64
+                          minimum: 0
+                        endStep:
+                          type: integer
+                          format: int64
+                          minimum: 1
+                        samples:
+                          type: integer
+                          format: int64
+                          minimum: 1
+                        rankCount:
+                          type: integer
+                          format: int64
+                          minimum: 1
+                        meanSeconds:
+                          type: number
+                          minimum: 0
+                        workerSession:
+                          type: string
+                        observedAt:
+                          type: string
+                          format: date-time
                     observedAt:
                       type: string
                       format: date-time
@@ -152,6 +228,44 @@ spec:
                           format: int64
                         checkpointID:
                           type: string
+                        iterationTimeSeconds:
+                          type: number
+                          minimum: 0
+                        workerSession:
+                          type: string
+                        iterationMeasurement:
+                          type: object
+                          properties:
+                            method:
+                              type: string
+                              enum: [optimizer-update-window-v1]
+                            aggregation:
+                              type: string
+                              enum: [max-rank-mean]
+                            startStep:
+                              type: integer
+                              format: int64
+                              minimum: 0
+                            endStep:
+                              type: integer
+                              format: int64
+                              minimum: 1
+                            samples:
+                              type: integer
+                              format: int64
+                              minimum: 1
+                            rankCount:
+                              type: integer
+                              format: int64
+                              minimum: 1
+                            meanSeconds:
+                              type: number
+                              minimum: 0
+                            workerSession:
+                              type: string
+                            observedAt:
+                              type: string
+                              format: date-time
                         readyRanks:
                           type: integer
                           format: int64
@@ -195,6 +309,44 @@ spec:
                                 minimum: 0
                               checkpointID:
                                 type: string
+                              iterationTimeSeconds:
+                                type: number
+                                minimum: 0
+                              workerSession:
+                                type: string
+                              iterationMeasurement:
+                                type: object
+                                properties:
+                                  method:
+                                    type: string
+                                    enum: [optimizer-update-window-v1]
+                                  aggregation:
+                                    type: string
+                                    enum: [max-rank-mean]
+                                  startStep:
+                                    type: integer
+                                    format: int64
+                                    minimum: 0
+                                  endStep:
+                                    type: integer
+                                    format: int64
+                                    minimum: 1
+                                  samples:
+                                    type: integer
+                                    format: int64
+                                    minimum: 1
+                                  rankCount:
+                                    type: integer
+                                    format: int64
+                                    minimum: 1
+                                  meanSeconds:
+                                    type: number
+                                    minimum: 0
+                                  workerSession:
+                                    type: string
+                                  observedAt:
+                                    type: string
+                                    format: date-time
                               observedAt:
                                 type: string
                                 format: date-time

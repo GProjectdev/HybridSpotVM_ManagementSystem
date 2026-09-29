@@ -10,6 +10,7 @@ import (
 	"time"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -93,7 +94,7 @@ func TestPartialReplacementRejectsInfrastructureFencedSource(t *testing.T) {
 	}
 }
 
-func TestReplacementEmergencyCreatesPartialCheckpointBeforeReplacementReady(t *testing.T) {
+func TestCoordinatorEmergencyCreatesPartialCheckpointBeforeReplacementReady(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	op := replacementOperationFixture()
 	op.SetName(replacementOperationName("old", "old-uid"))
@@ -107,8 +108,15 @@ func TestReplacementEmergencyCreatesPartialCheckpointBeforeReplacementReady(t *t
 		t.Fatalf("replacement reconcile: %v", err)
 	}
 	migration := trainingpolicy.NewObject("FluidCRMigration")
+	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName() + "-partial-checkpoint"}, migration); !apierrors.IsNotFound(err) {
+		t.Fatalf("replacement reconciler must not create checkpoints: %v", err)
+	}
+	cp := &CheckpointReconciler{Client: reconciler.Client, Clock: reconciler.Clock}
+	if err := cp.coordinateReplacementCheckpoint(context.Background(), op); err != nil {
+		t.Fatal(err)
+	}
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: op.GetName() + "-partial-checkpoint"}, migration); err != nil {
-		t.Fatalf("emergency partial checkpoint: %v", err)
+		t.Fatalf("coordinator partial checkpoint: %v", err)
 	}
 	replacement := trainingpolicy.NewObject("NodeProvision")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "new"}, replacement); err != nil {
@@ -162,6 +170,10 @@ func TestReplacementWaitsForExistingFullCheckpointBeforePartial(t *testing.T) {
 	inflight.SetGeneration(1)
 	inflight.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": "aws", "phase": "Running", "observedGeneration": int64(1)}}}
 	reconciler := replacementReconcilerFixture(t, now, op, replacementPolicyFixture(), replacementOldNodeProvisionFixture(), replacementReadyNodeProvisionFixture(), inflight)
+	cp := &CheckpointReconciler{Client: reconciler.Client, Clock: reconciler.Clock}
+	if err := cp.coordinateReplacementCheckpoint(context.Background(), op); err == nil || !strings.Contains(err.Error(), "periodic checkpoint") {
+		t.Fatalf("coordinator must serialize with periodic checkpoint: %v", err)
+	}
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
 		t.Fatalf("replacement reconcile: %v", err)
@@ -189,7 +201,7 @@ func TestPlannedReplacementWaitsForCheckpointQuiesceReceipt(t *testing.T) {
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "old-replace"}, updated); err != nil {
 		t.Fatal(err)
 	}
-	if msg := stringField(updated.Object, "status", "message"); !strings.Contains(msg, "quiesce periodic checkpoints") {
+	if msg := stringField(updated.Object, "status", "message"); !strings.Contains(msg, "checkpoint coordinator") {
 		t.Fatalf("message = %q", msg)
 	}
 }
@@ -211,6 +223,10 @@ func TestReplacementReconcileRepairsPlacementForExistingPartialCheckpoint(t *tes
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	migration := replacementPartialCheckpointFixture(false)
 	reconciler := replacementReconcilerFixture(t, now, replacementOperationFixture(), replacementPolicyFixture(), replacementOldNodeProvisionFixture(), replacementReadyNodeProvisionFixture(), migration)
+	cp := &CheckpointReconciler{Client: reconciler.Client, Clock: reconciler.Clock}
+	if err := cp.coordinateReplacementCheckpoint(context.Background(), replacementOperationFixture()); err != nil {
+		t.Fatal(err)
+	}
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
 		t.Fatalf("replacement reconcile: %v", err)
@@ -409,13 +425,17 @@ func assertProducedRestoreMatchesFixtureShape(t *testing.T, restore *unstructure
 	}
 }
 
-func TestReplacementReconcileEmitsTypedPartialCheckpointAfterReplacementReady(t *testing.T) {
+func TestCoordinatorEmitsTypedPartialCheckpointAfterReplacementReady(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	op := replacementOperationFixture()
 	policy := replacementPolicyFixture()
 	oldNP := replacementOldNodeProvisionFixture()
 	replacement := replacementReadyNodeProvisionFixture()
 	reconciler := replacementReconcilerFixture(t, now, op, policy, oldNP, replacement)
+	cp := &CheckpointReconciler{Client: reconciler.Client, Clock: reconciler.Clock}
+	if err := cp.coordinateReplacementCheckpoint(context.Background(), op); err != nil {
+		t.Fatal(err)
+	}
 
 	if _, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "old-replace"}}); err != nil {
 		t.Fatalf("replacement reconcile: %v", err)
@@ -624,8 +644,8 @@ func replacementPartialCheckpointFixture(completed bool) *unstructured.Unstructu
 	migration.SetUID(types.UID("checkpoint-uid"))
 	migration.SetGeneration(3)
 	migration.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "replacement-checkpoint"})
-	migration.SetAnnotations(map[string]string{"training.dcnlab.com/checkpoint-id": "old-replace-partial-checkpoint"})
-	migration.Object["spec"] = map[string]interface{}{"resume": false, "partialCheckpoint": map[string]interface{}{"targetRanks": []interface{}{int64(1)}}}
+	migration.SetAnnotations(map[string]string{"training.dcnlab.com/checkpoint-id": "old-replace-partial-checkpoint", "training.dcnlab.com/recovery-operation": "old-replace", "training.dcnlab.com/recovery-operation-uid": "operation-uid"})
+	migration.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "uid": "workload-uid"}, "resume": false, "partialCheckpoint": map[string]interface{}{"targetRanks": []interface{}{int64(1)}}}
 	phase := "Running"
 	status := map[string]interface{}{"clusterName": "aws", "phase": phase, "observedGeneration": int64(3)}
 	if completed {

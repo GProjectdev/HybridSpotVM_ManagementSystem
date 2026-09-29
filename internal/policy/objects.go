@@ -154,6 +154,10 @@ func NewFluidCRMigration(input PolicyInput, runtime RuntimeSnapshot, startedAt t
 
 func PolicyStatus(decision Decision, observedAt time.Time) map[string]interface{} {
 	return map[string]interface{}{
+		"decisionStage":                         decision.DecisionStage,
+		"intervalSource":                        decision.IntervalSource,
+		"priceEvaluated":                        decision.PriceEvaluated,
+		"economicsSource":                       decision.EconomicsSource,
 		"observedAt":                            observedAt.UTC().Format(time.RFC3339),
 		"desiredWorkers":                        decision.DesiredWorkers,
 		"onDemandWorkers":                       decision.OnDemandWorkers,
@@ -179,6 +183,9 @@ func CheckpointStatus(name string, intervalSeconds int64, observedAt time.Time, 
 		"reason":                      reason,
 		"deduplication":               "restart,inflight,emergency,no-catchup",
 		"sourcePropagationPolicyOnly": true,
+		"periodicQuiesced":            false,
+		"replacementOperation":        nil,
+		"message":                     nil,
 	}
 }
 

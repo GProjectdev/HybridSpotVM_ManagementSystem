@@ -48,23 +48,31 @@ type WorkloadRef struct {
 }
 
 type RuntimeSnapshot struct {
-	Name               string
-	Generation         int64
-	WorkloadUID        types.UID
-	StatusWorkloadUID  types.UID
-	MemberWorkloadUID  types.UID
-	SourceCluster      string
-	Phase              string
-	ExpectedWorldSize  int64
-	Port               int64
-	Container          string
-	GlobalStep         int64
-	CheckpointID       string
-	ReadyRanks         int64
-	WorldSize          int64
-	ObservedGeneration int64
-	Pods               []PodRuntime
-	ObservedAt         string
+	IterationTimeSeconds float64
+	IterationMethod      string
+	IterationAggregation string
+	IterationRankCount   int64
+	IterationStartStep   int64
+	IterationEndStep     int64
+	IterationSamples     int64
+	IterationObservedAt  string
+	Name                 string
+	Generation           int64
+	WorkloadUID          types.UID
+	StatusWorkloadUID    types.UID
+	MemberWorkloadUID    types.UID
+	SourceCluster        string
+	Phase                string
+	ExpectedWorldSize    int64
+	Port                 int64
+	Container            string
+	GlobalStep           int64
+	CheckpointID         string
+	ReadyRanks           int64
+	WorldSize            int64
+	ObservedGeneration   int64
+	Pods                 []PodRuntime
+	ObservedAt           string
 }
 
 type PodRuntime struct {
@@ -113,6 +121,7 @@ type CapacityDefaults struct {
 }
 
 type CheckpointPolicy struct {
+	Paper              PaperProfile
 	MinIntervalSeconds int64
 	MaxIntervalSeconds int64
 	CandidateIntervals []int64
@@ -133,6 +142,7 @@ type RiskBand struct {
 }
 
 type PolicyInput struct {
+	Suspended       bool
 	Namespace       string
 	PolicyName      string
 	PolicyUID       types.UID
@@ -151,6 +161,10 @@ type PolicyInput struct {
 }
 
 type Decision struct {
+	DecisionStage             string
+	IntervalSource            string
+	PriceEvaluated            bool
+	EconomicsSource           string
 	DesiredWorkers            int64
 	OnDemandWorkers           int64
 	SpotWorkers               int64
@@ -170,6 +184,7 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 		resume = true
 	}
 	return PolicyInput{
+		Suspended:       obj.GetAnnotations()["training.dcnlab.com/suspend"] == "true",
 		Namespace:       obj.GetNamespace(),
 		PolicyName:      obj.GetName(),
 		PolicyUID:       obj.GetUID(),
@@ -205,6 +220,16 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 			SecurityGroupIDs:   nestedStringSlice(obj.Object, "spec", "capacity", "aws", "securityGroupIds"),
 		},
 		Checkpoint: CheckpointPolicy{
+			Paper: PaperProfile{
+				Enabled:             nestedBoolDefault(obj.Object, false, "spec", "checkpoint", "paperProfile", "enabled"),
+				Asynchronous:        nestedBoolDefault(obj.Object, false, "spec", "checkpoint", "paperProfile", "asynchronous"),
+				GPUToDRAMSeconds:    nestedFloatDefault(obj.Object, -1, "spec", "checkpoint", "paperProfile", "gpuToDramSeconds"),
+				StorageSeconds:      nestedFloatDefault(obj.Object, -1, "spec", "checkpoint", "paperProfile", "storageSeconds"),
+				CheckpointGiB:       nestedFloatDefault(obj.Object, 0, "spec", "checkpoint", "paperProfile", "checkpointGiB"),
+				BufferGiB:           nestedFloatDefault(obj.Object, 0, "spec", "checkpoint", "paperProfile", "bufferGiB"),
+				ObservedAt:          nestedStringDefault(obj.Object, "", "spec", "checkpoint", "paperProfile", "observedAt"),
+				CandidateIterations: nestedIntSlice(obj.Object, "spec", "checkpoint", "paperProfile", "candidateIterations"),
+			},
 			MinIntervalSeconds: nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "minIntervalSeconds"),
 			MaxIntervalSeconds: nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "maxIntervalSeconds"),
 			CandidateIntervals: nestedIntSlice(obj.Object, "spec", "checkpoint", "candidateIntervalSeconds"),
@@ -213,6 +238,27 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 			Resume:             resume,
 		},
 	}
+}
+
+// ReadPolicyInput resolves verified execution placement without rewriting user intent.
+// Status from a different policy, workload, or initial intent is never adopted.
+func ReadPolicyInput(obj *unstructured.Unstructured) PolicyInput {
+	input := ReadPolicySpec(obj)
+	state, found, err := unstructured.NestedMap(obj.Object, "status", "placement")
+	if err != nil || !found || input.PolicyUID == "" || input.WorkloadRef.UID == "" {
+		return input
+	}
+	if state["verified"] != true || state["policyUID"] != string(input.PolicyUID) ||
+		state["workloadUID"] != string(input.WorkloadRef.UID) ||
+		state["initialSourceCluster"] != input.SourceCluster || state["initialRuntimeName"] != input.RuntimeRefName {
+		return input
+	}
+	cluster, _ := state["activeCluster"].(string)
+	name, _, _ := unstructured.NestedString(state, "runtimeRef", "name")
+	if cluster != "" && name != "" {
+		input.SourceCluster, input.RuntimeRefName = cluster, name
+	}
+	return input
 }
 
 func ReadRuntimeStatus(obj *unstructured.Unstructured, sourceCluster string) RuntimeSnapshot {
@@ -228,23 +274,31 @@ func ReadRuntimeStatus(obj *unstructured.Unstructured, sourceCluster string) Run
 		}
 	}
 	return RuntimeSnapshot{
-		Name:               obj.GetName(),
-		Generation:         obj.GetGeneration(),
-		WorkloadUID:        types.UID(nestedStringDefault(obj.Object, "", "spec", "workloadRef", "uid")),
-		StatusWorkloadUID:  types.UID(nestedStringDefault(selected, "", "status", "workloadUID")),
-		MemberWorkloadUID:  types.UID(nestedStringDefault(selected, "", "status", "memberWorkloadUID")),
-		SourceCluster:      nestedStringDefault(obj.Object, sourceCluster, "spec", "sourceCluster"),
-		Phase:              nestedStringDefault(selected, "", "status", "phase"),
-		ExpectedWorldSize:  nestedIntDefault(obj.Object, 0, "spec", "expectedWorldSize"),
-		Port:               nestedIntDefault(obj.Object, DefaultControlPort, "spec", "port"),
-		Container:          nestedStringDefault(obj.Object, "", "spec", "container"),
-		GlobalStep:         nestedIntDefault(selected, 0, "status", "globalStep"),
-		CheckpointID:       nestedStringDefault(selected, "", "status", "checkpointID"),
-		ReadyRanks:         nestedIntDefault(selected, 0, "status", "readyRanks"),
-		WorldSize:          nestedIntDefault(selected, 0, "status", "worldSize"),
-		ObservedGeneration: nestedIntDefault(selected, 0, "status", "observedGeneration"),
-		Pods:               readRuntimePods(selected),
-		ObservedAt:         nestedStringDefault(selected, "", "status", "observedAt"),
+		IterationTimeSeconds: nestedFloatDefault(selected, 0, "status", "iterationTimeSeconds"),
+		IterationMethod:      nestedStringDefault(selected, "", "status", "iterationMeasurement", "method"),
+		IterationAggregation: nestedStringDefault(selected, "", "status", "iterationMeasurement", "aggregation"),
+		IterationRankCount:   nestedIntDefault(selected, 0, "status", "iterationMeasurement", "rankCount"),
+		IterationStartStep:   nestedIntDefault(selected, 0, "status", "iterationMeasurement", "startStep"),
+		IterationEndStep:     nestedIntDefault(selected, 0, "status", "iterationMeasurement", "endStep"),
+		IterationSamples:     nestedIntDefault(selected, 0, "status", "iterationMeasurement", "samples"),
+		IterationObservedAt:  nestedStringDefault(selected, "", "status", "iterationMeasurement", "observedAt"),
+		Name:                 obj.GetName(),
+		Generation:           obj.GetGeneration(),
+		WorkloadUID:          types.UID(nestedStringDefault(obj.Object, "", "spec", "workloadRef", "uid")),
+		StatusWorkloadUID:    types.UID(nestedStringDefault(selected, "", "status", "workloadUID")),
+		MemberWorkloadUID:    types.UID(nestedStringDefault(selected, "", "status", "memberWorkloadUID")),
+		SourceCluster:        nestedStringDefault(obj.Object, sourceCluster, "spec", "sourceCluster"),
+		Phase:                nestedStringDefault(selected, "", "status", "phase"),
+		ExpectedWorldSize:    nestedIntDefault(obj.Object, 0, "spec", "expectedWorldSize"),
+		Port:                 nestedIntDefault(obj.Object, DefaultControlPort, "spec", "port"),
+		Container:            nestedStringDefault(obj.Object, "", "spec", "container"),
+		GlobalStep:           nestedIntDefault(selected, 0, "status", "globalStep"),
+		CheckpointID:         nestedStringDefault(selected, "", "status", "checkpointID"),
+		ReadyRanks:           nestedIntDefault(selected, 0, "status", "readyRanks"),
+		WorldSize:            nestedIntDefault(selected, 0, "status", "worldSize"),
+		ObservedGeneration:   nestedIntDefault(selected, 0, "status", "observedGeneration"),
+		Pods:                 readRuntimePods(selected),
+		ObservedAt:           nestedStringDefault(selected, "", "status", "observedAt"),
 	}
 }
 
@@ -268,10 +322,14 @@ func ReadRiskStatus(obj *unstructured.Unstructured) RiskSnapshot {
 }
 
 func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decision {
+	return DecideAt(input, runtime, risk, time.Now().UTC())
+}
+
+func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now time.Time) Decision {
 	desired := input.TargetWorkers
 	alpha := clampAlpha(input.Alpha)
 	horizonSeconds := maxInt64(1, input.ForecastSeconds)
-	riskKnown := risk.Ready && risk.LambdaPerHour >= 0
+	riskKnown := risk.Ready && finite(risk.LambdaPerHour) && risk.LambdaPerHour >= 0
 	if !riskKnown {
 		return Decision{DesiredWorkers: desired, Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: applyIntervalBounds(conservativeInterval(input.Checkpoint), input.Checkpoint), CostEvaluated: false, ProvisioningBlocked: true, Reason: "risk_unavailable"}
 	}
@@ -281,19 +339,48 @@ func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decis
 		onDemand = input.MinOnDemand
 		spot = desired - onDemand
 	}
-	now := time.Now().UTC()
 	fallback, costEvaluated := economicFallback(input, risk, now)
 	reason := "independent_spot_survival"
+	priceEvaluated := finite(risk.SpotPricePerHour) && risk.SpotPricePerHour > 0 &&
+		finite(risk.OnDemandPricePerHour) && risk.OnDemandPricePerHour > 0
+	if priceEvaluated && risk.SpotPricePerHour >= risk.OnDemandPricePerHour {
+		spot, onDemand = 0, desired
+		reason = "spot_price_not_cheaper"
+	}
 	if fallback {
 		spot, onDemand = 0, desired
 		reason = "expected_eviction_loss_exceeds_od_cost"
 	}
 	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, now)
 	interval = applyIntervalBounds(interval, input.Checkpoint)
-	return Decision{DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
+	stage, source := "Bootstrap", "risk-band-bootstrap"
+	if intervalEvaluated {
+		stage, source = "CheckpointMeasured", "checkpoint-cost-adaptive"
+		if input.Checkpoint.Paper.Enabled {
+			stage, source = "PaperMeasured", "paper-equations-1-5"
+		}
+	}
+	if costEvaluated {
+		stage = "EconomicsEvaluated"
+	}
+	economicsSource := ""
+	if costEvaluated {
+		economicsSource = input.Economics.Source
+		if economicsSource == "" {
+			economicsSource = "operator-calibration"
+		}
+	}
+	return Decision{DecisionStage: stage, IntervalSource: source, PriceEvaluated: priceEvaluated, EconomicsSource: economicsSource, DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
 }
 
 func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot, spotWorkers int64, now time.Time) (int64, bool) {
+	if checkpoint.Paper.Enabled {
+		selection, err := SelectPaperInterval(checkpoint, runtime, risk, now)
+		if err != nil {
+			return applyIntervalBounds(EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), checkpoint), false
+		}
+		return selection.Seconds, true
+	}
 	measured := checkpoint.MeasuredCosts
 	observedAt, err := time.Parse(time.RFC3339, measured.ObservedAt)
 	if err != nil || observedAt.After(now) || now.Sub(observedAt) > 10*time.Minute || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers <= 0 {

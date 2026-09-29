@@ -66,7 +66,10 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	if policy == nil {
 		return again, fmt.Errorf("placement policy not found")
 	}
-	input := p.ReadPolicySpec(policy)
+	if !policy.GetDeletionTimestamp().IsZero() {
+		return ctrl.Result{}, nil
+	}
+	input := p.ReadPolicyInput(policy)
 	if target != input.Capacity.AWSCluster || target == input.SourceCluster {
 		return again, fmt.Errorf("group placement requires source to configured AWS cluster")
 	}
@@ -87,6 +90,9 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	request := newRestoreRequest()
 	err := r.Reader.Get(ctx, client.ObjectKey{Namespace: key.Namespace, Name: name}, request)
 	if apierrors.IsNotFound(err) {
+		if input.Suspended {
+			return again, nil
+		}
 		round, e := selectGroupCheckpoint(ctx, r.Reader, input)
 		if e != nil {
 			return again, e

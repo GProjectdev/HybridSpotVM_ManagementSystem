@@ -7,6 +7,7 @@ import (
 
 // Loss is per individual eviction, in the same currency as the hourly VM price.
 type EconomicsPolicy struct {
+	Source              string
 	Enabled             bool
 	LossCostPerEviction float64
 	ObservedAt          string

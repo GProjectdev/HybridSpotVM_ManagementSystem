@@ -12,6 +12,7 @@ spec:
   sourceCluster: ${SOURCE_CLUSTER}
   expectedWorldSize: 2
   targetWorkers: 2
+  # Optional name for the policy-manager-created runtime; defaults to <policy-name>-runtime.
   runtimeRef:
     name: ${RUNTIME_NAME}
   riskProfileRef:

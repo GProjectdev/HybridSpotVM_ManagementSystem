@@ -28,6 +28,7 @@ type ReplacementReconciler struct {
 
 type replacementSpec struct {
 	Operation                    string
+	OperationUID                 string
 	PolicyName                   string
 	PolicyUID                    string
 	PolicyGeneration             int64
@@ -188,28 +189,15 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err != nil {
 		return "Pending", err
 	}
-	var migration *unstructured.Unstructured
-	if spec.EmergencyEventID != "" {
-		migration, _, err = r.ensureReplacementPartialCheckpoint(ctx, op.GetNamespace(), spec)
-		if err != nil {
-			return replacementPhaseAwaitingPartialCheckpoint, err
-		}
-	}
 	if created {
 		return replacementPhaseAwaitingReplacementReady, nil
 	}
 	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
 		return replacementPhaseAwaitingReplacementReady, err
 	}
-	if migration == nil {
-		var checkpointCreated bool
-		migration, checkpointCreated, err = r.ensureReplacementPartialCheckpoint(ctx, op.GetNamespace(), spec)
-		if err != nil {
-			return replacementPhaseAwaitingPartialCheckpoint, err
-		}
-		if checkpointCreated {
-			return replacementPhaseAwaitingPartialCheckpoint, nil
-		}
+	migration, err := r.replacementCheckpoint(ctx, op.GetNamespace(), spec)
+	if err != nil {
+		return replacementPhaseAwaitingPartialCheckpoint, err
 	}
 	if err := verifyPartialCheckpointEvidence(migration, spec); err != nil {
 		return replacementPhaseAwaitingPartialCheckpoint, err
@@ -271,6 +259,7 @@ func (r *ReplacementReconciler) existingSpotRecoveryPhase(ctx context.Context, n
 func readReplacementSpec(op *unstructured.Unstructured) (replacementSpec, error) {
 	spec := replacementSpec{
 		Operation:                    stringField(op.Object, "spec", "operation"),
+		OperationUID:                 string(op.GetUID()),
 		PolicyName:                   stringField(op.Object, "spec", "policyRef", "name"),
 		PolicyUID:                    stringField(op.Object, "spec", "policyRef", "uid"),
 		PolicyGeneration:             intField(op.Object, "spec", "policyRef", "generation"),
@@ -477,64 +466,16 @@ func verifyReplacementReadyForOperation(replacement *unstructured.Unstructured, 
 	return nil
 }
 
-func (r *ReplacementReconciler) ensureReplacementPartialCheckpoint(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, bool, error) {
-	if err := r.waitForExistingCheckpointsTerminal(ctx, ns, spec); err != nil {
-		return nil, false, err
+// Replacement consumes checkpoints; only CheckpointReconciler creates them.
+func (r *ReplacementReconciler) replacementCheckpoint(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, error) {
+	obj := trainingpolicy.NewObject("FluidCRMigration")
+	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.Operation + "-partial-checkpoint"}, obj); err != nil {
+		return nil, fmt.Errorf("waiting for checkpoint coordinator to create partial checkpoint: %w", err)
 	}
-	return r.ensurePartialCheckpoint(ctx, ns, spec)
-}
-
-func (r *ReplacementReconciler) ensurePartialCheckpoint(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, bool, error) {
-	name := spec.Operation + "-partial-checkpoint"
-	existing := trainingpolicy.NewObject("FluidCRMigration")
-	err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, existing)
-	if err == nil {
-		if existing.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID || existing.GetLabels()[trainingpolicy.LabelRole] != "replacement-checkpoint" {
-			return nil, false, fmt.Errorf("existing partial checkpoint ownership mismatch")
-		}
-		input := trainingpolicy.PolicyInput{Namespace: ns, PolicyName: spec.PolicyName, PolicyUID: types.UID(spec.PolicyUID)}
-		if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, existing, spec.SourceCluster)); err != nil {
-			return nil, false, err
-		}
-		return existing, false, nil
+	if err := verifyReplacementCheckpointIdentity(obj, spec); err != nil {
+		return nil, err
 	}
-	if !apierrors.IsNotFound(err) {
-		return nil, false, err
-	}
-	desired := trainingpolicy.NewObject("FluidCRMigration")
-	desired.SetNamespace(ns)
-	desired.SetName(name)
-	desired.SetLabels(map[string]string{
-		trainingpolicy.LabelManagedBy: "hybridspotvm-system",
-		trainingpolicy.LabelPolicy:    spec.PolicyName,
-		trainingpolicy.LabelPolicyUID: spec.PolicyUID,
-		trainingpolicy.LabelRole:      "replacement-checkpoint",
-	})
-	desired.SetAnnotations(map[string]string{
-		"training.dcnlab.com/recovery-operation": spec.Operation,
-		"training.dcnlab.com/started-at":         r.now().UTC().Format(time.RFC3339),
-		"training.dcnlab.com/checkpoint-id":      name,
-	})
-	desired.Object["spec"] = map[string]interface{}{
-		"workloadRef": map[string]interface{}{
-			"apiVersion": spec.WorkloadAPIVersion,
-			"kind":       spec.WorkloadKind,
-			"name":       spec.WorkloadName,
-			"uid":        spec.WorkloadUID,
-		},
-		"resume": false,
-		"partialCheckpoint": map[string]interface{}{
-			"targetRanks": int64SliceToInterface(spec.TargetRanks),
-		},
-	}
-	if err := r.Create(ctx, desired); err != nil {
-		return nil, false, err
-	}
-	input := trainingpolicy.PolicyInput{Namespace: ns, PolicyName: spec.PolicyName, PolicyUID: types.UID(spec.PolicyUID)}
-	if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, desired, spec.SourceCluster)); err != nil {
-		return nil, false, err
-	}
-	return desired, true, nil
+	return obj, nil
 }
 
 func verifyPartialCheckpointEvidence(migration *unstructured.Unstructured, spec replacementSpec) error {
@@ -548,38 +489,12 @@ func verifyPartialCheckpointEvidence(migration *unstructured.Unstructured, spec 
 	return err
 }
 
-func (r *ReplacementReconciler) waitForExistingCheckpointsTerminal(ctx context.Context, ns string, spec replacementSpec) error {
-	if spec.EmergencyEventID == "" {
-		policy := trainingpolicy.NewObject("TrainingPolicy")
-		if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
-			return fmt.Errorf("get TrainingPolicy checkpoint quiesce receipt: %w", err)
-		}
-		quiesced := boolField(policy.Object, "status", trainingpolicy.StatusCheckpointPath, "periodicQuiesced")
-		operation := stringField(policy.Object, "status", trainingpolicy.StatusCheckpointPath, "replacementOperation")
-		if !quiesced || operation != spec.Operation {
-			return fmt.Errorf("waiting for checkpoint controller to quiesce periodic checkpoints for replacement %s", spec.Operation)
-		}
-	}
-	list := trainingpolicy.NewList("FluidCRMigration")
-	labels := client.MatchingLabels{trainingpolicy.LabelPolicyUID: spec.PolicyUID, trainingpolicy.LabelRole: "checkpoint"}
-	if err := r.reader().List(ctx, list, client.InNamespace(ns), labels); err != nil {
-		return fmt.Errorf("list existing FluidCRMigration checkpoints: %w", err)
-	}
-	for i := range list.Items {
-		item := &list.Items[i]
-		if !isTerminalPhase(item, spec.SourceCluster) {
-			return fmt.Errorf("waiting for existing checkpoint %s to reach terminal phase before partial replacement", item.GetName())
-		}
-	}
-	return nil
-}
-
 func (r *ReplacementReconciler) replacementPolicyAndRuntime(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, *unstructured.Unstructured, error) {
 	policy := trainingpolicy.NewObject("TrainingPolicy")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
 		return nil, nil, fmt.Errorf("get TrainingPolicy: %w", err)
 	}
-	input := trainingpolicy.ReadPolicySpec(policy)
+	input := trainingpolicy.ReadPolicyInput(policy)
 	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: input.RuntimeRefName}, runtimeObj); err != nil {
 		return nil, nil, fmt.Errorf("get TrainingRuntime: %w", err)
