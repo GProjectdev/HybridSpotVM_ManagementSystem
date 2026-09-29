@@ -63,6 +63,9 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			return "", err
 		}
 		if !trainingpolicy.RuntimeReadyForCheckpoint(input, snapshot, r.now()) {
+			if policy.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
+				return "", errPartialReplacementNotReady
+			}
 			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
 			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID)
 			return name, err

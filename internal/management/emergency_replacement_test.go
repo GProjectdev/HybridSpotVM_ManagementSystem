@@ -15,6 +15,7 @@ import (
 func TestEmergencyReplacementNeedsDurableGroupRoundAndNoPeriodicCheckpoint(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy, runtime, node := emergencyReplacementFixtures(now)
+	policy.SetAnnotations(map[string]string{"training.dcnlab.com/planned-partial": "disabled"})
 	r := checkpointReconcilerFixture(t, func() time.Time { return now }, policy, runtime, node, workloadFixture("workload-uid"))
 	request := ctrl.Request{NamespacedName: client.ObjectKeyFromObject(policy)}
 	for i := 0; i < 2; i++ {
@@ -47,12 +48,12 @@ func TestEmergencyReplacementRejectsUnsafeEvidence(t *testing.T) {
 	}{
 		{"rank-zero", func(_, runtime, node *unstructured.Unstructured) {
 			_ = unstructured.SetNestedField(node.Object, "node-0", "status", "nodeName")
-		}, "no complete durable full-group checkpoint"},
+		}, "partial replacement prerequisites are not ready"},
 		{"stale", func(_, runtime, _ *unstructured.Unstructured) {
 			clusters, _, _ := unstructured.NestedSlice(runtime.Object, "status", "clusters")
 			clusters[0].(map[string]interface{})["status"].(map[string]interface{})["observedAt"] = "2020-01-01T00:00:00Z"
 			_ = unstructured.SetNestedSlice(runtime.Object, clusters, "status", "clusters")
-		}, "no complete durable full-group checkpoint"},
+		}, "partial replacement prerequisites are not ready"},
 		{"on-demand-signal", func(_, _, node *unstructured.Unstructured) {
 			_ = unstructured.SetNestedField(node.Object, "OnDemand", "spec", "marketType")
 		}, "Spot NodeProvision"},

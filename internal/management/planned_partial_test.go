@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,22 +14,26 @@ import (
 
 func TestPlannedPartialRouting(t *testing.T) {
 	for _, tc := range []struct {
-		name                               string
-		rank                               int
-		stale, changed, risk, group        bool
-		selected, reject                   bool
-		emergency, wrongInstance, notReady bool
+		name                                 string
+		rank                                 int
+		stale, changed, risk, group          bool
+		selected, reject                     bool
+		emergency, wrongInstance, notReady   bool
+		specFence, statusFence, otherCluster bool
 	}{
 		{name: "healthy nonzero rank", rank: 1, selected: true},
 		{name: "healthy rank zero", rank: 0, selected: true},
-		{name: "stale health uses group", rank: 1, stale: true},
+		{name: "stale health waits", rank: 1, stale: true},
 		{name: "changed UID refuses", rank: 1, changed: true, selected: true, reject: true},
-		{name: "at risk uses group", rank: 1, risk: true},
+		{name: "at risk waits for ownership", rank: 1, risk: true},
 		{name: "group already owns world", rank: 1, group: true},
 		{name: "live interruption rank zero", rank: 0, risk: true, emergency: true, selected: true},
 		{name: "live interruption rank one", rank: 1, risk: true, emergency: true, selected: true},
 		{name: "notice mismatched instance refuses", rank: 1, risk: true, emergency: true, wrongInstance: true, selected: true, reject: true},
-		{name: "unavailable node uses group", rank: 1, notReady: true},
+		{name: "unavailable node waits", rank: 1, notReady: true},
+		{name: "source fence waits", rank: 1, specFence: true},
+		{name: "observed fence waits", rank: 1, statusFence: true},
+		{name: "unsupported cluster waits", rank: 1, otherCluster: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, input := groupCheckpointFixture()
@@ -36,6 +41,9 @@ func TestPlannedPartialRouting(t *testing.T) {
 			input.Generation = 1
 			input.RuntimeRefName = "runtime"
 			input.Capacity.AWSCluster = "aws"
+			if tc.otherCluster {
+				input.Capacity.AWSCluster = "another-cluster"
+			}
 			now := time.Now().UTC().Truncate(time.Second)
 			policy := p.NewObject("TrainingPolicy")
 			policy.SetName("policy")
@@ -90,6 +98,12 @@ func TestPlannedPartialRouting(t *testing.T) {
 			if tc.notReady {
 				_ = unstructured.SetNestedField(old.Object, "Failed", "status", "phase")
 			}
+			if tc.specFence {
+				_ = unstructured.SetNestedMap(old.Object, map[string]interface{}{"operation": "other"}, "spec", "fence")
+			}
+			if tc.statusFence {
+				_ = unstructured.SetNestedMap(old.Object, map[string]interface{}{"phase": "Fenced"}, "status", "fence")
+			}
 			observed := now
 			if tc.stale {
 				observed = now.Add(-3 * time.Minute)
@@ -106,6 +120,34 @@ func TestPlannedPartialRouting(t *testing.T) {
 			selected, created, err := r.ensurePlannedPartialReplacement(context.Background(), policy, input, old, operation, "replacement", "OnDemand", eventID)
 			if selected != tc.selected || (err != nil) != tc.reject || created != (tc.selected && !tc.reject) {
 				t.Fatalf("selected=%v created=%v err=%v", selected, created, err)
+			}
+			if !selected && err == nil {
+				automaticCreated, automaticErr := r.ensureAutomaticSpotReplacement(context.Background(), policy, input, old, operation, "replacement", "OnDemand", eventID)
+				if automaticCreated || !errors.Is(automaticErr, errPartialReplacementNotReady) {
+					t.Fatalf("partial must wait without group fallback: created=%v err=%v", automaticCreated, automaticErr)
+				}
+				requests := &unstructured.UnstructuredList{}
+				requests.SetGroupVersionKind(newRestoreRequest().GroupVersionKind().GroupVersion().WithKind("RestoreRequestList"))
+				for _, list := range []*unstructured.UnstructuredList{requests, newSpotReplacementList()} {
+					if err := r.List(context.Background(), list, client.InNamespace("demo")); err != nil || len(list.Items) != 0 {
+						t.Fatalf("waiting partial created %s: %v, %v", list.GetKind(), list.Items, err)
+					}
+				}
+				if tc.stale {
+					current := p.NewObject("TrainingRuntime")
+					if err := r.Get(context.Background(), client.ObjectKeyFromObject(rt), current); err != nil {
+						t.Fatal(err)
+					}
+					clusters, _, _ := unstructured.NestedSlice(current.Object, "status", "clusters")
+					clusters[0].(map[string]interface{})["status"].(map[string]interface{})["observedAt"] = now.Format(time.RFC3339)
+					_ = unstructured.SetNestedSlice(current.Object, clusters, "status", "clusters")
+					if err := r.Update(context.Background(), current); err != nil {
+						t.Fatal(err)
+					}
+					if created, err := r.ensureAutomaticSpotReplacement(context.Background(), policy, input, old, operation, "replacement", "OnDemand", eventID); !created || err != nil {
+						t.Fatalf("fresh evidence should unblock partial: created=%v err=%v", created, err)
+					}
+				}
 			}
 			if created {
 				createdOp := newSpotReplacementObject()

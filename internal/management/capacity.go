@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var errPartialReplacementNotReady = errors.New("partial replacement prerequisites are not ready; group fallback is disabled")
 
 type capacityDecision struct {
 	Blocked             bool
@@ -98,6 +101,9 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 				created, err := r.ensureAutomaticSpotReplacement(ctx, policyObj, input, existing, result.OperationName, result.ReplacementName, desiredMarket, "")
 				if err != nil {
 					result.Reason = "replacement_unsupported"
+					if errors.Is(err, errPartialReplacementNotReady) {
+						result.Reason = "partial_replacement_waiting"
+					}
 					result.Message = err.Error()
 					return result, nil
 				}
@@ -131,12 +137,14 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarketType) || oldMarket == desiredMarketType {
 		return false, fmt.Errorf("replacement requires old and desired marketType to differ and be Spot/OnDemand")
 	}
-	// A live, coordinated world can preserve survivors, including when rank 0 moves.
+	// Missing partial evidence must not widen deletion to the whole world.
+	// Group replacement requires an explicit opt-out of planned partial.
 	if policyObj.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
 		selected, created, err := r.ensurePlannedPartialReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
 		if selected || err != nil {
 			return created, err
 		}
+		return false, errPartialReplacementNotReady
 	}
 	return r.ensureGroupReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
 }

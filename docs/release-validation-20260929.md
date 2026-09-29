@@ -1,5 +1,8 @@
 # 2026-09-29 재배포 및 검증 가이드
 
+Partial 재검증 시 [Partial 복원 재시도 가이드](partial-restore-retry-20260929.md)를
+먼저 확인한다. 준비 조건 미충족은 대기이며 그룹 복원으로 자동 전환하지 않는다.
+
 대상: 기존 MGMT + Karmada + AWS member, Buildah, Docker Hub,
 2-rank GPU DDP, NFS 공유 checkpoint 구성.
 이 문서는 과거 수동 status/lock 수정 절차를 대체한다. **실제 클러스터는 이번
@@ -66,7 +69,8 @@ kubectl --kubeconfig="$AWS_KUBECONFIG" get deploy,ds -A -o yaml > "$EVIDENCE/mem
 # 존재하는 실험 이름으로 지정한 경우에만 실행
 : "${OLD_NS:?}"
 : "${OLD_POLICY:?}"
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$OLD_NS" +  annotate trainingpolicy "$OLD_POLICY" training.dcnlab.com/suspend=true --overwrite
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$OLD_NS" \
+  annotate trainingpolicy "$OLD_POLICY" training.dcnlab.com/suspend=true --overwrite
 ```
 
 idle 상태에서 MGMT policy-manager/checkpoint-coordinator/spot-recovery-controller의
@@ -137,14 +141,18 @@ build_push() {
   buildah push --digestfile "$IMAGES/$NAME.digest" "$IMAGE" "docker://$IMAGE"
   printf '%s@%s\n' "$REPO" "$(cat "$IMAGES/$NAME.digest")" > "$IMAGES/$NAME.image"
 }
-for COMPONENT in vm-spot-risk-collector policy-manager checkpoint-coordinator +  spot-recovery-controller placement-webhook training-runtime-collector spot-watcher; do
-  build_push "$COMPONENT" "$REG/hybrid-spot-vm-system" "$SYS" +    --build-arg "COMPONENT=$COMPONENT"
+for COMPONENT in vm-spot-risk-collector policy-manager checkpoint-coordinator \
+  spot-recovery-controller placement-webhook training-runtime-collector spot-watcher; do
+  build_push "$COMPONENT" "$REG/hybrid-spot-vm-system" "$SYS" \
+  --build-arg "COMPONENT=$COMPONENT"
 done
 build_push stateful "$REG/stateful-migration-operator" "$STATEFUL"
 build_push provisioner "$REG/my-publiccloudvm-provisioner" "$PROV"
 build_push webhook "$REG/myfluidcr-operator" "$FLUID" -f "$FLUID/Dockerfile.webhook"
 build_push payload-base "$REG/myfluidcr-operator" "$FLUID" -f "$FLUID/Dockerfile.payload"
-build_push payload-stateful "$REG/myfluidcr-operator" "$STATEFUL" +  -f "$STATEFUL/Dockerfile.payload-overlay" +  --build-arg "FLUIDCR_PAYLOAD_IMAGE=$(cat "$IMAGES/payload-base.image")"
+build_push payload-stateful "$REG/myfluidcr-operator" "$STATEFUL" \
+  -f "$STATEFUL/Dockerfile.payload-overlay" \
+  --build-arg "FLUIDCR_PAYLOAD_IMAGE=$(cat "$IMAGES/payload-base.image")"
 build_push group-control "$REG/myfluidcr-operator" "$FLUID" -f "$FLUID/Dockerfile.group-control"
 ```
 
@@ -161,18 +169,32 @@ dev 이미지나 샘플 주소를 덮어쓰지 않는다.
 for CFG in "$KARMADA_KUBECONFIG" "$AWS_KUBECONFIG"; do
   kubectl --kubeconfig="$CFG" apply -k "$SYS/config/crd/"
   kubectl --kubeconfig="$CFG" apply -k "$STATEFUL/config/crd/"
-  kubectl --kubeconfig="$CFG" apply +    -f "$PROV/config/crd/bases/ml.dcn.ssu.ac.kr_nodeprovisions.yaml" +    -f "$PROV/config/crd/bases/ml.dcn.ssu.ac.kr_nodeprovisionnetconfigs.yaml"
-  kubectl --kubeconfig="$CFG" wait --for=condition=Established +    crd/trainingpolicies.training.dcnlab.com crd/trainingruntimes.training.dcnlab.com +    crd/fluidcrmigrations.fluidcr.dcnlab.com --timeout=120s
+  kubectl --kubeconfig="$CFG" apply \
+  -f "$PROV/config/crd/bases/ml.dcn.ssu.ac.kr_nodeprovisions.yaml" \
+  -f "$PROV/config/crd/bases/ml.dcn.ssu.ac.kr_nodeprovisionnetconfigs.yaml"
+  kubectl --kubeconfig="$CFG" wait --for=condition=Established \
+  crd/trainingpolicies.training.dcnlab.com crd/trainingruntimes.training.dcnlab.com \
+  crd/fluidcrmigrations.fluidcr.dcnlab.com --timeout=120s
 done
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f "$SYS/config/karmada/access.yaml"
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply +  -f "$SYS/config/karmada/runtime-interpreter.yaml" +  -f "$SYS/config/runbook/nodeprovision-status.yaml" +  -f "$STATEFUL/config/karmada/ric/restoreplan_resource_interpreter.yaml" +  -f "$STATEFUL/config/karmada/ric/fluidcrmigration_resource_interpreter.yaml"
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply +  -f "$STATEFUL/config/karmada/role.yaml" -f "$STATEFUL/config/karmada/binding.yaml"
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply \
+  -f "$SYS/config/karmada/runtime-interpreter.yaml" \
+  -f "$SYS/config/runbook/nodeprovision-status.yaml" \
+  -f "$STATEFUL/config/karmada/ric/restoreplan_resource_interpreter.yaml" \
+  -f "$STATEFUL/config/karmada/ric/fluidcrmigration_resource_interpreter.yaml"
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply \
+  -f "$STATEFUL/config/karmada/role.yaml" -f "$STATEFUL/config/karmada/binding.yaml"
 kubectl --kubeconfig="$AWS_KUBECONFIG" apply -f "$SYS/config/member/rbac.yaml"
 for AREA in checkpoint member; do
-  kubectl --kubeconfig="$AWS_KUBECONFIG" apply +    -f "$STATEFUL/config/$AREA/role.yaml" -f "$STATEFUL/config/$AREA/binding.yaml"
+  kubectl --kubeconfig="$AWS_KUBECONFIG" apply \
+  -f "$STATEFUL/config/$AREA/role.yaml" -f "$STATEFUL/config/$AREA/binding.yaml"
 done
-kubectl --kubeconfig="$AWS_KUBECONFIG" apply +  -f "$STATEFUL/config/member/artifact-role.yaml" +  -f "$STATEFUL/config/member/artifact-binding.yaml"
-kubectl --kubeconfig="$AWS_KUBECONFIG" auth can-i create pods --subresource=exec +  --as=system:serviceaccount:stateful-migration-system:stateful-checkpoint +  -n fluidcr-demo
+kubectl --kubeconfig="$AWS_KUBECONFIG" apply \
+  -f "$STATEFUL/config/member/artifact-role.yaml" \
+  -f "$STATEFUL/config/member/artifact-binding.yaml"
+kubectl --kubeconfig="$AWS_KUBECONFIG" auth can-i create pods --subresource=exec \
+  --as=system:serviceaccount:stateful-migration-system:stateful-checkpoint \
+  -n fluidcr-demo
 ```
 
 마지막 권한 확인의 기대값은 yes다. 다른 namespace/ServiceAccount라면 실명으로 바꾼다.
@@ -186,7 +208,8 @@ CRD 적용은 기존 status를 새 증거로 변환하지 않는다. 이전 oper
 ```bash
 set_image() {
   local CFG="$1" NS="$2" KIND="$3" NAME="$4" CONTAINER="$5" KEY="$6"
-  kubectl --kubeconfig="$CFG" -n "$NS" set image "$KIND/$NAME" +    "$CONTAINER=$(cat "$IMAGES/$KEY.image")"
+  kubectl --kubeconfig="$CFG" -n "$NS" set image "$KIND/$NAME" \
+  "$CONTAINER=$(cat "$IMAGES/$KEY.image")"
   kubectl --kubeconfig="$CFG" -n "$NS" rollout status "$KIND/$NAME" --timeout=600s
 }
 set_image "$MGMT_KUBECONFIG" stateful-migration-system deployment stateful-management manager stateful
@@ -252,7 +275,8 @@ jq '[.items[] | {name:.metadata.name,uid:.metadata.uid,
   capability:.metadata.labels["migration.dcnlab.com/restore-from-file"],
   runtime:.status.nodeInfo.containerRuntimeVersion,
   ready:[.status.conditions[]|select(.type=="Ready")]}]'
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n remote-cluster-provisioner-system +  logs deployment/remote-cluster-provisioner -c manager --since=15m --tail=150
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n remote-cluster-provisioner-system \
+  logs deployment/remote-cluster-provisioner -c manager --since=15m --tail=150
 ```
 
 라벨만 true로 patch하지 않는다. 새 NodeProvision Ready, actual runtime/hash/config,
@@ -343,7 +367,8 @@ spec:
 EOF
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f "$EVIDENCE/workload.json"
 export WORKLOAD_UID="$(kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get sts trainer -o jsonpath='{.metadata.uid}')"
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" label sts trainer +  "training.dcnlab.com/workload-uid=$WORKLOAD_UID" --overwrite
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" label sts trainer \
+  "training.dcnlab.com/workload-uid=$WORKLOAD_UID" --overwrite
 envsubst < "$SYS/config/samples/20-workload-propagationpolicy.yaml" |
   kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f -
 envsubst < "$SYS/config/samples/11-spot-risk-profile-static.yaml" |
@@ -385,11 +410,13 @@ Operator를 중복 설치하지 않는다. source/target 간 공유 파일 store
 - Runtime 생성 주체는 사용자 아닌 Policy Manager. TrainingPolicy spec은 관측값으로 재작성되지 않는다.
 
 ```bash
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" wait pod/trainer-0 pod/trainer-1 +  --for=condition=Ready --timeout=1200s
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" wait pod/trainer-0 pod/trainer-1 \
+  --for=condition=Ready --timeout=1200s
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get trainingruntime "$RUNTIME_NAME" -o json |
   jq '{spec:.spec,status:.status}'
 for POD in trainer-0 trainer-1; do
-  kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$POD" -c trainer +    --timestamps --since=2m --tail=20
+  kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$POD" -c trainer \
+  --timestamps --since=2m --tail=20
 done
 ```
 
@@ -399,7 +426,8 @@ Provisioner log, cloud-init, GPU allocatable과 Pending 이유를 조사한다.
 ### B. 주기 checkpoint 두 회 연속
 
 ```bash
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get fluidcrmigrations +  -o custom-columns='NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message' --watch
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get fluidcrmigrations \
+  -o custom-columns='NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message' --watch
 ```
 
 두 개의 새로운 round 각각 Completed, 파일/hash/export 증거, 자동 in-place resume,
@@ -415,8 +443,10 @@ kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get fluidcrmigrations +  -o cust
 ```bash
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get pods -l app=trainer -o json > "$EVIDENCE/pods-before.json"
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get nodeprovisions -o json > "$EVIDENCE/nodes-before.json"
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" patch spotriskprofile trainer-risk +  --type=merge -p '{"spec":{"staticLambdaPerHour":0.5}}'
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get spotreplacements,restorerequests +  -o custom-columns='KIND:.kind,NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message' --watch
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" patch spotriskprofile trainer-risk \
+  --type=merge -p '{"spec":{"staticLambdaPerHour":0.5}}'
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get spotreplacements,restorerequests \
+  -o custom-columns='KIND:.kind,NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message'
 ```
 
 새 operation UID를 기록하고 다음을 순서대로 확인한다.
@@ -451,14 +481,23 @@ KARMADA_KUBECONFIG로 조회한다. 시간과 전체 message를 잘라내지 않
 
 ```bash
 date -u
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" +  get trainingpolicies,trainingruntimes,spotriskprofiles,spotreplacements,restorerequests,nodeprovisions +  -o json > "$EVIDENCE/control.json"
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" +  get pods,statefulsets,pvc,fluidcrmigrations,restoreplans,nodeprovisions +  -o json > "$EVIDENCE/member.json"
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get events +  --sort-by=.metadata.creationTimestamp > "$EVIDENCE/events.txt"
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" \
+  get trainingpolicies,trainingruntimes,spotriskprofiles,spotreplacements,restorerequests,nodeprovisions \
+  -o json > "$EVIDENCE/control.json"
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" \
+  get pods,statefulsets,pvc,fluidcrmigrations,restoreplans,nodeprovisions \
+  -o json > "$EVIDENCE/member.json"
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get events \
+  --sort-by=.metadata.creationTimestamp > "$EVIDENCE/events.txt"
 for POD in trainer-0 trainer-1; do
-  kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$POD" -c trainer +    --timestamps --since=10m > "$EVIDENCE/$POD.log"
+  kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$POD" -c trainer \
+  --timestamps --since=10m > "$EVIDENCE/$POD.log"
 done
-kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get pods -l app=trainer +  -o custom-columns='NAME:.metadata.name,UID:.metadata.uid,NODE:.spec.nodeName,READY:.status.containerStatuses[0].ready,RESTARTS:.status.containerStatuses[0].restartCount'
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" +  get spotreplacements,restorerequests +  -o custom-columns='KIND:.kind,NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message'
+kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get pods -l app=trainer \
+  -o custom-columns='NAME:.metadata.name,UID:.metadata.uid,NODE:.spec.nodeName,READY:.status.containerStatuses[0].ready,RESTARTS:.status.containerStatuses[0].restartCount'
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" \
+  get spotreplacements,restorerequests \
+  -o custom-columns='KIND:.kind,NAME:.metadata.name,PHASE:.status.phase,MESSAGE:.status.message'
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get restoreplans -o json |
   jq '[.items[]|{name:.metadata.name,uid:.metadata.uid,generation:.metadata.generation,
     phase:.status.phase,message:.status.message,targets:.spec.pods,
