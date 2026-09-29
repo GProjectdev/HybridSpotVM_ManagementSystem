@@ -131,10 +131,37 @@ func TestUserPolicyReplacementOptIn(t *testing.T) {
 	})
 }
 
+func TestDiscoveryStampsIdentityBeforeScaleUp(t *testing.T) {
+	r, sts, _ := discoveryFixture(t, "aws")
+	if err := r.Create(context.Background(), userPolicy(sts, "aws")); err != nil {
+		t.Fatal(err)
+	}
+	_ = unstructured.SetNestedField(sts.Object, int64(0), "spec", "replicas")
+	if err := r.Update(context.Background(), sts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(sts)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Get(context.Background(), client.ObjectKeyFromObject(sts), sts); err != nil {
+		t.Fatal(err)
+	}
+	if stringField(sts.Object, "spec", "template", "metadata", "labels", "training.dcnlab.com/workload-uid") != string(sts.GetUID()) {
+		t.Fatal("scaled-to-zero workload must receive template identity before starting")
+	}
+}
+
 func TestUserPolicyCreatesOneSpotOneOnDemand(t *testing.T) {
 	r, sts, _ := discoveryFixture(t, "aws")
 	obj := discover(t, r, sts)
 	ctx := context.Background()
+	if err := r.Get(ctx, client.ObjectKeyFromObject(sts), sts); err != nil {
+		t.Fatal(err)
+	}
+	if stringField(sts.Object, "spec", "template", "metadata", "labels", "training.dcnlab.com/workload-uid") != string(sts.GetUID()) ||
+		stringField(sts.Object, "spec", "updateStrategy", "type") != "OnDelete" {
+		t.Fatalf("template identity must be stamped without rolling live survivors: %#v", sts.Object)
+	}
 	if p.ReadPolicySpec(obj).MinOnDemand != 1 {
 		t.Fatal("integer defaults lost")
 	}

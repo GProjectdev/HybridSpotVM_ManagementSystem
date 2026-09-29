@@ -22,15 +22,16 @@ import (
 )
 
 type RuntimeObservation struct {
-	GlobalStep           int64                 `json:"globalStep"`
-	CheckpointID         string                `json:"checkpointID"`
-	Rank                 int64                 `json:"rank"`
-	WorldSize            int64                 `json:"worldSize"`
-	ObservedAt           string                `json:"observedAt"`
-	State                string                `json:"state"`
-	IterationTimeSeconds *float64              `json:"iterationTimeSeconds,omitempty"`
-	IterationMeasurement *IterationMeasurement `json:"iterationMeasurement,omitempty"`
-	WorkerSession        string                `json:"workerSession,omitempty"`
+	GlobalStep           int64                  `json:"globalStep"`
+	CheckpointID         string                 `json:"checkpointID"`
+	Rank                 int64                  `json:"rank"`
+	WorldSize            int64                  `json:"worldSize"`
+	ObservedAt           string                 `json:"observedAt"`
+	State                string                 `json:"state"`
+	IterationTimeSeconds *float64               `json:"iterationTimeSeconds,omitempty"`
+	IterationMeasurement *IterationMeasurement  `json:"iterationMeasurement,omitempty"`
+	WorkerSession        string                 `json:"workerSession,omitempty"`
+	SurvivorResume       map[string]interface{} `json:"survivorResume,omitempty"`
 }
 type RuntimeReconciler struct {
 	client.Client
@@ -164,7 +165,14 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 			return readErr
 		}
 		if resp.StatusCode != 200 || len(b) > 65536 {
-			return fmt.Errorf("pod %s invalid runtime response", pod.Name)
+			if len(b) > 65536 {
+				return fmt.Errorf("pod %s runtime response exceeds 64KiB", pod.Name)
+			}
+			var detail struct {
+				Error string `json:"error"`
+			}
+			_ = json.Unmarshal(b, &detail)
+			return fmt.Errorf("pod %s runtime HTTP %d: %.512s", pod.Name, resp.StatusCode, detail.Error)
 		}
 		var sample RuntimeObservation
 		if err = json.Unmarshal(b, &sample); err != nil {
@@ -177,19 +185,34 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 		if sample.State != "Running" || sample.WorldSize != expected || sample.Rank < 0 || sample.Rank >= expected || sample.GlobalStep < 0 || seen[sample.Rank] {
 			return fmt.Errorf("pod %s invalid rank membership", pod.Name)
 		}
+		effectiveCheckpoint := sample.CheckpointID
+		if receipt := sample.SurvivorResume; receipt != nil {
+			at, err := time.Parse(time.RFC3339Nano, fmt.Sprint(receipt["resumedAt"]))
+			rank, ok := receipt["rank"].(float64)
+			if err != nil || at.After(stamp) || receipt["podUID"] != string(pod.UID) || receipt["nodeName"] != pod.Spec.NodeName || !ok || rank != float64(sample.Rank) {
+				return fmt.Errorf("pod %s invalid survivor resume identity or time", pod.Name)
+			}
+			effectiveCheckpoint, ok = receipt["checkpointID"].(string)
+			if !ok || effectiveCheckpoint == "" {
+				return fmt.Errorf("pod %s missing survivor resume checkpoint", pod.Name)
+			}
+		}
 		if len(samples) == 0 {
 			minStep = sample.GlobalStep
-			checkpoint = sample.CheckpointID
+			checkpoint = effectiveCheckpoint
 		} else {
 			if sample.GlobalStep < minStep {
 				minStep = sample.GlobalStep
 			}
-			if checkpoint != sample.CheckpointID {
+			if checkpoint != effectiveCheckpoint {
 				return fmt.Errorf("ranks report different checkpoints")
 			}
 		}
 		seen[sample.Rank] = true
 		entry := map[string]interface{}{"name": pod.Name, "uid": string(pod.UID), "rank": sample.Rank, "nodeName": pod.Spec.NodeName, "globalStep": sample.GlobalStep, "checkpointID": sample.CheckpointID, "observedAt": sample.ObservedAt}
+		if sample.SurvivorResume != nil {
+			entry["survivorResume"] = sample.SurvivorResume
+		}
 		entry["workerSession"] = sample.WorkerSession
 		if validIterationMeasurement(sample, time.Now()) {
 			entry["iterationMeasurement"] = sample.IterationMeasurement.status()

@@ -76,14 +76,15 @@ type RuntimeSnapshot struct {
 }
 
 type PodRuntime struct {
-	Name               string
-	UID                string
-	Rank               int64
-	GlobalStep         int64
-	PreviousGlobalStep int64
-	CheckpointID       string
-	ObservedAt         string
-	PreviousObservedAt string
+	SurvivorCheckpointID string
+	Name                 string
+	UID                  string
+	Rank                 int64
+	GlobalStep           int64
+	PreviousGlobalStep   int64
+	CheckpointID         string
+	ObservedAt           string
+	PreviousObservedAt   string
 }
 
 type RiskSnapshot struct {
@@ -458,10 +459,14 @@ func RuntimeReadyForCheckpoint(input PolicyInput, runtime RuntimeSnapshot, now t
 			return false
 		}
 		ranks[pod.Rank] = true
+		effectiveCheckpoint := pod.CheckpointID
+		if pod.SurvivorCheckpointID != "" {
+			effectiveCheckpoint = pod.SurvivorCheckpointID
+		}
 		if !checkpointInitialized {
-			checkpointID = pod.CheckpointID
+			checkpointID = effectiveCheckpoint
 			checkpointInitialized = true
-		} else if pod.CheckpointID != checkpointID {
+		} else if effectiveCheckpoint != checkpointID {
 			return false
 		}
 		podObservedAt, err := time.Parse(time.RFC3339, pod.ObservedAt)
@@ -527,7 +532,7 @@ func readRuntimePods(obj map[string]interface{}) []PodRuntime {
 	items := nestedMapSlice(obj, "status", "pods")
 	pods := make([]PodRuntime, 0, len(items))
 	for _, item := range items {
-		pods = append(pods, PodRuntime{Name: nestedStringDefault(item, "", "name"), UID: nestedStringDefault(item, "", "uid"), Rank: nestedIntDefault(item, 0, "rank"), GlobalStep: nestedIntDefault(item, 0, "globalStep"), PreviousGlobalStep: nestedIntDefault(item, 0, "previousGlobalStep"), CheckpointID: nestedStringDefault(item, "", "checkpointID"), ObservedAt: nestedStringDefault(item, "", "observedAt"), PreviousObservedAt: nestedStringDefault(item, "", "previousObservedAt")})
+		pods = append(pods, PodRuntime{SurvivorCheckpointID: nestedStringDefault(item, "", "survivorResume", "checkpointID"), Name: nestedStringDefault(item, "", "name"), UID: nestedStringDefault(item, "", "uid"), Rank: nestedIntDefault(item, 0, "rank"), GlobalStep: nestedIntDefault(item, 0, "globalStep"), PreviousGlobalStep: nestedIntDefault(item, 0, "previousGlobalStep"), CheckpointID: nestedStringDefault(item, "", "checkpointID"), ObservedAt: nestedStringDefault(item, "", "observedAt"), PreviousObservedAt: nestedStringDefault(item, "", "previousObservedAt")})
 	}
 	return pods
 }

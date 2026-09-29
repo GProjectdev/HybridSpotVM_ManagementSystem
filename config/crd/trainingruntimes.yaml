@@ -158,6 +158,9 @@ spec:
                       minimum: 0
                     checkpointID:
                       type: string
+                    survivorResume:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     iterationTimeSeconds:
                       type: number
                       minimum: 0
@@ -309,6 +312,9 @@ spec:
                                 minimum: 0
                               checkpointID:
                                 type: string
+                              survivorResume:
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
                               iterationTimeSeconds:
                                 type: number
                                 minimum: 0

@@ -122,6 +122,10 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 				status["iterationTimeSeconds"], status["iterationMeasurement"] = 1.5, metric
 				status["pods"].([]interface{})[0].(map[string]interface{})["workerSession"] = "worker-1"
 				status["pods"].([]interface{})[0].(map[string]interface{})["iterationMeasurement"] = metric
+				status["pods"].([]interface{})[0].(map[string]interface{})["survivorResume"] = map[string]interface{}{
+					"checkpointID": "partial-1", "generation": int64(123), "podUID": "pod-uid",
+					"rank": int64(0), "nodeName": "worker-0", "resumedAt": "2026-09-29T00:00:00Z",
+				}
 				memberStatus := runtime.DeepCopyJSON(status)
 				delete(memberStatus, "clusters")
 				status["clusters"].([]interface{})[0].(map[string]interface{})["status"] = memberStatus

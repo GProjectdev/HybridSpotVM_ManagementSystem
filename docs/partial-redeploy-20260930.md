@@ -1,5 +1,8 @@
 # 정리 후 Partial 재배포 가이드
 
+> 후속 수정본은 [Partial 재개 증거 수정본 가이드](partial-resume-release-20260930.md)를 사용한다.
+> 아래는 이전 시점의 절차다. 특히 CRD/Stateful 컨트롤러 변경 불필요 안내는 후속 수정본에 해당하지 않는다.
+
 ## 현재 상태
 
 Karmada/AWS trainer replicas=0, 학습 Pod 삭제, StatefulSet에 Group 복원 annotation 없음이 확인되었다.

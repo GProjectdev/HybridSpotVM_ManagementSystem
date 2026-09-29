@@ -126,6 +126,30 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	report := func(reason string) (ctrl.Result, error) {
 		return again, patchStatusSubtree(ctx, r.Client, policy, "discovery", map[string]interface{}{"ready": false, "reason": reason, "observedAt": time.Now().UTC().Format(time.RFC3339)})
 	}
+	// Stamp identity while scaled to zero too, before the first Pods are created.
+	templateUID, _, _ := unstructured.NestedString(sts.Object, "spec", "template", "metadata", "labels", "training.dcnlab.com/workload-uid")
+	if sts.GetLabels()["training.dcnlab.com/workload-uid"] != string(sts.GetUID()) || templateUID != string(sts.GetUID()) {
+		before := sts.DeepCopy()
+		labels := sts.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels["training.dcnlab.com/workload-uid"] = string(sts.GetUID())
+		sts.SetLabels(labels)
+		if templateUID != string(sts.GetUID()) {
+			// Preserve running survivors when repairing the template identity.
+			if err := unstructured.SetNestedField(sts.Object, "OnDelete", "spec", "updateStrategy", "type"); err != nil {
+				return again, err
+			}
+			unstructured.RemoveNestedField(sts.Object, "spec", "updateStrategy", "rollingUpdate")
+			if err := unstructured.SetNestedField(sts.Object, string(sts.GetUID()), "spec", "template", "metadata", "labels", "training.dcnlab.com/workload-uid"); err != nil {
+				return again, err
+			}
+		}
+		if err := r.Patch(ctx, sts, client.MergeFrom(before)); err != nil {
+			return again, err
+		}
+	}
 	b, target, err := selectedBinding(ctx, r.Reader, sts)
 	if err != nil {
 		return report(err.Error())
@@ -137,19 +161,6 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	if replicas != input.TargetWorkers {
 		return report("replica change requires an explicit capacity transition")
-	}
-	// The origin UID label is required by the existing member-side runtime verifier.
-	if sts.GetLabels()["training.dcnlab.com/workload-uid"] != string(sts.GetUID()) {
-		before := sts.DeepCopy()
-		labels := sts.GetLabels()
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		labels["training.dcnlab.com/workload-uid"] = string(sts.GetUID())
-		sts.SetLabels(labels)
-		if err := r.Patch(ctx, sts, client.MergeFrom(before)); err != nil {
-			return again, err
-		}
 	}
 	if err := r.ensureRuntime(ctx, policy, sts, input.SourceCluster); err != nil {
 		return report(err.Error())
