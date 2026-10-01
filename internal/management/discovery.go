@@ -354,7 +354,7 @@ func mapPolicies(c client.Client, kind string) handler.MapFunc {
 		for _, item := range list.Items {
 			input := p.ReadPolicyInput(&item)
 			match := kind == "binding" || (kind == "risk" && input.RiskProfileName == obj.GetName()) || (kind == "runtime" && input.RuntimeRefName == obj.GetName())
-			if kind == "node" || kind == "replacement" {
+			if kind == "node" || kind == "replacement" || kind == "checkpoint" {
 				match = item.GetUID() != "" && obj.GetLabels()[p.LabelPolicyUID] == string(item.GetUID())
 			}
 			if match {

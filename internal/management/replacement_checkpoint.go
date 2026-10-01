@@ -15,6 +15,9 @@ import (
 
 // Coordinator serialization prevents periodic and replacement requests racing.
 func (r *CheckpointReconciler) coordinateReplacementCheckpoint(ctx context.Context, op *unstructured.Unstructured) error {
+	if _, found, _ := unstructured.NestedMap(op.Object, "status", "partialFallback"); found {
+		return fmt.Errorf("partial checkpoint creation fenced by group fallback handoff")
+	}
 	spec, err := readReplacementSpec(op)
 	if err != nil {
 		return err

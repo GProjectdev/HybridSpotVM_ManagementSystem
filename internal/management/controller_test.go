@@ -308,7 +308,7 @@ func TestCheckpointReconcileRepairsOrphanPropagationPolicyForInflight(t *testing
 	}
 }
 
-func TestCheckpointReconcileCreatesTwoRoundsWithFlatRICStatus(t *testing.T) {
+func TestCheckpointReconcileMaintainsOneSchedule(t *testing.T) {
 	now := mustParseTime(t, "2026-09-26T00:00:00Z")
 	policy := checkpointPolicyFixture(now)
 	runtimeObj := runtimeFixture(now)
@@ -321,7 +321,9 @@ func TestCheckpointReconcileCreatesTwoRoundsWithFlatRICStatus(t *testing.T) {
 		t.Fatalf("first checkpoint reconcile: %v", err)
 	}
 	first := getOnlyMigration(t, reconciler.Client)
-	markMigrationFlatCompleted(first)
+	if first.GetName() != "train-periodic" || !boolField(first.Object, "spec", "schedule", "enabled") {
+		t.Fatalf("expected stable periodic schedule: %v", first.Object)
+	}
 	if err := reconciler.Update(context.Background(), first); err != nil {
 		t.Fatalf("update first migration: %v", err)
 	}
@@ -335,8 +337,8 @@ func TestCheckpointReconcileCreatesTwoRoundsWithFlatRICStatus(t *testing.T) {
 	if err := reconciler.List(context.Background(), list, client.InNamespace("default")); err != nil {
 		t.Fatalf("list migrations: %v", err)
 	}
-	if len(list.Items) != 2 {
-		t.Fatalf("migration count = %d, want 2", len(list.Items))
+	if len(list.Items) != 1 {
+		t.Fatalf("migration count = %d, want 1 stable schedule", len(list.Items))
 	}
 }
 

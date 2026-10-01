@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +19,7 @@ const (
 	replacementPhaseAwaitingReplacementReady  = "AwaitingReplacementReady"
 	replacementPhaseAwaitingPartialCheckpoint = "AwaitingPartialCheckpoint"
 	replacementPhaseAwaitingRestoreEvidence   = "AwaitingRestoreEvidence"
+	replacementPhaseAwaitingGroupFallback     = "AwaitingGroupFallback"
 )
 
 type ReplacementReconciler struct {
@@ -79,6 +81,14 @@ func (r *ReplacementReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err != nil {
 		status["message"] = err.Error()
 	}
+	var handoff *partialFallbackHandoffError
+	if errors.As(err, &handoff) {
+		status["partialFallback"] = handoff.fallback
+	} else if rawStatus, _ := op.Object["status"].(map[string]interface{}); rawStatus != nil {
+		if fallback, ok := rawStatus["partialFallback"].(map[string]interface{}); ok {
+			status["partialFallback"] = fallback
+		}
+	}
 	if refErr := r.applyReplacementStatusRefs(ctx, op.GetNamespace(), readReplacementRefs(op), status); refErr != nil && err == nil {
 		status["message"] = refErr.Error()
 	}
@@ -88,7 +98,7 @@ func (r *ReplacementReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err != nil && phase != "Rejected" {
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
-	if phase == replacementPhaseAwaitingReplacementReady || phase == replacementPhaseAwaitingPartialCheckpoint || phase == replacementPhaseAwaitingRestoreEvidence {
+	if phase == replacementPhaseAwaitingReplacementReady || phase == replacementPhaseAwaitingPartialCheckpoint || phase == replacementPhaseAwaitingRestoreEvidence || phase == replacementPhaseAwaitingGroupFallback {
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 	return ctrl.Result{}, nil
@@ -98,6 +108,7 @@ type replacementRefs struct {
 	ReplacementNodeProvisionName string
 	PartialCheckpointName        string
 	RestoreRequestName           string
+	GroupRestoreRequestName      string
 	RecoveryName                 string
 }
 
@@ -106,6 +117,7 @@ func readReplacementRefs(op *unstructured.Unstructured) replacementRefs {
 		ReplacementNodeProvisionName: stringField(op.Object, "spec", "replacementNodeProvisionRef", "name"),
 		PartialCheckpointName:        stringField(op.Object, "spec", "operation") + "-partial-checkpoint",
 		RestoreRequestName:           stringField(op.Object, "spec", "operation") + "-restore",
+		GroupRestoreRequestName:      stringField(op.Object, "spec", "operation") + "-group-restore",
 		RecoveryName:                 stringField(op.Object, "spec", "operation") + "-cleanup",
 	}
 }
@@ -142,6 +154,16 @@ func (r *ReplacementReconciler) applyReplacementStatusRefs(ctx context.Context, 
 		}
 		if err == nil {
 			status["restoreRequestRef"] = map[string]interface{}{"name": req.GetName(), "uid": string(req.GetUID()), "generation": req.GetGeneration()}
+		}
+	}
+	if refs.GroupRestoreRequestName != "-group-restore" {
+		req := newRestoreRequest()
+		err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: refs.GroupRestoreRequestName}, req)
+		if err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("get group RestoreRequest status ref: %w", err)
+		}
+		if err == nil {
+			status["groupRestoreRequestRef"] = map[string]interface{}{"name": req.GetName(), "uid": string(req.GetUID()), "generation": req.GetGeneration()}
 		}
 	}
 	if refs.RecoveryName != "-cleanup" {
@@ -194,6 +216,9 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	}
 	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
 		return replacementPhaseAwaitingReplacementReady, err
+	}
+	if phase, handled, err := r.reconcilePartialToGroupFallback(ctx, op, spec, oldNP); handled {
+		return phase, err
 	}
 	migration, err := r.replacementCheckpoint(ctx, op.GetNamespace(), spec)
 	if err != nil {

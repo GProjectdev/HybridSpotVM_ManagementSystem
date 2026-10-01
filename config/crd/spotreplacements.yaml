@@ -135,7 +135,7 @@ spec:
             properties:
               phase:
                 type: string
-                enum: [Pending, AwaitingReplacementReady, AwaitingPartialCheckpoint, AwaitingRestoreEvidence, CleanupRequested, Completed, Rejected]
+                enum: [Pending, AwaitingReplacementReady, AwaitingPartialCheckpoint, AwaitingRestoreEvidence, AwaitingGroupFallback, CleanupRequested, Completed, Rejected]
               observedGeneration:
                 type: integer
                 format: int64
@@ -158,5 +158,32 @@ spec:
                   name: {type: string}
                   uid: {type: string}
                   generation: {type: integer, format: int64}
+              groupRestoreRequestRef:
+                type: object
+                properties:
+                  name: {type: string}
+                  uid: {type: string}
+                  generation: {type: integer, format: int64}
+              partialFallback:
+                type: object
+                properties:
+                  phase: {type: string}
+                  reason: {type: string}
+                  message: {type: string}
+                  observedAt: {type: string, format: date-time}
+                  checkpointRef:
+                    type: object
+                    properties:
+                      name: {type: string}
+                      uid: {type: string}
+                      generation: {type: integer, format: int64}
+                      checkpointID: {type: string}
+                  failedPartialCheckpointRef:
+                    type: object
+                    properties:
+                      name: {type: string}
+                      uid: {type: string}
+                      generation: {type: integer, format: int64}
+                      checkpointID: {type: string}
               message:
                 type: string
