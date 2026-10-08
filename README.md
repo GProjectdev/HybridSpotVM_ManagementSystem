@@ -1,5 +1,9 @@
 # Hybrid Spot VM Management System
 
+Checkpoint interval v3.0: [Korean build, rollout, and verification guide](docs/checkpoint-coordinator-v3.0-release-20261008.md).
+Measured intervals now use a bounded analytical integer optimizer instead of operator-supplied candidate lists.
+The asynchronous paper model and the measured CRIU adaptation remain distinct; missing measurements use bootstrap intervals.
+
 Current release: [redeployment and validation](docs/release-validation-20260929.md),
 [architecture, workflows and PPT claims](docs/architecture-workflows-ppt.md).
 
