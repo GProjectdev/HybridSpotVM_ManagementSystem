@@ -22,9 +22,9 @@ func TestDecisionStagesWithoutSyntheticMeasurements(t *testing.T) {
 		t.Fatalf("bootstrap: %+v", d)
 	}
 	input.Checkpoint.MeasuredCosts = MeasuredCosts{CheckpointSeconds: 10, CopySeconds: 2, ObservedAt: now.Format(time.RFC3339)}
-	check("CheckpointMeasured", "checkpoint-cost-adaptive")
+	check("CheckpointMeasured", "checkpoint-cost-analytic")
 	input.Economics = EconomicsPolicy{Enabled: true, LossCostPerEviction: 2, ObservedAt: now.Format(time.RFC3339)}
-	d = check("EconomicsEvaluated", "checkpoint-cost-adaptive")
+	d = check("EconomicsEvaluated", "checkpoint-cost-analytic")
 	if !d.CostEvaluated || d.EconomicsSource != "operator-calibration" {
 		t.Fatalf("economics: %+v", d)
 	}

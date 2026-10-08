@@ -24,7 +24,6 @@ spec:
   checkpoint:
     minIntervalSeconds: 60
     maxIntervalSeconds: 600
-    candidateIntervalSeconds: [60, 120, 300, 600]
     riskBands:
     - maxLambdaPerHour: 0.02
       intervalSeconds: 600

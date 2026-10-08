@@ -25,7 +25,7 @@ func TestPaperEquationsAndMemoryConstraint(t *testing.T) {
 
 func TestPaperSelectionZeroRiskAndMissingEvidence(t *testing.T) {
 	now := time.Now().UTC()
-	cp := CheckpointPolicy{Paper: PaperProfile{Enabled: true, Asynchronous: true, GPUToDRAMSeconds: 4, StorageSeconds: 2, CheckpointGiB: 1, BufferGiB: 2, ObservedAt: now.Format(time.RFC3339Nano), CandidateIterations: []int64{10, 20, 40}}}
+	cp := CheckpointPolicy{MaxIntervalSeconds: 80, Paper: PaperProfile{Enabled: true, Asynchronous: true, GPUToDRAMSeconds: 4, StorageSeconds: 2, CheckpointGiB: 1, BufferGiB: 2, ObservedAt: now.Format(time.RFC3339Nano), CandidateIterations: []int64{10, 20}}}
 	rt := RuntimeSnapshot{WorldSize: 2, ReadyRanks: 2, GlobalStep: 40, IterationTimeSeconds: 2, IterationMethod: "optimizer-update-window-v1", IterationAggregation: "max-rank-mean", IterationRankCount: 2, IterationStartStep: 20, IterationEndStep: 40, IterationSamples: 20, IterationObservedAt: now.Format(time.RFC3339Nano)}
 	best, err := SelectPaperInterval(cp, rt, RiskSnapshot{Ready: true}, now)
 	if err != nil || best.Iterations != 40 || best.Seconds != 80 {

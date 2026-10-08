@@ -356,9 +356,9 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 	interval = applyIntervalBounds(interval, input.Checkpoint)
 	stage, source := "Bootstrap", "risk-band-bootstrap"
 	if intervalEvaluated {
-		stage, source = "CheckpointMeasured", "checkpoint-cost-adaptive"
+		stage, source = "CheckpointMeasured", "checkpoint-cost-analytic"
 		if input.Checkpoint.Paper.Enabled {
-			stage, source = "PaperMeasured", "paper-equations-1-5"
+			stage, source = "PaperMeasured", "paper-equations-1-5-analytic"
 		}
 	}
 	if costEvaluated {
@@ -384,29 +384,18 @@ func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, 
 	}
 	measured := checkpoint.MeasuredCosts
 	observedAt, err := time.Parse(time.RFC3339, measured.ObservedAt)
-	if err != nil || observedAt.After(now) || now.Sub(observedAt) > 10*time.Minute || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers <= 0 {
+	if err != nil || observedAt.After(now) || now.Sub(observedAt) > 10*time.Minute || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || !risk.Ready || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers < 0 {
 		return EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), false
 	}
 	lambdaJobPerSecond := risk.LambdaPerHour * float64(spotWorkers) / 3600
-	candidates := checkpoint.CandidateIntervals
-	if len(candidates) == 0 {
-		candidates = []int64{30, 60, 120, 300, 600}
+	lower, upper, err := checkpointIntervalBounds(checkpoint)
+	if err != nil {
+		return EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), false
 	}
-	best := int64(0)
-	bestObjective := math.Inf(1)
-	for _, candidate := range candidates {
-		if candidate <= 0 {
-			continue
-		}
-		candidate = applyIntervalBounds(candidate, checkpoint)
-		tau := float64(candidate)
-		objective := measured.CheckpointSeconds/tau + lambdaJobPerSecond*tau/2 + math.Max(0, measured.CopySeconds/tau-1)
-		if objective < bestObjective {
-			bestObjective = objective
-			best = candidate
-		}
-	}
-	if best <= 0 {
+	// This seconds-domain objective is the existing CRIU cost adaptation, not
+	// evidence of the paper's asynchronous GPU-to-DRAM buffering assumptions.
+	best, err := optimalIntegerInterval(measured.CheckpointSeconds, measured.CopySeconds, 1, lambdaJobPerSecond/2, lower, upper)
+	if err != nil {
 		return EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), false
 	}
 	return best, true
@@ -479,17 +468,17 @@ func RuntimeReadyForCheckpoint(input PolicyInput, runtime RuntimeSnapshot, now t
 
 func EstimateCheckpointIntervalSeconds(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot) int64 {
 	if runtime.WorldSize > 0 && runtime.ReadyRanks < runtime.WorldSize {
-		return chooseCandidate(checkpoint, 60)
+		return applyIntervalBounds(60, checkpoint)
 	}
 	if !risk.Ready || risk.LambdaPerHour < 0 {
 		return conservativeInterval(checkpoint)
 	}
 	for _, band := range riskBandsOrDefault(checkpoint) {
 		if risk.LambdaPerHour <= band.MaxLambdaPerHour {
-			return chooseCandidate(checkpoint, band.IntervalSeconds)
+			return applyIntervalBounds(band.IntervalSeconds, checkpoint)
 		}
 	}
-	return chooseCandidate(checkpoint, 30)
+	return applyIntervalBounds(30, checkpoint)
 }
 
 func NextCheckpointDue(now time.Time, lastStartedAt string, intervalSeconds int64) bool {
@@ -658,31 +647,15 @@ func riskBandsOrDefault(checkpoint CheckpointPolicy) []RiskBand {
 }
 
 func conservativeInterval(checkpoint CheckpointPolicy) int64 {
-	return chooseCandidate(checkpoint, 60)
-}
-
-func chooseCandidate(checkpoint CheckpointPolicy, desired int64) int64 {
-	candidates := checkpoint.CandidateIntervals
-	if len(candidates) == 0 {
-		candidates = []int64{30, 60, 120, 300, 600}
-	}
-	chosen := candidates[len(candidates)-1]
-	for _, candidate := range candidates {
-		if candidate >= desired {
-			return candidate
-		}
-	}
-	return chosen
+	return applyIntervalBounds(60, checkpoint)
 }
 
 func applyIntervalBounds(interval int64, checkpoint CheckpointPolicy) int64 {
-	if checkpoint.MinIntervalSeconds > 0 && interval < checkpoint.MinIntervalSeconds {
-		interval = checkpoint.MinIntervalSeconds
+	lower, upper, err := checkpointIntervalBounds(checkpoint)
+	if err != nil {
+		return DefaultCheckpointSeconds // Controllers reject invalid bounds before scheduling.
 	}
-	if checkpoint.MaxIntervalSeconds > 0 && interval > checkpoint.MaxIntervalSeconds {
-		interval = checkpoint.MaxIntervalSeconds
-	}
-	return interval
+	return min(upper, max(lower, interval))
 }
 
 func firstPositive(values ...int64) int64 {

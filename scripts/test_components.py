@@ -61,7 +61,11 @@ class ComponentTests(unittest.TestCase):
             containers = pod["containers"]
             self.assertEqual(len(containers), 1)
             container = containers[0]
-            self.assertEqual(container["image"], "ghcr.io/gprojectdev/" + name + ":dev")
+            expected_image = {
+                "policy-manager": "jeongseungjun/hybrid-spot-vm-system:policy_manager_v3.0",
+                "checkpoint-coordinator": "jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0",
+            }.get(name, "ghcr.io/gprojectdev/" + name + ":dev")
+            self.assertEqual(container["image"], expected_image)
             images.add(container["image"])
             self.assertFalse(any(a.startswith("--mode") for a in container.get("args", [])))
             self.assertEqual(doc["spec"]["selector"]["matchLabels"],

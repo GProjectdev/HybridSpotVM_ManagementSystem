@@ -54,7 +54,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/policy-manager:dev
+        image: jeongseungjun/hybrid-spot-vm-system:policy_manager_v3.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE
@@ -94,7 +94,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/checkpoint-coordinator:dev
+        image: jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE

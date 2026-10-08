@@ -189,6 +189,11 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	// Use the evidence collected in this reconciliation, not the previous
+	// status snapshot. Status-only policy updates do not enqueue this controller.
+	if measuredCosts != nil {
+		input.Checkpoint.MeasuredCosts = *measuredCosts
+	}
 	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, now)
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, nowOr(r.Clock)) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, r.now(), "risk_not_fresh")
@@ -224,10 +229,12 @@ func applyPaperIntervalStatus(status map[string]interface{}, input trainingpolic
 	status["intervalCostEvaluated"] = decision.IntervalCostEvaluated
 	if input.Checkpoint.Paper.Enabled {
 		if decision.IntervalCostEvaluated {
-			status["message"] = "paper interval selected from measured inputs"
+			status["message"] = "paper integer interval calculated analytically from measured inputs; rounded up to scheduler seconds"
 		} else {
-			status["message"] = "bootstrap interval selected; paper inputs unavailable or no feasible paper candidate"
+			status["message"] = "bootstrap interval selected; paper inputs unavailable or memory/time bounds infeasible"
 		}
+	} else if decision.IntervalCostEvaluated {
+		status["message"] = "interval calculated analytically from measured CRIU costs; not an asynchronous paper profile"
 	}
 }
 

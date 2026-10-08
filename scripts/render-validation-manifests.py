@@ -49,6 +49,8 @@ def main():
         "ghcr.io/gprojectdev/vm-spot-risk-collector:dev": "SPOT_RISK_COLLECTOR_IMAGE",
         "ghcr.io/gprojectdev/policy-manager:dev": "POLICY_MANAGER_IMAGE",
         "ghcr.io/gprojectdev/checkpoint-coordinator:dev": "CHECKPOINT_COORDINATOR_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:policy_manager_v3.0": "POLICY_MANAGER_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0": "CHECKPOINT_COORDINATOR_IMAGE",
         "ghcr.io/gprojectdev/spot-recovery-controller:dev": "SPOT_RECOVERY_IMAGE",
         "ghcr.io/gprojectdev/training-runtime-collector:dev": "RUNTIME_COLLECTOR_IMAGE",
         "ghcr.io/gprojectdev/spot-watcher:dev": "SPOT_WATCHER_IMAGE",
