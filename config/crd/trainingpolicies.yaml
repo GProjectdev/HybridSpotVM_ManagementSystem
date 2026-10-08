@@ -48,6 +48,10 @@ spec:
               message: targetWorkers is immutable; create a new TrainingPolicy for capacity shape changes
             - rule: '!has(self.policy) || !has(self.policy.minOnDemand) || self.policy.minOnDemand <= self.targetWorkers'
               message: policy.minOnDemand must be <= targetWorkers
+            - rule: '!has(self.policy) || !has(self.policy.fixedOnDemand) || self.policy.fixedOnDemand <= self.targetWorkers'
+              message: policy.fixedOnDemand must be <= targetWorkers
+            - rule: '!has(self.policy) || !has(self.policy.fixedOnDemand) || !has(self.policy.minOnDemand) || self.policy.fixedOnDemand >= self.policy.minOnDemand'
+              message: policy.fixedOnDemand must be >= minOnDemand
             - rule: '!has(self.checkpoint) || !has(self.checkpoint.minIntervalSeconds) || !has(self.checkpoint.maxIntervalSeconds) || self.checkpoint.minIntervalSeconds <= self.checkpoint.maxIntervalSeconds'
               message: checkpoint minIntervalSeconds must be <= maxIntervalSeconds
             properties:
@@ -110,6 +114,11 @@ spec:
                     format: int64
                     minimum: 0
                     default: 0
+                  fixedOnDemand:
+                    description: Pins the desired OnDemand count, overriding risk, price, and economics allocation decisions. Checkpoint adaptation and interruption recovery remain active.
+                    type: integer
+                    format: int64
+                    minimum: 0
                   economics:
                     type: object
                     required: [enabled]

@@ -1,5 +1,8 @@
 # Hybrid Spot VM Management System
 
+ResNet18 / CIFAR-10 evaluation: [Korean step-by-step guide](docs/evaluation-resnet18-guide.md), [YAML generator and scripts](evaluation/README.md).
+The cost comparison and fixed-composition checkpoint comparison use separate run IDs in `fluidcr-realign-121040`.
+
 Checkpoint interval v3.0: [Korean build, rollout, and verification guide](docs/checkpoint-coordinator-v3.0-release-20261008.md).
 Measured intervals now use a bounded analytical integer optimizer instead of operator-supplied candidate lists.
 The asynchronous paper model and the measured CRIU adaptation remain distinct; missing measurements use bootstrap intervals.

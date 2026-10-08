@@ -1,0 +1,48 @@
+{
+  "apiVersion": "training.dcnlab.com/v1alpha1",
+  "kind": "TrainingPolicy",
+  "metadata": {
+    "name": "source-template",
+    "namespace": "fluidcr-realign-121040"
+  },
+  "spec": {
+    "workloadRef": {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "name": "BOUND_DURING_PREPARE",
+      "uid": "BOUND_DURING_PREPARE"
+    },
+    "sourceCluster": "aws",
+    "targetWorkers": 2,
+    "policy": {
+      "alpha": 0.8,
+      "forecastHorizonSeconds": 3600,
+      "minOnDemand": 1
+    },
+    "checkpoint": {
+      "resume": true
+    },
+    "capacity": {
+      "aws": {
+        "karmadaCluster": "aws",
+        "region": "ap-northeast-2",
+        "availabilityZone": "ap-northeast-2c",
+        "instanceType": "g5.xlarge",
+        "ami": "REPLACE_AMI",
+        "subnetId": "REPLACE_SUBNET",
+        "vpcId": "REPLACE_VPC",
+        "securityGroupIds": [
+          "REPLACE_SECURITY_GROUP"
+        ],
+        "iamInstanceProfile": "REPLACE_INSTANCE_PROFILE",
+        "rootVolumeSizeGB": 100,
+        "hardwareType": "gpu",
+        "nodeLabel": "gpu",
+        "credentialsRef": {
+          "name": "REPLACE_EXISTING_SECRET",
+          "namespace": "fluidcr-realign-121040"
+        }
+      }
+    }
+  }
+}

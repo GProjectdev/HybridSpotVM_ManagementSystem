@@ -154,6 +154,9 @@ func (r *PolicyReconciler) reader() client.Reader {
 }
 
 func validatePolicyInput(input trainingpolicy.PolicyInput) error {
+	if err := trainingpolicy.ValidateFixedComposition(input); err != nil {
+		return err
+	}
 	if input.TargetWorkers <= 0 {
 		return fmt.Errorf("spec.targetWorkers must be positive")
 	}

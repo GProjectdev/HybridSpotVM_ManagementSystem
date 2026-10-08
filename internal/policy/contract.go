@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -154,6 +155,7 @@ type PolicyInput struct {
 	SourceCluster   string
 	TargetWorkers   int64
 	MinOnDemand     int64
+	FixedOnDemand   *int64
 	Alpha           float64
 	ForecastSeconds int64
 	Capacity        CapacityDefaults
@@ -180,6 +182,10 @@ type Decision struct {
 }
 
 func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
+	var fixedOnDemand *int64
+	if value, found, err := unstructured.NestedInt64(obj.Object, "spec", "policy", "fixedOnDemand"); err == nil && found {
+		fixedOnDemand = &value
+	}
 	resume, ok, _ := unstructured.NestedBool(obj.Object, "spec", "checkpoint", "resume")
 	if !ok {
 		resume = true
@@ -196,6 +202,7 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 		SourceCluster:   nestedStringDefault(obj.Object, "", "spec", "sourceCluster"),
 		TargetWorkers:   nestedIntDefault(obj.Object, 0, "spec", "targetWorkers"),
 		MinOnDemand:     nestedIntDefault(obj.Object, 0, "spec", "policy", "minOnDemand"),
+		FixedOnDemand:   fixedOnDemand,
 		Alpha:           clampAlpha(nestedFloatDefault(obj.Object, DefaultAlpha, "spec", "policy", "alpha")),
 		ForecastSeconds: maxInt64(1, nestedIntDefault(obj.Object, DefaultForecastHorizonSeconds, "spec", "policy", "forecastHorizonSeconds")),
 		Economics: EconomicsPolicy{
@@ -326,10 +333,24 @@ func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decis
 	return DecideAt(input, runtime, risk, time.Now().UTC())
 }
 
+func ValidateFixedComposition(input PolicyInput) error {
+	if input.FixedOnDemand == nil {
+		return nil
+	}
+	count := *input.FixedOnDemand
+	if count < 0 || count > input.TargetWorkers || count < input.MinOnDemand {
+		return fmt.Errorf("spec.policy.fixedOnDemand must be nonnegative, >= minOnDemand, and <= targetWorkers")
+	}
+	return nil
+}
+
 func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now time.Time) Decision {
 	desired := input.TargetWorkers
 	alpha := clampAlpha(input.Alpha)
 	horizonSeconds := maxInt64(1, input.ForecastSeconds)
+	if ValidateFixedComposition(input) != nil {
+		return Decision{DesiredWorkers: desired, Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, ProvisioningBlocked: true, Reason: "invalid_spec"}
+	}
 	riskKnown := risk.Ready && finite(risk.LambdaPerHour) && risk.LambdaPerHour >= 0
 	if !riskKnown {
 		return Decision{DesiredWorkers: desired, Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: applyIntervalBounds(conservativeInterval(input.Checkpoint), input.Checkpoint), CostEvaluated: false, ProvisioningBlocked: true, Reason: "risk_unavailable"}
@@ -351,6 +372,12 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 	if fallback {
 		spot, onDemand = 0, desired
 		reason = "expected_eviction_loss_exceeds_od_cost"
+	}
+	// Explicit composition affects allocation only; measured risk still drives checkpoints.
+	if input.FixedOnDemand != nil {
+		onDemand = *input.FixedOnDemand
+		spot = desired - onDemand
+		reason = "fixed_worker_composition"
 	}
 	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, now)
 	interval = applyIntervalBounds(interval, input.Checkpoint)

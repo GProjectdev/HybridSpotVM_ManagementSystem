@@ -5,3 +5,4 @@ kubeconfig*
 *.kubeconfig
 .env
 __pycache__/
+/evidence/

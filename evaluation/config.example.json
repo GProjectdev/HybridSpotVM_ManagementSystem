@@ -1,0 +1,21 @@
+{
+  "namespace": "fluidcr-realign-121040",
+  "cluster": "aws",
+  "region": "ap-northeast-2",
+  "availability_zone": "ap-northeast-2c",
+  "instance_type": "g5.xlarge",
+  "policy_source": "policy-source.json",
+  "nfs_server": "REPLACE_NFS_SERVER",
+  "nfs_dataset_path": "/REPLACE_EXPORT/datasets/cifar10",
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system:resnet18_eval_v1",
+  "storage_class": "nfs-client",
+  "checkpoint_size": "10Gi",
+  "goal_steps": 10000,
+  "batch_size": 32,
+  "seed": 42,
+  "max_seconds": 5400,
+  "scenario": "constant",
+  "risk_change_after_seconds": 1200,
+  "initial_risk": 0.05,
+  "changed_risk": 0.8
+}

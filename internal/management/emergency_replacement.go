@@ -16,6 +16,9 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 	if !boolField(policy.Object, "spec", "replacement", "enabled") {
 		return "", nil
 	}
+	if err := trainingpolicy.ValidateFixedComposition(input); err != nil {
+		return "", err
+	}
 	active, err := r.activeSpotReplacement(ctx, input)
 	if err != nil {
 		return "", err
@@ -44,6 +47,9 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			return "", fmt.Errorf("emergency recovery requires a live UID-bound Spot NodeProvision in the AWS source cluster")
 		}
 		name := replacementOperationName(node.GetName(), event.NodeUID)
+		if input.FixedOnDemand != nil && policy.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
+			return "", fmt.Errorf("fixed-composition emergency Spot replacement is unsupported without training.dcnlab.com/planned-partial=disabled")
+		}
 		existing := newSpotReplacementObject()
 		err := r.Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: name}, existing)
 		if err == nil {
@@ -57,6 +63,12 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 		}
 		if !apierrors.IsNotFound(err) {
 			return "", err
+		}
+		// Same-market emergency recovery is confined to the explicit group route.
+		if input.FixedOnDemand != nil {
+			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
+			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "Spot", event.EventID)
+			return name, err
 		}
 		snapshot, err := r.runtimeSnapshot(ctx, input)
 		if err != nil {
