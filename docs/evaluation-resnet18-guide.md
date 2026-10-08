@@ -1,5 +1,9 @@
 # ResNet18 평가 실행 가이드
 
+> 실제 실행 순서는 [평가별 독립 실행 가이드](evaluation-separate-guide.md)를 우선 따른다.
+> 비용 평가는 cost.py, 주기 평가는 checkpoint.py로 분리하여 순차 실행한다.
+> 아래 문서는 공통 설치, FIS, 비용 원장과 정리 절차의 참고 문서다.
+
 이 문서는 기존 MGMT/Karmada/AWS 환경의 동작 검증을 마친 뒤 새 ResNet18 학습과 평가 toolkit을 연결하는 절차다. 이미 검증한 provisioning, checkpoint/restore, replacement 전체 시나리오를 처음부터 반복하지 않는다. 먼저 새 이미지·데이터·DDP·runtime 수집의 짧은 연동 smoke를 확인하고 같은 조건의 본 실험으로 진행한다. 이 문서 작성이나 로컬 테스트 통과는 실제 GPU 실행·복원·비용 절감 검증을 의미하지 않는다.
 
 기존 namespace는 `fluidcr-realign-121040`이다. 기존 `trainer-realign`은 안전한 spec 템플릿을 가져오는 원본이며 평가 도구가 덮어쓸 대상이 아니다. 매 실행은 새로운 run-id로 구분하고 해당 run의 리소스·증거만 관리한다. 데이터셋, kubeconfig, Secret 값, 개인 설정과 수집 증거를 Git에 commit하지 않는다.

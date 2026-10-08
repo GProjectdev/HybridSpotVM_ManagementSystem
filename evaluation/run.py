@@ -511,7 +511,7 @@ def cleanup(evidence, confirm):
     event(evidence,"cleanup_requested",note="PVC/PV retained; verify member finalizers and actual EC2 termination")
     print("Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.")
 
-def main():
+def main(experiment=None):
     parser=argparse.ArgumentParser(description=__doc__)
     sub=parser.add_subparsers(dest="command",required=True)
     p=sub.add_parser("capture-policy")
@@ -520,8 +520,12 @@ def main():
     p=sub.add_parser("render")
     p.add_argument("--config",required=True,type=Path)
     p.add_argument("--run-id",required=True)
-    p.add_argument("--experiment",choices=["cost","checkpoint"],required=True)
-    p.add_argument("--arm",required=True)
+    if experiment is None:
+        p.add_argument("--experiment",choices=["cost","checkpoint"],required=True)
+    else:
+        p.set_defaults(experiment=experiment)
+    arms = {"cost": ["A", "B"], "checkpoint": ["F60", "F300", "F600", "D"]}
+    p.add_argument("--arm",required=True,choices=arms.get(experiment))
     p.add_argument("--out",required=True,type=Path)
     for name in ("prepare","start","stop","risk","cleanup"):
         p=sub.add_parser(name)
@@ -531,6 +535,10 @@ def main():
         if name=="cleanup":
             p.add_argument("--confirm",required=True)
     args=parser.parse_args()
+    if experiment is not None and hasattr(args, "evidence"):
+        recorded = read(args.evidence / "run.json").get("experiment")
+        if recorded != experiment:
+            raise ValueError("evidence belongs to a different experiment: " + str(recorded))
     if args.command=="capture-policy":
         obj=get("karmada","trainingpolicy",args.name)
         save(args.output,{"apiVersion":obj["apiVersion"],"kind":obj["kind"],"spec":obj["spec"]})

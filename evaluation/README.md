@@ -1,5 +1,9 @@
 # ResNet18 / CIFAR-10 평가 도구
 
+평가는 [독립 실행 가이드](../docs/evaluation-separate-guide.md)에 따라 각각 진행한다.
+비용은 cost.py(A/B), 주기는 checkpoint.py(F60/F300/F600/D)를 사용한다.
+설정과 증거를 분리하고 이전 실행의 VM 정리가 끝난 뒤 다음 실행을 시작한다.
+
 [한국어 단계별 실행 가이드](../docs/evaluation-resnet18-guide.md)를 먼저 읽으세요.
 
 - `run.py`: 설정으로 실행별 YAML 생성, 준비, 학습 실행/종료, UID 제한 정리
