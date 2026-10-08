@@ -17,7 +17,7 @@
     "policy": {
       "alpha": 0.8,
       "forecastHorizonSeconds": 3600,
-      "minOnDemand": 1
+      "minOnDemand": 0
     },
     "checkpoint": {
       "resume": true

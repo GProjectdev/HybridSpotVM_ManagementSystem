@@ -57,7 +57,7 @@ class RenderTests(unittest.TestCase):
             with patch.object(run,"HERE",p):
                 return run.render(self.c,self.source,"r18a01",exp,arm)
     def test_cost_and_fixed_policy(self):
-        for exp,arm,expected in [("cost","A",2),("cost","B",1)]+[("checkpoint",arm,1) for arm in ("F60","F300","F600","D")]:
+        for exp,arm,expected in [("cost","A",2),("cost","B",0)]+[("checkpoint",arm,1) for arm in ("F60","F300","F600","D")]:
             info,member,items,policy=self.render(exp,arm)
             self.assertEqual(policy["spec"]["policy"]["minOnDemand"],expected)
             self.assertEqual(policy["spec"]["policy"].get("fixedOnDemand"),1 if exp=="checkpoint" else None)

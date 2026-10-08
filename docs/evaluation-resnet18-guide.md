@@ -144,7 +144,7 @@ python3 -m json.tool evaluation/policy-source.json
 | experiment | arm | 비교 조건 |
 | --- | --- | --- |
 | cost | A | OD 2, checkpoint 300초 고정 |
-| cost | B | 최소 OD 1 + 정책이 결정한 나머지 구성, checkpoint 300초 고정 |
+| cost | B | minOnDemand=0, 정책이 전체 구성 결정(All-Spot 허용), checkpoint 300초 고정 |
 | checkpoint | F60 / F300 / F600 | OD 1 + Spot 1 고정, 각각 60 / 300 / 600초 |
 | checkpoint | D | OD 1 + Spot 1 고정, checkpoint 60~600초 적응 |
 

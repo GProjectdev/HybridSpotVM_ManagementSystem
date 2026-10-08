@@ -17,5 +17,10 @@
   "scenario": "constant",
   "risk_change_after_seconds": 1200,
   "initial_risk": 0.05,
-  "changed_risk": 0.8
+  "changed_risk": 0.8,
+  "risk_schedule": [
+    {"after_seconds": 1200, "lambda_per_hour": 0.8},
+    {"after_seconds": 2400, "lambda_per_hour": 0.05},
+    {"after_seconds": 3600, "lambda_per_hour": 0.8}
+  ]
 }

@@ -1,0 +1,26 @@
+{
+  "apiVersion": "training.dcnlab.com/v1alpha1",
+  "kind": "TrainingPolicy",
+  "spec": {
+    "sourceCluster": "aws",
+    "targetWorkers": 2,
+    "policy": {"alpha": 0.8, "forecastHorizonSeconds": 3600, "minOnDemand": 0},
+    "checkpoint": {"resume": true},
+    "capacity": {
+      "aws": {
+        "karmadaCluster": "aws",
+        "region": "ap-northeast-2",
+        "availabilityZone": "ap-northeast-2c",
+        "instanceType": "g5.xlarge",
+        "ami": "ami-0cd58737b3097f1b2",
+        "subnetId": "subnet-09a7611f69b847ea0",
+        "vpcId": "vpc-0e7415995848c333f",
+        "securityGroupIds": ["sg-0e36311101b33ccac"],
+        "rootVolumeSizeGB": 100,
+        "hardwareType": "gpu",
+        "nodeLabel": "gpu",
+        "credentialsRef": {"name": "aws-node-credentials", "namespace": "fluidcr-realign-121040"}
+      }
+    }
+  }
+}

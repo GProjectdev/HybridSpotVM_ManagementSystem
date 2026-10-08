@@ -92,8 +92,22 @@ def validate(c, run_id, experiment, arm):
     for key in ("initial_risk", "changed_risk"):
         if not isinstance(c.get(key), (float, int)) or not math.isfinite(c[key]) or c[key] < 0:
             raise ValueError(key + " must be finite and nonnegative")
-    if c.get("scenario") not in ("constant", "risk-rise", "interruption"):
-        raise ValueError("scenario must be constant, risk-rise, or interruption")
+    if c.get("scenario") not in ("constant", "risk-rise", "risk-schedule", "interruption"):
+        raise ValueError("scenario must be constant, risk-rise, risk-schedule, or interruption")
+    if c["scenario"] == "risk-schedule":
+        schedule = c.get("risk_schedule")
+        if not isinstance(schedule, list) or not schedule:
+            raise ValueError("risk_schedule must be a nonempty list")
+        previous = 0
+        for entry in schedule:
+            if not isinstance(entry, dict):
+                raise ValueError("risk_schedule entries must be objects")
+            offset, value = entry.get("after_seconds"), entry.get("lambda_per_hour")
+            if type(offset) is not int or not previous < offset < c["max_seconds"]:
+                raise ValueError("risk_schedule offsets must increase and precede timeout")
+            if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+                raise ValueError("risk_schedule values must be finite and nonnegative")
+            previous = offset
     if experiment == "cost" and arm == "A" and c["scenario"] == "interruption":
         raise ValueError("All On-Demand has no Spot target; use a constant control run for interruption comparisons")
     if c["scenario"] == "risk-rise" and not 0 < c.get("risk_change_after_seconds", 0) < c["max_seconds"]:
@@ -121,7 +135,7 @@ def render(c, source, run_id, experiment, arm):
                        replacement={"enabled": True})
     policy_spec["policy"] = copy.deepcopy(source["spec"].get("policy", {}))
     policy_spec["policy"].pop("fixedOnDemand", None)
-    policy_spec["policy"]["minOnDemand"] = 2 if arm == "A" else 1
+    policy_spec["policy"]["minOnDemand"] = (2 if arm == "A" else 0) if experiment == "cost" else 1
     if experiment == "checkpoint":
         policy_spec["policy"]["fixedOnDemand"] = 1
     interval = 300 if experiment == "cost" or arm == "D" else int(arm[1:])
@@ -318,6 +332,34 @@ def observe_policy(evidence, run):
             run["changed_risk_consumed"] = True
     save(evidence/"policy-latest.json", obj)
 
+
+def advance_risk_schedule(evidence, run, elapsed):
+    entries = run.setdefault("risk_schedule_observations", [])
+    if entries and not entries[-1].get("consumed_at"):
+        current = entries[-1]
+        risk = owned(run, "karmada", "spotriskprofile", run["risk"])
+        status = risk.get("status", {})
+        policy = read(evidence/"policy-latest.json")
+        decision = policy.get("status", {}).get("policy", {})
+        value = current["lambda_per_hour"]
+        if (risk.get("spec", {}).get("staticLambdaPerHour") == value
+                and status.get("ready")
+                and status.get("observedGeneration") == risk["metadata"]["generation"]
+                and status.get("lambdaPerHour") == value
+                and decision.get("lambdaPerHour") == value):
+            current["consumed_at"] = now()
+            current["decision"] = decision
+            event(evidence, "scheduled_risk_consumed", index=len(entries)-1, decision=decision)
+    index = len(entries)
+    if index < len(run["risk_schedule"]) and elapsed >= run["risk_schedule"][index]["after_seconds"]:
+        if entries and not entries[-1].get("consumed_at"):
+            raise RuntimeError("previous scheduled risk not consumed before next offset")
+        entry = run["risk_schedule"][index]
+        set_risk(evidence, entry["lambda_per_hour"])
+        entries.append(dict(entry, requested_at=now(), actual_after_seconds=elapsed))
+        event(evidence, "scheduled_risk_requested", index=index, **entries[-1])
+    save(evidence/"run.json", run)
+
 def set_risk(evidence, value):
     if not math.isfinite(value) or value < 0:
         raise ValueError("risk must be finite and nonnegative")
@@ -363,6 +405,12 @@ def verify_group_recovery(evidence, run):
                     raise RuntimeError("group recovery/cleanup incomplete: old NodeProvision remains in "+cluster)
 
 def verify_scenario(evidence, run):
+    if run["scenario"] == "risk-schedule":
+        observations = run.get("risk_schedule_observations", [])
+        if len(observations) != len(run["risk_schedule"]) or not all(x.get("consumed_at") for x in observations):
+            raise RuntimeError("risk schedule incomplete; increase goal_steps or inspect risk consumption")
+        if active_operations(run):
+            raise RuntimeError("risk schedule recovery/cleanup still active")
     if run.get("arm") == "D" and not run.get("analytic_interval_observed"):
         raise RuntimeError("analytic checkpoint interval was never observed; bootstrap-only run is not dynamic-policy evidence")
     if run["scenario"] == "risk-rise" and not run.get("changed_risk_consumed"):
@@ -448,6 +496,8 @@ def start(evidence):
                 run.update(phase="completed",completed_at=now())
                 event(evidence,"all_ranks_completed")
                 break
+            if run["scenario"] == "risk-schedule" and learning_start is not None:
+                advance_risk_schedule(evidence, run, time.monotonic()-learning_start)
             time.sleep(5)
         else:
             raise TimeoutError("max_seconds reached")
