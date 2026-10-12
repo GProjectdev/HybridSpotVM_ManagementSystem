@@ -5,7 +5,9 @@
 - A: OD 2개, TrainingPolicy annotation training.dcnlab.com/periodic-checkpoint=disabled로 정기 Checkpoint를 명시적으로 비활성화한다.
 - 앞서 안내한 2시간 주기 및 최초 지연 방식은 폐기했다. 실행 시간이 2시간을 넘어도 정기 Checkpoint를 만들지 않는다.
 - A는 위험률 변경과 시간표 완료 검사를 하지 않는다. renderer가 scenario를 constant로 바꾼다.
-- B: 최소 OD 강제 없음, 위험률 기반 VM 구성, 분석식 기반 Checkpoint 주기(60~600초).
+- B: 최소 OD 강제 없음, 위험률 기반 VM 구성, 분석식 기반 Checkpoint 주기(60~3600초).
+- 3600초는 위험률 입력의 1시간 변경 시나리오를 고려한 실험 상한이며 논문이 강제하는 값은 아니다. 위험률 갱신과 Checkpoint 실행은 동기화되지 않는다.
+- 상한 변경은 renderer와 문서 변경뿐이다. eval.1.3 coordinator를 배포했다면 추가 이미지 빌드는 필요 없다. 새 run-id로 render하여 반영한다.
 - B는 초기 측정값이 없을 때 bootstrap 주기를 사용한다. 이후 checkpoint-cost-analytic 관측이 있어야 성공이다.
 - A에서 Checkpoint 리소스가 관측되거나 비활성화 적용 확인이 없으면 성공으로 인정하지 않는다.
 - annotation은 해당 정책의 정기 작업만 비활성화한다. B와 긴급/교체용 Checkpoint 경로는 그대로 유지한다.

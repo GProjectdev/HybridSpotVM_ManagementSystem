@@ -100,9 +100,16 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(info["scenario"], "risk-schedule")
         self.assertNotIn("training.dcnlab.com/periodic-checkpoint", policy["metadata"]["annotations"])
         self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 60)
-        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 600)
+        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 3600)
         with self.assertRaisesRegex(RuntimeError, "analytic"):
             run.verify_scenario(Path("."), dict(info, scenario="constant"))
+
+    def test_dynamic_hour_cap_does_not_change_fixed_arms(self):
+        for arm, lower, upper in (("D", 60, 3600), ("F60", 60, 60),
+                                  ("F300", 300, 300), ("F600", 600, 600)):
+            _, _, _, policy = self.render("checkpoint", arm)
+            self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], lower)
+            self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], upper)
 
     def test_baseline_rejects_checkpoint_and_records_disabled(self):
         info = {"experiment":"cost", "arm":"A", "scenario":"constant", "policy":"policy",

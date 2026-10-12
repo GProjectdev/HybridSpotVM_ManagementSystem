@@ -145,7 +145,7 @@ def render(c, source, run_id, experiment, arm):
     checkpoint.pop("measuredCosts", None)
     checkpoint.pop("paperProfile", None)
     checkpoint.update(minIntervalSeconds=60 if dynamic else interval,
-                      maxIntervalSeconds=600 if dynamic else interval,
+                      maxIntervalSeconds=3600 if dynamic else interval,
                       riskBands=[{"maxLambdaPerHour": 1.0, "intervalSeconds": interval}], resume=True)
     policy_spec["checkpoint"] = checkpoint
     policy = resource("training.dcnlab.com/v1alpha1", "TrainingPolicy", app, run_id, policy_spec)
