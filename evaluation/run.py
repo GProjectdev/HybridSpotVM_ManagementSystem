@@ -139,7 +139,7 @@ def render(c, source, run_id, experiment, arm):
     if experiment == "checkpoint":
         policy_spec["policy"]["fixedOnDemand"] = 1
     dynamic = arm == "D" or (experiment == "cost" and arm == "B")
-    interval = 7200 if experiment == "cost" and arm == "A" else (300 if dynamic else int(arm[1:]))
+    interval = 300 if experiment == "cost" or dynamic else int(arm[1:])
     checkpoint = copy.deepcopy(source["spec"].get("checkpoint", {}))
     checkpoint.pop("candidateIntervalSeconds", None)
     checkpoint.pop("measuredCosts", None)
@@ -150,6 +150,8 @@ def render(c, source, run_id, experiment, arm):
     policy_spec["checkpoint"] = checkpoint
     policy = resource("training.dcnlab.com/v1alpha1", "TrainingPolicy", app, run_id, policy_spec)
     policy["metadata"]["annotations"] = {"training.dcnlab.com/suspend": "true"}
+    if experiment == "cost" and arm == "A":
+        policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"] = "disabled"
     if experiment == "checkpoint":
         policy["metadata"]["annotations"]["training.dcnlab.com/planned-partial"] = "disabled"
     risk = resource("training.dcnlab.com/v1alpha1", "SpotRiskProfile", app+"-risk", run_id,
@@ -325,13 +327,13 @@ def observe_policy(evidence, run):
             raise RuntimeError("fixed composition not honored; inspect controller image and policy")
     checkpoint = obj.get("status", {}).get("checkpoint", {})
     if run["experiment"] == "cost" and run["arm"] == "A":
-        if checkpoint.get("reason") == "periodic_deferred":
-            run["periodic_delay_observed"] = True
+        if checkpoint.get("reason") == "periodic_disabled":
+            run["periodic_disabled_observed"] = True
         migrations = get("aws", "fluidcrmigrations")["items"]
         for migration in migrations:
             spec = migration.get("spec", {})
             if spec.get("workloadRef", {}).get("name") == run["app"]:
-                raise RuntimeError("A baseline contains a checkpoint schedule/run; inspect coordinator image and delay")
+                raise RuntimeError("A baseline contains a checkpoint schedule/run; inspect coordinator image and policy")
     if checkpoint.get("intervalSource") == "checkpoint-cost-analytic":
         run["analytic_interval_observed"] = True
     if run["scenario"] == "risk-rise":
@@ -416,8 +418,8 @@ def verify_group_recovery(evidence, run):
                     raise RuntimeError("group recovery/cleanup incomplete: old NodeProvision remains in "+cluster)
 
 def verify_scenario(evidence, run):
-    if run.get("experiment") == "cost" and run.get("arm") == "A" and not run.get("periodic_delay_observed"):
-        raise RuntimeError("A baseline delay acknowledgement missing; inspect coordinator image")
+    if run.get("experiment") == "cost" and run.get("arm") == "A" and not run.get("periodic_disabled_observed"):
+        raise RuntimeError("A baseline disabled acknowledgement missing; inspect coordinator image")
     if run["scenario"] == "risk-schedule":
         observations = run.get("risk_schedule_observations", [])
         if len(observations) != len(run["risk_schedule"]) or not all(x.get("consumed_at") for x in observations):
@@ -470,12 +472,6 @@ def start(evidence):
     logged = set()
     deadline = time.monotonic()+run["max_seconds"]
     try:
-        if run["experiment"] == "cost" and run["arm"] == "A":
-            not_before = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=2)).isoformat()
-            kubectl("karmada", "-n", NS, "patch", "trainingpolicy", run["policy"], "--type=merge", "-p",
-                    json.dumps({"metadata":{"annotations":{"training.dcnlab.com/periodic-not-before":not_before}}}))
-            run["periodic_not_before"] = not_before
-            save(evidence/"run.json", run)
         kubectl("karmada","-n",NS,"scale","statefulset",run["app"],"--replicas=2")
         patch_policy(run,False)
         while time.monotonic() < deadline:

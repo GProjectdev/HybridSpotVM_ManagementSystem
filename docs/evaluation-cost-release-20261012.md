@@ -2,14 +2,14 @@
 
 ## 1. 변경된 조건
 
-- A: OD 2개, 정기 Checkpoint 간격 7200초. start 시각부터 최초 2시간은 정기 스케줄 생성을 보류한다.
-- 최초 지연 기준은 VM 준비 시간을 포함한 실험 시작 시각이다. 학습 시작 후 2시간이 아니다.
+- A: OD 2개, TrainingPolicy annotation training.dcnlab.com/periodic-checkpoint=disabled로 정기 Checkpoint를 명시적으로 비활성화한다.
+- 앞서 안내한 2시간 주기 및 최초 지연 방식은 폐기했다. 실행 시간이 2시간을 넘어도 정기 Checkpoint를 만들지 않는다.
 - A는 위험률 변경과 시간표 완료 검사를 하지 않는다. renderer가 scenario를 constant로 바꾼다.
 - B: 최소 OD 강제 없음, 위험률 기반 VM 구성, 분석식 기반 Checkpoint 주기(60~600초).
 - B는 초기 측정값이 없을 때 bootstrap 주기를 사용한다. 이후 checkpoint-cost-analytic 관측이 있어야 성공이다.
-- A에서 Checkpoint 리소스가 관측되거나 지연 적용 확인이 없으면 성공으로 인정하지 않는다.
-- 2시간이 지나면 A도 Checkpoint를 수행할 수 있다. 그런 실행은 무Checkpoint baseline으로 쓰지 않는다.
-- annotation은 정기 작업만 지연한다. 긴급/교체용 Checkpoint를 막는 전역 비활성화 기능이 아니다.
+- A에서 Checkpoint 리소스가 관측되거나 비활성화 적용 확인이 없으면 성공으로 인정하지 않는다.
+- annotation은 해당 정책의 정기 작업만 비활성화한다. B와 긴급/교체용 Checkpoint 경로는 그대로 유지한다.
+- 이미 정기 스케줄이 있다면 pause를 요청하고 멤버의 확인을 기다린다. 진행 중인 작업을 강제 중단하지 않는다.
 - 기존 평가용 policy-manager/CRD는 유지한다. 이번에는 checkpoint-coordinator만 새로 빌드한다.
 
 ## 2. 코드 받기 및 테스트
@@ -30,7 +30,7 @@ go test -p 2 -mod=readonly ./internal/management ./internal/policy
 아래 명령은 한 단계가 성공한 뒤 다음 단계를 실행한다.
 
 ```bash
-export COORD_IMAGE=docker.io/jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0-eval.1.2
+export COORD_IMAGE=docker.io/jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0-eval.1.3
 buildah login docker.io
 buildah bud --arch amd64 --build-arg COMPONENT=checkpoint-coordinator -f Dockerfile -t "$COORD_IMAGE" .
 buildah push "$COORD_IMAGE" "docker://$COORD_IMAGE"
@@ -46,19 +46,20 @@ goal_steps=30000, max_seconds=10800, scenario=risk-schedule,
 initial_risk=0.05, risk_schedule=[{"after_seconds":3600,"lambda_per_hour":0.8}]로 설정한다.
 90분 이내 완료는 예상일 뿐 보장하지 않는다. A와 B의 목표 Step은 동일하게 유지한다.
 B가 60분 전에 끝나거나 교체 완료 전에 끝나면 시나리오 조건 미충족으로 실패할 수 있다.
-180분 제한은 학습 목표 시간이 아니다. A가 최초 지연 시간을 넘으면 이 baseline 조건에 맞지 않는다.
+180분 제한은 학습 목표 시간이 아니다. 기존 2시간 지연용 evidence는 재사용하지 말고 새 ID로 render한다.
 
 아래 ID가 이미 사용됐다면 새 ID로 바꾼다. 각 명령의 성공을 확인하고 다음 명령을 실행한다.
 
 ```bash
 python3 evaluation/cost.py render --config evaluation/config.cost.local.json --run-id costa04 --arm A --out evidence/cost/costa04
-jq '.spec.checkpoint' evidence/cost/costa04/policy.yaml
+jq '{annotations:.metadata.annotations,checkpoint:.spec.checkpoint}' evidence/cost/costa04/policy.yaml
 jq '{scenario,goal_steps}' evidence/cost/costa04/run.json
 python3 evaluation/cost.py prepare --evidence evidence/cost/costa04
 python3 evaluation/cost.py start --evidence evidence/cost/costa04
 ```
 
-다른 터미널에서 아래를 확인한다. A의 policy-latest.json에 status.checkpoint.reason=periodic_deferred가 보여야 한다.
+다른 터미널에서 아래를 확인한다. A의 policy-latest.json에 status.checkpoint.reason=periodic_disabled가 보여야 한다.
+policy.yaml의 checkpoint 간격 필드는 비활성화 중에는 실행에 사용되지 않는다.
 
 ```bash
 tail -n 20 -F evidence/cost/costa04/runner-events.jsonl

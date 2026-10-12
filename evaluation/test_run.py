@@ -88,30 +88,30 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(policy["metadata"]["annotations"].get("training.dcnlab.com/planned-partial"),
                              "disabled" if exp=="checkpoint" else None)
 
-    def test_cost_baseline_delayed_and_proposal_dynamic(self):
+    def test_cost_baseline_disabled_and_proposal_dynamic(self):
         self.c.update(scenario="risk-schedule", risk_schedule=[{"after_seconds":3600,"lambda_per_hour":0.8}])
         info, _, _, policy = self.render("cost", "A")
         self.assertEqual(info["scenario"], "constant")
-        self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 7200)
-        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 7200)
-        run.verify_scenario(Path("."), dict(info, periodic_delay_observed=True))
+        self.assertEqual(policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"], "disabled")
+        run.verify_scenario(Path("."), dict(info, periodic_disabled_observed=True))
         with self.assertRaisesRegex(RuntimeError, "acknowledgement"):
             run.verify_scenario(Path("."), info)
         info, _, _, policy = self.render("cost", "B")
         self.assertEqual(info["scenario"], "risk-schedule")
+        self.assertNotIn("training.dcnlab.com/periodic-checkpoint", policy["metadata"]["annotations"])
         self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 60)
         self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 600)
         with self.assertRaisesRegex(RuntimeError, "analytic"):
             run.verify_scenario(Path("."), dict(info, scenario="constant"))
 
-    def test_baseline_rejects_checkpoint_and_records_delay(self):
+    def test_baseline_rejects_checkpoint_and_records_disabled(self):
         info = {"experiment":"cost", "arm":"A", "scenario":"constant", "policy":"policy",
                 "policy_uid":"uid", "app":"eval-test"}
-        policy = {"status":{"checkpoint":{"reason":"periodic_deferred"}}}
+        policy = {"status":{"checkpoint":{"reason":"periodic_disabled"}}}
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[]}):
                 run.observe_policy(Path(directory), info)
-            self.assertTrue(info["periodic_delay_observed"])
+            self.assertTrue(info["periodic_disabled_observed"])
             migration = {"spec":{"workloadRef":{"name":"eval-test"}}}
             with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[migration]}):
                 with self.assertRaisesRegex(RuntimeError, "contains a checkpoint"):
