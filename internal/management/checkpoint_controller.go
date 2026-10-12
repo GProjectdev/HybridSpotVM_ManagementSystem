@@ -211,6 +211,13 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		status["message"] = err.Error()
 		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 	}
+	if deferred, err := periodicDeferred(policyObj, now); err != nil {
+		return ctrl.Result{}, err
+	} else if deferred {
+		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, now, "periodic_deferred")
+		status["notBefore"] = policyObj.GetAnnotations()["training.dcnlab.com/periodic-not-before"]
+		return ctrl.Result{RequeueAfter: time.Minute}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
+	}
 	migration, err := r.ensureCheckpointSchedule(ctx, input, runtimeSnapshot, decision.CheckpointIntervalSeconds)
 	if err != nil {
 		return ctrl.Result{}, err

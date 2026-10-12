@@ -1,5 +1,7 @@
 # ResNet18 / CIFAR-10 평가 도구
 
+비용 A/B의 최신 조건과 이미지 갱신은 [2026-10-12 가이드](../docs/evaluation-cost-release-20261012.md)를 우선 따른다.
+
 평가는 [독립 실행 가이드](../docs/evaluation-separate-guide.md)에 따라 각각 진행한다.
 비용은 cost.py(A/B), 주기는 checkpoint.py(F60/F300/F600/D)를 사용한다.
 설정과 증거를 분리하고 이전 실행의 VM 정리가 끝난 뒤 다음 실행을 시작한다.

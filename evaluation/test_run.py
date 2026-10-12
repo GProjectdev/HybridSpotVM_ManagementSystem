@@ -87,6 +87,35 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(info["dataset"],"cifar10")
             self.assertEqual(policy["metadata"]["annotations"].get("training.dcnlab.com/planned-partial"),
                              "disabled" if exp=="checkpoint" else None)
+
+    def test_cost_baseline_delayed_and_proposal_dynamic(self):
+        self.c.update(scenario="risk-schedule", risk_schedule=[{"after_seconds":3600,"lambda_per_hour":0.8}])
+        info, _, _, policy = self.render("cost", "A")
+        self.assertEqual(info["scenario"], "constant")
+        self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 7200)
+        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 7200)
+        run.verify_scenario(Path("."), dict(info, periodic_delay_observed=True))
+        with self.assertRaisesRegex(RuntimeError, "acknowledgement"):
+            run.verify_scenario(Path("."), info)
+        info, _, _, policy = self.render("cost", "B")
+        self.assertEqual(info["scenario"], "risk-schedule")
+        self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 60)
+        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 600)
+        with self.assertRaisesRegex(RuntimeError, "analytic"):
+            run.verify_scenario(Path("."), dict(info, scenario="constant"))
+
+    def test_baseline_rejects_checkpoint_and_records_delay(self):
+        info = {"experiment":"cost", "arm":"A", "scenario":"constant", "policy":"policy",
+                "policy_uid":"uid", "app":"eval-test"}
+        policy = {"status":{"checkpoint":{"reason":"periodic_deferred"}}}
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[]}):
+                run.observe_policy(Path(directory), info)
+            self.assertTrue(info["periodic_delay_observed"])
+            migration = {"spec":{"workloadRef":{"name":"eval-test"}}}
+            with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[migration]}):
+                with self.assertRaisesRegex(RuntimeError, "contains a checkpoint"):
+                    run.observe_policy(Path(directory), info)
     def test_readonly_data_fresh_checkpoint_uid_before_start(self):
         info,member,items,policy=self.render()
         self.assertTrue(member[0]["spec"]["nfs"]["readOnly"])
@@ -114,7 +143,7 @@ class RenderTests(unittest.TestCase):
 
     def test_completed_risk_change_requires_recovery(self):
         with tempfile.TemporaryDirectory() as d:
-            info={"scenario":"risk-rise","experiment":"cost","arm":"B","policy_uid":"uid","changed_risk_consumed":True}
+            info={"scenario":"risk-rise","experiment":"cost","arm":"B","policy_uid":"uid","changed_risk_consumed":True,"analytic_interval_observed":True}
             with patch.object(run,"get",return_value={"items":[]}):
                 with self.assertRaisesRegex(RuntimeError,"recovery/cleanup"):
                     run.verify_scenario(Path(d),info)

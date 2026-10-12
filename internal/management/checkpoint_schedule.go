@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -14,6 +15,18 @@ import (
 
 const checkpointScheduleRole = "checkpoint-schedule"
 const checkpointEvidenceRole = "checkpoint-evidence"
+
+func periodicDeferred(policy *unstructured.Unstructured, now time.Time) (bool, error) {
+	value := policy.GetAnnotations()["training.dcnlab.com/periodic-not-before"]
+	if value == "" {
+		return false, nil
+	}
+	deadline, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return true, fmt.Errorf("invalid periodic-not-before: %w", err)
+	}
+	return now.Before(deadline), nil
+}
 
 func isCheckpointSchedule(obj *unstructured.Unstructured) bool {
 	_, found, _ := unstructured.NestedMap(obj.Object, "spec", "schedule")
@@ -93,6 +106,10 @@ func (r *CheckpointReconciler) pauseCheckpointSchedules(ctx context.Context, inp
 }
 
 func (r *CheckpointReconciler) scheduleMustPause(ctx context.Context, policy *unstructured.Unstructured, input p.PolicyInput) (bool, error) {
+	deferred, err := periodicDeferred(policy, r.now())
+	if deferred || err != nil {
+		return true, nil
+	}
 	if input.Suspended || !input.Checkpoint.Resume || policy.GetAnnotations()[groupIntentAnnotation] != "" || !discoveryReady(policy) {
 		return true, nil
 	}

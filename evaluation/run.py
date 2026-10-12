@@ -138,13 +138,14 @@ def render(c, source, run_id, experiment, arm):
     policy_spec["policy"]["minOnDemand"] = (2 if arm == "A" else 0) if experiment == "cost" else 1
     if experiment == "checkpoint":
         policy_spec["policy"]["fixedOnDemand"] = 1
-    interval = 300 if experiment == "cost" or arm == "D" else int(arm[1:])
+    dynamic = arm == "D" or (experiment == "cost" and arm == "B")
+    interval = 7200 if experiment == "cost" and arm == "A" else (300 if dynamic else int(arm[1:]))
     checkpoint = copy.deepcopy(source["spec"].get("checkpoint", {}))
     checkpoint.pop("candidateIntervalSeconds", None)
     checkpoint.pop("measuredCosts", None)
     checkpoint.pop("paperProfile", None)
-    checkpoint.update(minIntervalSeconds=60 if arm == "D" else interval,
-                      maxIntervalSeconds=600 if arm == "D" else interval,
+    checkpoint.update(minIntervalSeconds=60 if dynamic else interval,
+                      maxIntervalSeconds=600 if dynamic else interval,
                       riskBands=[{"maxLambdaPerHour": 1.0, "intervalSeconds": interval}], resume=True)
     policy_spec["checkpoint"] = checkpoint
     policy = resource("training.dcnlab.com/v1alpha1", "TrainingPolicy", app, run_id, policy_spec)
@@ -212,6 +213,8 @@ def render(c, source, run_id, experiment, arm):
                           "placement":{"clusterAffinity":{"clusterNames":[c["cluster"]]}}})
     run = dict(c, run_id=run_id, app=app, policy=app, risk=app+"-risk", experiment=experiment, arm=arm,
                model="resnet18", dataset="cifar10", world_size=2, created_at=now(), phase="rendered")
+    if experiment == "cost" and arm == "A":
+        run["scenario"] = "constant"
     return run, [pv,data_pvc,ckpt], [service,script,sts,risk,placement], policy
 
 def create(cluster, obj, evidence, ledger):
@@ -321,6 +324,14 @@ def observe_policy(evidence, run):
         if (decision.get("onDemandWorkers"), decision.get("spotWorkers")) != (1, 1):
             raise RuntimeError("fixed composition not honored; inspect controller image and policy")
     checkpoint = obj.get("status", {}).get("checkpoint", {})
+    if run["experiment"] == "cost" and run["arm"] == "A":
+        if checkpoint.get("reason") == "periodic_deferred":
+            run["periodic_delay_observed"] = True
+        migrations = get("aws", "fluidcrmigrations")["items"]
+        for migration in migrations:
+            spec = migration.get("spec", {})
+            if spec.get("workloadRef", {}).get("name") == run["app"]:
+                raise RuntimeError("A baseline contains a checkpoint schedule/run; inspect coordinator image and delay")
     if checkpoint.get("intervalSource") == "checkpoint-cost-analytic":
         run["analytic_interval_observed"] = True
     if run["scenario"] == "risk-rise":
@@ -405,13 +416,15 @@ def verify_group_recovery(evidence, run):
                     raise RuntimeError("group recovery/cleanup incomplete: old NodeProvision remains in "+cluster)
 
 def verify_scenario(evidence, run):
+    if run.get("experiment") == "cost" and run.get("arm") == "A" and not run.get("periodic_delay_observed"):
+        raise RuntimeError("A baseline delay acknowledgement missing; inspect coordinator image")
     if run["scenario"] == "risk-schedule":
         observations = run.get("risk_schedule_observations", [])
         if len(observations) != len(run["risk_schedule"]) or not all(x.get("consumed_at") for x in observations):
             raise RuntimeError("risk schedule incomplete; increase goal_steps or inspect risk consumption")
         if active_operations(run):
             raise RuntimeError("risk schedule recovery/cleanup still active")
-    if run.get("arm") == "D" and not run.get("analytic_interval_observed"):
+    if (run.get("arm") == "D" or (run.get("experiment") == "cost" and run.get("arm") == "B")) and not run.get("analytic_interval_observed"):
         raise RuntimeError("analytic checkpoint interval was never observed; bootstrap-only run is not dynamic-policy evidence")
     if run["scenario"] == "risk-rise" and not run.get("changed_risk_consumed"):
         raise RuntimeError("changed risk was not consumed by the policy before completion")
@@ -457,6 +470,12 @@ def start(evidence):
     logged = set()
     deadline = time.monotonic()+run["max_seconds"]
     try:
+        if run["experiment"] == "cost" and run["arm"] == "A":
+            not_before = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=2)).isoformat()
+            kubectl("karmada", "-n", NS, "patch", "trainingpolicy", run["policy"], "--type=merge", "-p",
+                    json.dumps({"metadata":{"annotations":{"training.dcnlab.com/periodic-not-before":not_before}}}))
+            run["periodic_not_before"] = not_before
+            save(evidence/"run.json", run)
         kubectl("karmada","-n",NS,"scale","statefulset",run["app"],"--replicas=2")
         patch_policy(run,False)
         while time.monotonic() < deadline:

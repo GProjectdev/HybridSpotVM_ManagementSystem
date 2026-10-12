@@ -1,5 +1,7 @@
 # ResNet18 평가 실행 가이드
 
+> 비용 A/B 재실행은 [2026-10-12 수정 가이드](evaluation-cost-release-20261012.md)를 먼저 따른다. 기존 300초 고정 비교를 대체한다.
+
 > 실제 실행 순서는 [평가별 독립 실행 가이드](evaluation-separate-guide.md)를 우선 따른다.
 > 비용 평가는 cost.py, 주기 평가는 checkpoint.py로 분리하여 순차 실행한다.
 > 아래 문서는 공통 설치, FIS, 비용 원장과 정리 절차의 참고 문서다.
