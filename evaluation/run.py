@@ -266,9 +266,9 @@ def prepare(evidence):
     run.update(workload_uid=uid, policy_uid=result["metadata"]["uid"],phase="prepared")
     save(evidence/"run.json",run)
 
-def event(evidence, name, **fields):
+def event(evidence, event_name, **fields):
     with (evidence/"runner-events.jsonl").open("a",encoding="utf-8") as out:
-        out.write(json.dumps(dict(timestamp=now(),event=name,**fields))+"\n")
+        out.write(json.dumps(dict(timestamp=now(),event=event_name,**fields))+"\n")
 
 def patch_policy(run, suspended=True):
     owned(run,"karmada","trainingpolicy",run["policy"],run["policy_uid"])

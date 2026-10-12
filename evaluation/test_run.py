@@ -12,6 +12,26 @@ spec=importlib.util.spec_from_file_location("eval_run",HERE/"run.py")
 run=importlib.util.module_from_spec(spec);spec.loader.exec_module(run)
 
 class SaveTests(unittest.TestCase):
+    def test_cleanup_retries_with_remaining_node_after_policy_deleted(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            run.save(evidence/"run.json", {"run_id":"test", "policy":"eval-test", "app":"eval-test"})
+            run.save(evidence/"created.json", [{"cluster":"karmada", "kind":"TrainingPolicy",
+                "name":"eval-test", "uid":"old-uid", "namespaced":True}])
+            node = {"metadata":{"name":"eval-test-worker-00", "uid":"node-uid",
+                    "labels":{run.POLICY_UID:"old-uid"}}, "status":{"phase":"Ready"}}
+            def resources(cluster, kind, **kwargs):
+                return {"items":[node] if kind == "nodeprovisions" else []}
+            with patch.object(run, "kubectl", return_value="") as command, patch.object(run, "get", side_effect=resources):
+                run.cleanup(evidence, "test")
+            deletes = [c for c in command.call_args_list if "delete" in c.args]
+            self.assertEqual(len(deletes), 1)
+            self.assertEqual(deletes[0].kwargs["obj"], node)
+            events = [json.loads(line) for line in (evidence/"runner-events.jsonl").read_text().splitlines()]
+            deletion = next(x for x in events if x["event"] == "nodeprovision_delete_requested")
+            self.assertEqual(deletion["name"], "eval-test-worker-00")
+            self.assertEqual(events[-1]["event"], "cleanup_requested")
+
     def test_reader_sees_complete_old_json_until_atomic_publication(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "run.json"
