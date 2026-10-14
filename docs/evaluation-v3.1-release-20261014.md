@@ -211,4 +211,3 @@ A도 가능하면 동일 v3.1 환경에서 다시 측정한다. 기존 costa06 �
 ## 9. 배포 실패 시
 
 rollout 실패 시 실험을 시작하지 않는다. 기존에 백업한 Deployment의 image/args와 비교하고 해당 Deployment만 rollout undo하거나 이전 이미지로 되돌린다. 진행 중인 Restore에서 여러 버전의 payload를 섞지 않는다. payload 롤백은 Webhook 인자 복구와 새 Pod 생성이 모두 필요하다. CRD/status/finalizer를 임의로 바꾸어 검증을 우회하지 않는다.
-
