@@ -1,5 +1,7 @@
 # 비용 평가 A/B 재시작 가이드
 
+> 2026-10-14 이후 연속 Restore 수정, 병렬 VM 준비, 실패 실행 중단 및 이미지 교체는 [v3.1 배포 가이드](evaluation-v3.1-release-20261014.md)를 따른다. 아래 v3.0 이미지와 30000 Step 예시는 당시 기록이며, 현재 A/B 목표는 동일하게 43000 Step을 사용한다.
+
 ## 1. 변경된 조건
 
 - A: OD 2개, TrainingPolicy annotation training.dcnlab.com/periodic-checkpoint=disabled로 정기 Checkpoint를 명시적으로 비활성화한다.

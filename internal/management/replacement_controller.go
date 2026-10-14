@@ -425,8 +425,8 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 	existing := trainingpolicy.NewObject("NodeProvision")
 	err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.ReplacementNodeProvisionName}, existing)
 	if err == nil {
-		if existing.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
-			return nil, false, fmt.Errorf("existing replacement NodeProvision policy uid mismatch")
+		if err := replacementNodeProvisionIdentityError(existing, ns, spec); err != nil {
+			return nil, false, err
 		}
 		input := trainingpolicy.PolicyInput{Namespace: ns, PolicyName: spec.PolicyName, PolicyUID: types.UID(spec.PolicyUID)}
 		if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, existing, spec.TargetCluster)); err != nil {
@@ -437,31 +437,10 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 	if !apierrors.IsNotFound(err) {
 		return nil, false, err
 	}
-	desired := trainingpolicy.NewObject("NodeProvision")
-	desired.SetNamespace(ns)
-	desired.SetName(spec.ReplacementNodeProvisionName)
-	desired.SetLabels(map[string]string{
-		trainingpolicy.LabelManagedBy: "hybridspotvm-system",
-		trainingpolicy.LabelPolicy:    spec.PolicyName,
-		trainingpolicy.LabelPolicyUID: spec.PolicyUID,
-		trainingpolicy.LabelRole:      "replacement",
-	})
-	desired.SetAnnotations(map[string]string{
-		"training.dcnlab.com/recovery-operation":         spec.Operation,
-		"training.dcnlab.com/replaces-nodeprovision":     spec.OldNodeProvisionName,
-		"training.dcnlab.com/replaces-nodeprovision-uid": spec.OldNodeProvisionUID,
-	})
-	sourceSpec, ok, _ := unstructured.NestedMap(oldNP.Object, "spec")
-	if !ok {
-		return nil, false, fmt.Errorf("old NodeProvision spec required")
+	desired, err := buildReplacementNodeProvision(ns, oldNP, spec)
+	if err != nil {
+		return nil, false, err
 	}
-	newSpec := deepCopyMap(sourceSpec)
-	newSpec["marketType"] = spec.DesiredMarketType
-	newSpec["hostname"] = spec.ReplacementNodeProvisionName
-	if awsConfig, ok := newSpec["awsConfig"].(map[string]interface{}); ok {
-		delete(awsConfig, "keyPairName")
-	}
-	desired.Object["spec"] = newSpec
 	if err := r.Create(ctx, desired); err != nil {
 		return nil, false, err
 	}
@@ -473,6 +452,9 @@ func (r *ReplacementReconciler) ensureReplacementNodeProvision(ctx context.Conte
 }
 
 func verifyReplacementReadyForOperation(replacement *unstructured.Unstructured, spec replacementSpec) error {
+	if !replacement.GetDeletionTimestamp().IsZero() {
+		return fmt.Errorf("replacement NodeProvision is deleting")
+	}
 	if stringField(replacement.Object, "spec", "marketType") != spec.DesiredMarketType {
 		return fmt.Errorf("replacement NodeProvision marketType must be %s", spec.DesiredMarketType)
 	}

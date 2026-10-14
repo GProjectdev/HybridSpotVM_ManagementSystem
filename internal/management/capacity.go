@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,6 +27,14 @@ type capacityDecision struct {
 	HistoricalWorkers   int64
 	OperationName       string
 	ReplacementName     string
+}
+
+type capacityReplacementMismatch struct {
+	Node            *unstructured.Unstructured
+	ExistingMarket  string
+	DesiredMarket   string
+	OperationName   string
+	ReplacementName string
 }
 
 func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj *unstructured.Unstructured, input trainingpolicy.PolicyInput, decision trainingpolicy.Decision) (capacityDecision, error) {
@@ -62,11 +72,12 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 		for i := int64(0); i < decision.DesiredWorkers; i++ {
 			slot := trainingpolicy.NewNodeProvision(input, i, desiredMarketForOrdinal(i, decision))
 			old := owned[slot.GetName()]
-			if old == nil || old.GetUID() == "" || !old.GetDeletionTimestamp().IsZero() || stringField(old.Object, "spec", "marketType") != "Spot" || desiredMarketForOrdinal(i, decision) != "OnDemand" {
+			desiredMarket := desiredMarketForOrdinal(i, decision)
+			if old == nil || old.GetUID() == "" || !old.GetDeletionTimestamp().IsZero() || stringField(old.Object, "spec", "marketType") == desiredMarket {
 				continue
 			}
 			name := replacementNodeProvisionName(old.GetName(), string(old.GetUID()))
-			if reusableCapacityReplacement(owned[name], old, input) {
+			if reusableCapacityReplacement(owned[name], old, input, desiredMarket) {
 				// Preserve the source slot while reusing its UID-bound temporary capacity.
 				delete(owned, name)
 			}
@@ -81,6 +92,7 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 	}
 
 	missingGenerated := int64(0)
+	mismatches := []capacityReplacementMismatch{}
 	for i := int64(0); i < decision.DesiredWorkers; i++ {
 		desired := trainingpolicy.NewNodeProvision(input, i, desiredMarketForOrdinal(i, decision))
 		existing, exists := owned[desired.GetName()]
@@ -92,30 +104,13 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 		desiredMarket, _, _ := unstructured.NestedString(desired.Object, "spec", "marketType")
 		if existingMarket != "" && desiredMarket != "" && existingMarket != desiredMarket {
 			oldUID := string(existing.GetUID())
-			result.Blocked = true
-			result.Reason = "replacement_required"
-			result.ReplacementRequired = true
-			result.OperationName = replacementOperationName(existing.GetName(), oldUID)
-			result.ReplacementName = replacementNodeProvisionName(existing.GetName(), oldUID)
-			if boolField(policyObj.Object, "spec", "replacement", "enabled") {
-				created, err := r.ensureAutomaticSpotReplacement(ctx, policyObj, input, existing, result.OperationName, result.ReplacementName, desiredMarket, "")
-				if err != nil {
-					result.Reason = "replacement_unsupported"
-					if errors.Is(err, errPartialReplacementNotReady) {
-						result.Reason = "partial_replacement_waiting"
-					}
-					result.Message = err.Error()
-					return result, nil
-				}
-				if created {
-					result.Message = fmt.Sprintf("created UID-bound SpotReplacement %s for NodeProvision %s/%s uid=%s desiredMarketType=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID, desiredMarket)
-				} else {
-					result.Message = fmt.Sprintf("UID-bound SpotReplacement %s exists for NodeProvision %s/%s uid=%s desiredMarketType=%s", result.OperationName, existing.GetNamespace(), existing.GetName(), oldUID, desiredMarket)
-				}
-			} else {
-				result.Message = fmt.Sprintf("existing NodeProvision %s/%s uid=%s has immutable marketType=%s; desired=%s; replacement orchestration requires spec.replacement.enabled=true and an explicit UID-bound SpotReplacement", existing.GetNamespace(), existing.GetName(), oldUID, existingMarket, desiredMarket)
-			}
-			return result, nil
+			mismatches = append(mismatches, capacityReplacementMismatch{
+				Node:            existing,
+				ExistingMarket:  existingMarket,
+				DesiredMarket:   desiredMarket,
+				OperationName:   replacementOperationName(existing.GetName(), oldUID),
+				ReplacementName: replacementNodeProvisionName(existing.GetName(), oldUID),
+			})
 		}
 	}
 	if projected := int64(len(owned)) + missingGenerated; projected > input.TargetWorkers {
@@ -123,6 +118,59 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 		result.Reason = "capacity_inventory_full"
 		result.Overshoot = true
 		result.Message = fmt.Sprintf("owned NodeProvision inventory has %d workers and %d generated slots are missing; projected capacity %d exceeds fixed targetWorkers %d", result.OwnedWorkers, missingGenerated, projected, input.TargetWorkers)
+		return result, nil
+	}
+	if len(mismatches) > 0 {
+		result.Blocked = true
+		result.Reason = "replacement_required"
+		result.ReplacementRequired = true
+		result.OperationName = mismatches[0].OperationName
+		result.ReplacementName = mismatches[0].ReplacementName
+		if !boolField(policyObj.Object, "spec", "replacement", "enabled") {
+			first := mismatches[0]
+			result.Message = fmt.Sprintf("existing NodeProvision %s/%s uid=%s has immutable marketType=%s; desired=%s; replacement orchestration requires spec.replacement.enabled=true and an explicit UID-bound SpotReplacement", first.Node.GetNamespace(), first.Node.GetName(), string(first.Node.GetUID()), first.ExistingMarket, first.DesiredMarket)
+			return result, nil
+		}
+		preparedCount := 0
+		if policyObj.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
+			for _, mismatch := range mismatches {
+				prepared, err := r.ensurePreparedReplacementNodeProvision(ctx, policyObj, input, mismatch.Node, mismatch.OperationName, mismatch.ReplacementName, mismatch.DesiredMarket)
+				if err != nil {
+					result.Reason = "replacement_unsupported"
+					result.OperationName = mismatch.OperationName
+					result.ReplacementName = mismatch.ReplacementName
+					result.Message = err.Error()
+					return result, nil
+				}
+				if prepared {
+					preparedCount++
+				}
+			}
+		}
+		active, err := (&CheckpointReconciler{Client: r.Client}).activeSpotReplacement(ctx, input)
+		if err != nil {
+			return result, err
+		}
+		if active != nil {
+			result.OperationName = active.GetName()
+			result.ReplacementName = stringField(active.Object, "spec", "replacementNodeProvisionRef", "name")
+			result.Message = fmt.Sprintf("prepared replacement NodeProvision capacity for %d desired market mismatch(es); SpotReplacement %s remains the serial operation owner", len(mismatches), active.GetName())
+			return result, nil
+		}
+		created, err := r.ensureAutomaticSpotReplacement(ctx, policyObj, input, mismatches[0].Node, mismatches[0].OperationName, mismatches[0].ReplacementName, mismatches[0].DesiredMarket, "")
+		if err != nil {
+			result.Reason = "replacement_unsupported"
+			if errors.Is(err, errPartialReplacementNotReady) {
+				result.Reason = "partial_replacement_waiting"
+			}
+			result.Message = err.Error()
+			return result, nil
+		}
+		if created {
+			result.Message = fmt.Sprintf("prepared %d replacement NodeProvision(s) and created serial SpotReplacement %s for %d desired market mismatch(es)", preparedCount, result.OperationName, len(mismatches))
+		} else {
+			result.Message = fmt.Sprintf("prepared replacement NodeProvision capacity for %d desired market mismatch(es); serial SpotReplacement %s exists", len(mismatches), result.OperationName)
+		}
 		return result, nil
 	}
 
@@ -147,6 +195,71 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 		return false, errPartialReplacementNotReady
 	}
 	return r.ensureGroupReplacement(ctx, policyObj, input, oldNP, operationName, replacementName, desiredMarketType, emergencyEventID)
+}
+
+func (r *PolicyReconciler) ensurePreparedReplacementNodeProvision(ctx context.Context, policyObj *unstructured.Unstructured, input trainingpolicy.PolicyInput, oldNP *unstructured.Unstructured, operationName, replacementName, desiredMarketType string) (bool, error) {
+	if oldNP.GetUID() == "" {
+		return false, fmt.Errorf("replacement requires old NodeProvision UID evidence")
+	}
+	spec := replacementSpec{
+		Operation:                    operationName,
+		PolicyName:                   input.PolicyName,
+		PolicyUID:                    string(input.PolicyUID),
+		OldNodeProvisionName:         oldNP.GetName(),
+		OldNodeProvisionUID:          string(oldNP.GetUID()),
+		ReplacementNodeProvisionName: replacementName,
+		DesiredMarketType:            desiredMarketType,
+	}
+	existing := trainingpolicy.NewObject("NodeProvision")
+	err := r.reader().Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: replacementName}, existing)
+	if err == nil {
+		if err := replacementNodeProvisionIdentityError(existing, input.Namespace, spec); err != nil {
+			return false, err
+		}
+		return false, r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, existing, input.Capacity.AWSCluster))
+	}
+	if !apierrors.IsNotFound(err) {
+		return false, err
+	}
+	if policyObj.GetAnnotations()[groupIntentAnnotation] != "" || input.SourceCluster != "aws" || input.Capacity.AWSCluster != "aws" {
+		return false, errPartialReplacementNotReady
+	}
+	if active, err := activeGroupRestore(ctx, r.reader(), input); err != nil {
+		return false, err
+	} else if active != nil {
+		return false, errPartialReplacementNotReady
+	}
+	if err := verifyReplacementOldNode(oldNP, spec); err != nil {
+		return false, err
+	}
+	if stringField(oldNP.Object, "status", "phase") != "Ready" {
+		return false, fmt.Errorf("replacement source NodeProvision is not Ready")
+	}
+	runtime := trainingpolicy.NewObject("TrainingRuntime")
+	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: input.Namespace, Name: input.RuntimeRefName}, runtime); err != nil {
+		return false, err
+	}
+	health := trainingpolicy.ReadRuntimeStatus(runtime, input.SourceCluster)
+	if !trainingpolicy.RuntimeReadyForCheckpoint(input, health, r.now()) {
+		return false, errPartialReplacementNotReady
+	}
+	if _, err := r.groupSourcePods(ctx, input); err != nil {
+		return false, err
+	}
+	if _, _, err := r.groupCheckpointVolume(ctx, input); err != nil {
+		return false, err
+	}
+	desired, err := buildReplacementNodeProvision(input.Namespace, oldNP, spec)
+	if err != nil {
+		return false, err
+	}
+	if err := r.Create(ctx, desired); err != nil {
+		return false, err
+	}
+	if err := r.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, desired, input.Capacity.AWSCluster)); err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 func (r *PolicyReconciler) ownedWorkerNodeProvisions(ctx context.Context, input trainingpolicy.PolicyInput, successors map[string]string) (map[string]*unstructured.Unstructured, error) {

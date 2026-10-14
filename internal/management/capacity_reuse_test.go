@@ -22,8 +22,10 @@ func TestCapacityReusesOnlyBoundCandidate(t *testing.T) {
 			candidate.SetUID(types.UID("candidate-uid"))
 			labels := candidate.GetLabels()
 			labels[p.LabelRole] = "replacement"
+			labels[p.LabelManagedBy] = "hybridspotvm-system"
 			candidate.SetLabels(labels)
 			candidate.Object["spec"].(map[string]interface{})["marketType"] = "OnDemand"
+			candidate.Object["spec"].(map[string]interface{})["hostname"] = candidate.GetName()
 			annotations := map[string]string{
 				"training.dcnlab.com/replaces-nodeprovision":     old.GetName(),
 				"training.dcnlab.com/replaces-nodeprovision-uid": string(old.GetUID()),

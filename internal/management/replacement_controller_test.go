@@ -621,8 +621,12 @@ func replacementReadyNodeProvisionFixture() *unstructured.Unstructured {
 	np.SetNamespace("default")
 	np.SetName("new")
 	np.SetUID(types.UID("new-uid"))
-	np.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "replacement"})
-	np.SetAnnotations(map[string]string{"training.dcnlab.com/recovery-operation": "old-replace"})
+	np.SetLabels(map[string]string{trainingpolicy.LabelManagedBy: "hybridspotvm-system", trainingpolicy.LabelPolicy: "policy", trainingpolicy.LabelPolicyUID: "policy-uid", trainingpolicy.LabelRole: "replacement"})
+	np.SetAnnotations(map[string]string{
+		"training.dcnlab.com/recovery-operation":         "old-replace",
+		"training.dcnlab.com/replaces-nodeprovision":     "old",
+		"training.dcnlab.com/replaces-nodeprovision-uid": "old-uid",
+	})
 	np.Object["spec"] = map[string]interface{}{"marketType": "OnDemand", "hostname": "new", "instanceType": "m5.large"}
 	np.Object["status"] = map[string]interface{}{"phase": "Ready", "instanceId": "i-new", "nodeName": "new-node"}
 	return np

@@ -12,11 +12,19 @@ import subprocess
 import sys
 import tempfile
 import time
+from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 NS = "fluidcr-realign-121040"
 LABEL = "training.dcnlab.com/evaluation-run"
 POLICY_UID = "training.dcnlab.com/policy-uid"
+ABORT_BACKUP_DIR = "failed-abort-backups"
+ABORT_OPERATION_KINDS = (
+    "spotreplacements",
+    "spotrecoveries",
+    "restorerequests",
+    "fluidcrmigrations",
+)
 
 def now():
     return dt.datetime.now(dt.timezone.utc).isoformat()
@@ -288,6 +296,231 @@ def stop(evidence):
     kubectl("karmada","-n",NS,"scale","statefulset",run["app"],"--replicas=0")
     event(evidence,"workload_stopped",warning="VMs still bill until scoped cleanup and EC2 termination")
 
+def policy_uid_owned(obj, run, kind):
+    name = obj.get("metadata", {}).get("name", "")
+    labels = obj.get("metadata", {}).get("labels", {})
+    if labels.get(POLICY_UID) != run["policy_uid"]:
+        raise ValueError(kind+"/"+name+" policy UID mismatch; refusing abort")
+    spec_uid = obj.get("spec", {}).get("policyRef", {}).get("uid")
+    if spec_uid and spec_uid != run["policy_uid"]:
+        raise ValueError(kind+"/"+name+" spec policy UID mismatch; refusing abort")
+
+def workload_uid_owned(obj, run, kind):
+    name = obj.get("metadata", {}).get("name", "")
+    spec_uid = obj.get("spec", {}).get("workloadRef", {}).get("uid")
+    if spec_uid != run.get("workload_uid"):
+        raise ValueError(kind+"/"+name+" workload UID mismatch; refusing abort")
+    labels = obj.get("metadata", {}).get("labels", {})
+    if labels.get(POLICY_UID) not in (None, "", run["policy_uid"]):
+        raise ValueError(kind+"/"+name+" policy UID mismatch; refusing abort")
+    for status in obj.get("status", {}).get("clusters", []):
+        status_uid = status.get("workloadUID") or status.get("workloadRef", {}).get("uid")
+        if status_uid and status_uid != run.get("workload_uid"):
+            raise ValueError(kind+"/"+name+" status workload UID mismatch; refusing abort")
+
+def request_uids(objects):
+    return {obj["metadata"].get("uid") for _, kind, obj in objects if kind == "restorerequests" and obj["metadata"].get("uid")}
+
+def owner_ref_uids(obj):
+    return {owner.get("uid") for owner in obj.get("metadata", {}).get("ownerReferences", []) if owner.get("uid")}
+
+def restore_plan_owned(obj, run, request_ids, kind):
+    name = obj.get("metadata", {}).get("name", "")
+    spec = obj.get("spec", {})
+    if spec.get("workloadRef", {}).get("uid") != run.get("workload_uid"):
+        raise ValueError(kind+"/"+name+" workload UID mismatch; refusing abort")
+    if spec.get("requestUID") not in request_ids:
+        raise ValueError(kind+"/"+name+" request UID mismatch; refusing abort")
+
+def restore_plans_for_requests(cluster, run, request_ids):
+    if not request_ids:
+        return []
+    matches = []
+    for obj in get(cluster, "restoreplans")["items"]:
+        if obj.get("spec", {}).get("requestUID") in request_ids:
+            restore_plan_owned(obj, run, request_ids, "restoreplans")
+            matches.append(obj)
+    return matches
+
+def selector_targets(obj):
+    return {(item.get("apiVersion"), item.get("kind"), item.get("name"))
+            for item in obj.get("spec", {}).get("resourceSelectors", [])}
+
+def propagation_policy_for_objects(obj, selected, request_ids, run):
+    targets = selector_targets(obj)
+    if not targets:
+        return False
+    selected_keys = {(target.get("apiVersion"), target.get("kind"), target.get("metadata", {}).get("name"))
+                     for target in selected}
+    if not targets.issubset(selected_keys):
+        return False
+    labels = obj.get("metadata", {}).get("labels", {})
+    if labels.get(POLICY_UID) not in (None, "", run["policy_uid"]):
+        return False
+    return labels.get(POLICY_UID) == run["policy_uid"] or bool(owner_ref_uids(obj) & request_ids)
+
+def propagation_policies_for_objects(run, selected, request_ids):
+    if not selected:
+        return []
+    matches = []
+    for obj in get("karmada", "propagationpolicies")["items"]:
+        if propagation_policy_for_objects(obj, selected, request_ids, run):
+            matches.append(obj)
+    return matches
+
+def collect_failed_abort_objects(run, previous_request_ids=None):
+    operations = []
+    for kind in ABORT_OPERATION_KINDS:
+        for obj in get("karmada", kind, selector=POLICY_UID+"="+run["policy_uid"])["items"]:
+            policy_uid_owned(obj, run, kind)
+            operations.append(("karmada", kind, obj))
+    request_ids = set(previous_request_ids or []) | request_uids(operations)
+    plans = [("karmada", "restoreplans", obj) for obj in restore_plans_for_requests("karmada", run, request_ids)]
+    selected = [obj for _, _, obj in operations + plans]
+    placements = [("karmada", "propagationpolicies", obj) for obj in propagation_policies_for_objects(run, selected, request_ids)]
+    objects = placements + operations + plans
+    for obj in get("aws", "fluidcrmigrations")["items"]:
+        if obj.get("spec", {}).get("workloadRef", {}).get("uid") != run.get("workload_uid"):
+            continue
+        workload_uid_owned(obj, run, "fluidcrmigrations")
+        objects.append(("aws", "fluidcrmigrations", obj))
+    for obj in restore_plans_for_requests("aws", run, request_ids):
+        objects.append(("aws", "restoreplans", obj))
+    return objects
+
+def member_abort_migrations(run):
+    matches = []
+    for obj in get("aws", "fluidcrmigrations")["items"]:
+        if obj.get("spec", {}).get("workloadRef", {}).get("uid") == run.get("workload_uid"):
+            workload_uid_owned(obj, run, "fluidcrmigrations")
+            matches.append(obj)
+    return matches
+
+def abort_restore_plan_matches(run, request_ids):
+    matches = []
+    for cluster in ("karmada", "aws"):
+        for obj in restore_plans_for_requests(cluster, run, request_ids):
+            matches.append((cluster, "restoreplans", obj))
+    return matches
+
+def failed_abort_remaining(run):
+    request_ids = set(run.get("failed_abort_request_uids", []))
+    placement_names = set(run.get("failed_abort_placement_names", []))
+    remaining = []
+    for kind in ABORT_OPERATION_KINDS:
+        for obj in get("karmada", kind, selector=POLICY_UID+"="+run["policy_uid"])["items"]:
+            policy_uid_owned(obj, run, kind)
+            remaining.append("karmada/"+kind+"/"+obj["metadata"]["name"])
+    if placement_names:
+        for obj in get("karmada", "propagationpolicies")["items"]:
+            if obj["metadata"]["name"] in placement_names:
+                labels = obj.get("metadata", {}).get("labels", {})
+                if labels.get(POLICY_UID) != run["policy_uid"] and not (owner_ref_uids(obj) & request_ids):
+                    raise ValueError("propagationpolicies/"+obj["metadata"]["name"]+" owner UID mismatch; refusing abort")
+                remaining.append("karmada/propagationpolicies/"+obj["metadata"]["name"])
+    for obj in member_abort_migrations(run):
+        remaining.append("aws/fluidcrmigrations/"+obj["metadata"]["name"])
+    for cluster, kind, obj in abort_restore_plan_matches(run, request_ids):
+        remaining.append(cluster+"/"+kind+"/"+obj["metadata"]["name"])
+    return remaining
+
+def wait_failed_abort_removed(run, timeout=180, interval=5):
+    deadline = time.monotonic() + timeout
+    while True:
+        remaining = failed_abort_remaining(run)
+        if not remaining:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError("aborted recovery resources still exist; refusing scale/cleanup: " + ", ".join(remaining))
+        time.sleep(interval)
+
+def backup_failed_abort(evidence, run, objects, request_ids):
+    directory = evidence/ABORT_BACKUP_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory/(dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")+".json")
+    backup = {
+        "run_id": run["run_id"],
+        "policy_uid": run["policy_uid"],
+        "workload_uid": run.get("workload_uid"),
+        "request_uids": sorted(request_ids),
+        "created_at": now(),
+        "objects": [{"cluster": cluster, "kind": kind, "object": obj} for cluster, kind, obj in objects],
+    }
+    save(path, backup)
+    return path
+
+def delete_url(obj, plural):
+    api = obj.get("apiVersion", "")
+    name = quote(obj["metadata"]["name"], safe="")
+    namespace = quote(obj.get("metadata", {}).get("namespace") or NS, safe="")
+    if "/" in api:
+        group, version = api.split("/", 1)
+        return "/apis/"+quote(group, safe="")+"/"+quote(version, safe="")+"/namespaces/"+namespace+"/"+plural+"/"+name
+    return "/api/"+quote(api, safe="")+"/namespaces/"+namespace+"/"+plural+"/"+name
+
+def delete_checked(cluster, kind, obj):
+    try:
+        latest = get(cluster, kind, obj["metadata"]["name"])
+    except RuntimeError as exc:
+        if "NotFound" in str(exc) or "not found" in str(exc):
+            return False
+        raise
+    if not latest or not latest.get("metadata", {}).get("uid"):
+        return False
+    if latest.get("metadata", {}).get("uid") != obj.get("metadata", {}).get("uid"):
+        raise ValueError(kind+"/"+obj["metadata"]["name"]+" UID changed before delete; refusing abort")
+    options = {"apiVersion":"v1", "kind":"DeleteOptions", "preconditions":{"uid":latest["metadata"]["uid"]}}
+    try:
+        kubectl(cluster, "delete", "--raw="+delete_url(latest, kind), "--filename=-", obj=options)
+    except RuntimeError as exc:
+        if "NotFound" in str(exc) or "not found" in str(exc):
+            return False
+        raise
+    return True
+
+def abort_failed_run(evidence, confirm, wait_timeout=180, wait_interval=5):
+    run = read(evidence/"run.json")
+    if confirm != run["run_id"]:
+        raise ValueError("--confirm must equal run_id; abort deletes failed-run recovery objects")
+    if run.get("phase") not in ("failed", "aborted"):
+        raise ValueError("abort requires failed or already aborted run phase")
+    if run.get("phase") == "aborted":
+        wait_failed_abort_removed(run, wait_timeout, wait_interval)
+        return
+    patch_policy(run)
+    previous_request_ids = set(run.get("failed_abort_request_uids", []))
+    objects = collect_failed_abort_objects(run, previous_request_ids)
+    request_ids = previous_request_ids | request_uids(objects)
+    backup = backup_failed_abort(evidence, run, objects, request_ids)
+    run["failed_abort_request_uids"] = sorted(request_ids)
+    placement_names = set(run.get("failed_abort_placement_names", []))
+    placement_names.update(obj["metadata"]["name"] for _, kind, obj in objects if kind == "propagationpolicies")
+    run["failed_abort_placement_names"] = sorted(placement_names)
+    save(evidence/"run.json", run)
+    for cluster, kind, obj in objects:
+        if cluster == "karmada":
+            if kind == "restoreplans":
+                restore_plan_owned(obj, run, request_ids, kind)
+            elif kind == "propagationpolicies":
+                if obj["metadata"]["name"] not in run["failed_abort_placement_names"]:
+                    raise ValueError("propagationpolicies/"+obj["metadata"]["name"]+" not in persisted abort scope")
+            else:
+                policy_uid_owned(obj, run, kind)
+        elif kind == "restoreplans":
+            restore_plan_owned(obj, run, request_ids, kind)
+        else:
+            workload_uid_owned(obj, run, kind)
+        event(evidence, "failed_abort_delete_requested", cluster=cluster, kind=kind,
+              resource_name=obj["metadata"]["name"], uid=obj["metadata"].get("uid"))
+        delete_checked(cluster, kind, obj)
+    wait_failed_abort_removed(run, wait_timeout, wait_interval)
+    owned(run, "karmada", "statefulset", run["app"], run["workload_uid"])
+    kubectl("karmada", "-n", NS, "scale", "statefulset", run["app"], "--replicas=0")
+    run.update(phase="aborted", failed_abort_requested_at=now())
+    save(evidence/"run.json", run)
+    event(evidence, "failed_run_aborted", backup=str(backup.relative_to(evidence)),
+          warning="failed recovery objects were deleted; no success status fabricated")
+
 def active_operations(run):
     active = []
     for kind, terminal in (("spotreplacements", {"Completed", "Rejected"}),
@@ -548,6 +781,8 @@ def cleanup(evidence, confirm):
         sts_entries = [e for e in ledger if e["kind"] == "StatefulSet"]
         if sts_entries:
             run.setdefault("workload_uid", sts_entries[0]["uid"])
+        if run.get("phase") == "aborted":
+            wait_failed_abort_removed(run)
         wait_quiescent(run)
     # Delete workload first and wait for Karmada's member deletion. Keep dataset and checkpoints.
     for item in sorted(ledger,key=lambda e: 0 if e["kind"]=="StatefulSet" else 1):
@@ -592,12 +827,12 @@ def main(experiment=None):
     arms = {"cost": ["A", "B"], "checkpoint": ["F60", "F300", "F600", "D"]}
     p.add_argument("--arm",required=True,choices=arms.get(experiment))
     p.add_argument("--out",required=True,type=Path)
-    for name in ("prepare","start","stop","risk","cleanup"):
+    for name in ("prepare","start","stop","risk","cleanup","abort"):
         p=sub.add_parser(name)
         p.add_argument("--evidence",required=True,type=Path)
         if name=="risk":
             p.add_argument("--value",required=True,type=float)
-        if name=="cleanup":
+        if name in ("cleanup", "abort"):
             p.add_argument("--confirm",required=True)
     args=parser.parse_args()
     if experiment is not None and hasattr(args, "evidence"):
@@ -621,6 +856,8 @@ def main(experiment=None):
         set_risk(args.evidence,args.value)
     elif args.command=="cleanup":
         cleanup(args.evidence,args.confirm)
+    elif args.command=="abort":
+        abort_failed_run(args.evidence,args.confirm)
     else:
         globals()[args.command](args.evidence)
 

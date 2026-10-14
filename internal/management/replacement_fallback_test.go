@@ -447,8 +447,12 @@ func replacementFallbackFixtures(t *testing.T, now time.Time, stale bool) (*unst
 	replacement.SetNamespace("demo")
 	replacement.SetName("replacement")
 	replacement.SetUID(types.UID("replacement-uid"))
-	replacement.SetLabels(map[string]string{trainingpolicy.LabelPolicyUID: "policy", trainingpolicy.LabelRole: "replacement"})
-	replacement.SetAnnotations(map[string]string{"training.dcnlab.com/recovery-operation": "operation"})
+	replacement.SetLabels(map[string]string{trainingpolicy.LabelManagedBy: "hybridspotvm-system", trainingpolicy.LabelPolicy: "policy", trainingpolicy.LabelPolicyUID: "policy", trainingpolicy.LabelRole: "replacement"})
+	replacement.SetAnnotations(map[string]string{
+		"training.dcnlab.com/recovery-operation":         "operation",
+		"training.dcnlab.com/replaces-nodeprovision":     "np-1",
+		"training.dcnlab.com/replaces-nodeprovision-uid": "np-origin-1",
+	})
 	replacement.Object["spec"] = map[string]interface{}{"marketType": "OnDemand", "hostname": "replacement"}
 	replacement.Object["status"] = map[string]interface{}{"phase": "Ready", "instanceId": "i-new", "nodeName": "new-node"}
 	migration := trainingpolicy.NewObject("FluidCRMigration")
