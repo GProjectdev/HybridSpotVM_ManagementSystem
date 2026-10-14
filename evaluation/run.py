@@ -342,19 +342,81 @@ def restore_plans_for_requests(cluster, run, request_ids):
             matches.append(obj)
     return matches
 
-def selector_targets(obj):
-    return {(item.get("apiVersion"), item.get("kind"), item.get("name"))
-            for item in obj.get("spec", {}).get("resourceSelectors", [])}
+ALLOWED_RESOURCE_SELECTOR_FIELDS = {"apiVersion", "kind", "namespace", "name"}
 
-def propagation_policy_for_objects(obj, selected, request_ids, run):
-    targets = selector_targets(obj)
-    if not targets:
+def checked_resource_selectors(obj):
+    name = obj.get("metadata", {}).get("name", "")
+    checked = []
+    for item in obj.get("spec", {}).get("resourceSelectors", []):
+        unsupported = sorted(set(item) - ALLOWED_RESOURCE_SELECTOR_FIELDS)
+        if unsupported:
+            raise ValueError("propagationpolicies/"+name+" uses unsupported resource selector fields: "+", ".join(unsupported))
+        if not item.get("apiVersion") or not item.get("kind") or not item.get("name"):
+            raise ValueError("propagationpolicies/"+name+" must use explicit apiVersion/kind/name selectors")
+        checked.append(item)
+    return checked
+
+def selector_targets(obj):
+    return {(item.get("apiVersion"), item.get("kind"), item.get("namespace") or NS, item.get("name"))
+            for item in checked_resource_selectors(obj)}
+
+def selector_scope(obj):
+    return sorted(({key: item[key] for key in ("apiVersion", "kind", "namespace", "name") if key in item}
+                   for item in checked_resource_selectors(obj)),
+                  key=lambda item: (item.get("apiVersion", ""), item.get("kind", ""),
+                                    item.get("namespace", ""), item.get("name", "")))
+
+def placement_scope(obj):
+    metadata = obj.get("metadata", {})
+    labels = metadata.get("labels", {})
+    return {"name": metadata.get("name"), "uid": metadata.get("uid"),
+            "policy_uid": labels.get(POLICY_UID, ""),
+            "owner_uids": sorted(owner_ref_uids(obj)),
+            "resource_selectors": selector_scope(obj)}
+
+def persisted_placement_scopes(run):
+    scopes = []
+    seen = set()
+    for scope in run.get("failed_abort_placements", []):
+        name = scope.get("name")
+        if name and name not in seen:
+            scopes.append(scope)
+            seen.add(name)
+    for name in run.get("failed_abort_placement_names", []):
+        if name and name not in seen:
+            scopes.append({"name": name})
+            seen.add(name)
+    return scopes
+
+def placement_matches_scope(obj, scope, run, request_ids):
+    if not scope.get("name") or obj.get("metadata", {}).get("name") != scope.get("name"):
         return False
-    selected_keys = {(target.get("apiVersion"), target.get("kind"), target.get("metadata", {}).get("name"))
-                     for target in selected}
-    if not targets.issubset(selected_keys):
+    if not scope.get("uid") or not scope.get("resource_selectors"):
+        return False
+    if selector_scope(obj) != scope["resource_selectors"]:
         return False
     labels = obj.get("metadata", {}).get("labels", {})
+    if labels.get(POLICY_UID) not in (None, "", run["policy_uid"]):
+        return False
+    if labels.get(POLICY_UID) == run["policy_uid"]:
+        return True
+    return bool(owner_ref_uids(obj) & request_ids & set(scope.get("owner_uids", [])))
+
+def propagation_policy_for_objects(obj, selected, request_ids, run):
+    labels = obj.get("metadata", {}).get("labels", {})
+    try:
+        targets = selector_targets(obj)
+    except ValueError:
+        if labels.get(POLICY_UID) == run["policy_uid"] or bool(owner_ref_uids(obj) & request_ids):
+            raise
+        return False
+    if not targets:
+        return False
+    selected_keys = {(target.get("apiVersion"), target.get("kind"),
+                      target.get("metadata", {}).get("namespace") or NS,
+                      target.get("metadata", {}).get("name")) for target in selected}
+    if not targets.issubset(selected_keys):
+        return False
     if labels.get(POLICY_UID) not in (None, "", run["policy_uid"]):
         return False
     return labels.get(POLICY_UID) == run["policy_uid"] or bool(owner_ref_uids(obj) & request_ids)
@@ -368,6 +430,25 @@ def propagation_policies_for_objects(run, selected, request_ids):
             matches.append(obj)
     return matches
 
+def persisted_abort_placements(run, request_ids):
+    matches = []
+    for scope in persisted_placement_scopes(run):
+        name = scope.get("name")
+        if not name:
+            continue
+        try:
+            obj = get("karmada", "propagationpolicies", name)
+        except RuntimeError as exc:
+            if "NotFound" in str(exc) or "not found" in str(exc):
+                continue
+            raise
+        if not obj or not obj.get("metadata", {}).get("uid"):
+            continue
+        if not placement_matches_scope(obj, scope, run, request_ids):
+            raise ValueError("propagationpolicies/"+name+" does not match validated abort scope; refusing abort")
+        matches.append(obj)
+    return matches
+
 def collect_failed_abort_objects(run, previous_request_ids=None):
     operations = []
     for kind in ABORT_OPERATION_KINDS:
@@ -377,8 +458,12 @@ def collect_failed_abort_objects(run, previous_request_ids=None):
     request_ids = set(previous_request_ids or []) | request_uids(operations)
     plans = [("karmada", "restoreplans", obj) for obj in restore_plans_for_requests("karmada", run, request_ids)]
     selected = [obj for _, _, obj in operations + plans]
-    placements = [("karmada", "propagationpolicies", obj) for obj in propagation_policies_for_objects(run, selected, request_ids)]
-    objects = placements + operations + plans
+    placement_by_name = {obj["metadata"]["name"]: obj
+                         for obj in propagation_policies_for_objects(run, selected, request_ids)}
+    for obj in persisted_abort_placements(run, request_ids):
+        placement_by_name.setdefault(obj["metadata"]["name"], obj)
+    placements = [("karmada", "propagationpolicies", obj) for _, obj in sorted(placement_by_name.items())]
+    objects = operations + plans
     for obj in get("aws", "fluidcrmigrations")["items"]:
         if obj.get("spec", {}).get("workloadRef", {}).get("uid") != run.get("workload_uid"):
             continue
@@ -386,6 +471,7 @@ def collect_failed_abort_objects(run, previous_request_ids=None):
         objects.append(("aws", "fluidcrmigrations", obj))
     for obj in restore_plans_for_requests("aws", run, request_ids):
         objects.append(("aws", "restoreplans", obj))
+    objects.extend(placements)
     return objects
 
 def member_abort_migrations(run):
@@ -403,36 +489,56 @@ def abort_restore_plan_matches(run, request_ids):
             matches.append((cluster, "restoreplans", obj))
     return matches
 
-def failed_abort_remaining(run):
+def failed_abort_remaining(run, include_placements=True):
     request_ids = set(run.get("failed_abort_request_uids", []))
-    placement_names = set(run.get("failed_abort_placement_names", []))
     remaining = []
     for kind in ABORT_OPERATION_KINDS:
         for obj in get("karmada", kind, selector=POLICY_UID+"="+run["policy_uid"])["items"]:
             policy_uid_owned(obj, run, kind)
             remaining.append("karmada/"+kind+"/"+obj["metadata"]["name"])
-    if placement_names:
-        for obj in get("karmada", "propagationpolicies")["items"]:
-            if obj["metadata"]["name"] in placement_names:
-                labels = obj.get("metadata", {}).get("labels", {})
-                if labels.get(POLICY_UID) != run["policy_uid"] and not (owner_ref_uids(obj) & request_ids):
-                    raise ValueError("propagationpolicies/"+obj["metadata"]["name"]+" owner UID mismatch; refusing abort")
-                remaining.append("karmada/propagationpolicies/"+obj["metadata"]["name"])
     for obj in member_abort_migrations(run):
         remaining.append("aws/fluidcrmigrations/"+obj["metadata"]["name"])
     for cluster, kind, obj in abort_restore_plan_matches(run, request_ids):
         remaining.append(cluster+"/"+kind+"/"+obj["metadata"]["name"])
+    if include_placements:
+        for obj in persisted_abort_placements(run, request_ids):
+            remaining.append("karmada/propagationpolicies/"+obj["metadata"]["name"])
     return remaining
 
-def wait_failed_abort_removed(run, timeout=180, interval=5):
+def wait_failed_abort_removed(run, timeout=180, interval=5, include_placements=True):
     deadline = time.monotonic() + timeout
     while True:
-        remaining = failed_abort_remaining(run)
+        remaining = failed_abort_remaining(run, include_placements=include_placements)
         if not remaining:
             return
         if time.monotonic() >= deadline:
             raise RuntimeError("aborted recovery resources still exist; refusing scale/cleanup: " + ", ".join(remaining))
         time.sleep(interval)
+
+def recover_failed_abort_placement_scopes(evidence, run):
+    names = set(run.get("failed_abort_placement_names", []))
+    scoped = {scope.get("name") for scope in run.get("failed_abort_placements", [])
+              if scope.get("name") and scope.get("uid") and scope.get("resource_selectors")}
+    missing = names - scoped
+    if not missing:
+        return False
+    recovered = {scope.get("name"): scope for scope in run.get("failed_abort_placements", []) if scope.get("name")}
+    directory = evidence/ABORT_BACKUP_DIR
+    for path in sorted(directory.glob("*.json")) if directory.exists() else []:
+        backup = read(path)
+        if backup.get("run_id") != run["run_id"] or backup.get("policy_uid") != run["policy_uid"]:
+            continue
+        for item in backup.get("objects", []):
+            if item.get("kind") != "propagationpolicies":
+                continue
+            obj = item.get("object", {})
+            name = obj.get("metadata", {}).get("name")
+            if name in missing:
+                recovered[name] = placement_scope(obj)
+    updated = recovered.keys() >= names and recovered != {scope.get("name"): scope for scope in run.get("failed_abort_placements", []) if scope.get("name")}
+    if updated:
+        run["failed_abort_placements"] = [recovered[name] for name in sorted(recovered)]
+    return updated
 
 def backup_failed_abort(evidence, run, objects, request_ids):
     directory = evidence/ABORT_BACKUP_DIR
@@ -484,6 +590,8 @@ def abort_failed_run(evidence, confirm, wait_timeout=180, wait_interval=5):
         raise ValueError("--confirm must equal run_id; abort deletes failed-run recovery objects")
     if run.get("phase") not in ("failed", "aborted"):
         raise ValueError("abort requires failed or already aborted run phase")
+    if recover_failed_abort_placement_scopes(evidence, run):
+        save(evidence/"run.json", run)
     if run.get("phase") == "aborted":
         wait_failed_abort_removed(run, wait_timeout, wait_interval)
         return
@@ -494,16 +602,21 @@ def abort_failed_run(evidence, confirm, wait_timeout=180, wait_interval=5):
     backup = backup_failed_abort(evidence, run, objects, request_ids)
     run["failed_abort_request_uids"] = sorted(request_ids)
     placement_names = set(run.get("failed_abort_placement_names", []))
-    placement_names.update(obj["metadata"]["name"] for _, kind, obj in objects if kind == "propagationpolicies")
+    placement_scopes = {scope.get("name"): scope for scope in run.get("failed_abort_placements", []) if scope.get("name")}
+    for _, kind, obj in objects:
+        if kind == "propagationpolicies":
+            name = obj["metadata"]["name"]
+            placement_names.add(name)
+            placement_scopes[name] = placement_scope(obj)
     run["failed_abort_placement_names"] = sorted(placement_names)
+    run["failed_abort_placements"] = [placement_scopes[name] for name in sorted(placement_scopes)]
     save(evidence/"run.json", run)
-    for cluster, kind, obj in objects:
+    producer_objects = [(cluster, kind, obj) for cluster, kind, obj in objects if kind != "propagationpolicies"]
+    initial_placements = {obj["metadata"]["name"]: obj for _, kind, obj in objects if kind == "propagationpolicies"}
+    for cluster, kind, obj in producer_objects:
         if cluster == "karmada":
             if kind == "restoreplans":
                 restore_plan_owned(obj, run, request_ids, kind)
-            elif kind == "propagationpolicies":
-                if obj["metadata"]["name"] not in run["failed_abort_placement_names"]:
-                    raise ValueError("propagationpolicies/"+obj["metadata"]["name"]+" not in persisted abort scope")
             else:
                 policy_uid_owned(obj, run, kind)
         elif kind == "restoreplans":
@@ -513,6 +626,16 @@ def abort_failed_run(evidence, confirm, wait_timeout=180, wait_interval=5):
         event(evidence, "failed_abort_delete_requested", cluster=cluster, kind=kind,
               resource_name=obj["metadata"]["name"], uid=obj["metadata"].get("uid"))
         delete_checked(cluster, kind, obj)
+    wait_failed_abort_removed(run, wait_timeout, wait_interval, include_placements=False)
+    placement_objects = initial_placements
+    for obj in persisted_abort_placements(run, request_ids):
+        placement_objects[obj["metadata"]["name"]] = obj
+    for obj in placement_objects.values():
+        if obj["metadata"]["name"] not in run["failed_abort_placement_names"]:
+            raise ValueError("propagationpolicies/"+obj["metadata"]["name"]+" not in persisted abort scope")
+        event(evidence, "failed_abort_delete_requested", cluster="karmada", kind="propagationpolicies",
+              resource_name=obj["metadata"]["name"], uid=obj["metadata"].get("uid"))
+        delete_checked("karmada", "propagationpolicies", obj)
     wait_failed_abort_removed(run, wait_timeout, wait_interval)
     owned(run, "karmada", "statefulset", run["app"], run["workload_uid"])
     kubectl("karmada", "-n", NS, "scale", "statefulset", run["app"], "--replicas=0")
