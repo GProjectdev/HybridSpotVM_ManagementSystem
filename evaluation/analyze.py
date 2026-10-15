@@ -345,7 +345,9 @@ def summarize(evidence, billing_csv=None):
     run = load_run(evidence)
     issues = []
     result = {key: run[key] for key in ("run_id", "experiment", "arm", "model", "goal_steps")}
-    result.update({key: run.get(key, "") for key in ("instance_type", "batch_size", "seed", "training_image", "dataset")})
+    result.update({key: run.get(key, "") for key in (
+        "instance_type", "batch_size", "seed", "training_image", "dataset",
+        "sequence_length", "learning_rate", "nfs_model_path", "nfs_dataset_path", "training_code_sha256")})
     result.update(world_size=run.get("world_size", 2), region=run.get("region", "ap-northeast-2"))
     result.update(phase=run.get("phase", ""), failure_reason=run.get("failure_reason", ""))
     result.update(training_metrics(evidence, run, issues))
@@ -395,7 +397,8 @@ def baseline_savings(rows, baseline_run_id=None):
             any(matches[0].get(key, "") in ("", None) for key in required)):
         raise ValueError("baseline requires one included completed cost-A run with positive USD total and comparison fields")
     baseline = matches[0]
-    compare = (*required, "world_size", "region", "training_image")
+    compare = (*required, "world_size", "region", "training_image",
+               "sequence_length", "learning_rate", "nfs_model_path", "nfs_dataset_path", "training_code_sha256")
     for row in rows:
         if row is baseline:
             row["cost_comparison_status"] = "baseline"

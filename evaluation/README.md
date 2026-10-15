@@ -1,5 +1,8 @@
 # ResNet18 / CIFAR-10 평가 도구
 
+> ResNet-50 / GPT-2: [실행 위치별 새 모델 가이드](../docs/evaluation-multimodel-guide-20261015.md).
+> 환경 이미지만 빌드하던 이전 안내 대신 위 가이드의 최종 학습 이미지와 전처리 순서를 사용하세요.
+
 비용 A/B의 최신 조건과 이미지 갱신은 [2026-10-12 가이드](../docs/evaluation-cost-release-20261012.md)를 우선 따른다.
 
 평가는 [독립 실행 가이드](../docs/evaluation-separate-guide.md)에 따라 각각 진행한다.

@@ -52,8 +52,8 @@ def load_run(evidence):
         raise ValueError("experiment must be cost or checkpoint")
     if run.get("arm") not in {"A", "B", "F300", "D", "F60", "F600"}:
         raise ValueError("invalid experiment arm")
-    if run.get("model") != "resnet18":
-        raise ValueError("model must be resnet18")
+    if run.get("model") not in {"resnet18", "resnet50", "gpt2"}:
+        raise ValueError("model must be resnet18, resnet50, or gpt2")
     if type(run.get("goal_steps")) is not int or run["goal_steps"] <= 0:
         raise ValueError("goal_steps must be a positive integer")
     app = "eval-" + run["run_id"]
@@ -89,6 +89,15 @@ def event_from_message(message):
         if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
             raise ValueError("invalid event step_seconds")
         result["step_seconds"] = value
+    for key in ("samples_seen", "tokens_seen", "loss_tokens_seen"):
+        if key in raw:
+            if type(raw[key]) is not int or raw[key] < 0:
+                raise ValueError("invalid event " + key)
+            result[key] = raw[key]
+    if "loss" in raw:
+        if type(raw["loss"]) not in (int, float) or not math.isfinite(raw["loss"]):
+            raise ValueError("invalid event loss")
+        result["loss"] = raw["loss"]
     return result
 
 

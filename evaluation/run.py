@@ -4,6 +4,7 @@ import argparse
 import copy
 import datetime as dt
 import json
+import hashlib
 import math
 import os
 from pathlib import Path
@@ -83,6 +84,19 @@ def resource(api, kind, name, run_id, spec=None, namespaced=True):
     return obj
 
 def validate(c, run_id, experiment, arm):
+    model = c.get("model", "resnet18")
+    if model not in ("resnet18", "resnet50", "gpt2"):
+        raise ValueError("model must be resnet18, resnet50, or gpt2")
+    if "learning_rate" in c and (type(c["learning_rate"]) not in (int, float)
+            or not math.isfinite(c["learning_rate"]) or c["learning_rate"] <= 0):
+        raise ValueError("learning_rate must be finite and positive")
+    if model == "gpt2":
+        path = c.get("nfs_model_path", "")
+        if not isinstance(path, str) or not path.startswith("/") or ".." in Path(path).parts or "REPLACE" in path:
+            raise ValueError("gpt2 requires an absolute nfs_model_path")
+        length = c.get("sequence_length", 512)
+        if type(length) is not int or not 2 <= length <= 1024:
+            raise ValueError("sequence_length must be between 2 and 1024")
     if c.get("namespace") != NS:
         raise ValueError("namespace must remain " + NS)
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,15}[a-z0-9]|[a-z]", run_id):
@@ -125,6 +139,9 @@ def validate(c, run_id, experiment, arm):
 
 def render(c, source, run_id, experiment, arm):
     validate(c, run_id, experiment, arm)
+    model = c.get("model", "resnet18")
+    data_mount = "/datasets/wikitext103-tokenized" if model == "gpt2" else "/datasets/cifar10"
+    entrypoint = "train_gpt2.py" if model == "gpt2" else "train_resnet18.py"
     app = "eval-" + run_id
     labels = {"app": app, LABEL: run_id}
     policy_spec = copy.deepcopy(source["spec"])
@@ -184,17 +201,25 @@ def render(c, source, run_id, experiment, arm):
         "FLUIDCR_CHECKPOINT_PATH": "/checkpoint/$(POD_NAME)/latest.pt",
         "FLUIDCR_REGISTRY_DIR": "/tmp/fluidcr-workers", "FLUIDCR_DISTRIBUTED": 1,
         "EVAL_RUN_ID": run_id, "EVAL_GOAL_STEPS": c["goal_steps"], "EVAL_BATCH_SIZE": c["batch_size"],
-        "EVAL_SEED": c["seed"], "EVAL_DATA_ROOT": "/datasets/cifar10"}.items()]
+        "EVAL_SEED": c["seed"], "EVAL_DATA_ROOT": data_mount,
+        "EVAL_MODEL": model}.items()]
+    if "learning_rate" in c:
+        env.append({"name": "EVAL_LEARNING_RATE", "value": str(c["learning_rate"])})
+    if model == "gpt2":
+        env.extend({"name": k, "value": str(v)} for k, v in {
+            "EVAL_MODEL_ROOT": "/models/gpt2", "EVAL_SEQUENCE_LENGTH": c.get("sequence_length", 512),
+            "HF_HUB_OFFLINE": "1", "HF_DATASETS_OFFLINE": "1",
+            "TRANSFORMERS_OFFLINE": "1", "TOKENIZERS_PARALLELISM": "false"}.items())
     env = [{"name":"POD_NAME","valueFrom":{"fieldRef":{"fieldPath":"metadata.name"}}},
            {"name":"RANK","valueFrom":{"fieldRef":{"fieldPath":"metadata.labels['apps.kubernetes.io/pod-index']"}}}] + env
     container = {"name": "trainer", "image": c["training_image"], "imagePullPolicy": "Always",
-                 "command": ["python", "-u", "/workspace/train_resnet18.py"], "env": env,
+                 "command": ["python", "-u", "/workspace/" + entrypoint], "env": env,
                  "ports": [{"name":"control","containerPort":8298},{"name":"rendezvous","containerPort":29500}],
                  "resources": {"requests": {"cpu":"2","memory":"6Gi","nvidia.com/gpu":"1"},
                                "limits": {"cpu":"4","memory":"12Gi","nvidia.com/gpu":"1"}},
                  "readinessProbe": {"tcpSocket":{"port":"control"},"initialDelaySeconds":30},
                  "volumeMounts": [{"name":"training-script","mountPath":"/workspace","readOnly":True},
-                                  {"name":"dataset","mountPath":"/datasets/cifar10","readOnly":True},
+                                  {"name":"dataset","mountPath":data_mount,"readOnly":True},
                                   {"name":"shm","mountPath":"/dev/shm"}]}
     sts = resource("apps/v1","StatefulSet",app,run_id,
                    {"serviceName":app,"replicas":0,"podManagementPolicy":"Parallel","updateStrategy":{"type":"OnDelete"},
@@ -211,21 +236,42 @@ def render(c, source, run_id, experiment, arm):
                                            {"name":"dataset","persistentVolumeClaim":{"claimName":data_name,"readOnly":True}},
                                            {"name":"shm","emptyDir":{"medium":"Memory","sizeLimit":"1Gi"}}]}}})
     sts["metadata"]["labels"]["migration.dcnlab.com/pv-metadata"] = "enabled"
+    member = [pv, data_pvc, ckpt]
+    if model == "gpt2":
+        model_name = app + "-model"
+        model_pv, model_pvc = copy.deepcopy(pv), copy.deepcopy(data_pvc)
+        model_pv["metadata"] = meta(model_name, run_id, False)
+        model_pv["spec"]["claimRef"]["name"] = model_name
+        model_pv["spec"]["nfs"]["path"] = c["nfs_model_path"]
+        model_pvc["metadata"] = meta(model_name, run_id)
+        model_pvc["spec"]["volumeName"] = model_name
+        member.extend([model_pv, model_pvc])
+        container["volumeMounts"].append({"name": "model", "mountPath": "/models/gpt2", "readOnly": True})
+        sts["spec"]["template"]["spec"]["volumes"].append({"name": "model", "persistentVolumeClaim": {
+            "claimName": model_name, "readOnly": True}})
     service = resource("v1","Service",app,run_id,
                        {"clusterIP":"None","publishNotReadyAddresses":True,"selector":{"app":app},
                         "ports":[{"name":"control","port":8298},{"name":"rendezvous","port":29500}]})
     script = resource("v1","ConfigMap",app+"-script",run_id)
     script["data"] = {p.name: p.read_text(encoding="utf-8") for p in (HERE/"resnet18").glob("*.py") if not p.name.startswith("test")}
-    if "train_resnet18.py" not in script["data"]:
+    if model == "gpt2":
+        script["data"].update({p.name: p.read_text(encoding="utf-8") for p in (HERE/"gpt2").glob("*.py")
+                               if not p.name.startswith("test")})
+    if entrypoint not in script["data"]:
         raise ValueError("missing training entrypoint")
     placement = resource("policy.karmada.io/v1alpha1","PropagationPolicy",app+"-placement",run_id,
                          {"resourceSelectors":[{"apiVersion":o["apiVersion"],"kind":o["kind"],"name":o["metadata"]["name"]} for o in [service,script,sts]],
                           "placement":{"clusterAffinity":{"clusterNames":[c["cluster"]]}}})
     run = dict(c, run_id=run_id, app=app, policy=app, risk=app+"-risk", experiment=experiment, arm=arm,
-               model="resnet18", dataset="cifar10", world_size=2, created_at=now(), phase="rendered")
+               model=model, dataset="wikitext-103-raw-v1" if model == "gpt2" else "cifar10",
+               world_size=2, created_at=now(), phase="rendered")
+    run["learning_rate"] = c.get("learning_rate", 5e-5 if model == "gpt2" else 0.1)
+    run["sequence_length"] = c.get("sequence_length", 512) if model == "gpt2" else None
+    run["training_code_sha256"] = hashlib.sha256(
+        json.dumps(script["data"], sort_keys=True).encode("utf-8")).hexdigest()
     if experiment == "cost" and arm == "A":
         run["scenario"] = "constant"
-    return run, [pv,data_pvc,ckpt], [service,script,sts,risk,placement], policy
+    return run, member, [service,script,sts,risk,placement], policy
 
 def create(cluster, obj, evidence, ledger):
     result = json.loads(kubectl(cluster, "create", "-f", "-", "-o", "json", obj=obj))

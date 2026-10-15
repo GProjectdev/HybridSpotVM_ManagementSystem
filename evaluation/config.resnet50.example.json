@@ -1,0 +1,29 @@
+{
+  "namespace": "fluidcr-realign-121040",
+  "cluster": "aws",
+  "region": "ap-northeast-2",
+  "availability_zone": "ap-northeast-2c",
+  "instance_type": "g5.xlarge",
+  "policy_source": "policy-source.json",
+  "nfs_server": "10.50.1.31",
+  "storage_class": "nfs-client",
+  "checkpoint_size": "10Gi",
+  "goal_steps": 10000,
+  "batch_size": 32,
+  "seed": 42,
+  "max_seconds": 10800,
+  "scenario": "risk-schedule",
+  "risk_change_after_seconds": 180,
+  "initial_risk": 0.05,
+  "changed_risk": 0.8,
+  "risk_schedule": [
+    {
+      "after_seconds": 180,
+      "lambda_per_hour": 0.8
+    }
+  ],
+  "model": "resnet50",
+  "nfs_dataset_path": "/mnt/nfs/datasets/cifar10",
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system:resnet50_eval_v1",
+  "learning_rate": 0.1
+}

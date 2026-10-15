@@ -1,4 +1,5 @@
 config.local.json
+config.*.local.json
 policy-source.json
 runs/
 __pycache__/

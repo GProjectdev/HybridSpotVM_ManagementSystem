@@ -1,4 +1,4 @@
-"""Step-bounded CIFAR-10 DDP workload using the injected FluidCR backend."""
+"""Step-bounded model DDP workloads using the injected FluidCR backend."""
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -29,21 +29,33 @@ class Config:
     learning_rate: float
     momentum: float
     weight_decay: float
+    model: str = "resnet18"
+    model_root: str = "/models/gpt2"
+    sequence_length: int = 512
 
 
 def parse_config(argv=None, environ=None):
     env = os.environ if environ is None else environ
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=("resnet18", "resnet50", "gpt2"), default=env.get("EVAL_MODEL", "resnet18"))
+    parser.add_argument("--model-root", default=env.get("EVAL_MODEL_ROOT", "/models/gpt2"))
+    parser.add_argument("--sequence-length", type=int, default=env.get("EVAL_SEQUENCE_LENGTH", "512"))
     parser.add_argument("--run-id", default=env.get("EVAL_RUN_ID", ""))
     parser.add_argument("--goal-steps", type=int, default=env.get("EVAL_GOAL_STEPS", "10000"))
     parser.add_argument("--batch-size", type=int, default=env.get("EVAL_BATCH_SIZE", "128"))
     parser.add_argument("--seed", type=int, default=env.get("EVAL_SEED", "42"))
-    parser.add_argument("--data-root", default=env.get("EVAL_DATA_ROOT", "/datasets/cifar10"))
+    parser.add_argument("--data-root", default=env.get("EVAL_DATA_ROOT"))
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
-    parser.add_argument("--learning-rate", type=float, default=0.1)
+    parser.add_argument("--learning-rate", type=float, default=env.get("EVAL_LEARNING_RATE"))
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight-decay", type=float, default=5e-4)
     args = parser.parse_args(argv)
+    if args.model not in ("resnet18", "resnet50", "gpt2") or not 2 <= args.sequence_length <= 1024:
+        parser.error("invalid model or sequence length (must be in [2, 1024])")
+    if args.data_root is None:
+        args.data_root = "/datasets/wikitext103-tokenized" if args.model == "gpt2" else "/datasets/cifar10"
+    if args.learning_rate is None:
+        args.learning_rate = 5e-5 if args.model == "gpt2" else 0.1
     try:
         rank, world = int(env["RANK"]), int(env["WORLD_SIZE"])
         local = int(env.get("LOCAL_RANK", "0"))
@@ -147,8 +159,10 @@ def contract_digest(config, dataset_size):
     contract = asdict(config)
     for key in ("rank", "local_rank", "data_root"):
         contract.pop(key)
+    for key in ("model", "model_root", "sequence_length"):
+        contract.pop(key)
     contract.update(dataset="cifar10-train", dataset_size=dataset_size,
-                    model="resnet18-cifar-stem", data_recipe="step-shuffle-crop-flip-v1")
+                    model=config.model + "-cifar-stem", data_recipe="step-shuffle-crop-flip-v1")
     return hashlib.sha256(json.dumps(contract, sort_keys=True).encode("utf-8")).digest()
 
 
@@ -173,7 +187,10 @@ def train_updates(config, fluidcr, torch, model, optimizer, loader, device, even
     for images, labels in loader:
         images, labels = images.to(device), labels.to(device)
         optimizer.zero_grad(set_to_none=True)
-        loss = torch.nn.functional.cross_entropy(model(images), labels)
+        if config.model == "gpt2":
+            loss = model(input_ids=images, labels=labels, use_cache=False).loss
+        else:
+            loss = torch.nn.functional.cross_entropy(model(images), labels)
         loss_value = float(loss.detach().item())
         if not math.isfinite(loss_value):
             raise RuntimeError("non-finite training loss")
@@ -183,7 +200,12 @@ def train_updates(config, fluidcr, torch, model, optimizer, loader, device, even
         if completed != step + 1:
             raise RuntimeError("FluidCR must advance exactly one step per optimizer update")
         step = completed
-        events.emit("step", step, loss=loss_value,
+        token_fields = {}
+        if config.model == "gpt2":
+            samples = step * config.batch_size * config.world_size
+            token_fields = dict(tokens_seen=samples * config.sequence_length,
+                                loss_tokens_seen=samples * (config.sequence_length - 1))
+        events.emit("step", step, loss=loss_value, **token_fields,
                     step_seconds=time.monotonic() - started,
                     samples_seen=step * config.batch_size * config.world_size)
         if step == config.goal_steps:
@@ -219,8 +241,6 @@ def main(argv=None):
     import torch.distributed as dist
     from torch.nn.parallel import DistributedDataParallel
     from torch.utils.data import DataLoader
-    from torchvision.datasets import CIFAR10
-    from torchvision.models import resnet18
 
     random.seed(config.seed)
     np.random.seed(config.seed)
@@ -241,16 +261,37 @@ def main(argv=None):
                             rank=config.rank, world_size=config.world_size,
                             timeout=timedelta(minutes=10))
     # Data must be staged before the timed run, avoiding network/download races.
-    dataset = TrainingData(CIFAR10(config.data_root, train=True, download=False), config.seed)
-    expected_contract = torch.tensor(list(contract_digest(config, len(dataset))), dtype=torch.uint8)
-    model = resnet18(weights=None, num_classes=10)
-    model.conv1 = torch.nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-    model.maxpool = torch.nn.Identity()
+    if config.model == "gpt2":
+        try:
+            from train_gpt2 import load_workload, workload_digest
+        except ModuleNotFoundError as exc:
+            if exc.name != "train_gpt2":
+                raise
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gpt2"))
+            from train_gpt2 import load_workload, workload_digest
+        model, dataset = load_workload(config)
+        digest = workload_digest(config, dataset)
+    else:
+        from torchvision.datasets import CIFAR10
+        from torchvision.models import resnet18, resnet50
+        dataset = TrainingData(CIFAR10(config.data_root, train=True, download=False), config.seed)
+        model = (resnet50 if config.model == "resnet50" else resnet18)(weights=None, num_classes=10)
+        model.conv1 = torch.nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        model.maxpool = torch.nn.Identity()
+        digest = contract_digest(config, len(dataset))
+    expected_contract = torch.tensor(list(digest), dtype=torch.uint8)
     model.register_buffer("_evaluation_contract", expected_contract.clone())
     model = model.to(device)
+    if config.model == "gpt2":
+        model.tie_weights()
     # FluidCR loads model, optimizer momentum, RNG, and step count here.
-    optimizer = torch.optim.SGD(model.parameters(), lr=config.learning_rate,
-                               momentum=config.momentum, weight_decay=config.weight_decay)
+    if config.model == "gpt2":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate,
+                                     weight_decay=config.weight_decay)
+    else:
+        optimizer = torch.optim.SGD(model.parameters(), lr=config.learning_rate,
+                                   momentum=config.momentum, weight_decay=config.weight_decay)
     step = resumed_step(fluidcr, optimizer, config.goal_steps)
     if not torch.equal(model._evaluation_contract.cpu(), expected_contract):
         raise RuntimeError("checkpoint run/configuration does not match EVAL_* settings")
