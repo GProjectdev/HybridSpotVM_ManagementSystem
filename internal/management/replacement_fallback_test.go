@@ -118,7 +118,8 @@ func TestPartialFallbackCreatesGroupRestoreAfterRecordedHandoff(t *testing.T) {
 	}
 	group := newRestoreRequest()
 	if err := r.Get(context.Background(), client.ObjectKey{Namespace: "demo", Name: "operation-group-restore"}, group); err != nil {
-		t.Fatalf("group restore request: %v", err)
+		_ = r.Get(context.Background(), client.ObjectKeyFromObject(op), op)
+		t.Fatalf("group restore request: %v; status=%#v", err, op.Object["status"])
 	}
 	if stringField(group.Object, "spec", "checkpointRef", "uid") != "checkpoint" || stringField(group.Object, "spec", "groupRestore", "operationUID") != "np-origin-1" {
 		t.Fatalf("group restore did not preserve fallback checkpoint/operation: %#v", group.Object["spec"])

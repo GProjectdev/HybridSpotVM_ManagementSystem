@@ -38,7 +38,8 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			return "", fmt.Errorf("emergency replacement requires an interruption or rebalance signal")
 		}
 		if active != nil {
-			if active.GetAnnotations()[annotationEmergencyEventID] == event.EventID && stringField(active.Object, "spec", "oldNodeProvisionRef", "uid") == event.NodeUID {
+			spec, readErr := readReplacementSpec(active)
+			if readErr == nil && spec.EmergencyEventID != "" && verifyReplacementOldNode(node, spec) == nil {
 				return active.GetName(), nil
 			}
 			return active.GetName(), fmt.Errorf("partial operation %s owns this world; interruption %s requires verified actuator handoff before group recovery", active.GetName(), event.EventID)
@@ -56,7 +57,7 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			if stringField(existing.Object, "spec", "policyRef", "uid") != string(input.PolicyUID) || stringField(existing.Object, "spec", "oldNodeProvisionRef", "uid") != event.NodeUID {
 				return "", fmt.Errorf("emergency replacement name collision: %s", name)
 			}
-			if stringField(existing.Object, "status", "phase") == "Completed" {
+			if phase := stringField(existing.Object, "status", "phase"); phase == "Completed" || phase == "Rejected" {
 				continue
 			}
 			return name, nil

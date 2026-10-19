@@ -16,8 +16,14 @@ func (r *PolicyReconciler) ensurePlannedPartialReplacement(ctx context.Context, 
 	existing := newSpotReplacementObject()
 	err := r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: operation}, existing)
 	if err == nil {
-		if emergencyEventID != "" && existing.GetAnnotations()[annotationEmergencyEventID] != emergencyEventID {
-			return true, false, fmt.Errorf("existing partial operation requires verified interruption ownership handoff")
+		if emergencyEventID != "" {
+			spec, err := readReplacementSpec(existing)
+			if err != nil || spec.EmergencyEventID == "" {
+				return true, false, fmt.Errorf("existing partial operation requires verified interruption ownership handoff")
+			}
+			if err := verifyReplacementOldNode(old, spec); err != nil {
+				return true, false, err
+			}
 		}
 		if stringField(existing.Object, "spec", "policyRef", "uid") != string(input.PolicyUID) || stringField(existing.Object, "spec", "oldNodeProvisionRef", "uid") != string(old.GetUID()) || stringField(existing.Object, "spec", "desiredMarketType") != market {
 			return true, false, fmt.Errorf("existing partial replacement identity mismatch")
@@ -99,7 +105,9 @@ func (r *PolicyReconciler) ensurePlannedPartialReplacement(ctx context.Context, 
 	op.SetNamespace(input.Namespace)
 	op.SetName(operation)
 	if emergencyEventID != "" {
-		op.SetAnnotations(map[string]string{annotationEmergencyEventID: emergencyEventID})
+		binding := emergencyBinding(old)
+		binding[annotationEmergencyEventID] = emergencyEventID
+		op.SetAnnotations(binding)
 	}
 	op.SetLabels(map[string]string{p.LabelManagedBy: "hybridspotvm-system", p.LabelPolicy: input.PolicyName, p.LabelPolicyUID: string(input.PolicyUID), p.LabelRole: "replacement-operation"})
 	op.Object["spec"] = map[string]interface{}{

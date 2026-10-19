@@ -19,6 +19,8 @@ const (
 	annotationEmergencyInstanceID = "training.dcnlab.com/emergency-instance-id"
 	annotationEmergencyNodeName   = "training.dcnlab.com/emergency-node-name"
 	annotationEmergencyNodeUID    = "training.dcnlab.com/emergency-node-uid"
+	annotationEmergencySignal     = "training.dcnlab.com/emergency-signal-type"
+	annotationEmergencyNotice     = "training.dcnlab.com/emergency-notice-time"
 )
 
 type emergencySpotEvent struct {
@@ -26,6 +28,36 @@ type emergencySpotEvent struct {
 	InstanceID string
 	NodeName   string
 	NodeUID    string
+}
+
+func emergencyBinding(node *unstructured.Unstructured) map[string]string {
+	return map[string]string{
+		annotationEmergencyInstanceID: stringField(node.Object, "status", "instanceId"),
+		annotationEmergencySignal:     stringField(node.Object, "status", "spot", "signalType"),
+		annotationEmergencyNotice:     stringField(node.Object, "status", "spot", "noticeTime"),
+	}
+}
+
+// Only captured source evidence authorizes a successor; never infer legacy bindings.
+func matchesEmergencyEvent(spot map[string]interface{}, instance, event string, binding map[string]string) bool {
+	if instance == "" || event == "" || stringField(spot, "instanceID") != instance || stringField(spot, "eventID") == "" {
+		return false
+	}
+	bound := binding[annotationEmergencyInstanceID]
+	if bound != "" && bound != instance {
+		return false
+	}
+	if stringField(spot, "eventID") == event {
+		return true
+	}
+	originalSignal := binding[annotationEmergencySignal]
+	currentSignal := stringField(spot, "signalType")
+	if bound == "" || !validSpotSignalType(originalSignal) || !validSpotSignalType(currentSignal) || (originalSignal == spotInterruptionNotice && currentSignal != spotInterruptionNotice) {
+		return false
+	}
+	original, err := time.Parse(time.RFC3339Nano, binding[annotationEmergencyNotice])
+	current, currentErr := time.Parse(time.RFC3339Nano, stringField(spot, "noticeTime"))
+	return err == nil && currentErr == nil && !current.Before(original)
 }
 
 func (r *CheckpointReconciler) emergencySpotEvent(ctx context.Context, input trainingpolicy.PolicyInput) (*emergencySpotEvent, error) {

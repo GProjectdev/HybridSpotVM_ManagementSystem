@@ -171,6 +171,31 @@ spec:
                   reason: {type: string}
                   message: {type: string}
                   observedAt: {type: string, format: date-time}
+                  interruptionTime: {type: string, format: date-time}
+                  sourcePods:
+                    type: array
+                    items:
+                      type: object
+                      required: [rank, podName, podUID, nodeName, nodeProvisionRef]
+                      properties:
+                        rank: {type: integer, format: int64, minimum: 0}
+                        podName: {type: string}
+                        podUID: {type: string}
+                        nodeName: {type: string}
+                        nodeProvisionRef:
+                          type: object
+                          required: [name, uid, instanceID]
+                          properties:
+                            name: {type: string}
+                            uid: {type: string}
+                            instanceID: {type: string}
+                  interruptedPartialCheckpointRef:
+                    type: object
+                    properties:
+                      name: {type: string}
+                      uid: {type: string}
+                      generation: {type: integer, format: int64}
+                      checkpointID: {type: string}
                   checkpointRef:
                     type: object
                     properties:

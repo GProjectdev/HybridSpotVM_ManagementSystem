@@ -53,6 +53,7 @@ type recoverySpec struct {
 	CheckpointID                 string
 	EventID                      string
 	EmergencyEventID             string
+	EmergencyBinding             map[string]string
 	OldMarketType                string
 	DesiredMarketType            string
 	Operation                    string
@@ -158,6 +159,7 @@ func readRecoverySpec(obj *unstructured.Unstructured) recoverySpec {
 		CheckpointID:                 stringField(obj.Object, "spec", "checkpointID"),
 		EventID:                      stringField(obj.Object, "spec", "eventID"),
 		EmergencyEventID:             stringField(obj.Object, "spec", "emergencyEventID"),
+		EmergencyBinding:             obj.GetAnnotations(),
 		OldMarketType:                stringField(obj.Object, "spec", "oldMarketType"),
 		DesiredMarketType:            stringField(obj.Object, "spec", "desiredMarketType"),
 		Operation:                    stringField(obj.Object, "spec", "operation"),
@@ -298,6 +300,11 @@ func (r *RecoveryReconciler) verifySpotReplacement(ctx context.Context, ns strin
 	if eventID := replacement.GetAnnotations()[annotationEmergencyEventID]; eventID != spec.EmergencyEventID {
 		return fmt.Errorf("SpotReplacement emergencyEventID annotation mismatch")
 	}
+	for _, key := range []string{annotationEmergencyInstanceID, annotationEmergencySignal, annotationEmergencyNotice} {
+		if replacement.GetAnnotations()[key] != spec.EmergencyBinding[key] {
+			return fmt.Errorf("SpotReplacement emergency binding mismatch: %s", key)
+		}
+	}
 	targetRanks, ok, _ := unstructured.NestedSlice(replacement.Object, "spec", "partialCheckpoint", "targetRanks")
 	if !ok || len(targetRanks) == 0 {
 		return fmt.Errorf("SpotReplacement partialCheckpoint.targetRanks required")
@@ -360,7 +367,12 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 	if intField(req.Object, "status", "observedGeneration") != spec.RestoreRequestGeneration {
 		return restoreEvidence{}, fmt.Errorf("RestoreRequest observedGeneration mismatch")
 	}
-	if err := verifyRestoreEvidenceContract(req, spec); err != nil {
+	_, group, _ := unstructured.NestedMap(req.Object, "spec", "groupRestore")
+	if group {
+		if err := r.verifyGroupFallbackCleanup(ctx, req, spec); err != nil {
+			return restoreEvidence{}, err
+		}
+	} else if err := verifyRestoreEvidenceContract(req, spec); err != nil {
 		return restoreEvidence{}, err
 	}
 	checks := []struct {
@@ -389,6 +401,9 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 	}
 	sourceNodes := map[string]bool{}
 	pods, ok, _ := unstructured.NestedSlice(req.Object, "spec", "pods")
+	if group {
+		pods, ok, _ = unstructured.NestedSlice(req.Object, "spec", "groupRestore", "sourcePods")
+	}
 	if !ok || len(pods) == 0 {
 		return restoreEvidence{}, fmt.Errorf("RestoreRequest spec.pods sourceNode evidence required")
 	}
@@ -397,7 +412,11 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 		if !ok {
 			continue
 		}
-		if node := stringField(pod, "sourceNode"); node != "" {
+		node := stringField(pod, "sourceNode")
+		if group {
+			node = stringField(pod, "nodeName")
+		}
+		if node != "" {
 			sourceNodes[node] = true
 		}
 	}
@@ -565,10 +584,11 @@ func verifyOldNodeRIC(np *unstructured.Unstructured, spec recoverySpec, restore 
 			return fmt.Errorf("old NodeProvision status.spot RIC evidence required")
 		}
 		atRisk, _, _ := unstructured.NestedBool(map[string]interface{}{"spot": spot}, "spot", "atRisk")
-		if stringField(spot, "eventID") != spec.EventID || stringField(spot, "instanceID") != instanceID || !atRisk || !validSpotSignalType(stringField(spot, "signalType")) {
-			return fmt.Errorf("old NodeProvision eventID, instanceID, atRisk, and signalType evidence required")
+		eventMatches := stringField(spot, "eventID") == spec.EventID
+		if spec.EmergencyEventID != "" {
+			eventMatches = matchesEmergencyEvent(spot, instanceID, spec.EmergencyEventID, spec.EmergencyBinding) && (spec.EmergencyBinding[annotationEmergencyInstanceID] != "" || eventMatches)
 		}
-		if spec.EmergencyEventID != "" && stringField(spot, "eventID") != spec.EmergencyEventID {
+		if !eventMatches || stringField(spot, "instanceID") != instanceID || !atRisk || !validSpotSignalType(stringField(spot, "signalType")) {
 			return fmt.Errorf("old NodeProvision eventID, instanceID, atRisk, and signalType evidence required")
 		}
 	}

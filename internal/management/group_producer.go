@@ -21,6 +21,8 @@ const groupOldUID = "training.dcnlab.com/group-old-nodeprovision-uid"
 const groupNewName = "training.dcnlab.com/group-new-nodeprovision"
 const groupNewUID = "training.dcnlab.com/group-new-nodeprovision-uid"
 const groupIntentAnnotation = "training.dcnlab.com/group-restore-intent"
+const groupCleanupOwner = "training.dcnlab.com/group-cleanup-owner"
+const groupCleanupOwnerUID = "training.dcnlab.com/group-cleanup-owner-uid"
 
 func (r *PolicyReconciler) quiesceGroup(ctx context.Context, policy *unstructured.Unstructured, operation string) (bool, error) {
 	a := policy.GetAnnotations()
@@ -39,7 +41,11 @@ func (r *PolicyReconciler) quiesceGroup(ctx context.Context, policy *unstructure
 	return boolField(policy.Object, "status", "checkpoint", "periodicQuiesced") && stringField(policy.Object, "status", "checkpoint", "replacementOperation") == operation && stringField(policy.Object, "status", "checkpoint", "reason") == "group_intent_quiesced", nil
 }
 
-func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *unstructured.Unstructured, input p.PolicyInput, old *unstructured.Unstructured, operation, replacementName, market, event string) (bool, error) {
+func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *unstructured.Unstructured, input p.PolicyInput, old *unstructured.Unstructured, operation, replacementName, market, event string, handoffs ...map[string]interface{}) (bool, error) {
+	var fallback map[string]interface{}
+	if len(handoffs) > 0 {
+		fallback = handoffs[0]
+	}
 	name := operation + "-group-restore"
 	existing := newRestoreRequest()
 	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: name}, existing); err == nil {
@@ -59,13 +65,20 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 	}
 	// No instance is created unless the complete recoverable round and current
 	// world identities are available independently of runtime health.
-	round, err := selectGroupCheckpoint(ctx, r.reader(), input)
+	round, err := fallbackGroupCheckpoint(ctx, r.reader(), input, fallback)
 	if err != nil {
 		return false, err
 	}
 	source, err := r.groupSourcePods(ctx, input)
 	if err != nil {
 		return false, err
+	}
+	if emergencyFallback(fallback) {
+		pinned, _, _ := unstructured.NestedSlice(fallback, "sourcePods")
+		if !reflect.DeepEqual(source, pinned) {
+			return false, fmt.Errorf("source identity changed after emergency fallback handoff")
+		}
+		source = pinned
 	}
 	pvc, root, err := r.groupCheckpointVolume(ctx, input)
 	if err != nil {
@@ -129,6 +142,16 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 	a[groupOldUID] = string(old.GetUID())
 	a[groupNewName] = replacement.GetName()
 	a[groupNewUID] = string(replacement.GetUID())
+	if fallback != nil {
+		owner := newSpotReplacementObject()
+		if err := r.reader().Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: operation}, owner); err != nil {
+			return false, err
+		}
+		if owner.GetUID() == "" || owner.GetLabels()[p.LabelPolicyUID] != string(input.PolicyUID) || stringField(owner.Object, "spec", "oldNodeProvisionRef", "uid") != string(old.GetUID()) {
+			return false, fmt.Errorf("group fallback cleanup owner mismatch")
+		}
+		a[groupCleanupOwner], a[groupCleanupOwnerUID] = owner.GetName(), string(owner.GetUID())
+	}
 	if event != "" {
 		a[annotationEmergencyEventID] = event
 	}

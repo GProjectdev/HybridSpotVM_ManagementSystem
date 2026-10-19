@@ -172,6 +172,9 @@ func TestPlannedPartialRouting(t *testing.T) {
 				if spec.EmergencyEventID != eventID {
 					t.Fatalf("notice identity lost: %+v", spec)
 				}
+				if tc.emergency && spec.EmergencyBinding[annotationEmergencyInstanceID] != stringField(old.Object, "status", "instanceId") {
+					t.Fatal("creation lost instance binding")
+				}
 				selected, created, err = r.ensurePlannedPartialReplacement(context.Background(), policy, input, old, operation, "replacement", "OnDemand", eventID)
 				if !selected || created || err != nil {
 					t.Fatalf("idempotency selected=%v created=%v err=%v", selected, created, err)

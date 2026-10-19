@@ -56,6 +56,17 @@ func (r *GroupRecoveryReconciler) Reconcile(ctx context.Context, key ctrl.Reques
 		}
 	}
 	a := req.GetAnnotations()
+	if a[groupCleanupOwner] != "" || a[groupCleanupOwnerUID] != "" {
+		owner := newSpotReplacementObject()
+		if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: a[groupCleanupOwner]}, owner); err != nil {
+			return again, err
+		}
+		if a[groupCleanupOwnerUID] == "" || string(owner.GetUID()) != a[groupCleanupOwnerUID] || owner.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) || stringField(owner.Object, "spec", "oldNodeProvisionRef", "uid") != a[groupOldUID] || req.GetName() != stringField(owner.Object, "spec", "operation")+"-group-restore" {
+			return again, fmt.Errorf("group cleanup owner identity mismatch")
+		}
+		// The replacement controller owns the verified SpotRecovery cleanup gate.
+		return ctrl.Result{}, nil
+	}
 	if a[groupOldName] == "" {
 		return ctrl.Result{}, nil
 	}

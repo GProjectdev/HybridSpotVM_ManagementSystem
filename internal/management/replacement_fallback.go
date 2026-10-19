@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	trainingpolicy "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -18,10 +19,13 @@ const partialFallbackHandoffRecorded = "HandoffRecorded"
 var errPartialFallbackNotApplicable = errors.New("partial fallback not applicable")
 
 type partialFallbackDecision struct {
-	Reason              string
-	Message             string
-	CheckpointRef       map[string]interface{}
-	FailedCheckpointRef map[string]interface{}
+	Reason                   string
+	Message                  string
+	CheckpointRef            map[string]interface{}
+	FailedCheckpointRef      map[string]interface{}
+	EmergencySources         []interface{}
+	InterruptedCheckpointRef map[string]interface{}
+	InterruptionTime         string
 }
 
 type partialFallbackHandoffError struct {
@@ -50,6 +54,13 @@ func (r *ReplacementReconciler) reconcilePartialToGroupFallback(ctx context.Cont
 		}
 		if decision.FailedCheckpointRef != nil {
 			fallback["failedPartialCheckpointRef"] = decision.FailedCheckpointRef
+		}
+		if decision.EmergencySources != nil {
+			fallback["sourcePods"] = decision.EmergencySources
+			fallback["interruptionTime"] = decision.InterruptionTime
+			if decision.InterruptedCheckpointRef != nil {
+				fallback["interruptedPartialCheckpointRef"] = decision.InterruptedCheckpointRef
+			}
 		}
 		return replacementPhaseAwaitingGroupFallback, true, &partialFallbackHandoffError{fallback: fallback, message: "partial-to-full-group fallback handoff recorded; waiting one reconcile before group restore"}
 	}
@@ -113,7 +124,7 @@ func (r *ReplacementReconciler) reconcilePartialToGroupFallback(ctx context.Cont
 	if err := r.revalidateFreshPartialFallbackProof(ctx, op.GetNamespace(), spec, input, fallback); err != nil {
 		return replacementPhaseAwaitingGroupFallback, true, err
 	}
-	round, err := selectGroupCheckpoint(ctx, r.reader(), input)
+	round, err := fallbackGroupCheckpoint(ctx, r.reader(), input, fallback)
 	if err != nil {
 		return replacementPhaseAwaitingGroupFallback, true, err
 	}
@@ -124,7 +135,7 @@ func (r *ReplacementReconciler) reconcilePartialToGroupFallback(ctx context.Cont
 		return replacementPhaseAwaitingGroupFallback, true, err
 	}
 	producer := &PolicyReconciler{Client: r.Client, APIReader: r.reader(), Clock: r.Clock}
-	_, err = producer.ensureGroupReplacement(ctx, policy, input, oldNP, spec.Operation, spec.ReplacementNodeProvisionName, spec.DesiredMarketType, spec.EmergencyEventID)
+	_, err = producer.ensureGroupReplacement(ctx, policy, input, oldNP, spec.Operation, spec.ReplacementNodeProvisionName, spec.DesiredMarketType, spec.EmergencyEventID, fallback)
 	if err != nil {
 		return replacementPhaseAwaitingGroupFallback, true, err
 	}
@@ -149,6 +160,9 @@ func (r *ReplacementReconciler) classifyPartialToGroupFallback(ctx context.Conte
 			return partialFallbackDecision{}, false, nil
 		}
 		return partialFallbackDecision{}, false, err
+	}
+	if decision, eligible, err := r.classifyEmergencyPartialFallback(ctx, ns, spec, input, partial, partialErr == nil); eligible || err != nil {
+		return decision, eligible, err
 	}
 	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")
 	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: ns, Name: input.RuntimeRefName}, runtimeObj); err != nil {
@@ -250,6 +264,7 @@ func groupFallbackRecoverySpec(spec replacementSpec, runtimeObj, restore, oldNP,
 		CheckpointID:                 stringField(fallback, "checkpointRef", "checkpointID"),
 		EventID:                      stringField(oldNP.Object, "status", "spot", "eventID"),
 		EmergencyEventID:             spec.EmergencyEventID,
+		EmergencyBinding:             spec.EmergencyBinding,
 		OldMarketType:                stringField(oldNP.Object, "spec", "marketType"),
 		DesiredMarketType:            spec.DesiredMarketType,
 		Operation:                    spec.Operation,
@@ -278,6 +293,9 @@ func (r *ReplacementReconciler) validateRecordedPartialFallback(ctx context.Cont
 	} else if !apierrors.IsNotFound(err) {
 		return err
 	}
+	if emergencyFallback(fallback) {
+		return r.quiesceInterruptedPartial(ctx, ns, spec, fallback)
+	}
 	partial := trainingpolicy.NewObject("FluidCRMigration")
 	if stringField(fallback, "failedPartialCheckpointRef", "name") == "" {
 		if err := r.reader().Get(ctx, client.ObjectKey{Namespace: ns, Name: spec.Operation + "-partial-checkpoint"}, partial); err == nil {
@@ -300,6 +318,9 @@ func (r *ReplacementReconciler) validateRecordedPartialFallback(ctx context.Cont
 	return nil
 }
 func (r *ReplacementReconciler) revalidateFreshPartialFallbackProof(ctx context.Context, ns string, spec replacementSpec, input trainingpolicy.PolicyInput, fallback map[string]interface{}) error {
+	if emergencyFallback(fallback) {
+		return r.validateEmergencySources(ctx, input, spec, fallback)
+	}
 	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")
 	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: ns, Name: input.RuntimeRefName}, runtimeObj); err != nil {
 		return err
@@ -446,6 +467,13 @@ func fallbackCheckpointMatchesRound(fallback map[string]interface{}, round *grou
 }
 
 func verifyGroupFallbackRequest(req *unstructured.Unstructured, spec replacementSpec, fallback map[string]interface{}) error {
+	if emergencyFallback(fallback) {
+		pinned, _, _ := unstructured.NestedSlice(fallback, "sourcePods")
+		actual, _, _ := unstructured.NestedSlice(req.Object, "spec", "groupRestore", "sourcePods")
+		if !reflect.DeepEqual(pinned, actual) || req.GetAnnotations()[groupCleanupOwner] != spec.Operation || req.GetAnnotations()[groupCleanupOwnerUID] != spec.OperationUID {
+			return fmt.Errorf("emergency group source/cleanup identity differs from handoff")
+		}
+	}
 	if req.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID || req.GetLabels()[trainingpolicy.LabelRole] != groupRestoreRole {
 		return fmt.Errorf("group fallback RestoreRequest ownership mismatch")
 	}
