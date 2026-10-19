@@ -205,6 +205,10 @@ def render(c, source, run_id, experiment, arm):
         "EVAL_MODEL": model}.items()]
     if "learning_rate" in c:
         env.append({"name": "EVAL_LEARNING_RATE", "value": str(c["learning_rate"])})
+    if type(c.get("restore_audit", False)) is not bool:
+        raise ValueError("restore_audit must be a boolean")
+    if c.get("restore_audit", False):
+        env.append({"name": "EVAL_RESTORE_AUDIT", "value": "1"})
     if model == "gpt2":
         env.extend({"name": k, "value": str(v)} for k, v in {
             "EVAL_MODEL_ROOT": "/models/gpt2", "EVAL_SEQUENCE_LENGTH": c.get("sequence_length", 512),

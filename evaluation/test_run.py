@@ -88,6 +88,17 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(policy["metadata"]["annotations"].get("training.dcnlab.com/planned-partial"),
                              "disabled" if exp=="checkpoint" else None)
 
+    def test_restore_audit_is_opt_in(self):
+        for enabled in (False, True):
+            self.c['restore_audit'] = enabled
+            _, _, items, _ = self.render('cost', 'B')
+            sts = next(o for o in items if o['kind'] == 'StatefulSet')
+            env = sts['spec']['template']['spec']['containers'][0]['env']
+            self.assertEqual(any(e['name'] == 'EVAL_RESTORE_AUDIT' for e in env), enabled)
+        self.c['restore_audit'] = 'false'
+        with self.assertRaises(ValueError):
+            self.render()
+
     def test_cost_baseline_disabled_and_proposal_dynamic(self):
         self.c.update(scenario="risk-schedule", risk_schedule=[{"after_seconds":3600,"lambda_per_hour":0.8}])
         info, _, _, policy = self.render("cost", "A")

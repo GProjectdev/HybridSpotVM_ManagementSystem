@@ -23,7 +23,8 @@ POLICY_LABEL = "training.dcnlab.com/policy"
 PARENT_LABEL = "training.dcnlab.com/scheduled-parent"
 PARENT_UID = "training.dcnlab.com/scheduled-parent-uid"
 PREFIX = "EVAL_EVENT "
-EVENTS = {"worker_started", "step", "restored", "completed"}
+EVENTS = {"worker_started", "step", "restored", "completed",
+          "restore_audit_fresh", "restore_audit", "update_audit"}
 NAME = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\Z")
 INSTANCE = re.compile(r"i-[0-9a-f]{8,17}\Z")
 
@@ -98,6 +99,25 @@ def event_from_message(message):
         if type(raw["loss"]) not in (int, float) or not math.isfinite(raw["loss"]):
             raise ValueError("invalid event loss")
         result["loss"] = raw["loss"]
+    if raw['event'] in ('restore_audit', 'update_audit'):
+        if type(raw.get('passed')) is not bool:
+            raise ValueError('audit requires boolean passed')
+        result['passed'] = raw['passed']
+        for key in ('gradients_finite', 'gradients_nonzero', 'parameters_changed'):
+            if key in raw:
+                if type(raw[key]) is not bool:
+                    raise ValueError('invalid audit boolean')
+                result[key] = raw[key]
+        for key in ('input_sha256', 'parameter_sha256'):
+            if key in raw:
+                if not isinstance(raw[key], str) or not re.fullmatch('[0-9a-f]{64}', raw[key]):
+                    raise ValueError('invalid audit digest')
+                result[key] = raw[key]
+        if 'checks' in raw:
+            checks = raw['checks']
+            if not isinstance(checks, dict) or set(checks) != {'model','optimizer','rng','step'} or any(type(v) is not bool for v in checks.values()):
+                raise ValueError('invalid audit checks')
+            result['checks'] = checks
     return result
 
 

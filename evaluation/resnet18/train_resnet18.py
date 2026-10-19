@@ -83,7 +83,8 @@ class Events:
         self.attempt_id = uuid.uuid4().hex
 
     def emit(self, event, global_step, **fields):
-        if event not in {"worker_started", "restored", "step", "completed"}:
+        if event not in {"worker_started", "restored", "step", "completed",
+                         "restore_audit_fresh", "restore_audit", "update_audit"}:
             raise ValueError("unknown evaluation event")
         if type(global_step) is not int or global_step < 0:
             raise ValueError("global_step must be a nonnegative integer")
@@ -176,7 +177,7 @@ def resumed_step(fluidcr, optimizer, goal_steps):
     return step
 
 
-def train_updates(config, fluidcr, torch, model, optimizer, loader, device, events):
+def train_updates(config, fluidcr, torch, model, optimizer, loader, device, events, audit=None):
     step = resumed_step(fluidcr, optimizer, config.goal_steps)
     if step == config.goal_steps:
         return step
@@ -186,6 +187,8 @@ def train_updates(config, fluidcr, torch, model, optimizer, loader, device, even
     # The batch sampler already starts at the restored step; never skip twice.
     for images, labels in loader:
         images, labels = images.to(device), labels.to(device)
+        if audit is not None:
+            audit.before(images, labels)
         optimizer.zero_grad(set_to_none=True)
         if config.model == "gpt2":
             loss = model(input_ids=images, labels=labels, use_cache=False).loss
@@ -195,11 +198,15 @@ def train_updates(config, fluidcr, torch, model, optimizer, loader, device, even
         if not math.isfinite(loss_value):
             raise RuntimeError("non-finite training loss")
         loss.backward()
+        if audit is not None:
+            audit.gradients()
         optimizer.step()
         completed = resumed_step(fluidcr, optimizer, config.goal_steps)
         if completed != step + 1:
             raise RuntimeError("FluidCR must advance exactly one step per optimizer update")
         step = completed
+        if audit is not None:
+            audit.after(step)
         token_fields = {}
         if config.model == "gpt2":
             samples = step * config.batch_size * config.world_size
@@ -295,6 +302,10 @@ def main(argv=None):
     step = resumed_step(fluidcr, optimizer, config.goal_steps)
     if not torch.equal(model._evaluation_contract.cpu(), expected_contract):
         raise RuntimeError("checkpoint run/configuration does not match EVAL_* settings")
+    audit = None
+    if os.environ.get("EVAL_RESTORE_AUDIT") == "1":
+        from restore_audit import RestoreAudit
+        audit = RestoreAudit(model, optimizer, step, events)
     # Restore before DDP's rank-0 broadcast, including when rank 0 is the
     # replacement. Survivors rebuild DDP inside the FluidCR optimizer hook;
     # they do not repeat main(), so no startup-only collectives may follow.
@@ -309,7 +320,7 @@ def main(argv=None):
     # model's restored torch RNG stream. Augmentation has its own per-item RNG.
     generator = torch.Generator().manual_seed(config.seed + config.rank)
     loader = DataLoader(dataset, batch_sampler=sampler, num_workers=0, generator=generator)
-    step = train_updates(config, fluidcr, torch, model, optimizer, loader, device, events)
+    step = train_updates(config, fluidcr, torch, model, optimizer, loader, device, events, audit=audit)
     dist.barrier()
     hold_completed(fluidcr, events, step)
 
