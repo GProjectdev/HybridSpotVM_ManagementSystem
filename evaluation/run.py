@@ -101,7 +101,7 @@ def validate(c, run_id, experiment, arm):
         raise ValueError("namespace must remain " + NS)
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,15}[a-z0-9]|[a-z]", run_id):
         raise ValueError("run-id: 1-17 lowercase letters/digits/hyphens, start with letter")
-    if arm not in ({"A", "B"} if experiment == "cost" else {"F60", "F300", "F600", "D"}):
+    if arm not in ({"A", "B"} if experiment == "cost" else {"F60", "F300", "F600", "F1200", "D"}):
         raise ValueError("arm does not belong to experiment")
     for key in ("nfs_server", "nfs_dataset_path", "training_image", "storage_class"):
         if not c.get(key) or "REPLACE" in c[key]:
@@ -116,7 +116,7 @@ def validate(c, run_id, experiment, arm):
             raise ValueError(key + " must be finite and nonnegative")
     if c.get("scenario") not in ("constant", "risk-rise", "risk-schedule", "interruption"):
         raise ValueError("scenario must be constant, risk-rise, risk-schedule, or interruption")
-    if c["scenario"] == "risk-schedule":
+    if has_risk_schedule(c):
         schedule = c.get("risk_schedule")
         if not isinstance(schedule, list) or not schedule:
             raise ValueError("risk_schedule must be a nonempty list")
@@ -136,6 +136,11 @@ def validate(c, run_id, experiment, arm):
         raise ValueError("risk change must be positive and before timeout")
     if c["region"] != "ap-northeast-2" or c["availability_zone"] != "ap-northeast-2c":
         raise ValueError("this evaluation is scoped to ap-northeast-2c")
+
+def has_risk_schedule(config):
+    return config["scenario"] == "risk-schedule" or (
+        config["scenario"] == "interruption" and "risk_schedule" in config)
+
 
 def render(c, source, run_id, experiment, arm):
     validate(c, run_id, experiment, arm)
@@ -826,11 +831,11 @@ def verify_group_recovery(evidence, run):
 def verify_scenario(evidence, run):
     if run.get("experiment") == "cost" and run.get("arm") == "A" and not run.get("periodic_disabled_observed"):
         raise RuntimeError("A baseline disabled acknowledgement missing; inspect coordinator image")
-    if run["scenario"] == "risk-schedule":
+    if has_risk_schedule(run):
         observations = run.get("risk_schedule_observations", [])
         if len(observations) != len(run["risk_schedule"]) or not all(x.get("consumed_at") for x in observations):
             raise RuntimeError("risk schedule incomplete; increase goal_steps or inspect risk consumption")
-        if active_operations(run):
+        if run["scenario"] == "risk-schedule" and active_operations(run):
             raise RuntimeError("risk schedule recovery/cleanup still active")
     if (run.get("arm") == "D" or (run.get("experiment") == "cost" and run.get("arm") == "B")) and not run.get("analytic_interval_observed"):
         raise RuntimeError("analytic checkpoint interval was never observed; bootstrap-only run is not dynamic-policy evidence")
@@ -917,7 +922,7 @@ def start(evidence):
                 run.update(phase="completed",completed_at=now())
                 event(evidence,"all_ranks_completed")
                 break
-            if run["scenario"] == "risk-schedule" and learning_start is not None:
+            if has_risk_schedule(run) and learning_start is not None:
                 advance_risk_schedule(evidence, run, time.monotonic()-learning_start)
             time.sleep(5)
         else:
@@ -997,7 +1002,7 @@ def main(experiment=None):
         p.add_argument("--experiment",choices=["cost","checkpoint"],required=True)
     else:
         p.set_defaults(experiment=experiment)
-    arms = {"cost": ["A", "B"], "checkpoint": ["F60", "F300", "F600", "D"]}
+    arms = {"cost": ["A", "B"], "checkpoint": ["F60", "F300", "F600", "F1200", "D"]}
     p.add_argument("--arm",required=True,choices=arms.get(experiment))
     p.add_argument("--out",required=True,type=Path)
     for name in ("prepare","start","stop","risk","cleanup","abort"):

@@ -33,7 +33,7 @@ class SeparateExperimentsTests(unittest.TestCase):
                     self.assertIn("different experiment", result.stderr)
 
     def test_help_is_experiment_specific(self):
-        for experiment, arms in (("cost", "{A,B}"), ("checkpoint", "{F60,F300,F600,D}")):
+        for experiment, arms in (("cost", "{A,B}"), ("checkpoint", "{F60,F300,F600,F1200,D}")):
             result = self.invoke(experiment, "render", "--help")
             self.assertEqual(result.returncode, 0)
             self.assertIn(arms, result.stdout)

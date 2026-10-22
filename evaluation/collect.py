@@ -51,7 +51,7 @@ def load_run(evidence):
         raise ValueError("invalid run_id")
     if run.get("experiment") not in {"cost", "checkpoint"}:
         raise ValueError("experiment must be cost or checkpoint")
-    if run.get("arm") not in {"A", "B", "F300", "D", "F60", "F600"}:
+    if run.get("arm") not in {"A", "B", "F300", "D", "F60", "F600", "F1200"}:
         raise ValueError("invalid experiment arm")
     if run.get("model") not in {"resnet18", "resnet50", "gpt2"}:
         raise ValueError("model must be resnet18, resnet50, or gpt2")
