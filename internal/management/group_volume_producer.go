@@ -14,7 +14,7 @@ import (
 
 const groupVolumeHold = "migration.dcnlab.com/group-volume-hold"
 
-// Called only after validating Prepared and the exact full-world fence receipt.
+// Called only after validating the exact full-world source fence receipt.
 func (r *GroupPlacementReconciler) ensureGroupVolumes(ctx context.Context, binding, request *unstructured.Unstructured) (bool, error) {
 	sts := p.NewObject("StatefulSet")
 	if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: request.GetNamespace(), Name: stringField(request.Object, "spec", "workloadRef", "name")}, sts); err != nil {

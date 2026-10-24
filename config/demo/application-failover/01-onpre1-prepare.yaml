@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: r50-fluidcr-demo-prepare
+  namespace: fluidcr-realign-121040
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: onpre1-gpu-worker-01
+      containers:
+      - name: prepare
+        image: busybox:1.36.1
+        command:
+        - sh
+        - -ec
+        - test -d /store/datasets/cifar10/cifar-10-batches-py; mkdir -p /store/gpu-fluidcr-demo/r50-fluidcr-demo; test -w /store/gpu-fluidcr-demo/r50-fluidcr-demo
+        volumeMounts:
+        - {name: store, mountPath: /store}
+      volumes:
+      - name: store
+        nfs: {server: 10.50.1.31, path: /mnt/nfs}

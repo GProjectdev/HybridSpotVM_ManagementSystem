@@ -106,6 +106,9 @@ type RiskSnapshot struct {
 }
 
 type CapacityDefaults struct {
+	Mode               string
+	ExistingNodes      []ExistingCapacityNode
+	readError          error
 	AWSCluster         string
 	Region             string
 	AvailabilityZone   string
@@ -190,7 +193,7 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 	if !ok {
 		resume = true
 	}
-	return PolicyInput{
+	input := PolicyInput{
 		Suspended:       obj.GetAnnotations()["training.dcnlab.com/suspend"] == "true",
 		Namespace:       obj.GetNamespace(),
 		PolicyName:      obj.GetName(),
@@ -246,6 +249,8 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 			Resume:             resume,
 		},
 	}
+	readExistingCapacity(obj, &input.Capacity)
+	return input
 }
 
 // ReadPolicyInput resolves verified execution placement without rewriting user intent.

@@ -55,7 +55,7 @@ func (h *PlacementAdmission) holdStoppedPlacement(ctx context.Context, policy, o
 		return false, fmt.Errorf("stopped workload UID mismatch or deleting")
 	}
 	for _, object := range []*unstructured.Unstructured{old, next} {
-		for _, key := range []string{pendingPlacementAnnotation, placementRequestAnnotation, placementRequestUIDAnnotation} {
+		for _, key := range []string{pendingPlacementAnnotation, placementRequestAnnotation, placementRequestUIDAnnotation, applicationFailoverTrigger} {
 			if object.GetAnnotations()[key] != "" {
 				return false, fmt.Errorf("cannot stop while placement restore intent remains")
 			}

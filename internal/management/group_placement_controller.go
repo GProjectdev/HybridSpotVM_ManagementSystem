@@ -18,8 +18,14 @@ import (
 
 type GroupPlacementReconciler struct {
 	client.Client
-	Reader client.Reader
+	Reader         client.Reader
+	ExistingNodes  func(context.Context, p.PolicyInput) (map[string]string, error)
+	ExistingClaims func(context.Context, p.PolicyInput, *unstructured.Unstructured, *unstructured.Unstructured) (bool, error)
 }
+
+// Explicit fault injection starts UID-bound source fencing before the Pod is
+// removed. It does not invent a Karmada scheduling decision.
+const applicationFailoverTrigger = "training.dcnlab.com/application-failover-trigger"
 
 func (r *GroupPlacementReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).Named("group-placement-management").For(bindingObject()).Complete(r)
@@ -34,12 +40,17 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 	pending := binding.GetAnnotations()[pendingPlacementAnnotation]
-	if pending == "" {
+	trigger := binding.GetAnnotations()[applicationFailoverTrigger]
+	if pending == "" && trigger == "" {
 		return ctrl.Result{}, nil
 	}
 	var clusters []interface{}
-	if err := utiljson.Unmarshal([]byte(pending), &clusters); err != nil {
-		return again, err
+	if pending != "" {
+		if err := utiljson.Unmarshal([]byte(pending), &clusters); err != nil {
+			return again, err
+		}
+	} else {
+		clusters = []interface{}{map[string]interface{}{"name": ""}}
 	}
 	if len(clusters) != 1 {
 		return again, fmt.Errorf("single target placement required")
@@ -70,11 +81,33 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 	input := p.ReadPolicyInput(policy)
+	if err := validatePolicyInput(input); err != nil {
+		return again, err
+	}
+	if trigger != "" {
+		if trigger != string(binding.GetUID()) || binding.GetUID() == "" || stringField(policy.Object, "spec", "capacity", "mode") != "Existing" {
+			return again, fmt.Errorf("application failover trigger requires existing capacity and the current binding UID")
+		}
+		if pending == "" {
+			target = input.Capacity.AWSCluster
+			// After release, the trigger must not start a second operation.
+			if binding.GetAnnotations()[placementRequestUIDAnnotation] != "" && input.SourceCluster == target {
+				return ctrl.Result{}, nil
+			}
+		}
+	}
 	if target != input.Capacity.AWSCluster || target == input.SourceCluster {
 		return again, fmt.Errorf("group placement requires source to configured AWS cluster")
 	}
-	current, _, _ := unstructured.NestedSlice(binding.Object, "spec", "clusters")
-	if len(current) != 1 || stringField(current[0].(map[string]interface{}), "name") != input.SourceCluster {
+	current, sourceErr := applicationFailoverSourcePlacement(binding)
+	if sourceErr != nil {
+		return again, sourceErr
+	}
+	if len(current) != 1 {
+		return again, fmt.Errorf("exactly one source placement required")
+	}
+	currentCluster, valid := current[0].(map[string]interface{})
+	if !valid || stringField(currentCluster, "name") != input.SourceCluster {
 		return again, fmt.Errorf("source placement changed during operation")
 	}
 	if replicas, present := cluster["replicas"]; present && replicas != input.TargetWorkers {
@@ -105,30 +138,41 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		if e != nil {
 			return again, e
 		}
+		nodes := map[string]string{}
+		if input.Capacity.Mode == "Existing" {
+			if r.ExistingNodes == nil {
+				return again, fmt.Errorf("existing-capacity member reader is not configured")
+			}
+			nodes, e = r.ExistingNodes(ctx, input)
+			if e != nil {
+				return again, e
+			}
+		}
 		if ready, e := producer.quiesceGroup(ctx, policy, operation); e != nil {
 			return again, e
 		} else if !ready {
 			return again, nil
 		}
-		nodes := map[string]string{}
-		for rank := int64(0); rank < input.TargetWorkers; rank++ {
-			// Initial cross-cluster recovery uses stable OnDemand capacity. The policy
-			// may subsequently replace it according to its risk decision.
-			desired := p.NewNodeProvision(input, rank, "OnDemand")
-			if e := producer.createIfMissing(ctx, desired); e != nil {
-				return again, e
+		if input.Capacity.Mode != "Existing" {
+			for rank := int64(0); rank < input.TargetWorkers; rank++ {
+				// Initial cross-cluster recovery uses stable OnDemand capacity. The policy
+				// may subsequently replace it according to its risk decision.
+				desired := p.NewNodeProvision(input, rank, "OnDemand")
+				if e := producer.createIfMissing(ctx, desired); e != nil {
+					return again, e
+				}
+				if e := producer.createIfMissing(ctx, p.NewPropagationPolicyFor(input, desired, target)); e != nil {
+					return again, e
+				}
+				np := p.NewObject("NodeProvision")
+				if e := r.Reader.Get(ctx, client.ObjectKeyFromObject(desired), np); e != nil {
+					return again, e
+				}
+				if stringField(np.Object, "status", "phase") != "Ready" || stringField(np.Object, "status", "nodeName") == "" {
+					return again, nil
+				}
+				nodes[fmt.Sprintf("%s-%d", input.WorkloadRef.Name, rank)] = stringField(np.Object, "status", "nodeName")
 			}
-			if e := producer.createIfMissing(ctx, p.NewPropagationPolicyFor(input, desired, target)); e != nil {
-				return again, e
-			}
-			np := p.NewObject("NodeProvision")
-			if e := r.Reader.Get(ctx, client.ObjectKeyFromObject(desired), np); e != nil {
-				return again, e
-			}
-			if stringField(np.Object, "status", "phase") != "Ready" || stringField(np.Object, "status", "nodeName") == "" {
-				return again, nil
-			}
-			nodes[fmt.Sprintf("%s-%d", input.WorkloadRef.Name, rank)] = stringField(np.Object, "status", "nodeName")
 		}
 		sts := p.NewObject("StatefulSet")
 		if e := r.Reader.Get(ctx, client.ObjectKey{Namespace: key.Namespace, Name: input.WorkloadRef.Name}, sts); e != nil {
@@ -168,7 +212,9 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		binding.SetAnnotations(a)
 		return again, r.Patch(ctx, binding, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
 	}
-	if e := validateGroupRelease(ctx, r.Reader, request); e != nil {
+	// The target cannot prepare its group checkpoint until its generated PVC
+	// exists. Source fencing, not target Prepared, gates volume migration.
+	if e := validateGroupSourceFence(ctx, r.Reader, request); e != nil {
 		return again, nil
 	}
 	if ready, e := r.ensureGroupVolumes(ctx, binding, request); e != nil {
@@ -179,8 +225,45 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	if e := validateGroupVolumes(ctx, r.Reader, binding, request); e != nil {
 		return again, nil
 	}
+	if input.Capacity.Mode == p.CapacityModeExisting {
+		if r.ExistingClaims == nil {
+			return again, fmt.Errorf("existing-capacity claim preparer is not configured")
+		}
+		if ready, e := r.ExistingClaims(ctx, input, binding, request); e != nil {
+			return again, e
+		} else if !ready {
+			return again, nil
+		}
+	}
+	if pending == "" {
+		return again, nil // Only Karmada may decide the failover target.
+	}
+	if e := validateGroupRelease(ctx, r.Reader, request); e != nil {
+		return again, nil
+	}
+	if input.Capacity.Mode == "Existing" {
+		if r.ExistingNodes == nil {
+			return again, fmt.Errorf("existing-capacity member reader is not configured")
+		}
+		nodes, e := r.ExistingNodes(ctx, input)
+		if e != nil {
+			return again, e
+		}
+		pods, _, e := unstructured.NestedSlice(request.Object, "spec", "pods")
+		if e != nil || len(nodes) != len(pods) {
+			return again, fmt.Errorf("existing target mapping changed")
+		}
+		for _, raw := range pods {
+			pod, ok := raw.(map[string]interface{})
+			if !ok || nodes[stringField(pod, "targetPod")] != stringField(pod, "targetNode") {
+				return again, fmt.Errorf("existing target mapping differs from restore request")
+			}
+		}
+	}
 	before := binding.DeepCopy()
 	delete(a, pendingPlacementAnnotation)
+	delete(a, applicationFailoverTrigger)
+	delete(a, applicationFailoverSourceAnnotation)
 	if a[groupVolumeHold] == string(request.GetUID()) {
 		unstructured.RemoveNestedField(binding.Object, "spec", "suspension", "dispatching")
 		delete(a, groupVolumeHold)

@@ -37,7 +37,87 @@ func validateGroupRelease(ctx context.Context, reader client.Reader, request *un
 	return validateGroupPlanRelease(request, plan)
 }
 
-func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
+// validateGroupSourceFence authorizes volume migration before target preparation.
+// The management receipt must agree with the current source aggregation.
+func validateGroupSourceFence(ctx context.Context, reader client.Reader, request *unstructured.Unstructured) error {
+	if request.GetUID() == "" || request.GetGeneration() < 1 || !request.GetDeletionTimestamp().IsZero() || intField(request.Object, "status", "observedGeneration") != request.GetGeneration() {
+		return fmt.Errorf("restore request identity or observed generation is stale")
+	}
+	switch stringField(request.Object, "status", "phase") {
+	case "AwaitingSourceFence", "Preparing", "Prepared", "Running", "Verified":
+	default:
+		return fmt.Errorf("restore request phase does not permit source fence release")
+	}
+	name := stringField(request.Object, "status", "planName")
+	if name == "" {
+		return fmt.Errorf("restore plan name missing")
+	}
+	plan := &unstructured.Unstructured{}
+	plan.SetGroupVersionKind(schema.GroupVersionKind{Group: "migration.dcnlab.com", Version: "v1alpha1", Kind: "RestorePlan"})
+	if err := reader.Get(ctx, client.ObjectKey{Namespace: request.GetNamespace(), Name: name}, plan); err != nil {
+		return err
+	}
+	if err := validateGroupPlanIdentity(request, plan); err != nil {
+		return err
+	}
+	spec, _, _ := unstructured.NestedMap(request.Object, "spec")
+	asserted, _, err := unstructured.NestedBool(spec, "sourceFenced")
+	if err != nil || asserted {
+		return fmt.Errorf("self-asserted source fencing is not group evidence")
+	}
+	group, _, _ := unstructured.NestedMap(spec, "groupRestore")
+	sourceName := stringField(spec, "sourceCluster")
+	if sourceName == "" || stringField(group, "sourceWorldUID") == "" {
+		return fmt.Errorf("source cluster or world identity missing")
+	}
+	var source map[string]interface{}
+	for _, entry := range nestedClusterStatuses(plan.Object) {
+		if stringField(entry, "clusterName") != sourceName {
+			continue
+		}
+		if source != nil {
+			return fmt.Errorf("duplicate source report")
+		}
+		source = entry
+	}
+	if source == nil || intField(source, "observedGeneration") != plan.GetGeneration() || stringField(source, "phase") != "SourceFenced" {
+		return fmt.Errorf("source report is missing, stale or not SourceFenced")
+	}
+	gc, _, _ := unstructured.NestedMap(source, "groupControl")
+	if stringField(gc, "volumeServer") == "" || stringField(gc, "volumePath") == "" {
+		return fmt.Errorf("source volume identity missing")
+	}
+	fences, err := groupSourceReceipt(request, plan, spec, group, gc)
+	if err != nil {
+		return err
+	}
+	if err := validateGroupSourceFences(group, plan.GetGeneration(), fences); err != nil {
+		return err
+	}
+	reported, _, _ := unstructured.NestedSlice(source, "sourceFences")
+	if err := validateGroupSourceFences(group, plan.GetGeneration(), reported); err != nil {
+		return err
+	}
+	// Both lists are complete and UID/generation-bound; compare the remaining
+	// evidence by pod name so aggregation ordering cannot change authorization.
+	byName := make(map[string]map[string]interface{}, len(reported))
+	for _, raw := range reported {
+		f := raw.(map[string]interface{})
+		byName[stringField(f, "podName")] = f
+	}
+	for _, raw := range fences {
+		f := raw.(map[string]interface{})
+		report := byName[stringField(f, "podName")]
+		for _, key := range []string{"deleteRequestedAt", "goneObservedAt"} {
+			if stringField(f, key) != stringField(report, key) {
+				return fmt.Errorf("source receipt %s does not match source report", key)
+			}
+		}
+	}
+	return nil
+}
+
+func validateGroupPlanIdentity(request, plan *unstructured.Unstructured) error {
 	if plan.GetName() != stringField(request.Object, "status", "planName") || plan.GetNamespace() != request.GetNamespace() || plan.GetUID() == "" || plan.GetGeneration() < 1 || !plan.GetDeletionTimestamp().IsZero() {
 		return fmt.Errorf("restore plan identity mismatch")
 	}
@@ -63,13 +143,19 @@ func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
 	if _, ok := actual["localPodRestore"]; !ok {
 		actual["localPodRestore"] = false
 	}
- for _,spec:=range []map[string]interface{}{expected,actual}{
-  pods,_,_:=unstructured.NestedSlice(spec,"pods")
-  for _,raw:=range pods{
-   if pod,ok:=raw.(map[string]interface{});ok {if _,exists:=pod["rank"];!exists{pod["rank"]=int64(0)}}
-  }
-  if pods!=nil{spec["pods"]=pods}
- }
+	for _, spec := range []map[string]interface{}{expected, actual} {
+		pods, _, _ := unstructured.NestedSlice(spec, "pods")
+		for _, raw := range pods {
+			if pod, ok := raw.(map[string]interface{}); ok {
+				if _, exists := pod["rank"]; !exists {
+					pod["rank"] = int64(0)
+				}
+			}
+		}
+		if pods != nil {
+			spec["pods"] = pods
+		}
+	}
 	if !reflect.DeepEqual(expected, actual) {
 		return fmt.Errorf("restore plan spec differs from immutable request")
 	}
@@ -77,6 +163,15 @@ func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
 	if !ok || stringField(group, "operationUID") == "" || stringField(group, "sourceWorldUID") != stringField(expected, "workloadRef", "uid") {
 		return fmt.Errorf("group identity missing or mismatched")
 	}
+	return nil
+}
+
+func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
+	if err := validateGroupPlanIdentity(request, plan); err != nil {
+		return err
+	}
+	expected, _, _ := unstructured.NestedMap(request.Object, "spec")
+	group, _, _ := unstructured.NestedMap(expected, "groupRestore")
 	targetName := stringField(expected, "targetCluster")
 	var target map[string]interface{}
 	matches := 0
@@ -116,17 +211,30 @@ func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
 	if stringField(expected, "sourceCluster") == targetName {
 		fences, _, _ = unstructured.NestedSlice(target, "sourceFences")
 	} else {
-		var receipt map[string]interface{}
-		if err := json.Unmarshal([]byte(plan.GetAnnotations()[groupFenceAnnotation]), &receipt); err != nil {
-			return fmt.Errorf("management source fence receipt missing")
+		var err error
+		fences, err = groupSourceReceipt(request, plan, expected, group, gc)
+		if err != nil {
+			return err
 		}
-		for key, want := range map[string]string{"requestUID": string(request.GetUID()), "operationUID": stringField(group, "operationUID"), "sourceWorldUID": stringField(group, "sourceWorldUID"), "sourceCluster": stringField(expected, "sourceCluster"), "volumeServer": stringField(gc, "volumeServer"), "volumePath": stringField(gc, "volumePath")} {
-			if stringField(receipt, key) != want {
-				return fmt.Errorf("source receipt %s mismatch", key)
-			}
-		}
-		fences, _ = receipt["fences"].([]interface{})
 	}
+	return validateGroupSourceFences(group, plan.GetGeneration(), fences)
+}
+
+func groupSourceReceipt(request, plan *unstructured.Unstructured, spec, group, control map[string]interface{}) ([]interface{}, error) {
+	var receipt map[string]interface{}
+	if err := json.Unmarshal([]byte(plan.GetAnnotations()[groupFenceAnnotation]), &receipt); err != nil {
+		return nil, fmt.Errorf("management source fence receipt missing")
+	}
+	for key, want := range map[string]string{"requestUID": string(request.GetUID()), "operationUID": stringField(group, "operationUID"), "sourceWorldUID": stringField(group, "sourceWorldUID"), "sourceCluster": stringField(spec, "sourceCluster"), "volumeServer": stringField(control, "volumeServer"), "volumePath": stringField(control, "volumePath")} {
+		if stringField(receipt, key) != want {
+			return nil, fmt.Errorf("source receipt %s mismatch", key)
+		}
+	}
+	fences, _ := receipt["fences"].([]interface{})
+	return fences, nil
+}
+
+func validateGroupSourceFences(group map[string]interface{}, generation int64, fences []interface{}) error {
 	sources, _, _ := unstructured.NestedSlice(group, "sourcePods")
 	if len(sources) == 0 || int64(len(sources)) != intField(group, "worldSize") || len(fences) != len(sources) {
 		return fmt.Errorf("incomplete source world fencing")
@@ -162,7 +270,7 @@ func validateGroupPlanRelease(request, plan *unstructured.Unstructured) error {
 					gen = int64(v)
 				}
 			}
-			if stringField(f, "sourcePodUID") != uid || stringField(f, "phase") != "SourceGone" || gen != plan.GetGeneration() {
+			if stringField(f, "sourcePodUID") != uid || stringField(f, "phase") != "SourceGone" || gen != generation {
 				return fmt.Errorf("source fence UID or generation mismatch")
 			}
 			deleted, e1 := time.Parse(time.RFC3339Nano, stringField(f, "deleteRequestedAt"))

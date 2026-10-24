@@ -3,7 +3,7 @@ package management
 import ctrl "sigs.k8s.io/controller-runtime"
 
 func SetupPolicy(mgr ctrl.Manager) error {
-	if err := (&GroupPlacementReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {
+	if err := (&GroupPlacementReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader(), ExistingNodes: existingNodeResolver(mgr.GetAPIReader()), ExistingClaims: existingClaimPreparer(mgr.GetAPIReader())}).SetupWithManager(mgr); err != nil {
 		return err
 	}
 	if err := (&DiscoveryReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()}).SetupWithManager(mgr); err != nil {

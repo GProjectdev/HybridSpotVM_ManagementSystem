@@ -301,6 +301,18 @@ func (r *PolicyReconciler) groupCheckpointVolume(ctx context.Context, input p.Po
 	if injectedClaim != "" {
 		return injectedClaim, root, nil
 	}
+	// A single-rank world has exactly one generated checkpoint claim. Multi-rank
+	// group control still requires one shared claim, not independent rank PVCs.
+	templates, _, _ := unstructured.NestedSlice(sts.Object, "spec", "volumeClaimTemplates")
+	for _, raw := range templates {
+		t, ok := raw.(map[string]interface{})
+		if ok && volume != "" && stringField(t, "metadata", "name") == volume {
+			if input.TargetWorkers != 1 {
+				return "", "", fmt.Errorf("per-rank checkpoint claims require a single-rank world")
+			}
+			return volume + "-" + input.WorkloadRef.Name + "-0", root, nil
+		}
+	}
 	return "", "", fmt.Errorf("shared checkpoint PVC mount at %s required", root)
 }
 

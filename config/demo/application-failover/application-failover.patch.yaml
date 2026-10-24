@@ -1,0 +1,8 @@
+# Merge patch, NOT an apply manifest. Arm only after restore orchestration is ready.
+spec:
+  propagateDeps: true
+  failover:
+    application:
+      decisionConditions:
+        tolerationSeconds: 300
+      purgeMode: Never

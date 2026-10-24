@@ -44,6 +44,14 @@ spec:
             type: object
             required: [workloadRef, sourceCluster, targetWorkers]
             x-kubernetes-validations:
+            - rule: '((has(self.capacity) && has(self.capacity.mode)) ? self.capacity.mode : "Provisioned") == ((has(oldSelf.capacity) && has(oldSelf.capacity.mode)) ? oldSelf.capacity.mode : "Provisioned")'
+              message: capacity.mode is immutable; create a new TrainingPolicy to change capacity ownership
+            - rule: '(has(self.capacity) && has(self.capacity.existingNodes)) == (has(oldSelf.capacity) && has(oldSelf.capacity.existingNodes)) && (!(has(self.capacity) && has(self.capacity.existingNodes)) || self.capacity.existingNodes == oldSelf.capacity.existingNodes)'
+              message: capacity.existingNodes is immutable; create a new TrainingPolicy to change node identities or rank mapping
+            - rule: '!has(self.capacity) || !has(self.capacity.mode) || self.capacity.mode != "Existing" || (has(self.capacity.existingNodes) && size(self.capacity.existingNodes) == self.targetWorkers && self.capacity.existingNodes.all(n, n.rank < self.targetWorkers))'
+              message: Existing capacity requires exactly one node per target rank
+            - rule: '!has(self.capacity) || !has(self.capacity.mode) || self.capacity.mode != "Existing" || !has(self.policy) || !has(self.policy.fixedOnDemand) || self.policy.fixedOnDemand == self.targetWorkers'
+              message: Existing capacity cannot request a Spot worker composition
             - rule: self.targetWorkers == oldSelf.targetWorkers
               message: targetWorkers is immutable; create a new TrainingPolicy for capacity shape changes
             - rule: '!has(self.policy) || !has(self.policy.minOnDemand) || self.policy.minOnDemand <= self.targetWorkers'
@@ -221,7 +229,42 @@ spec:
                     default: true
               capacity:
                 type: object
+                x-kubernetes-validations:
+                - rule: '!has(self.existingNodes) || (has(self.mode) && self.mode == "Existing")'
+                  message: existingNodes requires mode Existing
+                - rule: '!has(self.existingNodes) || self.existingNodes.all(n, self.existingNodes.filter(m, m.nodeName == n.nodeName).size() == 1 && self.existingNodes.filter(m, m.nodeUID == n.nodeUID).size() == 1 && self.existingNodes.filter(m, m.rank == n.rank).size() == 1)'
+                  message: existingNodes ranks, node names and UIDs must be unique
                 properties:
+                  mode:
+                    description: Existing validates explicitly selected externally owned GPU nodes and never provisions, adopts, replaces, or deletes them. Omission retains ordinary provisioning.
+                    type: string
+                    enum: [Provisioned, Existing]
+                    default: Provisioned
+                  existingNodes:
+                    type: array
+                    minItems: 1
+                    maxItems: 128
+                    x-kubernetes-list-type: map
+                    x-kubernetes-list-map-keys: [rank]
+                    items:
+                      type: object
+                      required: [rank, nodeName, nodeUID]
+                      properties:
+                        rank:
+                          type: integer
+                          format: int64
+                          minimum: 0
+                          maximum: 127
+                        nodeName:
+                          type: string
+                          minLength: 1
+                          maxLength: 253
+                          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+                        nodeUID:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                          pattern: '^\S+$'
                   aws:
                     type: object
                     properties:

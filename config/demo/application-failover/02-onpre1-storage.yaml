@@ -1,0 +1,28 @@
+# PVCs are created by the StatefulSet in the existing namespace.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: r50-fluidcr-demo-data
+spec:
+  capacity: {storage: 10Gi}
+  accessModes: [ReadOnlyMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: fluidcr-realign-121040
+    name: dataset-r50-fluidcr-demo-0
+  nfs: {server: 10.50.1.31, path: /mnt/nfs/datasets/cifar10, readOnly: true}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: r50-fluidcr-demo-checkpoint
+spec:
+  capacity: {storage: 10Gi}
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: fluidcr-realign-121040
+    name: checkpoint-r50-fluidcr-demo-0
+  nfs: {server: 10.50.1.31, path: /mnt/nfs/gpu-fluidcr-demo/r50-fluidcr-demo}

@@ -43,6 +43,16 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		status["message"] = err.Error()
 		return ctrl.Result{}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
 	}
+	if input.Capacity.Mode == "Existing" {
+		// Existing nodes remain externally owned. Do not enter any allocation,
+		// replacement, adoption, or capacity cleanup path.
+		status := map[string]interface{}{
+			"provisioningBlocked": true, "reason": "existing_capacity",
+			"message":    "externally managed nodes; target readiness is checked before group restore",
+			"observedAt": r.now().UTC().Format(time.RFC3339),
+		}
+		return ctrl.Result{}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
+	}
 	runtimeSnapshot, err := r.runtimeSnapshot(ctx, input)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -154,6 +164,9 @@ func (r *PolicyReconciler) reader() client.Reader {
 }
 
 func validatePolicyInput(input trainingpolicy.PolicyInput) error {
+	if err := trainingpolicy.ValidateCapacity(input); err != nil {
+		return err
+	}
 	if err := trainingpolicy.ValidateFixedComposition(input); err != nil {
 		return err
 	}
@@ -214,6 +227,9 @@ func (r *PolicyReconciler) riskSnapshot(ctx context.Context, input trainingpolic
 }
 
 func (r *PolicyReconciler) ensureNodeProvisions(ctx context.Context, input trainingpolicy.PolicyInput, decision trainingpolicy.Decision) error {
+	if input.Capacity.Mode == "Existing" {
+		return fmt.Errorf("existing capacity cannot provision or adopt nodes")
+	}
 	successors, err := r.completedReplacementSuccessors(ctx, input)
 	if err != nil {
 		return err

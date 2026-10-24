@@ -38,6 +38,11 @@ func (h *PlacementAdmission) Handle(ctx context.Context, req admission.Request) 
 	if err := utiljson.Unmarshal(req.Object.Raw, &next.Object); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
+	if old.GetAnnotations()[applicationFailoverSourceAnnotation] != "" || old.GetAnnotations()[applicationFailoverTrigger] != "" {
+		if err := sameApplicationFailoverIdentity(old, next); err != nil {
+			return admission.Denied(err.Error())
+		}
+	}
 	if stringField(next.Object, "spec", "resource", "kind") != "StatefulSet" || stringField(next.Object, "spec", "resource", "apiVersion") != "apps/v1" {
 		return admission.Allowed("not a StatefulSet")
 	}
@@ -56,7 +61,21 @@ func (h *PlacementAdmission) Handle(ctx context.Context, req admission.Request) 
 		}
 	}
 	if policy == nil {
+		if old.GetAnnotations()[applicationFailoverSourceAnnotation] != "" {
+			return admission.Denied("application failover policy missing")
+		}
 		return admission.Allowed("unmanaged workload")
+	}
+	bridged, err := h.holdApplicationFailover(ctx, policy, old, next, req.UserInfo.Username)
+	if err != nil {
+		return admission.Denied(err.Error())
+	}
+	if bridged {
+		encoded, err := json.Marshal(next.Object)
+		if err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+		return admission.PatchResponseFromRaw(req.Object.Raw, encoded)
 	}
 	stopped, err := h.holdStoppedPlacement(ctx, policy, old, next)
 	if err != nil {
@@ -118,7 +137,10 @@ func (h *PlacementAdmission) validateRelease(ctx context.Context, policy, old, n
 	if old.GetUID() == "" || stringField(request.Object, "spec", "groupRestore", "operationUID") != string(old.GetUID()) {
 		return fmt.Errorf("restore operation is not bound to this ResourceBinding")
 	}
-	before, _, _ := unstructured.NestedSlice(old.Object, "spec", "clusters")
+	before, err := applicationFailoverSourcePlacement(old)
+	if err != nil {
+		return err
+	}
 	if len(before) != 1 {
 		return fmt.Errorf("source placement missing")
 	}
