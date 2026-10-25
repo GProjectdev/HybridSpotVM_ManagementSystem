@@ -58,17 +58,27 @@ export DEMO_TAG="appfailover-$(git rev-parse --short HEAD)"
 
 ## 2. 변경한 이미지 배포 준비
 
-Git push 후에도 컨테이너 이미지는 별도로 빌드·게시해야 한다. registry 인증과 Docker가
+Git push 후에도 컨테이너 이미지는 별도로 빌드·게시해야 한다. registry 인증과 Buildah가
 준비된 Linux 호스트에서 현재 checkout한 commit으로 빌드한다. 다른 호스트에서 빌드했다면
 게시한 태그를 MGMT에도 동일하게 설정한다.
 
 ```bash
+buildah login --username jeongseungjun docker.io
+(
+set -euo pipefail
+: "${DEMO_TAG:?먼저 DEMO_TAG를 설정하세요}"
 for COMPONENT in policy-manager placement-webhook; do
   IMAGE="docker.io/jeongseungjun/hybrid-spot-vm-system:${COMPONENT}-${DEMO_TAG}"
-  docker build --build-arg COMPONENT="$COMPONENT" -t "$IMAGE" .
-  docker push "$IMAGE"
+  buildah bud --layers --build-arg COMPONENT="$COMPONENT" -f Dockerfile -t "$IMAGE" .
+  buildah push "$IMAGE" "docker://$IMAGE"
 done
+)
 ```
+
+로그인에는 Docker Hub 자격 증명을 사용하며 GitHub 토큰을 사용하지 않는다.
+빌드와 push는 같은 Linux 사용자로 실행한다. `Dockerfile`은 Buildah가 읽는 빌드 파일이며,
+`docker.io`와 `docker://`는 레지스트리 주소와 전송 방식이다. Docker 데몬은 필요 없다.
+빌드가 실패하면 해당 이미지 push와 다음 컴포넌트 빌드를 중단한다.
 
 새 자동 경로에서 변경되는 바이너리는 이 두 개다. checkpoint 생성 정지와 group 완료에는
 기존 `checkpoint-coordinator`, `spot-recovery-controller`도 각각 필요하며 기존 v3.2.0
