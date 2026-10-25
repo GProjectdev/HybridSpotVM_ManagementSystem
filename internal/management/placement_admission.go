@@ -66,6 +66,13 @@ func (h *PlacementAdmission) Handle(ctx context.Context, req admission.Request) 
 		}
 		return admission.Allowed("unmanaged workload")
 	}
+	recovered, err := h.admitSelectedRecovery(ctx, policy, old, next, req.UserInfo.Username)
+	if err != nil {
+		return admission.Denied(err.Error())
+	}
+	if recovered {
+		return admission.Allowed("restoring held scheduling intent; dispatch remains suspended")
+	}
 	bridged, err := h.holdApplicationFailover(ctx, policy, old, next, req.UserInfo.Username)
 	if err != nil {
 		return admission.Denied(err.Error())

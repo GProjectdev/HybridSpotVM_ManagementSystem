@@ -2,8 +2,6 @@ package management
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"reflect"
 	"time"
@@ -99,6 +97,13 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	if target != input.Capacity.AWSCluster || target == input.SourceCluster {
 		return again, fmt.Errorf("group placement requires source to configured AWS cluster")
 	}
+	if binding.GetAnnotations()[recoverSelectedPlacement] != "" {
+		next, e := recoverSelectedBinding(ctx, r.Reader, policy, binding)
+		if e != nil {
+			return again, e
+		}
+		return again, r.Patch(ctx, next, client.MergeFromWithOptions(binding.DeepCopy(), client.MergeFromWithOptimisticLock{}))
+	}
 	current, sourceErr := applicationFailoverSourcePlacement(binding)
 	if sourceErr != nil {
 		return again, sourceErr
@@ -118,8 +123,7 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 	if operation == "" {
 		return again, fmt.Errorf("binding UID required")
 	}
-	hash := sha256.Sum256([]byte(operation + "/" + target))
-	name := input.PolicyName + "-move-" + hex.EncodeToString(hash[:6])
+	name := groupPlacementRequestName(input.PolicyName, operation, target)
 	request := newRestoreRequest()
 	err := r.Reader.Get(ctx, client.ObjectKey{Namespace: key.Namespace, Name: name}, request)
 	if apierrors.IsNotFound(err) {
