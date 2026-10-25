@@ -1,0 +1,29 @@
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: r50-fluidcr-demo02-onpre1
+  namespace: fluidcr-realign-121040
+spec:
+  resourceSelectors:
+  - {apiVersion: apps/v1, kind: StatefulSet, name: r50-fluidcr-demo02}
+  placement:
+    clusterAffinities:
+    - affinityName: primary
+      clusterNames: [onpre1]
+    - affinityName: backup
+      clusterNames: [aws]
+    replicaScheduling:
+      replicaSchedulingType: Duplicated
+---
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: r50-fluidcr-demo02-dependencies
+  namespace: fluidcr-realign-121040
+spec:
+  resourceSelectors:
+  - {apiVersion: v1, kind: ConfigMap, name: r50-fluidcr-demo02-script}
+  - {apiVersion: v1, kind: Service, name: r50-fluidcr-demo02}
+  placement:
+    clusterAffinity:
+      clusterNames: [onpre1, aws]
