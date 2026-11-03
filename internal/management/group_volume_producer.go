@@ -23,11 +23,11 @@ func (r *GroupPlacementReconciler) ensureGroupVolumes(ctx context.Context, bindi
 	if string(sts.GetUID()) != stringField(request.Object, "spec", "workloadRef", "uid") {
 		return false, fmt.Errorf("volume workload UID changed")
 	}
-	templates, _, err := unstructured.NestedSlice(sts.Object, "spec", "volumeClaimTemplates")
+	claims, err := groupVolumeClaims(sts, request)
 	if err != nil {
 		return false, err
 	}
-	if len(templates) == 0 {
+	if len(claims) == 0 {
 		return true, nil
 	}
 	source, target := stringField(request.Object, "spec", "sourceCluster"), stringField(request.Object, "spec", "targetCluster")
@@ -72,24 +72,9 @@ func (r *GroupPlacementReconciler) ensureGroupVolumes(ctx context.Context, bindi
 	if md == nil {
 		return false, fmt.Errorf("waiting for source PVMetadata")
 	}
-	pods, _, err := unstructured.NestedSlice(request.Object, "spec", "pods")
-	if err != nil {
-		return false, err
-	}
 	volumes := []interface{}{}
-	for _, raw := range templates {
-		t, ok := raw.(map[string]interface{})
-		if !ok {
-			return false, fmt.Errorf("invalid template")
-		}
-		for _, rawPod := range pods {
-			pod, ok := rawPod.(map[string]interface{})
-			if !ok {
-				return false, fmt.Errorf("invalid pod")
-			}
-			claim := stringField(t, "metadata", "name") + "-" + stringField(pod, "sourcePod")
-			volumes = append(volumes, map[string]interface{}{"sourcePVC": claim, "targetPVC": claim})
-		}
+	for _, claim := range claims {
+		volumes = append(volumes, map[string]interface{}{"sourcePVC": claim, "targetPVC": claim})
 	}
 	migration := &unstructured.Unstructured{}
 	migration.SetGroupVersionKind(schema.GroupVersionKind{Group: "migration.dcnlab.com", Version: "v1alpha1", Kind: "PVMigration"})

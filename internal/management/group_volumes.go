@@ -23,17 +23,17 @@ func validateGroupVolumes(ctx context.Context, reader client.Reader, binding, re
 	if sts.GetUID() == "" || string(sts.GetUID()) != stringField(request.Object, "spec", "workloadRef", "uid") || !sts.GetDeletionTimestamp().IsZero() {
 		return fmt.Errorf("volume workload identity mismatch")
 	}
-	templates, _, err := unstructured.NestedSlice(sts.Object, "spec", "volumeClaimTemplates")
+	claimNames, err := groupVolumeClaims(sts, request)
 	if err != nil {
 		return err
 	}
-	if len(templates) == 0 {
+	if len(claimNames) == 0 {
 		return nil
 	}
 	a := binding.GetAnnotations()
 	name, uid := a["migration.dcnlab.com/pv-migration"], a["migration.dcnlab.com/pv-migration-uid"]
 	if name == "" || uid == "" {
-		return fmt.Errorf("VCT group restore requires UID-bound PVMigration")
+		return fmt.Errorf("PVC group restore requires UID-bound PVMigration")
 	}
 	pv := &unstructured.Unstructured{}
 	pv.SetGroupVersionKind(schema.GroupVersionKind{Group: "migration.dcnlab.com", Version: "v1alpha1", Kind: "PVMigration"})
@@ -54,27 +54,13 @@ func validateGroupVolumes(ctx context.Context, reader client.Reader, binding, re
 	if !md.GetDeletionTimestamp().IsZero() || stringField(md.Object, "spec", "sourceCluster") != source || stringField(md.Object, "spec", "workloadRef", "name") != sts.GetName() || stringField(md.Object, "spec", "workloadRef", "uid") != string(sts.GetUID()) {
 		return fmt.Errorf("PVMetadata workload identity mismatch")
 	}
-	pods, _, err := unstructured.NestedSlice(request.Object, "spec", "pods")
-	if err != nil {
-		return err
-	}
 	claims := map[string]bool{}
-	for _, raw := range templates {
-		template, ok := raw.(map[string]interface{})
-		if !ok || stringField(template, "metadata", "name") == "" {
-			return fmt.Errorf("invalid volume claim template")
-		}
-		for _, rawPod := range pods {
-			pod, ok := rawPod.(map[string]interface{})
-			if !ok || stringField(pod, "sourcePod") == "" {
-				return fmt.Errorf("invalid restore pod")
-			}
-			claims[stringField(template, "metadata", "name")+"-"+stringField(pod, "sourcePod")] = true
-		}
+	for _, claim := range claimNames {
+		claims[claim] = true
 	}
 	volumes, _, err := unstructured.NestedSlice(pv.Object, "spec", "volumes")
 	if err != nil || len(claims) == 0 || len(volumes) != len(claims) {
-		return fmt.Errorf("PV mapping must cover all ordinal claims")
+		return fmt.Errorf("PV mapping must cover all workload claims")
 	}
 	for _, raw := range volumes {
 		v, ok := raw.(map[string]interface{})
@@ -83,7 +69,7 @@ func validateGroupVolumes(ctx context.Context, reader client.Reader, binding, re
 		}
 		s := stringField(v, "sourcePVC")
 		if !claims[s] || stringField(v, "targetPVC") != s {
-			return fmt.Errorf("PV mapping changed or duplicated ordinal claim")
+			return fmt.Errorf("PV mapping changed or duplicated workload claim")
 		}
 		delete(claims, s)
 	}

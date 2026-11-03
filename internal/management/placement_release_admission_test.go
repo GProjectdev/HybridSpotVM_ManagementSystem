@@ -25,7 +25,7 @@ func TestPlacementReleaseAdmissionJSONRoundTrip(t *testing.T) {
 		deny     string
 	}{
 		{name: "authorized replicas", username: controller},
-		{name: "VCT missing volume receipt", username: controller, vct: true, deny: "VCT group restore requires UID-bound PVMigration"},
+		{name: "VCT missing volume receipt", username: controller, vct: true, deny: "PVC group restore requires UID-bound PVMigration"},
 		{name: "unauthorized user", username: "ordinary-user", deny: "only the placement controller"},
 		{name: "stale plan generation", username: controller, mutate: func(_, plan, _ *unstructured.Unstructured) {
 			plan.SetGeneration(plan.GetGeneration() + 1)

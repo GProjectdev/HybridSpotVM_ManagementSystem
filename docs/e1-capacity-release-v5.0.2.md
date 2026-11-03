@@ -1,5 +1,8 @@
 # E1 Capacity Release v5.0.2
 
+Historical release: for automatic standalone shared PVC preparation, use
+[v5.0.3](e1-shared-pvc-v5.0.3.md). Do not prebind target PVCs for that evaluation.
+
 ## Scope
 
 E1 validates a managed two-rank DDP move from `onpre1` to `aws`, including

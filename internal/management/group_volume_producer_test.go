@@ -12,6 +12,16 @@ import (
 )
 
 func TestGroupVolumeProducer(t *testing.T) {
+	for _, standalone := range []bool{false, true} {
+		name := "template"
+		if standalone {
+			name = "shared-and-injected"
+		}
+		t.Run(name, func(t *testing.T) { testGroupVolumeProducer(t, standalone) })
+	}
+}
+
+func testGroupVolumeProducer(t *testing.T, standalone bool) {
 	ctx := context.Background()
 	request, _ := groupReleaseFixture(true)
 	binding := placementBinding("onprem")
@@ -23,6 +33,16 @@ func TestGroupVolumeProducer(t *testing.T) {
 	sts.SetNamespace("demo")
 	sts.SetUID("world")
 	sts.Object["spec"] = map[string]interface{}{"volumeClaimTemplates": []interface{}{map[string]interface{}{"metadata": map[string]interface{}{"name": "data"}}}}
+	expected := []string{"data-trainer-0"}
+	if standalone {
+		sts.Object["spec"] = map[string]interface{}{"template": map[string]interface{}{
+			"metadata": map[string]interface{}{"annotations": map[string]interface{}{"fluidcr.dcnlab.com/checkpoint-claim": "shared"}},
+			"spec": map[string]interface{}{"volumes": []interface{}{
+				map[string]interface{}{"name": "data", "persistentVolumeClaim": map[string]interface{}{"claimName": "dataset"}},
+			}},
+		}}
+		expected = []string{"dataset", "shared"}
+	}
 	gvk := schema.GroupVersionKind{Group: "migration.dcnlab.com", Version: "v1alpha1", Kind: "PVMetadata"}
 	md := &unstructured.Unstructured{}
 	md.SetGroupVersionKind(gvk)
@@ -54,8 +74,14 @@ func TestGroupVolumeProducer(t *testing.T) {
 		t.Fatal(err)
 	}
 	volumes, _, _ := unstructured.NestedSlice(migration.Object, "spec", "volumes")
-	if len(volumes) != 1 || stringField(volumes[0].(map[string]interface{}), "targetPVC") != "data-trainer-0" || !boolField(migration.Object, "spec", "sourceFenced") {
+	if len(volumes) != len(expected) || !boolField(migration.Object, "spec", "sourceFenced") {
 		t.Fatalf("wrong spec %#v", migration.Object["spec"])
+	}
+	for i, claim := range expected {
+		mapping := volumes[i].(map[string]interface{})
+		if stringField(mapping, "sourcePVC") != claim || stringField(mapping, "targetPVC") != claim {
+			t.Fatalf("wrong shared mapping: %#v", mapping)
+		}
 	}
 	// The API server assigns a UID; fake client does not.
 	migration.SetUID("pv-uid")
