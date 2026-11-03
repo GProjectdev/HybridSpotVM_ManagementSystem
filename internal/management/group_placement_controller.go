@@ -158,6 +158,7 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 			return again, nil
 		}
 		if input.Capacity.Mode != "Existing" {
+			capacityReady := true
 			for rank := int64(0); rank < input.TargetWorkers; rank++ {
 				// Initial cross-cluster recovery uses stable OnDemand capacity. The policy
 				// may subsequently replace it according to its risk decision.
@@ -173,9 +174,14 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 					return again, e
 				}
 				if stringField(np.Object, "status", "phase") != "Ready" || stringField(np.Object, "status", "nodeName") == "" {
-					return again, nil
+					// Request every rank before waiting for asynchronous VM bootstrap.
+					capacityReady = false
+					continue
 				}
 				nodes[fmt.Sprintf("%s-%d", input.WorkloadRef.Name, rank)] = stringField(np.Object, "status", "nodeName")
+			}
+			if !capacityReady {
+				return again, nil
 			}
 		}
 		sts := p.NewObject("StatefulSet")
