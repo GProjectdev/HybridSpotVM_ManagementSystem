@@ -1,5 +1,10 @@
 # E1 Shared PVC Release v5.0.3
 
+For the current GPT-2 experiment use [the execution driver guide](e1-gpt2-experiment.md).
+It supersedes the manual ResNet example below. Source SC is now `e1-aws-nfs`
+(10.50.1.31), not `legacy-nfs-client`. The existing PV RIC is named
+`persistentvolume-status`; do not create a second conflicting PV interpreter.
+
 ## Scope And Stop Conditions
 
 E1: two-rank DDP on onpre1 -> PropagationPolicy change -> cold AWS capacity ->
