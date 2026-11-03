@@ -17,7 +17,7 @@ def render_e1(config, source, run_id):
     policy["spec"]["capacity"]["mode"] = "Provisioned"
     policy["spec"]["capacity"].pop("existingNodes", None)
     policy["spec"]["replacement"] = {"enabled": False}
-    policy["spec"]["policy"].update(minOnDemand=0, fixedOnDemand=0)
+    policy["spec"]["policy"].update(alpha=0.05, minOnDemand=0, fixedOnDemand=0)
     policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"] = "disabled"
     # Release suspension only after the driver observes pending move intent.
     placement = next(o for o in resources if o["kind"] == "PropagationPolicy")

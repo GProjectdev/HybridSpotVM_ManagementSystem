@@ -17,9 +17,9 @@ Karmada-only ResourceBinding and PropagationPolicy resources.
 cd /root/hybridspot-validation/System
 git fetch origin restore-automation-20260928
 git merge --ff-only origin/restore-automation-20260928
-docker build --build-arg COMPONENT=policy-manager \
+buildah bud --build-arg COMPONENT=policy-manager \
   -t docker.io/jeongseungjun/hybrid-spot-vm-system:policy-manager-v5.0.4 .
-docker push docker.io/jeongseungjun/hybrid-spot-vm-system:policy-manager-v5.0.4
+buildah push docker.io/jeongseungjun/hybrid-spot-vm-system:policy-manager-v5.0.4 docker://docker.io/jeongseungjun/hybrid-spot-vm-system:policy-manager-v5.0.4
 ```
 
 Only deploy after build and push succeed. No other component image changes.
@@ -44,6 +44,16 @@ kubectl --kubeconfig="$MGMT_KUBECONFIG" -n hybridspot-system \
 - Old evaluation configurations must not be used to render this Spot-only target.
 
 ## Run
+
+The Python runner now defaults to alpha=0.05, 10 source warm-up steps,
+2400 seconds source timeout and 3600 seconds move timeout. Restore verification
+still requires 50 additional steps; checkpoint timeout remains 1200 seconds.
+This is a functional E1 test under constrained VPN bandwidth, not a bandwidth
+fix or a throughput comparison. Report actual elapsed times without subtracting
+network delays. A move timeout includes VM provisioning and restored progress;
+60 minutes is not a guarantee of completion on a slow target network.
+These runner-only changes require no image rebuild if policy-manager-v5.0.4
+is already deployed. Pull the code and render a fresh RUN; do not reuse evidence.
 
 ```bash
 export RUN="e1s-$(date -u +%m%d%H%M%S)"

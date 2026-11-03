@@ -466,7 +466,7 @@ def package(out):
     return archive
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     render = sub.add_parser("render")
@@ -478,12 +478,17 @@ def main():
         p = sub.add_parser(name)
         p.add_argument("--evidence", required=True)
         if name == "execute":
-            p.add_argument("--confirm", required=True, help="run ID; authorizes two AWS On-Demand workers")
-            p.add_argument("--warmup-steps", type=int, default=100)
+            p.add_argument("--confirm", required=True, help="run ID; authorizes two AWS Spot workers")
+            p.add_argument("--warmup-steps", type=int, default=10)
             p.add_argument("--resume-steps", type=int, default=50)
-            p.add_argument("--source-timeout", type=int, default=1200)
+            p.add_argument("--source-timeout", type=int, default=2400)
             p.add_argument("--checkpoint-timeout", type=int, default=1200)
-            p.add_argument("--move-timeout", type=int, default=2400)
+            p.add_argument("--move-timeout", type=int, default=3600)
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     if args.command == "render":
         config = read(args.config)

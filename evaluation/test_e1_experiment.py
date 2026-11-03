@@ -13,6 +13,12 @@ from run import read, save
 
 
 class E1ExperimentTests(unittest.TestCase):
+    def test_constrained_network_defaults(self):
+        from e1_experiment import build_parser
+        args = build_parser().parse_args(["execute", "--evidence", "test", "--confirm", "test"])
+        self.assertEqual((args.warmup_steps, args.source_timeout, args.move_timeout), (10, 2400, 3600))
+        self.assertEqual((args.resume_steps, args.checkpoint_timeout), (50, 1200))
+
     def checkpoint(self):
         return {"metadata": {"uid": "cp-uid", "generation": 1}, "status": {
             "phase": "Completed", "observedGeneration": 1, "completionTime": "2026-11-03T00:00:00Z", "pods": [
@@ -100,6 +106,7 @@ class E1ExperimentTests(unittest.TestCase):
             self.assertEqual(sum(o["kind"] == "PersistentVolumeClaim" for o in storage), 3)
             self.assertEqual(exp.run["model"], "gpt2")
             self.assertEqual(policy["spec"]["policy"]["fixedOnDemand"], 0)
+            self.assertEqual(policy["spec"]["policy"]["alpha"], 0.05)
             self.assertEqual(policy["spec"]["policy"]["minOnDemand"], 0)
             self.assertEqual(policy["metadata"]["annotations"]["training.dcnlab.com/suspend"], "true")
 
