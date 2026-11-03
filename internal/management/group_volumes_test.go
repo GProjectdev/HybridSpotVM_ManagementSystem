@@ -20,6 +20,37 @@ func TestGroupVolumes(t *testing.T) {
 			b.SetAnnotations(nil)
 		}},
 		{name: "ordinal claims ready"},
+		{name: "mixed split claims ready", mutate: func(s, b, p, m *unstructured.Unstructured) { addSplitReceipt(s, p) }},
+		{name: "shared-only split claims ready", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			unstructured.RemoveNestedField(s.Object, "spec", "volumeClaimTemplates")
+			volumes, _, _ := unstructured.NestedSlice(p.Object, "spec", "volumes")
+			works, _, _ := unstructured.NestedSlice(p.Object, "status", "works")
+			_ = unstructured.SetNestedSlice(p.Object, volumes[1:], "spec", "volumes")
+			_ = unstructured.SetNestedSlice(p.Object, works[1:], "status", "works")
+		}},
+		{name: "split half missing", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			works, _, _ := unstructured.NestedSlice(p.Object, "status", "works")
+			_ = unstructured.SetNestedSlice(p.Object, works[:2], "status", "works")
+		}, reject: true},
+		{name: "split UID mismatch", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			p.Object["status"].(map[string]interface{})["works"].([]interface{})[2].(map[string]interface{})["pvcUID"] = "other"
+		}, reject: true},
+		{name: "split receipt missing UID", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			p.Object["status"].(map[string]interface{})["works"].([]interface{})[1].(map[string]interface{})["pvUID"] = ""
+		}, reject: true},
+		{name: "split duplicate", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			works := p.Object["status"].(map[string]interface{})["works"].([]interface{})
+			works[2] = works[1]
+		}, reject: true},
+		{name: "split wrong name", mutate: func(s, b, p, m *unstructured.Unstructured) {
+			addSplitReceipt(s, p)
+			p.Object["status"].(map[string]interface{})["works"].([]interface{})[2].(map[string]interface{})["name"] = "foreign-pvc"
+		}, reject: true},
 		{name: "missing receipt", mutate: func(s, b, p, m *unstructured.Unstructured) { b.SetAnnotations(nil) }, reject: true},
 		{name: "stale PV generation", mutate: func(s, b, p, m *unstructured.Unstructured) { p.SetGeneration(2) }, reject: true},
 		{name: "recreated PV operation", mutate: func(s, b, p, m *unstructured.Unstructured) { p.SetUID("other") }, reject: true},
@@ -66,4 +97,17 @@ func TestGroupVolumes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func addSplitReceipt(sts, migration *unstructured.Unstructured) {
+	_ = unstructured.SetNestedField(sts.Object, "shared", "spec", "template", "metadata", "annotations", "fluidcr.dcnlab.com/checkpoint-claim")
+	volumes, _, _ := unstructured.NestedSlice(migration.Object, "spec", "volumes")
+	volumes = append(volumes, map[string]interface{}{"sourcePVC": "shared", "targetPVC": "shared"})
+	_ = unstructured.SetNestedSlice(migration.Object, volumes, "spec", "volumes")
+	works, _, _ := unstructured.NestedSlice(migration.Object, "status", "works")
+	name := groupPVWorkName(string(sts.GetUID()), "aws", sts.GetNamespace(), "shared")
+	for _, n := range []string{name, name + "-pvc"} {
+		works = append(works, map[string]interface{}{"name": n, "namespace": "karmada-es-aws", "standalone": true, "applied": true, "detached": true, "pvUID": "member-pv", "pvcUID": "member-pvc"})
+	}
+	_ = unstructured.SetNestedSlice(migration.Object, works, "status", "works")
 }

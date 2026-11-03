@@ -2,6 +2,8 @@ package management
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -74,10 +76,31 @@ func validateGroupVolumes(ctx context.Context, reader client.Reader, binding, re
 		delete(claims, s)
 	}
 	works, _, err := unstructured.NestedSlice(pv.Object, "status", "works")
-	if err != nil || len(works) != len(volumes) {
+	if err != nil {
 		return fmt.Errorf("incomplete PV Work evidence")
 	}
+	templateOnly := sts.DeepCopy()
+	unstructured.RemoveNestedField(templateOnly.Object, "spec", "template", "spec", "volumes")
+	unstructured.RemoveNestedField(templateOnly.Object, "spec", "template", "metadata", "annotations", "fluidcr.dcnlab.com/checkpoint-claim")
+	templateClaims, err := groupVolumeClaims(templateOnly, request)
+	if err != nil {
+		return err
+	}
+	templates := map[string]bool{}
+	for _, claim := range templateClaims {
+		templates[claim] = true
+	}
+	expectedCount := len(volumes)
+	for _, claim := range claimNames {
+		if !templates[claim] {
+			expectedCount++
+		}
+	}
+	if len(works) != expectedCount {
+		return fmt.Errorf("incomplete split PV/PVC Work evidence")
+	}
 	seen := map[string]bool{}
+	byName := map[string]map[string]interface{}{}
 	for _, raw := range works {
 		w, ok := raw.(map[string]interface{})
 		if !ok {
@@ -88,6 +111,33 @@ func validateGroupVolumes(ctx context.Context, reader client.Reader, binding, re
 			return fmt.Errorf("PV Work not applied and detached")
 		}
 		seen[name] = true
+		byName[name] = w
+	}
+	for _, claim := range claimNames {
+		if templates[claim] {
+			continue
+		}
+		name := groupPVWorkName(string(sts.GetUID()), target, request.GetNamespace(), claim)
+		pvWork, pvcWork := byName[name], byName[name+"-pvc"]
+		if pvWork == nil || pvcWork == nil || !boolField(pvWork, "standalone") || !boolField(pvcWork, "standalone") || stringField(pvWork, "pvUID") == "" || stringField(pvWork, "pvcUID") == "" || stringField(pvWork, "pvUID") != stringField(pvcWork, "pvUID") || stringField(pvWork, "pvcUID") != stringField(pvcWork, "pvcUID") {
+			return fmt.Errorf("standalone claim %s lacks reciprocal split Work receipts", claim)
+		}
+		delete(byName, name)
+		delete(byName, name+"-pvc")
+	}
+	for _, w := range byName {
+		if boolField(w, "standalone") {
+			return fmt.Errorf("unexpected standalone Work receipt")
+		}
 	}
 	return nil
+}
+
+// Wire identity shared with PV-Migration-System stableName("pvm", ...).
+func groupPVWorkName(parts ...string) string {
+	h := sha256.New()
+	for _, part := range parts {
+		fmt.Fprintf(h, "%d:%s;", len(part), part)
+	}
+	return "pvm-" + hex.EncodeToString(h.Sum(nil))[:24]
 }

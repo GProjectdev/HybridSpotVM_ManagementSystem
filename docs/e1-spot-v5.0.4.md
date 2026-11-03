@@ -1,8 +1,8 @@
 # E1 Spot target release v5.0.4
 
-For Karmada v1.19.0, apply the [paired Work status repair](e1-work-status-v1.19.0.md)
-before another E1 run. It changes the Karmada controller-manager image, not this
-policy-manager image. Do not bypass PV/PVC binding verification.
+Superseded by [split Work release v5.0.5](e1-split-work-v5.0.5.md).
+Keep Karmada unchanged. Use the coordinated controller upgrade in that guide
+before another E1 run. Do not bypass PV/PVC binding verification.
 
 Source: two existing ONPRE1 GPU workers. Target: two newly provisioned AWS
 Spot workers. This is not an all-Spot source environment. No On-Demand fallback.
