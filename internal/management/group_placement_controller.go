@@ -160,9 +160,12 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		if input.Capacity.Mode != "Existing" {
 			capacityReady := true
 			for rank := int64(0); rank < input.TargetWorkers; rank++ {
-				// Initial cross-cluster recovery uses stable OnDemand capacity. The policy
-				// may subsequently replace it according to its risk decision.
-				desired := p.NewNodeProvision(input, rank, "OnDemand")
+				// Honor explicit composition; keep stable bootstrap as the default.
+				market := "OnDemand"
+				if input.FixedOnDemand != nil && rank >= *input.FixedOnDemand {
+					market = "Spot"
+				}
+				desired := p.NewNodeProvision(input, rank, market)
 				if e := producer.createIfMissing(ctx, desired); e != nil {
 					return again, e
 				}

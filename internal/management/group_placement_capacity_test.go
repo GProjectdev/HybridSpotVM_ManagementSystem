@@ -15,6 +15,12 @@ import (
 )
 
 func TestGroupPlacementRequestsAllColdCapacityBeforeWaiting(t *testing.T) {
+	for _, fixed := range []int64{-1, 0, 1, 2} {
+		t.Run(fmt.Sprint(fixed), func(t *testing.T) { testColdCapacity(t, fixed) })
+	}
+}
+
+func testColdCapacity(t *testing.T, fixed int64) {
 	ctx := context.Background()
 	cp, _ := groupCheckpointFixture()
 	groupReport(cp)["clusterName"] = "onpre1"
@@ -33,6 +39,10 @@ func TestGroupPlacementRequestsAllColdCapacityBeforeWaiting(t *testing.T) {
 	set(policy, "workload", "status", "discovery", "workloadUID")
 	set(policy, "onpre1", "spec", "sourceCluster")
 	set(policy, int64(2), "spec", "targetWorkers")
+	if fixed >= 0 {
+		set(policy, fixed, "spec", "policy", "fixedOnDemand")
+		set(policy, int64(0), "spec", "policy", "minOnDemand")
+	}
 	set(policy, map[string]interface{}{"name": "source-runtime"}, "spec", "runtimeRef")
 	set(policy, map[string]interface{}{
 		"mode": "Provisioned", "aws": map[string]interface{}{
@@ -127,7 +137,11 @@ func TestGroupPlacementRequestsAllColdCapacityBeforeWaiting(t *testing.T) {
 			}
 		}
 		for rank := int64(0); rank < 2; rank++ {
-			np := p.NewNodeProvision(input, rank, "OnDemand")
+			market := "OnDemand"
+			if fixed >= 0 && rank >= fixed {
+				market = "Spot"
+			}
+			np := p.NewNodeProvision(input, rank, market)
 			pp := p.NewPropagationPolicyFor(input, np, "aws")
 			for _, expected := range []*unstructured.Unstructured{np, pp} {
 				actual := expected.DeepCopy()

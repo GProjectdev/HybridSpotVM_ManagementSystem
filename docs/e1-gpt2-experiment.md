@@ -1,5 +1,8 @@
 # E1 GPT-2 Small: execution and evidence
 
+Current release: [Spot target v5.0.4](e1-spot-v5.0.4.md). Deploy the new
+policy-manager before running: E1 now requests two Spot target workers.
+
 ## Scope
 
 Run two-rank GPT-2 Small on onpre1, export a full-world checkpoint, change only

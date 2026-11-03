@@ -99,7 +99,8 @@ class E1ExperimentTests(unittest.TestCase):
             storage = read(Path(d) / "onpre-storage.json")["items"]
             self.assertEqual(sum(o["kind"] == "PersistentVolumeClaim" for o in storage), 3)
             self.assertEqual(exp.run["model"], "gpt2")
-            self.assertEqual(policy["spec"]["policy"]["fixedOnDemand"], 2)
+            self.assertEqual(policy["spec"]["policy"]["fixedOnDemand"], 0)
+            self.assertEqual(policy["spec"]["policy"]["minOnDemand"], 0)
             self.assertEqual(policy["metadata"]["annotations"]["training.dcnlab.com/suspend"], "true")
 
     def test_no_move_when_export_gate_times_out_and_no_rerun(self):
@@ -123,6 +124,51 @@ class E1ExperimentTests(unittest.TestCase):
                 self.assertFalse(any(call.args[0] == "propagationpolicy" for call in mutate.call_args_list))
                 with self.assertRaises(FileExistsError):
                     exp.execute(args)
+
+    def test_move_releases_policy_only_after_pending_intent(self):
+        for fail_pending in (False, True):
+            with self.subTest(fail_pending=fail_pending), tempfile.TemporaryDirectory() as d:
+                exp, policy = self.fixture(d)
+                policy["metadata"]["uid"] = "policy-uid"
+                pods = [{"metadata": {"uid": "u0"}}, {"metadata": {"uid": "u1"}}]
+                def get(cluster, kind, name=None, **kwargs):
+                    if kind == "statefulset":
+                        return {"metadata": {"uid": "workload"}}
+                    if kind == "trainingpolicy":
+                        return policy
+                    return {"items": []}
+                args = SimpleNamespace(warmup_steps=100, source_timeout=1, checkpoint_timeout=1, move_timeout=1, resume_steps=50)
+                sequence = []
+                def wait(label, predicate, timeout):
+                    sequence.append(label)
+                    if label == "source_progress":
+                        return pods
+                    if label == "pending_move" and fail_pending:
+                        raise TimeoutError("no pending placement")
+                    return {}
+                def mutate(kind, name, value):
+                    if kind == "trainingpolicy":
+                        self.assertEqual(value["metadata"]["annotations"]["training.dcnlab.com/suspend"], "false")
+                        sequence.append("unsuspend")
+                with patch.object(exp, "preflight"), patch.object(exp, "snapshot"), patch.object(exp, "controllers"), \
+                        patch.object(exp, "k"), patch.object(exp, "create"), patch.object(exp, "get", side_effect=get), \
+                        patch.object(exp, "patch", side_effect=mutate), patch.object(exp, "wait", side_effect=wait):
+                    if fail_pending:
+                        with self.assertRaises(TimeoutError):
+                            exp.execute(args)
+                        self.assertNotIn("unsuspend", sequence)
+                    else:
+                        exp.execute(args)
+                        self.assertLess(sequence.index("pending_move"), sequence.index("unsuspend"))
+
+    def test_snapshot_skips_karmada_only_kinds_on_members(self):
+        with tempfile.TemporaryDirectory() as d:
+            exp, _ = self.fixture(d)
+            with patch.object(exp, "get", return_value={"items": []}) as get:
+                exp.snapshot("test")
+            for call in get.call_args_list:
+                if call.args[0] != "karmada":
+                    self.assertNotIn(call.args[1], ("resourcebindings", "propagationpolicies"))
 
     def test_package_contains_analysis_and_hashes(self):
         with tempfile.TemporaryDirectory() as d:

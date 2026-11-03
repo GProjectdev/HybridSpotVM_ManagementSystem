@@ -264,6 +264,8 @@ class Experiment:
         folder.mkdir(parents=True)
         for cluster in ("onpre1", "aws", "karmada"):
             for kind in (*KINDS, "persistentvolumes", "nodes"):
+                if cluster != "karmada" and kind in ("resourcebindings", "propagationpolicies"):
+                    continue
                 try:
                     value = self.get(cluster, kind, namespace=None if kind in ("persistentvolumes", "nodes") else NS)
                     save(folder / (cluster + "-" + kind + ".json"), evidence_resource(value))
@@ -415,6 +417,18 @@ class Experiment:
         self.snapshot("before-move")
         self.event("move_requested")
         self.patch("propagationpolicy", self.app + "-placement", {"spec": {"placement": {"clusterAffinity": {"clusterNames": ["aws"]}}}})
+        def pending_move():
+            for binding in self.get("karmada", "resourcebindings")["items"]:
+                resource = binding.get("spec", {}).get("resource", {})
+                if resource.get("uid") != uid or resource.get("kind") != "StatefulSet":
+                    continue
+                pending = binding.get("metadata", {}).get("annotations", {}).get("training.dcnlab.com/pending-placement", "[]")
+                if json.loads(pending) == [{"name": "aws", "replicas": 2}]:
+                    return True
+            return False
+        self.wait("pending_move", pending_move, 300)
+        self.patch("trainingpolicy", self.app, {"metadata": {"annotations": {"training.dcnlab.com/suspend": "false"}}})
+        self.event("policy_resumed_for_move")
         def resumed():
             target = self.progress("aws", 1)
             if not target:
