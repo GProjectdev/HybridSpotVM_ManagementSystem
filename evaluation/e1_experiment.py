@@ -466,6 +466,19 @@ def package(out):
     return archive
 
 
+def finalize(experiment):
+    # A failed diagnostic must not prevent packaging the evidence already saved.
+    for name, collect in (("logs", experiment.logs),
+                          ("snapshot", lambda: experiment.snapshot("final")),
+                          ("controllers", experiment.controllers)):
+        try:
+            collect()
+        except Exception:
+            experiment.event("final_collection_failed", stage=name,
+                             detail="Collection failed; remaining evidence will still be packaged")
+    return package(experiment.out)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -519,10 +532,7 @@ def main():
         experiment.event("execution_failed", detail=str(exc) or "KeyboardInterrupt", resources="retained")
         raise
     finally:
-        experiment.logs()
-        experiment.snapshot("final")
-        experiment.controllers()
-        package(experiment.out)
+        finalize(experiment)
 
 
 if __name__ == "__main__":

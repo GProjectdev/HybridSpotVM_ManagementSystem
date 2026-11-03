@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from e1_experiment import Experiment, durable_world, events_from, package, source_ready, evidence_resource, restored_progress
 from e1_render import render_e1
@@ -13,6 +13,18 @@ from run import read, save
 
 
 class E1ExperimentTests(unittest.TestCase):
+    def test_final_collection_failure_still_packages(self):
+        from e1_experiment import finalize
+        experiment = Mock(out="evidence")
+        experiment.logs.side_effect = RuntimeError("private diagnostic")
+        experiment.snapshot.side_effect = RuntimeError("private diagnostic")
+        with patch("e1_experiment.package", return_value="archive") as package_mock:
+            self.assertEqual(finalize(experiment), "archive")
+            experiment.controllers.assert_called_once_with()
+            package_mock.assert_called_once_with("evidence")
+        self.assertEqual(experiment.event.call_count, 2)
+        self.assertNotIn("private diagnostic", str(experiment.event.call_args_list))
+
     def test_constrained_network_defaults(self):
         from e1_experiment import build_parser
         args = build_parser().parse_args(["execute", "--evidence", "test", "--confirm", "test"])
