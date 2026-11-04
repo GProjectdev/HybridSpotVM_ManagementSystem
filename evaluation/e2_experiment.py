@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """E2 GPT-2 recovery experiment; checkpoint-gated, explicit FIS injection."""
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -36,6 +37,52 @@ def render(args):
     print("Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.")
 
 
+def checkpoint_candidates(objects, value):
+    """Resolve scheduled children through the live, policy-owned parent UID."""
+    owned = {o.get("metadata", {}).get("uid"): o for o in objects
+             if o.get("metadata", {}).get("uid")
+             and not o["metadata"].get("deletionTimestamp")
+             and o["metadata"].get("labels", {}).get(runner.POLICY_UID) == value["policy_uid"]
+             and o.get("spec", {}).get("workloadRef", {}).get("uid") == value["workload_uid"]}
+    candidates = []
+    for obj in objects:
+        meta = obj.get("metadata", {})
+        labels, annotations = meta.get("labels", {}), meta.get("annotations", {})
+        parent = owned.get(labels.get("training.dcnlab.com/scheduled-parent"))
+        direct = meta.get("uid") in owned
+        linked = (parent is not None
+                  and annotations.get("training.dcnlab.com/scheduled-parent-uid") == parent["metadata"]["uid"]
+                  and annotations.get("training.dcnlab.com/scheduled-parent-name") == parent["metadata"].get("name")
+                  and meta.get("namespace") == parent["metadata"].get("namespace")
+                  and labels.get(runner.POLICY_UID, value["policy_uid"]) == value["policy_uid"])
+        if (direct or linked) and obj.get("spec", {}).get("workloadRef", {}).get("uid") == value["workload_uid"]:
+            candidates.append(copy.deepcopy(obj))
+    for parent in owned.values():
+        ref = parent.get("status", {}).get("lastSuccessfulFullCheckpoint", {})
+        result = ref.get("result", {})
+        status = result.get("status", {})
+        generation = status.get("observedGeneration")
+        if (ref.get("uid") and ref.get("name") and ref.get("checkpointID")
+                and ref.get("phase") == "Completed" and isinstance(generation, int) and generation > 0
+                and ref.get("completionTime") == status.get("completionTime")
+                and result.get("spec", {}).get("workloadRef", {}).get("uid") == value["workload_uid"]):
+            candidates.append({"metadata": {"uid": ref["uid"], "name": ref["name"],
+                "namespace": parent["metadata"].get("namespace"), "generation": generation,
+                "annotations": {"training.dcnlab.com/checkpoint-id": ref["checkpointID"],
+                    "training.dcnlab.com/scheduled-parent-uid": parent["metadata"]["uid"]}},
+                "spec": copy.deepcopy(result["spec"]), "status": copy.deepcopy(status)})
+    for obj in candidates:
+        # Scheduled children can expose generation only on their Ready condition.
+        status, meta = obj.get("status", {}), obj.get("metadata", {})
+        if "observedGeneration" not in status and any(
+                c.get("type") == "Ready" and c.get("status") == "True"
+                and c.get("reason") == "CheckpointCompleted"
+                and c.get("observedGeneration") == meta.get("generation")
+                for c in status.get("conditions", [])):
+            status["observedGeneration"] = meta.get("generation")
+        yield obj
+
+
 def checkpoint_gate(out):
     value = info(out)
     runner.owned(value, "karmada", "trainingpolicy", value["policy"], value["policy_uid"])
@@ -44,11 +91,7 @@ def checkpoint_gate(out):
         raise ValueError("both source ranks must be Running")
     uids = [p["metadata"]["uid"] for p in pods]
     candidates = []
-    for obj in runner.get("aws", "fluidcrmigrations")["items"]:
-        if obj.get("metadata", {}).get("labels", {}).get(runner.POLICY_UID) != value["policy_uid"]:
-            continue
-        if obj.get("spec", {}).get("workloadRef", {}).get("uid") != value["workload_uid"]:
-            continue
+    for obj in checkpoint_candidates(runner.get("aws", "fluidcrmigrations")["items"], value):
         checkpoint_id = obj.get("metadata", {}).get("annotations", {}).get("training.dcnlab.com/checkpoint-id")
         if checkpoint_id and durable_world(obj, uids, checkpoint_id):
             candidates.append(obj)

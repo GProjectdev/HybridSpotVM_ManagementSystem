@@ -105,6 +105,48 @@ class E2Tests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     e2.checkpoint_gate(self.out)
 
+    def test_scheduled_children_and_retained_full_result(self):
+        value = {"policy_uid": "policy", "workload_uid": "workload"}
+        parent = {"metadata": {"uid": "parent", "name": "periodic", "namespace": "ns",
+                  "labels": {e2.runner.POLICY_UID: "policy"}},
+                  "spec": {"workloadRef": {"uid": "workload"}}}
+        child = test_e1_experiment.E1ExperimentTests().checkpoint()
+        child["metadata"].update(name="child", namespace="ns",
+            labels={"training.dcnlab.com/scheduled-parent": "parent"},
+            annotations={"training.dcnlab.com/checkpoint-id": "round",
+                         "training.dcnlab.com/scheduled-parent-uid": "parent",
+                         "training.dcnlab.com/scheduled-parent-name": "periodic"})
+        child["spec"] = copy.deepcopy(parent["spec"])
+        del child["status"]["observedGeneration"]
+        child["status"]["conditions"] = [{"type": "Ready", "status": "True",
+            "reason": "CheckpointCompleted", "observedGeneration": 1}]
+        candidates = list(e2.checkpoint_candidates([parent, child], value))
+        self.assertTrue(any(e2.durable_world(c, ["u0", "u1"], "round") for c in candidates))
+        self.assertNotIn("observedGeneration", child["status"])
+        for mutation in ("parent_uid", "parent_policy", "workload", "condition"):
+            p, c = copy.deepcopy(parent), copy.deepcopy(child)
+            if mutation == "parent_uid":
+                p["metadata"]["uid"] = "recreated"
+            elif mutation == "parent_policy":
+                p["metadata"]["labels"][e2.runner.POLICY_UID] = "other"
+            elif mutation == "workload":
+                c["spec"]["workloadRef"]["uid"] = "other"
+            else:
+                c["status"]["conditions"][0]["observedGeneration"] = 0
+            self.assertFalse(any(e2.durable_world(x, ["u0", "u1"], "round")
+                for x in e2.checkpoint_candidates([p, c], value)), mutation)
+        status = copy.deepcopy(child["status"])
+        status["observedGeneration"] = 1
+        parent["status"] = {"lastSuccessfulFullCheckpoint": {
+            "uid": "child", "name": "child", "phase": "Completed", "checkpointID": "round",
+            "completionTime": status["completionTime"],
+            "result": {"spec": child["spec"], "status": status}}}
+        self.assertTrue(any(e2.durable_world(x, ["u0", "u1"], "round")
+            for x in e2.checkpoint_candidates([parent], value)))
+        status["pods"][0]["podUID"] = "old"
+        self.assertFalse(any(e2.durable_world(x, ["u0", "u1"], "round")
+            for x in e2.checkpoint_candidates([parent], value)))
+
     def test_incomplete_report_not_success_and_export_allowlist(self):
         (self.out / "private.txt").write_text("CREDENTIAL", encoding="utf-8")
         (self.out / "presentation").mkdir()
