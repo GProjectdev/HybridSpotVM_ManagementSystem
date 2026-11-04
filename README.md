@@ -324,6 +324,7 @@ go build -mod=readonly ./cmd/...
 - [Integrated runtime upgrade](docs/integrated-upgrade-validation.md)
 - [Risk feed contract](docs/risk-feed.md)
 - [Evaluation scripts](evaluation/README.md)
+- [E2 GPT-2 interruption, recovery and presentation evidence](docs/e2-gpt2-experiment.md)
 
 과거 릴리스 문서는 특정 revision/실험 환경을 설명합니다. 신규 설치는 이 README를 우선하고,
 과거 자동 enrollment, Docker 명령 또는 Karmada fork 안내를 현재 설치에 혼용하지 마세요.

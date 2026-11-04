@@ -870,7 +870,7 @@ def verify_scenario(evidence, run):
         if not operations or any(o.get("status", {}).get("phase") != "Completed" for o in operations):
             raise RuntimeError("scenario recovery/cleanup has not completed; exclude from successful runs")
 
-def start(evidence):
+def start(evidence, completion_check=None):
     run = read(evidence/"run.json")
     if run["phase"] != "prepared":
         raise ValueError("start requires prepared run (no resume of finished measurements)")
@@ -915,12 +915,13 @@ def start(evidence):
             if run["scenario"]=="risk-rise" and learning_start is not None and not changed and time.monotonic()-learning_start>=run["risk_change_after_seconds"]:
                 set_risk(evidence,run["changed_risk"])
                 changed=True
-            if {0,1}.issubset(completed):
+            functional_complete = completion_check is not None and completion_check(evidence, run)
+            if {0,1}.issubset(completed) or functional_complete:
                 if run["scenario"]=="risk-rise" and not changed:
                     raise RuntimeError("goal completed before scheduled risk event; increase goal_steps")
                 verify_scenario(evidence, run)
                 run.update(phase="completed",completed_at=now())
-                event(evidence,"all_ranks_completed")
+                event(evidence,"functional_recovery_completed" if functional_complete else "all_ranks_completed")
                 break
             if has_risk_schedule(run) and learning_start is not None:
                 advance_risk_schedule(evidence, run, time.monotonic()-learning_start)

@@ -316,6 +316,9 @@ class Collector:
                 targets += [("trainingpolicies", [self.run["policy"]]),
                             ("trainingruntimes", ["-l", policy_selector]),
                             ("spotriskprofiles", [self.run["risk"]])]
+            if self.run.get("evaluation") == "E2" and cluster in ("karmada", "aws"):
+                targets += [(kind, ["-l", "training.dcnlab.com/policy-uid=" + self.run["policy_uid"]])
+                            for kind in ("restorerequests", "spotrecoveries")]
             if cluster == "aws":
                 targets += [("pods", ["-l", "app=" + self.run["app"] + "," + RUN_LABEL + "=" + self.run["run_id"]])]
             if cluster == "mgmt":
