@@ -1,5 +1,12 @@
 # Hybrid Spot VM Management System
 
+## E3 Controlled Evaluation
+
+See [E3 preparation, pilot, execution, evidence and cleanup](docs/e3-controlled-comparison.md).
+The new runner compares fixed On-Demand, fixed hybrid, and risk-controlled hybrid arms.
+Run the no-FIS pilot before approving the preregistered measurement plan.
+No controller image or upstream Karmada change is required by these evaluation scripts.
+
 ## 설치 범위와 지원 조건
 
 이 저장소는 고정 크기 DDP 학습의 Spot/On-Demand 용량 선택, 체크포인트 요청,

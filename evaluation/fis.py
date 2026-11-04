@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
+import math
 import run as runner
 
 def aws(region, *args):
@@ -58,13 +60,18 @@ def plan(evidence, role, alarm):
     runner.save(evidence/"fis-target.json",dict(t,account=account,run_id=run["run_id"]))
     print("Plan only; no interruption sent. Inspect",evidence/"fis-template.json")
 
-def start(evidence, confirm, allow_no_alarm):
+def start(evidence, confirm, allow_no_alarm, expected_target=None, deadline_monotonic=None):
+    if deadline_monotonic is not None and (
+            type(deadline_monotonic) not in (int, float) or not math.isfinite(deadline_monotonic)):
+        raise ValueError("deadline_monotonic must be finite")
     run=runner.read(evidence/"run.json")
     if run["run_id"]!=confirm or run.get("phase")!="running" or run["scenario"]!="interruption":
         raise ValueError("running interruption scenario and exact --confirm run_id required")
     if (evidence/"fis-started.json").exists():
         raise ValueError("already started; inspect existing FIS experiment")
     t=target(run)
+    if expected_target is not None and t != expected_target:
+        raise ValueError("target changed since authorization; refuse")
     planned=runner.read(evidence/"fis-target.json")
     if any(t[k]!=planned[k] for k in t):
         raise ValueError("target changed since plan; refuse")
@@ -86,6 +93,11 @@ def start(evidence, confirm, allow_no_alarm):
     # Persist intent before start; do not blindly retry an ambiguous network failure.
     token="eval-"+run["run_id"]
     runner.save(evidence/"fis-started.json",{"state":"start_requested","client_token":token,"target":t})
+    # Include template API latency and all receipt I/O in the dispatch deadline.
+    if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+        runner.save(evidence/"fis-started.json",{
+            "state":"deadline_exceeded_not_started","client_token":token,"target":t})
+        raise RuntimeError("FIS start deadline exceeded; request not sent")
     result=aws(run["region"],"fis","start-experiment","--experiment-template-id",created["experimentTemplate"]["id"],
                "--client-token",token,"--tags","evaluation-run="+run["run_id"])
     runner.save(evidence/"fis-started.json",result)

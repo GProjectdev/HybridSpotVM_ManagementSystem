@@ -733,11 +733,16 @@ def wait_quiescent(run):
 def observe_policy(evidence, run):
     obj = owned(run, "karmada", "trainingpolicy", run["policy"], run["policy_uid"])
     decision = obj.get("status", {}).get("policy", {})
-    if run["experiment"] == "checkpoint" and decision.get("decisionStage"):
+    e3 = run.get("e3")
+    if e3 is not None and decision.get("decisionStage"):
+        expected = {"A": (2, 0), "B": (1, 1)}.get(e3.get("arm"))
+        if expected is not None and (decision.get("onDemandWorkers"), decision.get("spotWorkers")) != expected:
+            raise RuntimeError("E3 arm composition not honored; inspect controller image and policy")
+    if e3 is None and run["experiment"] == "checkpoint" and decision.get("decisionStage"):
         if (decision.get("onDemandWorkers"), decision.get("spotWorkers")) != (1, 1):
             raise RuntimeError("fixed composition not honored; inspect controller image and policy")
     checkpoint = obj.get("status", {}).get("checkpoint", {})
-    if run["experiment"] == "cost" and run["arm"] == "A":
+    if e3 is None and run["experiment"] == "cost" and run["arm"] == "A":
         if checkpoint.get("reason") == "periodic_disabled":
             run["periodic_disabled_observed"] = True
         migrations = get("aws", "fluidcrmigrations")["items"]
@@ -870,10 +875,22 @@ def verify_scenario(evidence, run):
         if not operations or any(o.get("status", {}).get("phase") != "Completed" for o in operations):
             raise RuntimeError("scenario recovery/cleanup has not completed; exclude from successful runs")
 
-def start(evidence, completion_check=None):
+def start(evidence, completion_check=None, tick_callback=None):
     run = read(evidence/"run.json")
     if run["phase"] != "prepared":
         raise ValueError("start requires prepared run (no resume of finished measurements)")
+    e3 = run.get("e3")
+    if "e3" in run:
+        if not isinstance(e3, dict):
+            raise ValueError("e3 must be an object")
+        for key in ("window_seconds", "provisioning_timeout_seconds"):
+            value = e3.get(key)
+            if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
+                raise ValueError("e3." + key + " must be finite and positive")
+        if "arm" in e3 and e3["arm"] not in ("A", "B", "C"):
+            raise ValueError("e3.arm must be A, B, or C")
+        # The E3 caller owns risk/FIS dispatch through tick_callback.
+        run["scenario"] = "constant"
     owned(run,"karmada","statefulset",run["app"],run["workload_uid"])
     collector = subprocess.Popen([sys.executable,str(HERE/"collect.py"),"--evidence",str(evidence)])
     run.update(phase="running",started_at=now())
@@ -881,11 +898,18 @@ def start(evidence, completion_check=None):
     event(evidence,"provisioning_started")
     seen, completed, learning_start, changed = set(), set(), None, False
     logged = set()
-    deadline = time.monotonic()+run["max_seconds"]
+    deadline = time.monotonic()+(e3["provisioning_timeout_seconds"] if e3 is not None else run["max_seconds"])
     try:
         kubectl("karmada","-n",NS,"scale","statefulset",run["app"],"--replicas=2")
         patch_policy(run,False)
-        while time.monotonic() < deadline:
+        while e3 is not None or time.monotonic() < deadline:
+            if e3 is not None:
+                if learning_start is not None and time.monotonic()-learning_start >= e3["window_seconds"]:
+                    run.update(phase="measured", measurement_ended_at=now())
+                    event(evidence, "measurement_window_completed")
+                    break
+                if learning_start is None and time.monotonic() >= deadline:
+                    raise TimeoutError("E3 provisioning_timeout_seconds reached before both ranks progressed")
             if collector.poll() is not None:
                 raise RuntimeError("collector stopped unexpectedly")
             observe_policy(evidence, run)
@@ -909,9 +933,29 @@ def start(evidence, completion_check=None):
                         seen.add(rank)
                     if value.get("event") == "completed" and value.get("global_step",0)>=run["goal_steps"]:
                         completed.add(rank)
+                    if (e3 is not None and rank in (0, 1) and value.get("event") in ("step", "completed")
+                            and value.get("global_step", 0) >= run["goal_steps"]
+                            and (learning_start is None or time.monotonic()-learning_start < e3["window_seconds"])):
+                        raise RuntimeError("E3 goal reached before measurement window elapsed; increase goal_steps")
             if {0,1}.issubset(seen) and learning_start is None:
                 learning_start = time.monotonic()
+                if e3 is not None:
+                    if learning_start >= deadline:
+                        raise TimeoutError("E3 provisioning_timeout_seconds reached before both ranks progressed")
+                    run["measurement_started_at"] = now()
+                    save(evidence/"run.json", run)
                 event(evidence,"all_ranks_progress_observed")
+            if e3 is not None:
+                elapsed = time.monotonic()-learning_start if learning_start is not None else None
+                if elapsed is not None and elapsed >= e3["window_seconds"]:
+                    continue
+                if elapsed is not None and tick_callback is not None:
+                    tick_callback(evidence, run, elapsed)
+                    save(evidence/"run.json", run)
+                remaining = (e3["window_seconds"]-(time.monotonic()-learning_start)
+                             if learning_start is not None else deadline-time.monotonic())
+                time.sleep(max(0, min(5, remaining)))
+                continue
             if run["scenario"]=="risk-rise" and learning_start is not None and not changed and time.monotonic()-learning_start>=run["risk_change_after_seconds"]:
                 set_risk(evidence,run["changed_risk"])
                 changed=True
@@ -930,6 +974,8 @@ def start(evidence, completion_check=None):
             raise TimeoutError("max_seconds reached")
     except (Exception,KeyboardInterrupt) as exc:
         run.update(phase="failed",failure_reason=str(exc) or "interrupted",ended_at=now())
+        if e3 is not None and "measurement_started_at" in run:
+            run["measurement_ended_at"] = run["ended_at"]
         event(evidence,"run_failed",message=run["failure_reason"])
         raise
     finally:
