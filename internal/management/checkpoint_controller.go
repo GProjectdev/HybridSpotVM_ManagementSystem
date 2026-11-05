@@ -304,7 +304,7 @@ func (r *CheckpointReconciler) checkpointState(ctx context.Context, input traini
 			}
 			return lastStarted, true, item, latestMeasured, nil
 		}
-		if measured, ok, _ := measuredCostsFromMigration(item, input.SourceCluster, r.now()); ok {
+		if measured, ok, _ := measuredCostsFromMigrationWithMaxAge(item, input.SourceCluster, r.now(), trainingpolicy.MeasuredCostMaxAge(input.Checkpoint.MaxIntervalSeconds)); ok {
 			costs := measured
 			if latestMeasured == nil || costs.ObservedAt > latestMeasured.ObservedAt {
 				latestMeasured = &costs

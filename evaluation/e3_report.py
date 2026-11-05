@@ -102,6 +102,10 @@ def progress(path, run_id, start, end, warnings):
                 if "run_id" in raw and raw["run_id"] != run_id:
                     warnings.append("foreign run event ignored at line %d" % number)
                     continue
+                if raw.get("event") not in ("step", "completed"):
+                    # Validate audit receipts, but never use them as progress samples.
+                    event_from_message("EVAL_EVENT " + json.dumps(raw))
+                    continue
                 rank = raw.get("rank")
                 if type(rank) is not int or rank not in events:
                     raise ValueError()

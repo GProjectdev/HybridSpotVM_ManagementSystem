@@ -45,8 +45,8 @@ Spot interruption action을 사용하며 요청 성공과 실제 선점/복원 �
 
 ## 오늘 준비
 
-서버에서 기존 사용 브랜치를 갱신한다. 스크립트만 변경하므로 컨트롤러 이미지를 새로 빌드하지 않는다.
-FluidCR payload v3.1.2 수정과 현재 검증된 System/Stateful/PV 컨트롤러는 유지한다.
+서버에서 기존 사용 브랜치를 갱신한다. 파일럿 후속 수정은 [E3 수정 및 배포 가이드](e3-pilot-fixes.md)에 따라 policy-manager와 checkpoint-coordinator 이미지를 새로 빌드하고 교체한다.
+FluidCR payload v3.1.2와 Stateful/PV 컨트롤러 및 Karmada는 유지한다. 기존 local 설정 파일은 덮어쓰지 않는다.
 
 ```bash
 cd /root/hybridspot-validation/System

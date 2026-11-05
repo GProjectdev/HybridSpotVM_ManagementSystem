@@ -10,12 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const defaultMeasuredCostMaxAge = 10 * time.Minute
-
 var sha256Pattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 func measuredCostsFromMigration(migration *unstructured.Unstructured, sourceCluster string, now time.Time) (trainingpolicy.MeasuredCosts, bool, string) {
-	return measuredCostsFromMigrationWithMaxAge(migration, sourceCluster, now, defaultMeasuredCostMaxAge)
+	return measuredCostsFromMigrationWithMaxAge(migration, sourceCluster, now, trainingpolicy.MeasuredCostMaxAge(0))
 }
 
 func measuredCostsFromMigrationWithMaxAge(migration *unstructured.Unstructured, sourceCluster string, now time.Time, maxAge time.Duration) (trainingpolicy.MeasuredCosts, bool, string) {

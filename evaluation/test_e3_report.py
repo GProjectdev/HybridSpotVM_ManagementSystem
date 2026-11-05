@@ -97,6 +97,59 @@ class E3ReportTests(unittest.TestCase):
         self.write_events()
         self.assertIsNone(e3.report(self.root)["useful_progress"]["global_step"])
 
+    def test_audit_events_do_not_count_as_progress(self):
+        names = ("worker_started", "restored", "restore_audit", "restore_audit_fresh", "update_audit")
+        for with_tokens in (False, True):
+            with self.subTest(with_tokens=with_tokens):
+                self.events = [self.event(rank, second, step) for rank in (0, 1)
+                               for second, step in ((10, 100), (50, 101))]
+                for name in names:
+                    event = dict(self.event(0, 50, 900), event=name, passed=True)
+                    if not with_tokens:
+                        del event["tokens_seen"]
+                    self.events.append(event)
+                self.write_events()
+                result = e3.report(self.root)
+                self.assertEqual(result["useful_progress"], {"global_step": 1, "tokens_seen": 100})
+                self.assertEqual(result["monitor_audit_event_count"], 9)
+                self.assertFalse(any("invalid monitor event" in w or "monitor audit skipped" in w
+                                     or "conflicting" in w for w in result["warnings"]))
+
+    def test_malformed_progress_still_warns(self):
+        for name in ("step", "completed"):
+            for field in ("tokens_seen", "global_step", "rank", "attempt_id", "timestamp"):
+                for value in (None, True, -1, "invalid value"):
+                    with self.subTest(event=name, field=field, value=value):
+                        bad = dict(self.event(0, 50, 900), event=name)
+                        if value is None:
+                            del bad[field]
+                        else:
+                            bad[field] = value
+                        self.events = [self.event(rank, second, step) for rank in (0, 1)
+                                       for second, step in ((10, 100), (50, 101))] + [bad]
+                        self.write_events()
+                        result = e3.report(self.root)
+                        self.assertEqual(result["useful_progress"]["global_step"], 1)
+                        self.assertIn("invalid monitor event at line 5; possible log gap", result["warnings"])
+
+    def test_unknown_and_malformed_audits_still_warn(self):
+        for extra in ({"event": "unknown"}, {"event": "restore_audit", "passed": "yes"},
+                      {"event": "worker_started", "global_step": -1}):
+            with self.subTest(extra=extra):
+                self.events = [self.event(rank, second, step) for rank in (0, 1)
+                               for second, step in ((10, 100), (50, 101))]
+                self.events.append(dict(self.event(0, 50, 900), **extra))
+                self.write_events()
+                result = e3.report(self.root)
+                self.assertEqual(result["useful_progress"]["global_step"], 1)
+                self.assertTrue(any("monitor audit skipped" in w for w in result["warnings"]))
+
+    def test_completed_events_supply_progress(self):
+        self.events = [dict(self.event(rank, second, step), event="step" if second == 10 else "completed")
+                       for rank in (0, 1) for second, step in ((10, 100), (50, 101))]
+        self.write_events()
+        self.assertEqual(e3.report(self.root)["useful_progress"], {"global_step": 1, "tokens_seen": 100})
+
     def test_missing_files_still_report_no_pass(self):
         (self.root / "monitor-events.jsonl").unlink()
         (self.root / "e3-fault.json").unlink()

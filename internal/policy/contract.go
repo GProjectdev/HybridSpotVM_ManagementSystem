@@ -406,6 +406,16 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 	return Decision{DecisionStage: stage, IntervalSource: source, PriceEvaluated: priceEvaluated, EconomicsSource: economicsSource, DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
 }
 
+// MeasuredCostMaxAge allows one configured checkpoint interval plus completion
+// and reconciliation grace. Invalid scheduler bounds retain the legacy budget.
+func MeasuredCostMaxAge(maxIntervalSeconds int64) time.Duration {
+	const grace = 10 * time.Minute
+	if maxIntervalSeconds <= 0 || maxIntervalSeconds > math.MaxInt32 {
+		return grace
+	}
+	return time.Duration(maxIntervalSeconds)*time.Second + grace
+}
+
 func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot, spotWorkers int64, now time.Time) (int64, bool) {
 	if checkpoint.Paper.Enabled {
 		selection, err := SelectPaperInterval(checkpoint, runtime, risk, now)
@@ -416,7 +426,7 @@ func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, 
 	}
 	measured := checkpoint.MeasuredCosts
 	observedAt, err := time.Parse(time.RFC3339, measured.ObservedAt)
-	if err != nil || observedAt.After(now) || now.Sub(observedAt) > 10*time.Minute || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || !risk.Ready || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers < 0 {
+	if err != nil || observedAt.After(now) || now.Sub(observedAt) > MeasuredCostMaxAge(checkpoint.MaxIntervalSeconds) || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || !risk.Ready || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers < 0 {
 		return EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), false
 	}
 	lambdaJobPerSecond := risk.LambdaPerHour * float64(spotWorkers) / 3600
