@@ -527,7 +527,7 @@ func TestReplacementCleanupOmitsAbsentEventID(t *testing.T) {
 	}
 }
 
-func replacementReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *ReplacementReconciler {
+func replacementReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *replacementStagesFixture {
 	t.Helper()
 	scheme := runtime.NewScheme()
 	for _, gvk := range []string{"TrainingPolicy", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy"} {
@@ -543,7 +543,7 @@ func replacementReconcilerFixture(t *testing.T, now time.Time, objects ...client
 	scheme.AddKnownTypeWithName(restoreRequestGVK.GroupVersion().WithKind("RestoreRequestList"), &unstructured.UnstructuredList{})
 	statusObjects := []client.Object{newSpotReplacementObject()}
 	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(statusObjects...).WithObjects(objects...).Build()
-	return &ReplacementReconciler{Client: c, APIReader: c, Clock: func() time.Time { return now }}
+	return &replacementStagesFixture{&ReplacementReconciler{Client: c, APIReader: c, Clock: func() time.Time { return now }}}
 }
 
 func replacementOperationFixture() *unstructured.Unstructured {

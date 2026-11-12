@@ -6,5 +6,7 @@ import (
 )
 
 func main() {
-	app.Run("spot-recovery-controller", management.SetupRecovery)
+	// Deprecated alias for the integrated coordinator, not a second recovery owner.
+	// Do not co-run with checkpoint-coordinator or canonical deployments.
+	app.Run("checkpoint-recovery-coordinator", management.SetupCheckpointRecovery)
 }

@@ -46,6 +46,13 @@ def main():
     parser.add_argument("--control-plane-tolerations", action="store_true")
     args = parser.parse_args()
     names = {
+        "jeongseungjun/hybrid-spot-vm-system:public-cloud-vm-collector-v6.0": "PUBLIC_CLOUD_VM_COLLECTOR_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:spot-vm-management-controller-v6.0": "SPOT_VM_MANAGEMENT_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:checkpoint-recovery-coordinator-v6.0": "CHECKPOINT_RECOVERY_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:training-lifecycle-controller-v6.0": "TRAINING_LIFECYCLE_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:training-runtime-controller-v6.0": "TRAINING_RUNTIME_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:spot-watcher-v6.0": "SPOT_WATCHER_IMAGE",
+        "jeongseungjun/hybrid-spot-vm-system:placement-webhook-v6.0": "PLACEMENT_WEBHOOK_IMAGE",
         "ghcr.io/gprojectdev/vm-spot-risk-collector:dev": "SPOT_RISK_COLLECTOR_IMAGE",
         "ghcr.io/gprojectdev/policy-manager:dev": "POLICY_MANAGER_IMAGE",
         "ghcr.io/gprojectdev/checkpoint-coordinator:dev": "CHECKPOINT_COORDINATOR_IMAGE",

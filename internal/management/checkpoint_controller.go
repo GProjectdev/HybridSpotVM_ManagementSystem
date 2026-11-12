@@ -18,7 +18,8 @@ import (
 
 type CheckpointReconciler struct {
 	client.Client
-	Clock func() time.Time
+	Clock      func() time.Time
+	GroupStage string
 }
 
 func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

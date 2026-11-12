@@ -13,6 +13,18 @@ import (
 )
 
 func leaderElectionID(component string) string {
+	// Aliases share leases with canonical binaries as a migration backstop.
+	// Mixed-version deployments and --leader-elect=false are not safe to co-run.
+	switch component {
+	case "vm-spot-risk-collector":
+		component = "public-cloud-vm-collector"
+	case "policy-manager":
+		component = "spot-vm-management-controller"
+	case "checkpoint-coordinator", "spot-recovery-controller":
+		component = "checkpoint-recovery-coordinator"
+	case "training-runtime-collector":
+		component = "training-runtime-controller"
+	}
 	return "hybridspot-" + component
 }
 

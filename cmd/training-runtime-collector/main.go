@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	app.Run("training-runtime-collector", member.SetupRuntime)
+	// Deprecated alias. Do not co-run with canonical deployments.
+	app.Run("training-runtime-controller", member.SetupRuntime)
 }

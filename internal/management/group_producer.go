@@ -52,7 +52,7 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 		if existing.GetLabels()[p.LabelPolicyUID] != string(input.PolicyUID) || existing.GetAnnotations()[groupOldUID] != string(old.GetUID()) {
 			return false, fmt.Errorf("group restore request collision")
 		}
-		if event != "" && existing.GetAnnotations()[annotationEmergencyEventID] == "" {
+		if r.GroupStage != groupStageCapacity && event != "" && existing.GetAnnotations()[annotationEmergencyEventID] == "" {
 			before := existing.DeepCopy()
 			a := existing.GetAnnotations()
 			a[annotationEmergencyEventID] = event
@@ -89,9 +89,20 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 	} else if !ready {
 		return false, nil
 	}
+	if r.GroupStage != "" && fallback == nil {
+		if err := r.recordGroupOperation(ctx, policy, old, operation, replacementName, market, event); err != nil {
+			return false, err
+		}
+	}
+	if r.GroupStage == groupStageIntent {
+		return false, nil
+	}
 	replacement := p.NewObject("NodeProvision")
 	key := client.ObjectKey{Namespace: input.Namespace, Name: replacementName}
 	if err := r.reader().Get(ctx, key, replacement); apierrors.IsNotFound(err) {
+		if fallback != nil || r.GroupStage == groupStageRequest {
+			return false, fmt.Errorf("waiting for VM-owned fallback replacement capacity")
+		}
 		replacement.SetNamespace(key.Namespace)
 		replacement.SetName(key.Name)
 		replacement.SetLabels(map[string]string{p.LabelPolicyUID: string(input.PolicyUID), p.LabelPolicy: input.PolicyName, p.LabelManagedBy: "hybridspotvm-system", p.LabelRole: groupReplacementRole})
@@ -113,11 +124,16 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 	if replacement.GetLabels()[p.LabelPolicyUID] != string(input.PolicyUID) || replacement.GetAnnotations()[groupOldUID] != string(old.GetUID()) || stringField(replacement.Object, "spec", "marketType") != market {
 		return false, fmt.Errorf("group replacement identity mismatch")
 	}
-	if err := r.createIfMissing(ctx, p.NewPropagationPolicyFor(input, replacement, input.Capacity.AWSCluster)); err != nil {
-		return false, err
+	if fallback == nil && r.GroupStage != groupStageRequest {
+		if err := r.createIfMissing(ctx, p.NewPropagationPolicyFor(input, replacement, input.Capacity.AWSCluster)); err != nil {
+			return false, err
+		}
 	}
 	if replacement.GetUID() == "" || stringField(replacement.Object, "status", "phase") != "Ready" || stringField(replacement.Object, "status", "nodeName") == "" {
 		return false, fmt.Errorf("waiting for group replacement NodeProvision %s", replacementName)
+	}
+	if r.GroupStage == groupStageCapacity {
+		return false, nil
 	}
 	nodes := map[string]string{}
 	for _, raw := range source {

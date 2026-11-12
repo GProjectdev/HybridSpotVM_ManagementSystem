@@ -7,6 +7,7 @@ import (
 	"time"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,6 +69,16 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 	objects = append(objects, sts, replacement)
 	fixture := checkpointReconcilerFixture(t, time.Now, objects...)
 	r := &PolicyReconciler{Client: fixture.Client, APIReader: fixture.Client}
+	for _, stage := range []string{groupStageIntent, groupStageCapacity} {
+		r.GroupStage = stage
+		if _, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", ""); err != nil {
+			t.Fatalf("stage %s: %v", stage, err)
+		}
+		if err := r.Get(context.Background(), client.ObjectKey{Namespace: "demo", Name: "operation-group-restore"}, newRestoreRequest()); !apierrors.IsNotFound(err) {
+			t.Fatalf("stage %s created restore request: %v", stage, err)
+		}
+	}
+	r.GroupStage = groupStageRequest
 	created, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "")
 	if err != nil || !created {
 		t.Fatalf("created=%v err=%v", created, err)

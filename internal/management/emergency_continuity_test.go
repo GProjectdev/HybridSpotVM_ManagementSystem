@@ -96,6 +96,10 @@ func TestEmergencyContinuationKeepsOperationAndCheckpoint(t *testing.T) {
 		if err != nil || !selected || created {
 			t.Fatalf("partial producer: %v %v %v", selected, created, err)
 		}
+		vm := &ReplacementCapacityReconciler{Client: r.Client, APIReader: r.APIReader, Clock: r.Clock}
+		if _, err := vm.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(op)}); err != nil {
+			t.Fatal(err)
+		}
 		if phase, err := r.reconcileReplacement(ctx, op); phase != replacementPhaseAwaitingReplacementReady || (i == 0 && err != nil) {
 			t.Fatalf("phase=%s err=%v", phase, err)
 		}

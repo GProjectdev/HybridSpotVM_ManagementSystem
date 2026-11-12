@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: training-runtime-collector
+  name: training-runtime-controller
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: training-runtime-collector}
+    matchLabels: {app: training-runtime-controller}
   template:
     metadata:
-      labels: {app: training-runtime-collector}
+      labels: {app: training-runtime-controller}
     spec:
       serviceAccountName: runtime-collector
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/training-runtime-collector:dev
+        image: jeongseungjun/hybrid-spot-vm-system:training-runtime-controller-v6.0
         env:
         - name: POD_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}

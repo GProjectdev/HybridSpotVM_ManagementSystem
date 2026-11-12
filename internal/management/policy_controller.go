@@ -20,8 +20,9 @@ import (
 
 type PolicyReconciler struct {
 	client.Client
-	APIReader client.Reader
-	Clock     func() time.Time
+	APIReader  client.Reader
+	Clock      func() time.Time
+	GroupStage string
 }
 
 func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

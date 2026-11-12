@@ -1,5 +1,14 @@
 # Hybrid Spot VM Management System
 
+## v6.0 controller architecture
+
+The actual-presentation component contract is now the release target.
+Start with [v6 migration and compatibility](docs/v6-migration.md) and
+[canonical images](docs/component-images.md). Historical installation/evaluation
+examples below may use legacy names; use the current installer and v6 image list
+for new manifests. Do not run old and renamed controllers concurrently.
+TrainingPolicy and NodeProvision wire APIs are retained for existing resources.
+
 ## E3 Controlled Evaluation
 
 See [E3 preparation, pilot, execution, evidence and cleanup](docs/e3-controlled-comparison.md).

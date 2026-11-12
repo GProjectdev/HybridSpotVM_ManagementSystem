@@ -18,6 +18,36 @@ STAGES = {
     "placement": ["config/management/namespace.yaml", "config/management/placement-webhook.yaml"],
 }
 
+LEGACY_DEPLOYMENTS = {
+    "management": ["hybridspot-management", "vm-spot-risk-collector", "policy-manager",
+                   "checkpoint-coordinator", "spot-recovery-controller"],
+    "member": ["hybridspot-runtime", "training-runtime-collector"],
+    "aws-member": ["hybridspot-runtime", "training-runtime-collector"],
+}
+
+
+def verify_legacy_stopped(command, stage):
+    names = LEGACY_DEPLOYMENTS.get(stage, [])
+    if not names:
+        return
+    result = json.loads(subprocess.check_output(
+        command + ["-n", "hybridspot-system", "get", "deployments", *names,
+                   "--ignore-not-found", "-o", "json"], text=True))
+    objects = result.get("items", [result] if result.get("kind") == "Deployment" else [])
+    active = [obj["metadata"]["name"] for obj in objects
+              if obj.get("spec", {}).get("replicas", 1) > 0
+              or obj.get("status", {}).get("replicas", 0) > 0]
+    if active:
+        raise ValueError("Stop legacy deployments and wait for Pods to terminate: "
+                         + ", ".join(active))
+    # Deployment status can lag termination; inspect old Pod labels too.
+    for name in names:
+        pods = json.loads(subprocess.check_output(
+            command + ["-n", "hybridspot-system", "get", "pods",
+                       "-l", "app=" + name, "-o", "json"], text=True))
+        if pods.get("items"):
+            raise ValueError("Legacy Pods still exist for " + name)
+
 
 def load_documents(path):
     if not path.is_file():
@@ -84,6 +114,7 @@ def main():
         ["kubectl", "--kubeconfig", args.kubeconfig, "config", "current-context"], text=True).strip()
     if current != args.confirm_context:
         raise ValueError(f"Context mismatch: expected {args.confirm_context}, found {current}")
+    verify_legacy_stopped(command, args.stage)
     subprocess.run(command + ["apply", "-f", str(args.out)], check=True)
     for obj in result["items"]:
         kind, name = obj["kind"], obj["metadata"]["name"]

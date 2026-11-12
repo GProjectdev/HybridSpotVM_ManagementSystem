@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	app.Run("checkpoint-coordinator", management.SetupCheckpoint)
+	// Deprecated alias. Do not co-run with canonical deployments.
+	app.Run("checkpoint-recovery-coordinator", management.SetupCheckpointRecovery)
 }

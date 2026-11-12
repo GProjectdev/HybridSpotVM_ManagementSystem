@@ -67,7 +67,7 @@ func (r *ReplacementReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *ReplacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	op := newSpotReplacementObject()
-	if err := r.Get(ctx, req.NamespacedName, op); err != nil {
+	if err := r.reader().Get(ctx, req.NamespacedName, op); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	if !op.GetDeletionTimestamp().IsZero() {
@@ -221,12 +221,19 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err := verifyReplacementOldNode(oldNP, spec); err != nil {
 		return "Rejected", err
 	}
-	replacement, created, err := r.ensureReplacementNodeProvision(ctx, op.GetNamespace(), oldNP, spec)
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	err = r.reader().Get(ctx, client.ObjectKey{Namespace: op.GetNamespace(), Name: spec.ReplacementNodeProvisionName}, replacement)
+	if apierrors.IsNotFound(err) {
+		return replacementPhaseAwaitingReplacementReady, nil
+	}
 	if err != nil {
 		return "Pending", err
 	}
-	if created {
+	if replacement.GetUID() == "" {
 		return replacementPhaseAwaitingReplacementReady, nil
+	}
+	if err := replacementNodeProvisionIdentityError(replacement, op.GetNamespace(), spec); err != nil {
+		return "Pending", err
 	}
 	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
 		return replacementPhaseAwaitingReplacementReady, err

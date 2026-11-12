@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	app.Run("vm-spot-risk-collector", collector.Setup)
+	// Deprecated alias. Do not co-run with canonical deployments.
+	app.Run("public-cloud-vm-collector", collector.Setup)
 }

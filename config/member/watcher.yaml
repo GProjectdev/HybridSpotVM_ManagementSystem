@@ -19,7 +19,7 @@ spec:
       - operator: Exists
       containers:
       - name: watcher
-        image: ghcr.io/gprojectdev/spot-watcher:dev
+        image: jeongseungjun/hybrid-spot-vm-system:spot-watcher-v6.0
         args: [--metrics-bind-address=0, --health-probe-bind-address=0]
         env:
         - name: NODE_NAME

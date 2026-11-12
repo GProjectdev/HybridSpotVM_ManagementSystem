@@ -11,13 +11,13 @@ from test_validation_guide import UniqueLoader
 
 ROOT = Path(__file__).resolve().parents[1]
 MANAGEMENT = {
-    "vm-spot-risk-collector": ("collector", "collector.Setup"),
-    "policy-manager": ("management", "management.SetupPolicy"),
-    "checkpoint-coordinator": ("management", "management.SetupCheckpoint"),
-    "spot-recovery-controller": ("management", "management.SetupRecovery"),
+    "public-cloud-vm-collector": ("collector", "collector.Setup"),
+    "spot-vm-management-controller": ("management", "management.SetupVMManagement"),
+    "checkpoint-recovery-coordinator": ("management", "management.SetupCheckpointRecovery"),
+    "training-lifecycle-controller": ("management", "management.SetupLifecycle"),
 }
 MEMBER = {
-    "training-runtime-collector": "runtime.yaml",
+    "training-runtime-controller": "runtime.yaml",
     "spot-watcher": "watcher.yaml",
 }
 
@@ -25,11 +25,11 @@ MEMBER = {
 class ComponentTests(unittest.TestCase):
     def test_renderer_replaces_each_component_independently(self):
         variables = {
-            "vm-spot-risk-collector": "SPOT_RISK_COLLECTOR_IMAGE",
-            "policy-manager": "POLICY_MANAGER_IMAGE",
-            "checkpoint-coordinator": "CHECKPOINT_COORDINATOR_IMAGE",
-            "spot-recovery-controller": "SPOT_RECOVERY_IMAGE",
-            "training-runtime-collector": "RUNTIME_COLLECTOR_IMAGE",
+            "public-cloud-vm-collector": "PUBLIC_CLOUD_VM_COLLECTOR_IMAGE",
+            "spot-vm-management-controller": "SPOT_VM_MANAGEMENT_IMAGE",
+            "checkpoint-recovery-coordinator": "CHECKPOINT_RECOVERY_IMAGE",
+            "training-lifecycle-controller": "TRAINING_LIFECYCLE_IMAGE",
+            "training-runtime-controller": "TRAINING_RUNTIME_IMAGE",
             "spot-watcher": "SPOT_WATCHER_IMAGE",
         }
         env = os.environ.copy()
@@ -61,10 +61,7 @@ class ComponentTests(unittest.TestCase):
             containers = pod["containers"]
             self.assertEqual(len(containers), 1)
             container = containers[0]
-            expected_image = {
-                "policy-manager": "jeongseungjun/hybrid-spot-vm-system:policy_manager_v3.0",
-                "checkpoint-coordinator": "jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0",
-            }.get(name, "ghcr.io/gprojectdev/" + name + ":dev")
+            expected_image = "jeongseungjun/hybrid-spot-vm-system:" + name + "-v6.0"
             self.assertEqual(container["image"], expected_image)
             images.add(container["image"])
             self.assertFalse(any(a.startswith("--mode") for a in container.get("args", [])))

@@ -20,8 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [vm-spot-risk-collector, policy-manager, checkpoint-coordinator, spot-recovery-controller, training-runtime-collector, spot-watcher, placement-webhook]
+        component: [public-cloud-vm-collector, spot-vm-management-controller, checkpoint-recovery-coordinator, training-lifecycle-controller, training-runtime-controller, spot-watcher, placement-webhook]
     steps:
     - uses: actions/checkout@v4
-    - run: docker build --build-arg COMPONENT=${{ matrix.component }} -t component:test .
-    - run: docker run --rm component:test --help
+    - run: sudo apt-get update
+    - run: sudo apt-get install -y buildah podman
+    - run: buildah bud --build-arg COMPONENT=${{ matrix.component }} -t component:test .
+    - run: podman run --rm component:test --help

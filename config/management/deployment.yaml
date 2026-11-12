@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vm-spot-risk-collector
+  name: public-cloud-vm-collector
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: vm-spot-risk-collector}
+    matchLabels: {app: public-cloud-vm-collector}
   template:
     metadata:
-      labels: {app: vm-spot-risk-collector}
+      labels: {app: public-cloud-vm-collector}
     spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/vm-spot-risk-collector:dev
+        image: jeongseungjun/hybrid-spot-vm-system:public-cloud-vm-collector-v6.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE
@@ -41,20 +41,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: policy-manager
+  name: spot-vm-management-controller
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: policy-manager}
+    matchLabels: {app: spot-vm-management-controller}
   template:
     metadata:
-      labels: {app: policy-manager}
+      labels: {app: spot-vm-management-controller}
     spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: jeongseungjun/hybrid-spot-vm-system:policy_manager_v3.0
+        image: jeongseungjun/hybrid-spot-vm-system:spot-vm-management-controller-v6.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE
@@ -81,20 +81,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: checkpoint-coordinator
+  name: checkpoint-recovery-coordinator
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: checkpoint-coordinator}
+    matchLabels: {app: checkpoint-recovery-coordinator}
   template:
     metadata:
-      labels: {app: checkpoint-coordinator}
+      labels: {app: checkpoint-recovery-coordinator}
     spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: jeongseungjun/hybrid-spot-vm-system:checkpoint_coordinator_v3.0
+        image: jeongseungjun/hybrid-spot-vm-system:checkpoint-recovery-coordinator-v6.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE
@@ -121,20 +121,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spot-recovery-controller
+  name: training-lifecycle-controller
   namespace: hybridspot-system
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: spot-recovery-controller}
+    matchLabels: {app: training-lifecycle-controller}
   template:
     metadata:
-      labels: {app: spot-recovery-controller}
+      labels: {app: training-lifecycle-controller}
     spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/spot-recovery-controller:dev
+        image: jeongseungjun/hybrid-spot-vm-system:training-lifecycle-controller-v6.0
         args: [--kubeconfig=/etc/karmada/kubeconfig]
         env:
         - name: POD_NAMESPACE

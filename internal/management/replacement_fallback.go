@@ -15,6 +15,7 @@ import (
 )
 
 const partialFallbackHandoffRecorded = "HandoffRecorded"
+const fallbackCapacityUID = "training.dcnlab.com/fallback-capacity-uid"
 
 var errPartialFallbackNotApplicable = errors.New("partial fallback not applicable")
 
@@ -131,10 +132,21 @@ func (r *ReplacementReconciler) reconcilePartialToGroupFallback(ctx context.Cont
 	if !fallbackCheckpointMatchesRound(fallback, round) {
 		return replacementPhaseAwaitingGroupFallback, true, fmt.Errorf("durable full-group checkpoint changed after partial fallback handoff; refusing to switch recovery points")
 	}
-	if err := r.prepareReplacementForGroupFallback(ctx, op.GetNamespace(), spec, oldNP); err != nil {
+	// VM management acknowledges the recorded fallback by binding capacity to
+	// the source UID. The coordinator never patches replacement capacity.
+	replacement := trainingpolicy.NewObject("NodeProvision")
+	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: op.GetNamespace(), Name: spec.ReplacementNodeProvisionName}, replacement); err != nil {
 		return replacementPhaseAwaitingGroupFallback, true, err
 	}
-	producer := &PolicyReconciler{Client: r.Client, APIReader: r.reader(), Clock: r.Clock}
+	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
+		return replacementPhaseAwaitingGroupFallback, true, err
+	}
+	if replacement.GetUID() == "" || replacement.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID ||
+		replacement.GetAnnotations()[fallbackCapacityUID] != string(replacement.GetUID()) ||
+		replacement.GetAnnotations()[groupOldUID] != string(oldNP.GetUID()) {
+		return replacementPhaseAwaitingGroupFallback, true, fmt.Errorf("waiting for VM fallback capacity handoff")
+	}
+	producer := &PolicyReconciler{Client: r.Client, APIReader: r.reader(), Clock: r.Clock, GroupStage: groupStageRequest}
 	_, err = producer.ensureGroupReplacement(ctx, policy, input, oldNP, spec.Operation, spec.ReplacementNodeProvisionName, spec.DesiredMarketType, spec.EmergencyEventID, fallback)
 	if err != nil {
 		return replacementPhaseAwaitingGroupFallback, true, err
@@ -386,7 +398,7 @@ func (r *ReplacementReconciler) fallbackPolicyInput(ctx context.Context, ns stri
 	return policy, input, nil
 }
 
-func (r *ReplacementReconciler) prepareReplacementForGroupFallback(ctx context.Context, ns string, spec replacementSpec, oldNP *unstructured.Unstructured) error {
+func (r *ReplacementReconciler) prepareReplacementForGroupFallback(ctx context.Context, ns string, spec replacementSpec, oldNP *unstructured.Unstructured, input trainingpolicy.PolicyInput) error {
 	replacement := trainingpolicy.NewObject("NodeProvision")
 	if err := r.reader().Get(ctx, client.ObjectKey{Namespace: ns, Name: spec.ReplacementNodeProvisionName}, replacement); err != nil {
 		return err
@@ -397,10 +409,19 @@ func (r *ReplacementReconciler) prepareReplacementForGroupFallback(ctx context.C
 	if op := replacement.GetAnnotations()["training.dcnlab.com/recovery-operation"]; op != spec.Operation {
 		return fmt.Errorf("replacement NodeProvision operation mismatch before group fallback")
 	}
-	if existing := replacement.GetAnnotations()[groupOldUID]; existing == string(oldNP.GetUID()) {
-		return nil
-	} else if existing != "" {
+	if replacement.GetUID() == "" || !replacement.GetDeletionTimestamp().IsZero() {
+		return fmt.Errorf("replacement NodeProvision is unbound or deleting")
+	}
+	if existing := replacement.GetAnnotations()[groupOldUID]; existing != "" && existing != string(oldNP.GetUID()) {
 		return fmt.Errorf("replacement NodeProvision group fallback source UID conflict")
+	}
+	producer := &PolicyReconciler{Client: r.Client, APIReader: r.reader()}
+	if err := producer.createIfMissing(ctx, trainingpolicy.NewPropagationPolicyFor(input, replacement, input.Capacity.AWSCluster)); err != nil {
+		return err
+	}
+	if replacement.GetAnnotations()[groupOldUID] == string(oldNP.GetUID()) &&
+		replacement.GetAnnotations()[fallbackCapacityUID] == string(replacement.GetUID()) {
+		return nil
 	}
 	before := replacement.DeepCopy()
 	annotations := replacement.GetAnnotations()
@@ -408,6 +429,7 @@ func (r *ReplacementReconciler) prepareReplacementForGroupFallback(ctx context.C
 		annotations = map[string]string{}
 	}
 	annotations[groupOldUID] = string(oldNP.GetUID())
+	annotations[fallbackCapacityUID] = string(replacement.GetUID())
 	replacement.SetAnnotations(annotations)
 	return r.Client.Patch(ctx, replacement, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
 }

@@ -13,6 +13,29 @@ SPEC.loader.exec_module(INSTALL)
 
 
 class InstallTests(unittest.TestCase):
+    def test_legacy_desired_or_observed_replicas_block_cutover(self):
+        for spec, status in [(1, 0), (0, 1)]:
+            old = {"items": [{"metadata": {"name": "policy-manager"},
+                             "spec": {"replicas": spec}, "status": {"replicas": status}}]}
+            with patch.object(subprocess, "check_output", return_value=json.dumps(old)):
+                with self.assertRaisesRegex(ValueError, "Stop legacy"):
+                    INSTALL.verify_legacy_stopped(["kubectl"], "management")
+
+    def test_terminating_legacy_pods_block_cutover(self):
+        with patch.object(subprocess, "check_output",
+                          side_effect=['{"items":[]}', '{"items":[{"metadata":{"deletionTimestamp":"now"}}]}']):
+            with self.assertRaisesRegex(ValueError, "Legacy Pods"):
+                INSTALL.verify_legacy_stopped(["kubectl"], "management")
+
+    def test_empty_legacy_installation_allows_cutover(self):
+        with patch.object(subprocess, "check_output", return_value='{"items":[]}') as read:
+            INSTALL.verify_legacy_stopped(["kubectl", "--context", "expected"], "management")
+            self.assertEqual(read.call_count, 1 + len(INSTALL.LEGACY_DEPLOYMENTS["management"]))
+
+    def test_monolithic_controller_is_checked(self):
+        self.assertIn("hybridspot-management", INSTALL.LEGACY_DEPLOYMENTS["management"])
+        self.assertIn("hybridspot-runtime", INSTALL.LEGACY_DEPLOYMENTS["member"])
+
     def documents(self, stage):
         return [obj for path in INSTALL.STAGES[stage] for obj in INSTALL.load_documents(INSTALL.ROOT / path)]
 

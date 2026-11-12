@@ -67,7 +67,7 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 		}
 		// Same-market emergency recovery is confined to the explicit group route.
 		if input.FixedOnDemand != nil {
-			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
+			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
 			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "Spot", event.EventID)
 			return name, err
 		}
@@ -79,14 +79,14 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 			if policy.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
 				return "", errPartialReplacementNotReady
 			}
-			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
+			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
 			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID)
 			return name, err
 		}
 		if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 			return "", err
 		}
-		producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock}
+		producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
 		if _, err := producer.ensureAutomaticSpotReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID); err != nil {
 			return "", err
 		}

@@ -16,7 +16,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: manager
-        image: ghcr.io/gprojectdev/placement-webhook:dev
+        image: jeongseungjun/hybrid-spot-vm-system:placement-webhook-v6.0
         args: ["--leader-elect=false"]
         env:
         - name: KUBECONFIG

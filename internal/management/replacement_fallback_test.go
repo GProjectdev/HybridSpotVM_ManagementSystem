@@ -352,7 +352,7 @@ func TestPartialFallbackDoesNotTreatAPIErrorAsAbsentRestore(t *testing.T) {
 	}
 }
 
-func assertNoFallbackGroupRestore(t *testing.T, r *ReplacementReconciler) {
+func assertNoFallbackGroupRestore(t *testing.T, r *replacementStagesFixture) {
 	t.Helper()
 	group := newRestoreRequest()
 	if err := r.Get(context.Background(), client.ObjectKey{Namespace: "demo", Name: "operation-group-restore"}, group); !apierrors.IsNotFound(err) {
@@ -381,7 +381,7 @@ func mustReplacementSpec(t *testing.T, op *unstructured.Unstructured) replacemen
 	}
 	return spec
 }
-func replacementFallbackReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *ReplacementReconciler {
+func replacementFallbackReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *replacementStagesFixture {
 	t.Helper()
 	scheme := runtime.NewScheme()
 	for _, gvk := range []string{"TrainingPolicy", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy", "StatefulSet"} {
@@ -397,7 +397,7 @@ func replacementFallbackReconcilerFixture(t *testing.T, now time.Time, objects .
 	scheme.AddKnownTypeWithName(restoreRequestGVK.GroupVersion().WithKind("RestoreRequestList"), &unstructured.UnstructuredList{})
 	statusObjects := []client.Object{newSpotReplacementObject()}
 	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(statusObjects...).WithObjects(objects...).Build()
-	return &ReplacementReconciler{Client: c, APIReader: c, Clock: func() time.Time { return now }}
+	return &replacementStagesFixture{&ReplacementReconciler{Client: c, APIReader: c, Clock: func() time.Time { return now }}}
 }
 func replacementFallbackFixtures(t *testing.T, now time.Time, stale bool) (*unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured, *unstructured.Unstructured) {
 	t.Helper()
