@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	TrainingPolicyGVK    = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "TrainingPolicy"}
+	NodeRequestGVK    = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "NodeRequest"}
 	SpotRiskProfileGVK   = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "SpotRiskProfile"}
 	TrainingRuntimeGVK   = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "TrainingRuntime"}
 	SpotRecoveryGVK      = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "SpotRecovery"}

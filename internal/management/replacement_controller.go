@@ -221,6 +221,16 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err := verifyReplacementOldNode(oldNP, spec); err != nil {
 		return "Rejected", err
 	}
+	// Record deadline handoff while capacity is absent or provisioning;
+	// the fallback restore path retains its own readiness and fencing gates.
+	deadline, deadlineErr := time.Parse(time.RFC3339Nano, stringField(oldNP.Object, "status", "spot", "interruptionTime"))
+	emergencyExpired := spec.EmergencyEventID != "" && stringField(oldNP.Object, "status", "spot", "signalType") == spotInterruptionNotice &&
+		deadlineErr == nil && !deadline.IsZero() && !r.now().Before(deadline)
+	if emergencyExpired {
+		if phase, handled, err := r.reconcilePartialToGroupFallback(ctx, op, spec, oldNP); handled {
+			return phase, err
+		}
+	}
 	replacement := trainingpolicy.NewObject("NodeProvision")
 	err = r.reader().Get(ctx, client.ObjectKey{Namespace: op.GetNamespace(), Name: spec.ReplacementNodeProvisionName}, replacement)
 	if apierrors.IsNotFound(err) {
@@ -238,8 +248,10 @@ func (r *ReplacementReconciler) reconcileReplacement(ctx context.Context, op *un
 	if err := verifyReplacementReadyForOperation(replacement, spec); err != nil {
 		return replacementPhaseAwaitingReplacementReady, err
 	}
-	if phase, handled, err := r.reconcilePartialToGroupFallback(ctx, op, spec, oldNP); handled {
-		return phase, err
+	if !emergencyExpired {
+		if phase, handled, err := r.reconcilePartialToGroupFallback(ctx, op, spec, oldNP); handled {
+			return phase, err
+		}
 	}
 	migration, err := r.replacementCheckpoint(ctx, op.GetNamespace(), spec)
 	if err != nil {
@@ -394,15 +406,15 @@ func verifyReplacementPodEvidence(spec replacementSpec) error {
 }
 
 func (r *ReplacementReconciler) verifyReplacementPolicy(ctx context.Context, ns string, spec replacementSpec) error {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
-		return fmt.Errorf("get TrainingPolicy: %w", err)
+		return fmt.Errorf("get NodeRequest: %w", err)
 	}
 	if string(policy.GetUID()) != spec.PolicyUID || policy.GetGeneration() != spec.PolicyGeneration {
-		return fmt.Errorf("policyRef does not match current TrainingPolicy uid/generation")
+		return fmt.Errorf("policyRef does not match current NodeRequest uid/generation")
 	}
 	if stringField(policy.Object, "spec", "workloadRef", "uid") != spec.WorkloadUID {
-		return fmt.Errorf("TrainingPolicy workloadRef.uid mismatch")
+		return fmt.Errorf("NodeRequest workloadRef.uid mismatch")
 	}
 	return nil
 }
@@ -519,9 +531,9 @@ func verifyPartialCheckpointEvidence(migration *unstructured.Unstructured, spec 
 }
 
 func (r *ReplacementReconciler) replacementPolicyAndRuntime(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, *unstructured.Unstructured, error) {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
-		return nil, nil, fmt.Errorf("get TrainingPolicy: %w", err)
+		return nil, nil, fmt.Errorf("get NodeRequest: %w", err)
 	}
 	input := trainingpolicy.ReadPolicyInput(policy)
 	runtimeObj := trainingpolicy.NewObject("TrainingRuntime")

@@ -45,7 +45,7 @@ func TestPlannedPartialRouting(t *testing.T) {
 				input.Capacity.AWSCluster = "another-cluster"
 			}
 			now := time.Now().UTC().Truncate(time.Second)
-			policy := p.NewObject("TrainingPolicy")
+			policy := p.NewObject("NodeRequest")
 			policy.SetName("policy")
 			policy.SetNamespace("demo")
 			policy.SetUID(input.PolicyUID)

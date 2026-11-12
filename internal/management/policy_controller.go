@@ -26,7 +26,7 @@ type PolicyReconciler struct {
 }
 
 func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	policyObj := trainingpolicy.NewObject("TrainingPolicy")
+	policyObj := trainingpolicy.NewObject("NodeRequest")
 	if err := r.Get(ctx, req.NamespacedName, policyObj); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -35,6 +35,11 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	input := trainingpolicy.ReadPolicyInput(policyObj)
+	if input.WorkloadRef.UID != "" && boolField(policyObj.Object, "status", "policy", "awaitingWorkload") {
+		if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, map[string]interface{}{"awaitingWorkload": false}); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 	if input.Suspended {
 		status := map[string]interface{}{"provisioningBlocked": true, "reason": "policy_suspended", "message": "new capacity and replacement decisions suspended; existing operations may finish", "observedAt": r.now().UTC().Format(time.RFC3339)}
 		return ctrl.Result{}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status)
@@ -84,6 +89,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	}
+	if input.WorkloadRef.UID == "" {
+		return r.provisionBeforeWorkload(ctx, policyObj, input, decision)
 	}
 	if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 		decision.ProvisioningBlocked = true
@@ -148,7 +156,7 @@ func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-policy-management").
-		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
+		For(trainingpolicy.NewObject("NodeRequest"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
 		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).
 		Watches(newRestoreRequest(), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "replacement"))).

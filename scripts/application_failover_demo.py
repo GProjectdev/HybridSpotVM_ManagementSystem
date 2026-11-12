@@ -12,7 +12,7 @@ from datetime import datetime
 NS = "fluidcr-realign-121040"
 APP = "r50-fluidcr-demo"
 GROUP = "training.dcnlab.com/"
-POLICY = "trainingpolicies.training.dcnlab.com"
+POLICY = "noderequests.training.dcnlab.com"
 RUNTIME = "trainingruntimes.training.dcnlab.com"
 CHECKPOINT = "fluidcrmigrations.fluidcr.dcnlab.com"
 BINDING = "resourcebindings.work.karmada.io"
@@ -108,7 +108,7 @@ def enroll(args, kube):
     require(any(c.get("type") == "Ready" and c.get("status") == "True"
                 for c in node.get("status", {}).get("conditions", [])), "target node is not Ready")
     document = {
-        "apiVersion": "training.dcnlab.com/v1alpha1", "kind": "TrainingPolicy",
+        "apiVersion": "training.dcnlab.com/v1alpha1", "kind": "NodeRequest",
         "metadata": {"name": args.policy, "namespace": args.namespace,
                      "annotations": {GROUP + "periodic-checkpoint": "disabled"}},
         "spec": {"workloadRef": ref, "sourceCluster": args.source_cluster,

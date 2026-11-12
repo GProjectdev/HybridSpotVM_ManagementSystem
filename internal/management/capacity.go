@@ -43,7 +43,7 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 	if previous, ok, _ := unstructured.NestedInt64(policyObj.Object, "status", trainingpolicy.StatusPolicyPath, "desiredWorkers"); ok && previous > 0 && previous != input.TargetWorkers {
 		result.Blocked = true
 		result.Reason = "fixed_target_changed"
-		result.Message = fmt.Sprintf("spec.targetWorkers changed from historical fixed value %d to %d; create a new TrainingPolicy for capacity shape changes", previous, input.TargetWorkers)
+		result.Message = fmt.Sprintf("spec.targetWorkers changed from historical fixed value %d to %d; create a new NodeRequest for capacity shape changes", previous, input.TargetWorkers)
 		result.HistoricalWorkers = previous
 		return result, nil
 	}

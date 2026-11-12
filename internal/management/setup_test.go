@@ -14,7 +14,7 @@ func (registrationManager) GetAPIReader() client.Reader { return nil }
 func TestCanonicalControllerOwnership(t *testing.T) {
 	want := map[string][]string{
 		"spot-vm-management-controller":   {"*management.PolicyReconciler", "*management.ReplacementCapacityReconciler", "*management.RecoveryReconciler", "*management.GroupRecoveryReconciler", "*management.GroupCapacityReconciler"},
-		"training-lifecycle-controller":   {"*management.DiscoveryReconciler", "*management.GroupPlacementReconciler"},
+		"training-lifecycle-controller":   {"*management.NodeRequestBindingReconciler", "*management.DiscoveryReconciler", "*management.GroupPlacementReconciler"},
 		"checkpoint-recovery-coordinator": {"*management.ReplacementReconciler", "*management.CheckpointReconciler", "*management.GroupRequestReconciler"},
 	}
 	owners := map[string]string{}

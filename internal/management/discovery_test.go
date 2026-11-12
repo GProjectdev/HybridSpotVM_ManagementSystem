@@ -56,7 +56,7 @@ func discoveryFixture(t *testing.T, cluster string) (*DiscoveryReconciler, *unst
 	rb.SetUID("rb-uid")
 	rb.Object["spec"] = map[string]interface{}{"resource": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "namespace": "default", "uid": "workload-uid"}, "clusters": []interface{}{map[string]interface{}{"name": cluster, "replicas": int64(2)}}}
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: defaultsName, Namespace: "hybridspot-system"}, Data: map[string]string{"spec.yaml": discoveryDefaultsYAML("")}}
-	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(p.NewObject("TrainingPolicy")).WithObjects(sts, rb, cm).Build()
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(p.NewObject("NodeRequest")).WithObjects(sts, rb, cm).Build()
 	return &DiscoveryReconciler{Client: c, Reader: c}, sts, rb
 }
 
@@ -211,7 +211,7 @@ func TestUserPolicyNonAWSAndMigrationFreeze(t *testing.T) {
 	if len(list.Items) != 0 {
 		t.Fatal("non-AWS placement allocated AWS VMs")
 	}
-	current := p.NewObject("TrainingPolicy")
+	current := p.NewObject("NodeRequest")
 	if err := r.Get(ctx, client.ObjectKeyFromObject(obj), current); err != nil {
 		t.Fatal(err)
 	}

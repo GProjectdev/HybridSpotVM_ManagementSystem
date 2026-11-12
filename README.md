@@ -7,7 +7,8 @@ Start with [v6 migration and compatibility](docs/v6-migration.md) and
 [canonical images](docs/component-images.md). Historical installation/evaluation
 examples below may use legacy names; use the current installer and v6 image list
 for new manifests. Do not run old and renamed controllers concurrently.
-TrainingPolicy and NodeProvision wire APIs are retained for existing resources.
+NodeRequest is the v6 user request API; NodeProvision remains the per-VM API.
+This replaces TrainingPolicy and requires the explicit migration described below.
 
 ## E3 Controlled Evaluation
 
@@ -52,7 +53,7 @@ CRD admission, status reflection, checkpoint 및 실제 restore를 검증한 뒤
 | 실행 위치 | 컴포넌트 | 역할 |
 |---|---|---|
 | MGMT | vm-spot-risk-collector | 외부 hazard / 명시적 실험 입력을 SpotRiskProfile로 반영 |
-| MGMT | policy-manager | 사용자 TrainingPolicy에 따라 용량과 이동/복원 흐름 조정 |
+| MGMT | policy-manager | 사용자 NodeRequest에 따라 용량과 이동/복원 흐름 조정 |
 | MGMT | checkpoint-coordinator | 체크포인트 간격 계산 및 요청 |
 | MGMT | spot-recovery-controller | 검증된 복구에 연결된 이전 Spot 자원 정리 |
 | MGMT | placement-webhook | ResourceBinding 이동 보류 및 검증된 release 경로 |
@@ -257,7 +258,7 @@ ResourceBinding UPDATE가 막힐 수 있습니다. 운영 중 우회하거나 `I
 
 ## 5. 학습 작업 등록과 사용
 
-자동 TrainingPolicy 생성은 제거되었습니다. 사용자가 workload와 TrainingPolicy를 소유합니다.
+자동 NodeRequest 생성은 제거되었습니다. 사용자가 workload와 NodeRequest를 소유합니다.
 과거 automatic-policy-defaults 예제를 신규 설치에 적용하지 마세요.
 
 1. Karmada와 참여 Member에 같은 application namespace를 준비합니다.
@@ -267,28 +268,30 @@ ResourceBinding UPDATE가 막힐 수 있습니다. 운영 중 우회하거나 `I
    현재 full-world 경로의 공유 checkpoint 조건은 [full-group 가이드](docs/full-group-rollout.md)를 따릅니다.
    StatefulSet volumeClaimTemplates를 쓰는 임의 작업이 자동 호환된다고 가정하지 마세요.
 4. payload가 주입된 단일 학습 컨테이너 DDP StatefulSet, headless Service와
-   의존 ConfigMap, 소스 PropagationPolicy를 작성합니다. 모든 rank의 runtime 보고를 검증합니다.
+   의존 ConfigMap, 소스 PropagationPolicy를 작성합니다. 아직 Workload를 배포할 필요는 없습니다.
 5. [위험률 계약](docs/risk-feed.md)에 따라 SpotRiskProfile을 등록합니다.
    `config/samples/11-spot-risk-profile-static.yaml`은 실험 전용입니다.
-6. Karmada StatefulSet의 실제 UID를 조회하여 `config/samples/12-training-policy.yaml`의
-   workloadRef에 입력합니다. sourceCluster, world size, runtime/risk 참조,
-   AWS capacity와 credentialsRef를 실제 환경 값으로 채웁니다.
+6. `config/samples/12-training-policy.yaml`의 NodeRequest에 Workload 종류와 이름을
+   입력하고 UID는 생략합니다. sourceCluster를 AWS Member로 지정하고, world size,
+   runtime/risk 참조, AWS capacity와 credentialsRef를 실제 환경 값으로 채웁니다.
 7. 검토한 정책을 Karmada에 적용합니다. 이 시점부터 유료 VM이 생성될 수 있습니다.
    replica 수와 capacity quota를 먼저 확인하세요.
-8. 사용자 소유 PropagationPolicy를 변경하여 이동을 요청하고, NodeProvision readiness,
-   checkpoint export, source fencing, PV binding, RestoreRequest Verified,
-   양쪽 rank의 복원 후 step 진행을 확인합니다.
+8. NodeProvision의 노드/GPU readiness 확인 후 준비한 Workload와 배포 정책을 적용합니다.
+   Training Lifecycle Controller가 Workload UID를 연결하고 TrainingRuntime을 생성합니다.
+   모든 rank의 runtime 보고와 주기 Checkpoint를 확인합니다. 복구 시험은 별도로
+   checkpoint export, source fencing, PV binding, RestoreRequest Verified 및
+   복원 후 step 진행을 확인합니다.
 
 ```bash
 export NS=training-demo
 export APP=trainer
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get statefulset "$APP" \
-  -o jsonpath='{.metadata.uid}{"\n"}'
 # 편집/렌더링한 파일만 적용합니다. config/samples의 placeholder를 그대로 적용하지 않습니다.
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f rendered/risk-profile.yaml
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f rendered/training-policy.yaml
-kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get trainingpolicies,trainingruntimes,restorerequests,pvmigrations
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" get noderequests,trainingruntimes,restorerequests,pvmigrations
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" get nodeprovisions,pods,pvc
+# 노드/GPU 준비 확인 후 Workload를 별도로 배포합니다.
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" apply -f rendered/workload.yaml
 ```
 
 위 `rendered/risk-profile.yaml`, `training-policy.yaml`은 운영자가 작성한 입력 파일입니다.

@@ -27,8 +27,8 @@ python scripts/install-system.py aws-member --image-repository jeongseungjun/hyb
 ```
 
 Rendering does not apply manifests. Stop old controller Pods before applying
-renamed deployments. CR wire kinds remain compatible; NodeRequest is not yet a
-replacement CRD for TrainingPolicy.
+renamed deployments. NodeRequest replaces TrainingPolicy; follow the breaking
+API cutover in v6-migration.md before using these images with existing resources.
 
 Management deployments still share the existing Karmada kubeconfig and RBAC.
 Component separation is not a security isolation claim. Existing supporting

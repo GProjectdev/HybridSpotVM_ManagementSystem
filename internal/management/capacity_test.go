@@ -170,7 +170,7 @@ func TestCapacityGateFixedTargetChangeKeepsHistoricalBaselineAcrossReconciles(t 
 		if _, err := reconciler.Reconcile(context.Background(), req); err != nil {
 			t.Fatalf("policy reconcile %d: %v", i+1, err)
 		}
-		updated := trainingpolicy.NewObject("TrainingPolicy")
+		updated := trainingpolicy.NewObject("NodeRequest")
 		if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 			t.Fatalf("get policy after reconcile %d: %v", i+1, err)
 		}
@@ -682,7 +682,7 @@ func setParallelRuntimeObservedAt(runtimeObj *unstructured.Unstructured, observe
 func freshPolicyReader(t *testing.T, r *PolicyReconciler, extra *unstructured.Unstructured) client.Reader {
 	t.Helper()
 	var objects []client.Object
-	for _, kind := range []string{"StatefulSet", "TrainingPolicy"} {
+	for _, kind := range []string{"StatefulSet", "NodeRequest"} {
 		list := trainingpolicy.NewList(kind)
 		if err := r.List(context.Background(), list); err != nil {
 			t.Fatal(err)
@@ -717,7 +717,7 @@ func spotRecoveryFixture(name, policyUID, oldName, oldUID, phase string) *unstru
 
 func assertPolicyReason(t *testing.T, c client.Client, want string) {
 	t.Helper()
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := c.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatalf("get policy: %v", err)
 	}

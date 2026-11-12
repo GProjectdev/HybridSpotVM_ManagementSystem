@@ -231,18 +231,18 @@ func (s recoverySpec) sameClusterReplacement() bool {
 }
 
 func (r *RecoveryReconciler) verifyPolicy(ctx context.Context, ns string, spec recoverySpec) error {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
-		return fmt.Errorf("get TrainingPolicy: %w", err)
+		return fmt.Errorf("get NodeRequest: %w", err)
 	}
 	if !policy.GetDeletionTimestamp().IsZero() {
-		return fmt.Errorf("TrainingPolicy is deleting")
+		return fmt.Errorf("NodeRequest is deleting")
 	}
 	if string(policy.GetUID()) != spec.PolicyUID || policy.GetGeneration() != spec.PolicyGeneration {
-		return fmt.Errorf("policyRef does not match current TrainingPolicy uid/generation")
+		return fmt.Errorf("policyRef does not match current NodeRequest uid/generation")
 	}
 	if stringField(policy.Object, "spec", "workloadRef", "uid") != spec.WorkloadUID {
-		return fmt.Errorf("TrainingPolicy workloadRef.uid mismatch")
+		return fmt.Errorf("NodeRequest workloadRef.uid mismatch")
 	}
 	return nil
 }
@@ -375,6 +375,15 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 	} else if err := verifyRestoreEvidenceContract(req, spec); err != nil {
 		return restoreEvidence{}, err
 	}
+	if !group && spec.sameClusterReplacement() {
+		operation := newSpotReplacementObject()
+		if err := r.reader().Get(ctx, client.ObjectKey{Namespace: ns, Name: spec.Operation}, operation); err != nil {
+			return restoreEvidence{}, err
+		}
+		if err := verifyCleanupRankReceipts(req, operation); err != nil {
+			return restoreEvidence{}, err
+		}
+	}
 	checks := []struct {
 		name string
 		got  string
@@ -424,6 +433,80 @@ func (r *RecoveryReconciler) verifyRestoreRequest(ctx context.Context, ns string
 		return restoreEvidence{}, fmt.Errorf("RestoreRequest spec.pods sourceNode evidence required")
 	}
 	return restoreEvidence{SourceNodes: sourceNodes}, nil
+}
+
+// Match receipts against the operation's original participants before deletion.
+func verifyCleanupRankReceipts(req, operation *unstructured.Unstructured) error {
+	wanted, _, _ := unstructured.NestedSlice(operation.Object, "spec", "partialCheckpoint", "targetRanks")
+	ranks := map[int64]bool{}
+	for _, raw := range wanted {
+		rank, ok := int64Value(raw)
+		if !ok || rank < 0 || ranks[rank] {
+			return fmt.Errorf("cleanup requested target ranks invalid or duplicated")
+		}
+		ranks[rank] = true
+	}
+	if len(ranks) == 0 {
+		return fmt.Errorf("cleanup requested target ranks missing")
+	}
+	for _, obj := range []*unstructured.Unstructured{operation, req} {
+		declared, found, err := unstructured.NestedSlice(obj.Object, "spec", "partialRestore", "targetRanks")
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+		seen := map[int64]bool{}
+		for _, raw := range declared {
+			rank, ok := int64Value(raw)
+			if !ok || !ranks[rank] || seen[rank] {
+				return fmt.Errorf("cleanup partialRestore target ranks mismatch or duplicated")
+			}
+			seen[rank] = true
+		}
+		if len(seen) != len(ranks) {
+			return fmt.Errorf("cleanup partialRestore target ranks incomplete")
+		}
+	}
+	receipts, _, _ := unstructured.NestedSlice(req.Object, "status", "verification", "partialRestore", "targetRanks")
+	seen := map[int64]bool{}
+	for _, raw := range receipts {
+		pod, ok := raw.(map[string]interface{})
+		rank, valid := int64Value(pod["rank"])
+		if !ok || !valid || !ranks[rank] || seen[rank] {
+			return fmt.Errorf("cleanup target rank receipt mismatch or duplicated")
+		}
+		seen[rank] = true
+	}
+	if len(seen) != len(ranks) {
+		return fmt.Errorf("cleanup target rank receipts incomplete")
+	}
+	baseline, _, _ := unstructured.NestedSlice(operation.Object, "spec", "partialRestore", "preservedSurvivors")
+	survivors := map[int64]string{}
+	for _, raw := range baseline {
+		pod, ok := raw.(map[string]interface{})
+		rank, valid := int64Value(pod["rank"])
+		uid := stringField(pod, "podUID")
+		if !ok || !valid || rank < 0 || ranks[rank] || survivors[rank] != "" || uid == "" {
+			return fmt.Errorf("cleanup preserved survivor identity invalid or duplicated")
+		}
+		survivors[rank] = uid
+	}
+	receipts, _, _ = unstructured.NestedSlice(req.Object, "status", "verification", "survivors")
+	seen = map[int64]bool{}
+	for _, raw := range receipts {
+		pod, ok := raw.(map[string]interface{})
+		rank, valid := int64Value(pod["rank"])
+		if !ok || !valid || survivors[rank] == "" || stringField(pod, "podUID") != survivors[rank] || seen[rank] {
+			return fmt.Errorf("cleanup survivor UID receipt mismatch or duplicated")
+		}
+		seen[rank] = true
+	}
+	if len(seen) != len(survivors) {
+		return fmt.Errorf("cleanup survivor receipts incomplete")
+	}
+	return nil
 }
 
 func verifyRestoreEvidenceContract(req *unstructured.Unstructured, spec recoverySpec) error {

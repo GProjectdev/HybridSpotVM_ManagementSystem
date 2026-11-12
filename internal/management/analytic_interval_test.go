@@ -105,7 +105,7 @@ func TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule(t *tes
 				} else {
 					first = got.DeepCopy()
 				}
-				updated := p.NewObject("TrainingPolicy")
+				updated := p.NewObject("NodeRequest")
 				if err := r.Get(ctx, req.NamespacedName, updated); err != nil {
 					t.Fatal(err)
 				}

@@ -56,7 +56,7 @@ func TestReadRiskStatusUsesNestedPrices(t *testing.T) {
 		t.Fatalf("prices = %#v, want nested status.prices values", snapshot)
 	}
 	if !RiskFreshForPolicy(PolicyInput{Generation: 99}, snapshot, mustTime(t, "2026-09-26T00:00:00Z")) {
-		t.Fatal("risk freshness incorrectly depended on TrainingPolicy generation")
+		t.Fatal("risk freshness incorrectly depended on NodeRequest generation")
 	}
 	snapshot.ObservedGeneration = 6
 	if RiskFreshForPolicy(PolicyInput{Generation: 7}, snapshot, mustTime(t, "2026-09-26T00:00:00Z")) {

@@ -111,7 +111,7 @@ func TestMeasuredCostsFromMigrationAllowsLegitimateZeroCopyDuration(t *testing.T
 }
 
 func TestReadPolicySpecPrefersStatusMeasuredCosts(t *testing.T) {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.Object["spec"] = map[string]interface{}{"checkpoint": map[string]interface{}{"measuredCosts": map[string]interface{}{"checkpointSeconds": float64(9), "copySeconds": float64(3), "observedAt": "2026-09-26T00:00:00Z"}}}
 	policy.Object["status"] = map[string]interface{}{trainingpolicy.StatusCheckpointPath: map[string]interface{}{"measuredCosts": map[string]interface{}{"checkpointSeconds": float64(90), "copySeconds": float64(30), "observedAt": "2026-09-26T00:02:00Z"}}}
 

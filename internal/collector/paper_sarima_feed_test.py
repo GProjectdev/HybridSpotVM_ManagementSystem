@@ -125,7 +125,20 @@ class PaperSARIMAPreprocessingTest(unittest.TestCase):
         with mock.patch.object(sarima, "forecast_aggregate_preemptions_per_hour", return_value=(100.0, object())):
             payload = sarima.feed_payload(path, config, now=start + timedelta(hours=1))
         self.assertEqual(payload["lambdaPerHour"], 0.5)
+        self.assertEqual(payload["source"]["maxLambdaPerHour"], 0.5)
         self.assertEqual(payload["source"]["aggregateForecastPreemptionsPerHour"], 100.0)
+
+    def test_feed_declares_default_and_custom_caps(self):
+        start = datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
+        path = self.write_json({"metadata": {"gap_seconds": 3600, "start_time": start.isoformat(), "risk_population": 10}, "data": [10, 0]})
+        self.addCleanup(path.unlink)
+        for cap in (sarima.DEFAULT_MAX_LAMBDA_PER_HOUR, 0.5, 150.0, 250.0):
+            with self.subTest(cap=cap):
+                config = sarima.EstimatorConfig(min_history_hours=1, max_lambda_per_hour=cap)
+                with mock.patch.object(sarima, "forecast_aggregate_preemptions_per_hour", return_value=(2000.0, object())):
+                    payload = sarima.feed_payload(path, config, now=start + timedelta(hours=1))
+                self.assertEqual(payload["source"]["maxLambdaPerHour"], cap)
+                self.assertEqual(payload["lambdaPerHour"], min(200.0, cap))
 
     def test_future_evidence_is_rejected(self):
         start = datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
@@ -146,6 +159,10 @@ class PaperSARIMAPreprocessingTest(unittest.TestCase):
             (sarima.EstimatorConfig(retrain_window_weeks=0, min_history_hours=1), "retrain_window_weeks"),
             (sarima.EstimatorConfig(seasonal_period_hours=0), "seasonal_period_hours"),
             (sarima.EstimatorConfig(max_lambda_per_hour=0), "max_lambda_per_hour"),
+            (sarima.EstimatorConfig(max_lambda_per_hour=-1), "max_lambda_per_hour"),
+            (sarima.EstimatorConfig(max_lambda_per_hour=float("nan")), "max_lambda_per_hour"),
+            (sarima.EstimatorConfig(max_lambda_per_hour=float("inf")), "max_lambda_per_hour"),
+            (sarima.EstimatorConfig(max_lambda_per_hour=float("-inf")), "max_lambda_per_hour"),
             (sarima.EstimatorConfig(valid_for_seconds=3601), "valid_for_seconds"),
             (sarima.EstimatorConfig(min_history_hours=9999), "min_history_hours"),
             (sarima.EstimatorConfig(retrain_seconds=0), "retrain_seconds"),

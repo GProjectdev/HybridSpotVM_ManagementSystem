@@ -9,7 +9,7 @@ import (
 func TestPolicyInputRequiresBoundVerifiedPlacement(t *testing.T) {
 	for _, mode := range []string{"valid", "policy UID", "workload UID", "initial cluster", "initial runtime", "unverified", "empty cluster", "empty runtime"} {
 		t.Run(mode, func(t *testing.T) {
-			obj := NewObject("TrainingPolicy")
+			obj := NewObject("NodeRequest")
 			obj.SetName("train")
 			obj.SetUID("policy-uid")
 			obj.Object["spec"] = map[string]interface{}{

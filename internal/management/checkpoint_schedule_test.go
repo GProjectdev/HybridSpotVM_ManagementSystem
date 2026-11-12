@@ -318,7 +318,7 @@ func setLastSuccessfulFullCheckpoint(t *testing.T, parent, checkpoint *unstructu
 
 func checkpointScheduleReconcilerFixture(t *testing.T, clock func() time.Time, objects ...*unstructured.Unstructured) *CheckpointReconciler {
 	t.Helper()
-	c := fake.NewClientBuilder().WithScheme(testScheme()).WithStatusSubresource(p.NewObject("TrainingPolicy"), p.NewObject("FluidCRMigration")).Build()
+	c := fake.NewClientBuilder().WithScheme(testScheme()).WithStatusSubresource(p.NewObject("NodeRequest"), p.NewObject("FluidCRMigration")).Build()
 	for _, obj := range objects {
 		if err := c.Create(context.Background(), obj); err != nil {
 			t.Fatalf("create %s/%s fixture: %v", obj.GetKind(), obj.GetName(), err)

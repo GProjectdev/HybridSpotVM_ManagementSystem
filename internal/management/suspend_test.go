@@ -36,7 +36,7 @@ func TestSuspendedPolicyDoesNotCreateNewWork(t *testing.T) {
 			t.Fatalf("suspended policy created %s", kind)
 		}
 	}
-	got := p.NewObject("TrainingPolicy")
+	got := p.NewObject("NodeRequest")
 	if err := r.Get(context.Background(), key.NamespacedName, got); err != nil {
 		t.Fatal(err)
 	}

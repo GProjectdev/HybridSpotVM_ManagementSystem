@@ -46,7 +46,7 @@ func (h *PlacementAdmission) Handle(ctx context.Context, req admission.Request) 
 	if stringField(next.Object, "spec", "resource", "kind") != "StatefulSet" || stringField(next.Object, "spec", "resource", "apiVersion") != "apps/v1" {
 		return admission.Allowed("not a StatefulSet")
 	}
-	policies := p.NewList("TrainingPolicy")
+	policies := p.NewList("NodeRequest")
 	if err := h.Reader.List(ctx, policies, client.InNamespace(req.Namespace)); err != nil {
 		return admission.Errored(http.StatusServiceUnavailable, err)
 	}

@@ -19,7 +19,7 @@ import (
 )
 
 func existingCapacityPolicyFixture() *unstructured.Unstructured {
-	o := NewObject("TrainingPolicy")
+	o := NewObject("NodeRequest")
 	o.Object["spec"] = map[string]interface{}{
 		"sourceCluster": "onpre1", "targetWorkers": int64(1),
 		"workloadRef": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "uid": "workload-uid"},
@@ -29,7 +29,7 @@ func existingCapacityPolicyFixture() *unstructured.Unstructured {
 }
 
 func TestExistingCapacityContractAndAdmission(t *testing.T) {
-	data, err := os.ReadFile("../../config/crd/trainingpolicies.yaml")
+	data, err := os.ReadFile("../../config/crd/noderequests.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestExistingCapacityContractAndAdmission(t *testing.T) {
 }
 
 func TestExistingCapacityAdmissionTransitions(t *testing.T) {
-	data, err := os.ReadFile("../../config/crd/trainingpolicies.yaml")
+	data, err := os.ReadFile("../../config/crd/noderequests.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestExistingCapacityAdmissionTransitions(t *testing.T) {
 }
 
 func TestExistingCapacityCRDIsAdmissible(t *testing.T) {
-	data, err := os.ReadFile("../../config/crd/trainingpolicies.yaml")
+	data, err := os.ReadFile("../../config/crd/noderequests.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

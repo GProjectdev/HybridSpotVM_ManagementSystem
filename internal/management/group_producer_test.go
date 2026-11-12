@@ -18,7 +18,7 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 	input.PolicyName = "policy"
 	input.RuntimeRefName = "runtime"
 	input.Capacity.AWSCluster = "aws"
-	policy := p.NewObject("TrainingPolicy")
+	policy := p.NewObject("NodeRequest")
 	policy.SetName("policy")
 	policy.SetNamespace("demo")
 	policy.SetUID(input.PolicyUID)

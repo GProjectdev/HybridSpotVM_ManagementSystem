@@ -221,7 +221,7 @@ func TestRecoveryRejectsPolicyWorkloadMismatch(t *testing.T) {
 	reconciler := recoveryReconciler(t, r, policy)
 
 	phase, err := reconciler.recover(context.Background(), r)
-	if err == nil || phase != "Rejected" || !strings.Contains(err.Error(), "TrainingPolicy workloadRef.uid") {
+	if err == nil || phase != "Rejected" || !strings.Contains(err.Error(), "NodeRequest workloadRef.uid") {
 		t.Fatalf("recover() phase/error = %q/%v, want policy workload rejection", phase, err)
 	}
 }
@@ -464,7 +464,7 @@ func addSameClusterRestoreEvidence(obj *unstructured.Unstructured) {
 }
 
 func trainingPolicy() *unstructured.Unstructured {
-	policy := object("TrainingPolicy", "default", "policy", "policy-uid")
+	policy := object("NodeRequest", "default", "policy", "policy-uid")
 	policy.SetGeneration(3)
 	policy.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
 	return policy
@@ -502,7 +502,7 @@ func object(kind, namespace, name, uid string) *unstructured.Unstructured {
 func recoveryReconciler(t *testing.T, objects ...client.Object) *RecoveryReconciler {
 	t.Helper()
 	scheme := runtime.NewScheme()
-	for _, gvk := range []string{"TrainingPolicy", "TrainingRuntime", "SpotRecovery", "NodeProvision"} {
+	for _, gvk := range []string{"NodeRequest", "TrainingRuntime", "SpotRecovery", "NodeProvision"} {
 		obj := trainingpolicy.NewObject(gvk)
 		scheme.AddKnownTypeWithName(obj.GroupVersionKind(), &unstructured.Unstructured{})
 		listGVK := obj.GroupVersionKind()

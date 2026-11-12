@@ -34,7 +34,7 @@ func (r *CheckpointReconciler) ensureCheckpointSchedule(ctx context.Context, inp
 	labels[p.LabelRole] = checkpointScheduleRole
 	desired.SetLabels(labels)
 	desired.SetAnnotations(nil)
-	desired.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: "training.dcnlab.com/v1alpha1", Kind: "TrainingPolicy", Name: input.PolicyName, UID: input.PolicyUID}})
+	desired.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: "training.dcnlab.com/v1alpha1", Kind: "NodeRequest", Name: input.PolicyName, UID: input.PolicyUID}})
 	_ = unstructured.SetNestedMap(desired.Object, map[string]interface{}{"enabled": true, "intervalSeconds": interval}, "spec", "schedule")
 	current := p.NewObject("FluidCRMigration")
 	err := r.Get(ctx, client.ObjectKeyFromObject(desired), current)

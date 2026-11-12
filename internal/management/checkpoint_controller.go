@@ -23,7 +23,7 @@ type CheckpointReconciler struct {
 }
 
 func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	policyObj := trainingpolicy.NewObject("TrainingPolicy")
+	policyObj := trainingpolicy.NewObject("NodeRequest")
 	if err := r.Get(ctx, req.NamespacedName, policyObj); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -43,6 +43,13 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if !quiesced {
 			status := trainingpolicy.CheckpointStatus("", 0, r.now(), "waiting_for_schedule_pause")
 			status["periodicQuiesced"] = false
+			operation, intentErr := r.ensureEmergencyCapacityIntent(ctx, policyObj, input)
+			if operation != "" {
+				status["replacementOperation"] = operation
+			}
+			if intentErr != nil {
+				status["message"] = intentErr.Error()
+			}
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status)
 		}
 	}
@@ -251,7 +258,7 @@ func (r *CheckpointReconciler) validateLiveWorkloadUID(ctx context.Context, inpu
 func (r *CheckpointReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("training-checkpoint-management").
-		For(trainingpolicy.NewObject("TrainingPolicy"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
+		For(trainingpolicy.NewObject("NodeRequest"), builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))).
 		Watches(trainingpolicy.NewObject("SpotRiskProfile"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "risk"))).
 		Watches(trainingpolicy.NewObject("FluidCRMigration"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "checkpoint"))).
 		Watches(trainingpolicy.NewObject("TrainingRuntime"), handler.EnqueueRequestsFromMapFunc(mapPolicies(r.Client, "runtime"))).

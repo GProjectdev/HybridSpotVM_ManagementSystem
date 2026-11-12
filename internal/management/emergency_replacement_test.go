@@ -30,7 +30,7 @@ func TestEmergencyReplacementNeedsDurableGroupRoundAndNoPeriodicCheckpoint(t *te
 	if len(list.Items) != 0 {
 		t.Fatalf("operations: %d", len(list.Items))
 	}
-	updated := p.NewObject("TrainingPolicy")
+	updated := p.NewObject("NodeRequest")
 	if err := r.Get(context.Background(), client.ObjectKeyFromObject(policy), updated); err != nil {
 		t.Fatal(err)
 	}

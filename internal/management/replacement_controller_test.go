@@ -530,7 +530,7 @@ func TestReplacementCleanupOmitsAbsentEventID(t *testing.T) {
 func replacementReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *replacementStagesFixture {
 	t.Helper()
 	scheme := runtime.NewScheme()
-	for _, gvk := range []string{"TrainingPolicy", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy"} {
+	for _, gvk := range []string{"NodeRequest", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy"} {
 		obj := trainingpolicy.NewObject(gvk)
 		scheme.AddKnownTypeWithName(obj.GroupVersionKind(), &unstructured.Unstructured{})
 		listGVK := obj.GroupVersionKind()
@@ -569,7 +569,7 @@ func replacementOperationFixture() *unstructured.Unstructured {
 }
 
 func replacementPolicyFixture() *unstructured.Unstructured {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetNamespace("default")
 	policy.SetName("policy")
 	policy.SetUID(types.UID("policy-uid"))

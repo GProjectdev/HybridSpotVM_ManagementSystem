@@ -17,7 +17,7 @@ import (
 )
 
 func TestStatusPatchCarriesUIDAndResourceVersionPreconditions(t *testing.T) {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetUID(types.UID("policy-uid"))
 	policy.SetResourceVersion("42")
 	patch := statusSubtreePatch(policy, trainingpolicy.StatusPolicyPath, map[string]interface{}{"reason": "test"})
@@ -136,7 +136,7 @@ func TestPolicyReconcileBlocksProvisioningWhenLiveWorkloadUIDStale(t *testing.T)
 	if len(list.Items) != 0 {
 		t.Fatalf("node provisions = %d, want none for stale live workload UID", len(list.Items))
 	}
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatalf("get policy: %v", err)
 	}
@@ -167,7 +167,7 @@ func TestPolicyReconcileReportsReplacementRequiredWithoutSideEffects(t *testing.
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-00-replace"}, operation); err == nil {
 		t.Fatal("policy reconcile created SpotReplacement without explicit opt-in")
 	}
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatalf("get policy: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestPolicyReconcileCannotReplaceWithOnlySurvivorBaseline(t *testing.T) {
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train-worker-01-old-node-uid-replace"}, op); err == nil {
 		t.Fatal("automatic replacement incorrectly selected partial recovery")
 	}
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatal(err)
 	}
@@ -359,7 +359,7 @@ func TestCheckpointReconcileBlocksNewCheckpointWhenLiveWorkloadUIDStale(t *testi
 	if len(list.Items) != 0 {
 		t.Fatalf("migrations = %d, want none for stale live workload UID", len(list.Items))
 	}
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatalf("get policy: %v", err)
 	}
@@ -392,7 +392,7 @@ func policyReconcilerFixture(t *testing.T, clock func() time.Time, objects ...*u
 	t.Helper()
 	statusObjects := make([]client.Object, 0, len(objects))
 	for _, obj := range objects {
-		if obj.GetKind() == "TrainingPolicy" {
+		if obj.GetKind() == "NodeRequest" {
 			statusObjects = append(statusObjects, obj)
 		}
 	}
@@ -405,7 +405,7 @@ func policyReconcilerFixture(t *testing.T, clock func() time.Time, objects ...*u
 	// These fixtures exercise allocation after successful discovery and suspended
 	// capacity preparation. Discovery/gate rejection is covered independently.
 	for _, obj := range objects {
-		if obj.GetKind() != "TrainingPolicy" {
+		if obj.GetKind() != "NodeRequest" {
 			continue
 		}
 		sts := trainingpolicy.NewObject("StatefulSet")
@@ -437,7 +437,7 @@ func checkpointReconcilerFixture(t *testing.T, clock func() time.Time, objects .
 	t.Helper()
 	statusObjects := make([]client.Object, 0, len(objects))
 	for _, obj := range objects {
-		if obj.GetKind() == "TrainingPolicy" {
+		if obj.GetKind() == "NodeRequest" {
 			statusObjects = append(statusObjects, obj)
 		}
 	}
@@ -463,7 +463,7 @@ func mustSetNested(t *testing.T, obj map[string]interface{}, value interface{}, 
 var _ runtime.Object = (&unstructured.Unstructured{}).DeepCopyObject()
 
 func checkpointPolicyFixture(now time.Time) *unstructured.Unstructured {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetNamespace("default")
 	policy.SetName("train")
 	policy.SetUID(types.UID("policy-uid"))
@@ -577,7 +577,7 @@ func testScheme() *runtime.Scheme {
 		list.SetGroupVersionKind(listGVK)
 		scheme.AddKnownTypes(gvk.GroupVersion(), obj, list)
 	}
-	register(trainingpolicy.TrainingPolicyGVK)
+	register(trainingpolicy.NodeRequestGVK)
 	register(trainingpolicy.StatefulSetGVK)
 	register(trainingpolicy.TrainingRuntimeGVK)
 	register(trainingpolicy.SpotRiskProfileGVK)

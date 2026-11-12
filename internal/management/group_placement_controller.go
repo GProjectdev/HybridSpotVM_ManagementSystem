@@ -58,7 +58,7 @@ func (r *GroupPlacementReconciler) Reconcile(ctx context.Context, key ctrl.Reque
 		return again, fmt.Errorf("invalid target placement")
 	}
 	target := stringField(cluster, "name")
-	policies := p.NewList("TrainingPolicy")
+	policies := p.NewList("NodeRequest")
 	if err := r.Reader.List(ctx, policies, client.InNamespace(key.Namespace)); err != nil {
 		return again, err
 	}

@@ -64,7 +64,7 @@ func TestExplicitStopPlacement(t *testing.T) {
 			sts.SetNamespace("demo")
 			sts.SetUID("world")
 			_ = unstructured.SetNestedField(sts.Object, int64(0), "spec", "replicas")
-			policy := p.NewObject("TrainingPolicy")
+			policy := p.NewObject("NodeRequest")
 			policy.SetName("policy")
 			policy.SetNamespace("demo")
 			policy.SetUID("policy-uid")

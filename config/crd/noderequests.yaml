@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: trainingpolicies.training.dcnlab.com
+  name: noderequests.training.dcnlab.com
 spec:
   group: training.dcnlab.com
   names:
-    kind: TrainingPolicy
-    listKind: TrainingPolicyList
-    plural: trainingpolicies
-    singular: trainingpolicy
+    kind: NodeRequest
+    listKind: NodeRequestList
+    plural: noderequests
+    singular: noderequest
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -45,15 +45,15 @@ spec:
             required: [workloadRef, sourceCluster, targetWorkers]
             x-kubernetes-validations:
             - rule: '((has(self.capacity) && has(self.capacity.mode)) ? self.capacity.mode : "Provisioned") == ((has(oldSelf.capacity) && has(oldSelf.capacity.mode)) ? oldSelf.capacity.mode : "Provisioned")'
-              message: capacity.mode is immutable; create a new TrainingPolicy to change capacity ownership
+              message: capacity.mode is immutable; create a new NodeRequest to change capacity ownership
             - rule: '(has(self.capacity) && has(self.capacity.existingNodes)) == (has(oldSelf.capacity) && has(oldSelf.capacity.existingNodes)) && (!(has(self.capacity) && has(self.capacity.existingNodes)) || self.capacity.existingNodes == oldSelf.capacity.existingNodes)'
-              message: capacity.existingNodes is immutable; create a new TrainingPolicy to change node identities or rank mapping
+              message: capacity.existingNodes is immutable; create a new NodeRequest to change node identities or rank mapping
             - rule: '!has(self.capacity) || !has(self.capacity.mode) || self.capacity.mode != "Existing" || (has(self.capacity.existingNodes) && size(self.capacity.existingNodes) == self.targetWorkers && self.capacity.existingNodes.all(n, n.rank < self.targetWorkers))'
               message: Existing capacity requires exactly one node per target rank
             - rule: '!has(self.capacity) || !has(self.capacity.mode) || self.capacity.mode != "Existing" || !has(self.policy) || !has(self.policy.fixedOnDemand) || self.policy.fixedOnDemand == self.targetWorkers'
               message: Existing capacity cannot request a Spot worker composition
             - rule: self.targetWorkers == oldSelf.targetWorkers
-              message: targetWorkers is immutable; create a new TrainingPolicy for capacity shape changes
+              message: targetWorkers is immutable; create a new NodeRequest for capacity shape changes
             - rule: '!has(self.policy) || !has(self.policy.minOnDemand) || self.policy.minOnDemand <= self.targetWorkers'
               message: policy.minOnDemand must be <= targetWorkers
             - rule: '!has(self.policy) || !has(self.policy.fixedOnDemand) || self.policy.fixedOnDemand <= self.targetWorkers'
@@ -65,7 +65,12 @@ spec:
             properties:
               workloadRef:
                 type: object
-                required: [apiVersion, kind, name, uid]
+                required: [apiVersion, kind, name]
+                x-kubernetes-validations:
+                - rule: self.apiVersion == oldSelf.apiVersion && self.kind == oldSelf.kind && self.name == oldSelf.name
+                  message: workload identity is immutable; create a new NodeRequest for a different workload
+                - rule: '!has(oldSelf.uid) || (has(self.uid) && self.uid == oldSelf.uid)'
+                  message: workload UID cannot change after binding
                 properties:
                   apiVersion:
                     type: string

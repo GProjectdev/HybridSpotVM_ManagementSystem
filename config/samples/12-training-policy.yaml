@@ -1,5 +1,5 @@
 apiVersion: training.dcnlab.com/v1alpha1
-kind: TrainingPolicy
+kind: NodeRequest
 metadata:
   name: ${POLICY_NAME}
   namespace: ${NS}
@@ -8,11 +8,11 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: ${APP}
-    uid: ${WORKLOAD_UID}
-  sourceCluster: ${SOURCE_CLUSTER}
+    # UID is bound once by Training Lifecycle Controller after deployment.
+  sourceCluster: ${AWS_CLUSTER}
   expectedWorldSize: 2
   targetWorkers: 2
-  # Optional name for the policy-manager-created runtime; defaults to <policy-name>-runtime.
+  # Optional runtime name; defaults to <request-name>-runtime.
   runtimeRef:
     name: ${RUNTIME_NAME}
   riskProfileRef:

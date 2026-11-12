@@ -384,9 +384,9 @@ func fallbackFailedCheckpointRefMatchesDecision(fallback map[string]interface{},
 	return intField(fallback, "failedPartialCheckpointRef", "generation") == intField(decision.FailedCheckpointRef, "generation")
 }
 func (r *ReplacementReconciler) fallbackPolicyInput(ctx context.Context, ns string, spec replacementSpec) (*unstructured.Unstructured, trainingpolicy.PolicyInput, error) {
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, types.NamespacedName{Namespace: ns, Name: spec.PolicyName}, policy); err != nil {
-		return nil, trainingpolicy.PolicyInput{}, fmt.Errorf("get TrainingPolicy for fallback: %w", err)
+		return nil, trainingpolicy.PolicyInput{}, fmt.Errorf("get NodeRequest for fallback: %w", err)
 	}
 	if string(policy.GetUID()) != spec.PolicyUID || policy.GetGeneration() != spec.PolicyGeneration || stringField(policy.Object, "spec", "workloadRef", "uid") != spec.WorkloadUID {
 		return nil, trainingpolicy.PolicyInput{}, fmt.Errorf("fallback policy identity does not match SpotReplacement")

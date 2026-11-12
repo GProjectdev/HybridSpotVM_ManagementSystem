@@ -139,7 +139,7 @@ func TestEmergencyFixedCompositionInvalidPolicyStatus(t *testing.T) {
 			if _, err := r.Reconcile(context.Background(), request); err != nil {
 				t.Fatal(err)
 			}
-			got := p.NewObject("TrainingPolicy")
+			got := p.NewObject("NodeRequest")
 			if err := r.Get(context.Background(), request.NamespacedName, got); err != nil {
 				t.Fatal(err)
 			}

@@ -62,7 +62,7 @@ python3 scripts/application_failover_demo.py enroll \
   --target-node aws-gpu-demo-worker-01 --apply
 ```
 
-이 명령은 현재 StatefulSet UID와 AWS Node UID를 조회해 TrainingPolicy를 생성한다.
+이 명령은 현재 StatefulSet UID와 AWS Node UID를 조회해 NodeRequest를 생성한다.
 `capacity.mode=Existing`, `replacement.enabled=false`이며 주기적 checkpoint는
 데모 동안 disabled다. 새 EC2 생성이나 기존 NodeProvision 소유권 변경은 하지 않는다.
 이미 등록된 정책을 덮어쓰지 않는다.
@@ -174,7 +174,7 @@ kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$APP-0" -c trainer --tail=
 
 ```bash
 kubectl --kubeconfig="$KARMADA_KUBECONFIG" -n "$NS" \
-  get trainingpolicies,trainingruntimes,fluidcrmigrations,restorerequests,restoreplans,pvmigrations,resourcebindings \
+  get noderequests,trainingruntimes,fluidcrmigrations,restorerequests,restoreplans,pvmigrations,resourcebindings \
   -o json > "$EVIDENCE/final-resources.json"
 kubectl --kubeconfig="$AWS_KUBECONFIG" -n "$NS" logs "$APP-0" -c trainer --timestamps \
   > "$EVIDENCE/target-after-restore.log"

@@ -83,7 +83,7 @@ func selectedBinding(ctx context.Context, r client.Reader, sts *unstructured.Uns
 
 // A workload has one allocator, explicitly supplied by its owner.
 func workloadPolicy(ctx context.Context, reader client.Reader, sts *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	policies := p.NewList("TrainingPolicy")
+	policies := p.NewList("NodeRequest")
 	if err := reader.List(ctx, policies, client.InNamespace(sts.GetNamespace())); err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func workloadPolicy(ctx context.Context, reader client.Reader, sts *unstructured
 			continue
 		}
 		if found != nil {
-			return nil, fmt.Errorf("multiple TrainingPolicies reference workload; refusing multiple allocators")
+			return nil, fmt.Errorf("multiple NodeRequests reference workload; refusing multiple allocators")
 		}
 		found = obj
 	}
@@ -345,7 +345,7 @@ func automaticPlacement(ctx context.Context, r client.Reader, policy *unstructur
 
 func mapPolicies(c client.Client, kind string) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		list := p.NewList("TrainingPolicy")
+		list := p.NewList("NodeRequest")
 		if err := c.List(ctx, list, client.InNamespace(obj.GetNamespace())); err != nil {
 			ctrl.LoggerFrom(ctx).Error(err, "map policy dependencies")
 			return nil
@@ -368,7 +368,7 @@ func mapPolicies(c client.Client, kind string) handler.MapFunc {
 func (r *DiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).Named("statefulset-policy-discovery").
 		For(p.NewObject("StatefulSet")).
-		Watches(p.NewObject("TrainingPolicy"), handler.EnqueueRequestsFromMapFunc(mapPolicyWorkload), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(p.NewObject("NodeRequest"), handler.EnqueueRequestsFromMapFunc(mapPolicyWorkload), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(bindingObject(), handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 			b, ok := obj.(*unstructured.Unstructured)
 			if !ok || stringField(b.Object, "spec", "resource", "kind") != "StatefulSet" {

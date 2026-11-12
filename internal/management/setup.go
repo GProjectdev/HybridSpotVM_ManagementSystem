@@ -8,7 +8,7 @@ import (
 type managedController interface{ SetupWithManager(ctrl.Manager) error }
 
 // These are process ownership boundaries, not wire API renames. In particular,
-// TrainingPolicy and NodeProvision remain the compatibility contracts.
+// NodeRequest and NodeProvision remain the compatibility contracts.
 func componentControllers(mgr ctrl.Manager, component string) ([]managedController, error) {
 	c, reader := mgr.GetClient(), mgr.GetAPIReader()
 	switch component {
@@ -22,6 +22,7 @@ func componentControllers(mgr ctrl.Manager, component string) ([]managedControll
 		}, nil
 	case "training-lifecycle-controller":
 		return []managedController{
+			&NodeRequestBindingReconciler{Client: c, Reader: reader},
 			&DiscoveryReconciler{Client: c, Reader: reader},
 			&GroupPlacementReconciler{Client: c, Reader: reader, ExistingNodes: existingNodeResolver(reader), ExistingClaims: existingClaimPreparer(reader)},
 		}, nil

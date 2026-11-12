@@ -113,7 +113,7 @@ func TestEmergencyCheckpointRequiresRuntimeEvidence(t *testing.T) {
 		t.Fatalf("emergency reconcile: %v", err)
 	}
 	assertMigrationCount(t, reconciler.Client, 0)
-	updated := trainingpolicy.NewObject("TrainingPolicy")
+	updated := trainingpolicy.NewObject("NodeRequest")
 	if err := reconciler.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "train"}, updated); err != nil {
 		t.Fatalf("get policy: %v", err)
 	}

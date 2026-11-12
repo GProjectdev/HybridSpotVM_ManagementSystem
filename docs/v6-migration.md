@@ -27,11 +27,24 @@ into these management processes.
 
 ## Persisted APIs
 
-TrainingPolicy remains the persisted request API in this migration. It is the
-existing counterpart of the presentation's NodeRequest, not a new NodeRequest
-CRD. NodeProvision remains the provisioner's per-VM API. Do not rename kinds or
-recreate live CRs: an API migration needs schema/ownership conversion tests.
-Preserve all UID, durability, source fencing and verified recovery gates.
+NodeRequest replaces TrainingPolicy as the persisted user request API.
+Its spec contains VM capacity requirements, targetWorkers, and workloadRef
+(apiVersion, kind, name). Currently only apps/v1 StatefulSet in the request's
+namespace is supported. NodeProvision remains the provisioner's per-VM API.
+
+Submit NodeRequest without workloadRef.uid to allocate initial public-cloud VMs.
+Deploy the referenced workload separately after capacity is ready. Training
+Lifecycle Controller binds its UID once, then discovers placement and creates
+TrainingRuntime. Checkpoint and recovery require this binding and the existing
+placement/runtime gates. Recreated workloads are not automatically adopted.
+Training completion does not delete a user-owned NodeRequest.
+
+This is a breaking Kind change, not an in-place rename. Existing TrainingPolicy
+objects are not watched by the new controllers. Do not delete their CRD or copy
+their status/ownerReferences into NodeRequest. Finish active operations and
+perform legacy cleanup with the old controllers before creating fresh requests;
+keep checkpoint artifacts. Live-resource adoption is not implemented. Preserve
+all UID, durability, source fencing and verified recovery gates.
 
 ## Cutover
 

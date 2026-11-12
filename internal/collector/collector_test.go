@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,89 @@ import (
 
 	"github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/resource"
 )
+
+func TestPaperRiskNormalizedLambdaConsistency(t *testing.T) {
+	for _, tc := range []struct {
+		name                          string
+		aggregate, population, lambda float64
+		wantError                     bool
+	}{
+		{"exact", 2, 8, 0.25, false},
+		{"understated", 2, 8, 0.1, true},
+		{"zero understated", 2, 8, 0, true},
+		{"overstated", 2, 8, 0.5, true},
+		{"lower tolerance", 2, 8, 0.25 - 0.5e-9, false},
+		{"upper tolerance", 2, 8, 0.25 + 0.5e-9, false},
+		{"below tolerance", 2, 8, 0.25 - 2e-9, true},
+		{"above tolerance", 2, 8, 0.25 + 2e-9, true},
+		{"zero", 0, 8, 0, false},
+		{"cap after division", 400, 8, 50, false},
+		{"cap before division rejected", 400, 8, 12.5, true},
+		{"at cap", 800, 8, 100, false},
+		{"capped", 1600, 8, 100, false},
+		{"capped understated", 1600, 8, 99, true},
+		{"uncapped rejected", 1600, 8, 200, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			obj := resource.Object(spotRiskProfileKind)
+			risk := normalizedRisk{LambdaPerHour: tc.lambda, Source: map[string]interface{}{
+				"feed": map[string]interface{}{
+					"type": paperSourceType, "provenance": "paper-availability-count-sarima",
+					"rollingMeanHours": 3, "retrainWindowWeeks": 4, "seasonalPeriodHours": 24,
+					"riskPopulation": tc.population, "aggregateForecastPreemptionsPerHour": tc.aggregate,
+					"perInstanceLambdaApproximation": "approximate aggregateForecastPreemptionsPerHour/riskPopulation",
+				},
+			}}
+			err := validatePaperRiskSource(obj, &risk)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("validatePaperRiskSource() = %v, want error %v", err, tc.wantError)
+			}
+		})
+	}
+}
+
+func TestPaperRiskDeclaredLambdaCap(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		cap       interface{}
+		lambda    float64
+		wantError bool
+	}{
+		{"custom lower cap", 0.5, 0.5, false},
+		{"custom higher cap", 250.0, 200, false},
+		{"custom cap below normalized", 150.0, 150, false},
+		{"understated custom cap", 0.5, 0.1, true},
+		{"overstated custom cap", 0.5, 0.6, true},
+		{"lower tolerance", 0.5, 0.5 - 0.5e-9, false},
+		{"upper tolerance", 0.5, 0.5 + 0.5e-9, false},
+		{"zero cap", 0.0, 0, true},
+		{"negative cap", -1.0, 0, true},
+		{"nan cap", math.NaN(), 0, true},
+		{"infinite cap", math.Inf(1), 0, true},
+		{"negative infinite cap", math.Inf(-1), 0, true},
+		{"string cap", "0.5", 0.5, true},
+		{"null cap", nil, 100, true},
+		{"boolean cap", true, 100, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := map[string]interface{}{
+				"type": paperSourceType, "provenance": "paper-availability-count-sarima",
+				"rollingMeanHours": 3, "retrainWindowWeeks": 4, "seasonalPeriodHours": 24,
+				"riskPopulation": 8, "aggregateForecastPreemptionsPerHour": 1600,
+				"perInstanceLambdaApproximation": "approximate aggregateForecastPreemptionsPerHour/riskPopulation",
+				"maxLambdaPerHour":               tc.cap,
+			}
+			risk := normalizedRisk{LambdaPerHour: tc.lambda, Source: map[string]interface{}{"feed": source}}
+			err := validatePaperRiskSource(resource.Object(spotRiskProfileKind), &risk)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("validatePaperRiskSource() = %v, want error %v", err, tc.wantError)
+			}
+			if err == nil && risk.Source["maxLambdaPerHour"] != tc.cap {
+				t.Fatal("declared cap metadata was not preserved")
+			}
+		})
+	}
+}
 
 func TestFetchEndpointRiskAcceptsTLSFeed(t *testing.T) {
 	now := time.Date(2026, 9, 26, 4, 0, 0, 0, time.UTC)

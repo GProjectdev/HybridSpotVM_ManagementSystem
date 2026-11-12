@@ -11,6 +11,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// Partial intent allows capacity provisioning during schedule quiescence.
+// Group execution and competing checkpoints still require the pause receipt.
+func (r *CheckpointReconciler) ensureEmergencyCapacityIntent(ctx context.Context, policy *unstructured.Unstructured, input trainingpolicy.PolicyInput) (string, error) {
+	if input.Suspended || !discoveryReady(policy) || input.FixedOnDemand != nil ||
+		policy.GetAnnotations()[groupIntentAnnotation] != "" || policy.GetAnnotations()["training.dcnlab.com/planned-partial"] == "disabled" {
+		return "", nil
+	}
+	if err := validatePolicyInput(input); err != nil {
+		return "", err
+	}
+	if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
+		return "", err
+	}
+	return r.ensureEmergencyReplacement(ctx, policy, input)
+}
+
 // Recovery deduplication is independent of periodic checkpoint event accounting.
 func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, policy *unstructured.Unstructured, input trainingpolicy.PolicyInput) (string, error) {
 	if !boolField(policy.Object, "spec", "replacement", "enabled") {

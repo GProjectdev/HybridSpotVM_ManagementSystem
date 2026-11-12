@@ -32,7 +32,7 @@ func TestFixedCompositionRuntimeBounds(t *testing.T) {
 }
 
 func TestFixedCompositionParsingAndExplicitZero(t *testing.T) {
-	obj := NewObject("TrainingPolicy")
+	obj := NewObject("NodeRequest")
 	obj.Object["spec"] = map[string]interface{}{"targetWorkers": int64(2), "policy": map[string]interface{}{}}
 	if input := ReadPolicyInput(obj); input.FixedOnDemand != nil {
 		t.Fatal("omitted fixedOnDemand must preserve adaptive allocation")

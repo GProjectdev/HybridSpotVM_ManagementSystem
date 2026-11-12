@@ -12,13 +12,13 @@ import (
 
 func TestIndependentStatusWritersPreserveOtherComponent(t *testing.T) {
 	ctx := context.Background()
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetName("separate-components")
 	policy.SetNamespace("default")
 	c := fake.NewClientBuilder().WithScheme(testScheme()).WithStatusSubresource(policy).WithObjects(policy).Build()
 	key := client.ObjectKeyFromObject(policy)
 	for _, path := range []string{trainingpolicy.StatusPolicyPath, trainingpolicy.StatusCheckpointPath, trainingpolicy.StatusPolicyPath} {
-		current := trainingpolicy.NewObject("TrainingPolicy")
+		current := trainingpolicy.NewObject("NodeRequest")
 		if err := c.Get(ctx, key, current); err != nil {
 			t.Fatal(err)
 		}
@@ -26,7 +26,7 @@ func TestIndependentStatusWritersPreserveOtherComponent(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got := trainingpolicy.NewObject("TrainingPolicy")
+	got := trainingpolicy.NewObject("NodeRequest")
 	if err := c.Get(ctx, key, got); err != nil {
 		t.Fatal(err)
 	}
@@ -39,18 +39,18 @@ func TestIndependentStatusWritersPreserveOtherComponent(t *testing.T) {
 }
 func TestStatusPatchRetriesStaleResourceVersion(t *testing.T) {
 	ctx := context.Background()
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetName("conflicting-components")
 	policy.SetNamespace("default")
 	policy.SetUID("policy-uid")
 	c := fake.NewClientBuilder().WithScheme(testScheme()).WithStatusSubresource(policy).WithObjects(policy).Build()
 	key := client.ObjectKeyFromObject(policy)
 
-	stale := trainingpolicy.NewObject("TrainingPolicy")
+	stale := trainingpolicy.NewObject("NodeRequest")
 	if err := c.Get(ctx, key, stale); err != nil {
 		t.Fatal(err)
 	}
-	current := trainingpolicy.NewObject("TrainingPolicy")
+	current := trainingpolicy.NewObject("NodeRequest")
 	if err := c.Get(ctx, key, current); err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestStatusPatchRetriesStaleResourceVersion(t *testing.T) {
 		t.Fatalf("stale status patch was not retried: %v", err)
 	}
 
-	got := trainingpolicy.NewObject("TrainingPolicy")
+	got := trainingpolicy.NewObject("NodeRequest")
 	if err := c.Get(ctx, key, got); err != nil {
 		t.Fatal(err)
 	}

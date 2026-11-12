@@ -70,7 +70,7 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 			if errs := structural.ValidateStructural(field.NewPath("schema"), s); len(errs) != 0 {
 				t.Fatal(errs.ToAggregate())
 			}
-			if crd.Spec.Names.Kind == "TrainingPolicy" {
+			if crd.Spec.Names.Kind == "NodeRequest" {
 				economics := v.Schema.OpenAPIV3Schema.Properties["spec"].Properties["policy"].Properties["economics"]
 				if !reflect.DeepEqual(economics.Required, []string{"enabled"}) {
 					t.Fatal("automatic recovery calibration must not require manual cost/timestamp")
@@ -101,7 +101,7 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 				before := runtime.DeepCopyJSON(obj)
 				pruning.Prune(obj, s, true)
 				if !reflect.DeepEqual(before, obj) {
-					t.Fatalf("API prunes TrainingPolicy contract: before=%v after=%v", before, obj)
+					t.Fatalf("API prunes NodeRequest contract: before=%v after=%v", before, obj)
 				}
 			}
 			if crd.Spec.Names.Kind == "TrainingRuntime" {
@@ -179,7 +179,7 @@ func TestCRDsAreStructuralWithStatusSubresources(t *testing.T) {
 			}
 		})
 	}
-	for _, kind := range []string{"TrainingPolicy", "SpotRiskProfile", "TrainingRuntime", "SpotRecovery", "SpotReplacement"} {
+	for _, kind := range []string{"NodeRequest", "SpotRiskProfile", "TrainingRuntime", "SpotRecovery", "SpotReplacement"} {
 		if !found[kind] {
 			t.Errorf("missing CRD %s", kind)
 		}

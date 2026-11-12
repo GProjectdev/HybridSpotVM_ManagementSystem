@@ -264,6 +264,7 @@ def feed_payload(input_path: Path, config: EstimatorConfig, now: datetime | None
             "seasonalPeriodHours": config.seasonal_period_hours,
             "samplingGapSeconds": trace.gap_seconds,
             "riskPopulation": trace.risk_population,
+            "maxLambdaPerHour": config.max_lambda_per_hour,
             "aggregateForecastPreemptionsPerHour": aggregate_forecast_per_hour,
             "perInstanceLambdaApproximation": "approximate aggregateForecastPreemptionsPerHour/riskPopulation; risk_population must represent the at-risk population for this feed",
             "lastObservedHourStart": last_observed_hour_start.isoformat().replace("+00:00", "Z"),

@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func TestAnalyticIntervalTrainingPolicyAdmission(t *testing.T) {
-	data, err := os.ReadFile("../../config/crd/trainingpolicies.yaml")
+func TestAnalyticIntervalNodeRequestAdmission(t *testing.T) {
+	data, err := os.ReadFile("../../config/crd/noderequests.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestAnalyticIntervalTrainingPolicyAdmission(t *testing.T) {
 	}
 	celValidator := schemacel.NewValidator(structuralSchema, true, celconfig.PerCallLimit)
 	if celValidator == nil {
-		t.Fatal("TrainingPolicy CEL validator missing")
+		t.Fatal("NodeRequest CEL validator missing")
 	}
 	for _, tc := range []struct {
 		name      string
@@ -82,7 +82,7 @@ func TestAnalyticIntervalTrainingPolicyAdmission(t *testing.T) {
 				tc.mutate(checkpoint)
 			}
 			obj := map[string]interface{}{
-				"apiVersion": "training.dcnlab.com/v1alpha1", "kind": "TrainingPolicy",
+				"apiVersion": "training.dcnlab.com/v1alpha1", "kind": "NodeRequest",
 				"metadata": map[string]interface{}{"name": "trainer", "namespace": "default"},
 				"spec": map[string]interface{}{
 					"workloadRef":   map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "trainer", "uid": "workload-uid"},
@@ -94,7 +94,7 @@ func TestAnalyticIntervalTrainingPolicyAdmission(t *testing.T) {
 			errs = append(errs, celErrs...)
 			if tc.wantField == "" {
 				if len(errs) != 0 {
-					t.Fatalf("valid TrainingPolicy rejected: %v", errs.ToAggregate())
+					t.Fatalf("valid NodeRequest rejected: %v", errs.ToAggregate())
 				}
 				return
 			}

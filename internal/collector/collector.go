@@ -249,8 +249,20 @@ func validatePaperRiskSource(obj *unstructured.Unstructured, risk *normalizedRis
 	if approx == "" {
 		return errors.New("paperEstimator feed source.perInstanceLambdaApproximation is required")
 	}
-	if risk.LambdaPerHour > aggregate/riskPopulation+1e-9 {
-		return errors.New("paperEstimator lambdaPerHour exceeds aggregateForecastPreemptionsPerHour/riskPopulation")
+	// Older feeds omit the cap and use the original default.
+	maxLambda := 100.0
+	if _, present := feedSource["maxLambdaPerHour"]; present {
+		maxLambda, ok = sourceNumber(feedSource, "maxLambdaPerHour")
+		if !ok || !finiteNumber(maxLambda) || maxLambda <= 0 {
+			return errors.New("paperEstimator feed source.maxLambdaPerHour must be finite and positive")
+		}
+	}
+	expectedLambda := math.Min(aggregate/riskPopulation, maxLambda)
+	if risk.LambdaPerHour > expectedLambda+1e-9 {
+		return errors.New("paperEstimator lambdaPerHour exceeds capped aggregateForecastPreemptionsPerHour/riskPopulation")
+	}
+	if !finiteNumber(risk.LambdaPerHour) || math.Abs(risk.LambdaPerHour-expectedLambda) > 1e-9 {
+		return fmt.Errorf("paperEstimator lambdaPerHour must match capped aggregateForecastPreemptionsPerHour/riskPopulation: got %g, want %g", risk.LambdaPerHour, expectedLambda)
 	}
 	if host, ok := risk.Source["host"].(string); ok && host != "" {
 		feedSource["host"] = host

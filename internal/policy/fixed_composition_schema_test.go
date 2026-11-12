@@ -17,7 +17,7 @@ import (
 )
 
 func TestFixedCompositionAdmission(t *testing.T) {
-	data, err := os.ReadFile("../../config/crd/trainingpolicies.yaml")
+	data, err := os.ReadFile("../../config/crd/noderequests.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestFixedCompositionAdmission(t *testing.T) {
 		{"wrong-type", map[string]interface{}{"fixedOnDemand": "1"}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			obj := NewObject("TrainingPolicy")
+			obj := NewObject("NodeRequest")
 			obj.SetName("evaluation2")
 			obj.SetNamespace("default")
 			obj.Object["spec"] = map[string]interface{}{

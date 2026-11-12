@@ -36,7 +36,7 @@ func (r *PolicyReconciler) recordGroupOperation(ctx context.Context, policy, old
 	if intent.PolicyUID == "" || intent.OldUID == "" || intent.Operation == "" || intent.Replacement == "" || !validReplacementMarket(market) {
 		return fmt.Errorf("incomplete group operation identity")
 	}
-	current := p.NewObject("TrainingPolicy")
+	current := p.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, client.ObjectKeyFromObject(policy), current); err != nil {
 		return err
 	}
@@ -80,10 +80,10 @@ type GroupCapacityReconciler struct{ *PolicyReconciler }
 type GroupRequestReconciler struct{ *PolicyReconciler }
 
 func (r *GroupCapacityReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).Named("group-replacement-capacity").For(p.NewObject("TrainingPolicy")).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).Named("group-replacement-capacity").For(p.NewObject("NodeRequest")).Complete(r)
 }
 func (r *GroupRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).Named("group-replacement-request").For(p.NewObject("TrainingPolicy")).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).Named("group-replacement-request").For(p.NewObject("NodeRequest")).Complete(r)
 }
 func (r *GroupCapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.reconcileGroupOperation(ctx, req, groupStageCapacity)
@@ -93,7 +93,7 @@ func (r *GroupRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 func (r *PolicyReconciler) reconcileGroupOperation(ctx context.Context, req ctrl.Request, stage string) (ctrl.Result, error) {
-	policy := p.NewObject("TrainingPolicy")
+	policy := p.NewObject("NodeRequest")
 	if err := r.reader().Get(ctx, req.NamespacedName, policy); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}

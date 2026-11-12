@@ -18,8 +18,8 @@ const (
 func NewObject(kind string) *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
 	switch kind {
-	case "TrainingPolicy":
-		obj.SetGroupVersionKind(TrainingPolicyGVK)
+	case "NodeRequest":
+		obj.SetGroupVersionKind(NodeRequestGVK)
 	case "SpotRiskProfile":
 		obj.SetGroupVersionKind(SpotRiskProfileGVK)
 	case "TrainingRuntime":

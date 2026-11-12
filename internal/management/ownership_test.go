@@ -13,7 +13,7 @@ import (
 )
 
 func userPolicy(sts *unstructured.Unstructured, cluster string) *unstructured.Unstructured {
-	obj := p.NewObject("TrainingPolicy")
+	obj := p.NewObject("NodeRequest")
 	obj.SetNamespace(sts.GetNamespace())
 	obj.SetName("user-training")
 	obj.SetUID("user-policy-uid")
@@ -139,7 +139,7 @@ func TestDiscoveryDoesNotCreatePolicyWithoutUserIntent(t *testing.T) {
 	if _, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: client.ObjectKeyFromObject(sts)}); err != nil {
 		t.Fatal(err)
 	}
-	for _, kind := range []string{"TrainingPolicy", "TrainingRuntime", "NodeProvision"} {
+	for _, kind := range []string{"NodeRequest", "TrainingRuntime", "NodeProvision"} {
 		list := p.NewList(kind)
 		if err := r.List(context.Background(), list); err != nil {
 			t.Fatal(err)

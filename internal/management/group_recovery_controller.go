@@ -30,7 +30,7 @@ func (r *GroupRecoveryReconciler) Reconcile(ctx context.Context, key ctrl.Reques
 	if req.GetLabels()[p.LabelRole] != groupRestoreRole || !req.GetDeletionTimestamp().IsZero() {
 		return ctrl.Result{}, nil
 	}
-	policy := p.NewObject("TrainingPolicy")
+	policy := p.NewObject("NodeRequest")
 	if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: req.GetLabels()[p.LabelPolicy]}, policy); err != nil {
 		return again, err
 	}
@@ -78,6 +78,9 @@ func (r *GroupRecoveryReconciler) Reconcile(ctx context.Context, key ctrl.Reques
 		return again, fmt.Errorf("verified replacement identity/readiness mismatch")
 	}
 	old := p.NewObject("NodeProvision")
+	if !replacement.GetDeletionTimestamp().IsZero() {
+		return again, fmt.Errorf("replacement NodeProvision is deleting")
+	}
 	if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: a[groupOldName]}, old); apierrors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	} else if err != nil {

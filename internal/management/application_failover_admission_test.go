@@ -24,7 +24,7 @@ const applicationFailoverTestUser = "system:serviceaccount:hybridspot-system:pol
 
 func applicationFailoverFixture() (*unstructured.Unstructured, *unstructured.Unstructured, []*unstructured.Unstructured) {
 	request, plan := groupReleaseFixture(true)
-	policy := p.NewObject("TrainingPolicy")
+	policy := p.NewObject("NodeRequest")
 	policy.SetName("policy")
 	policy.SetNamespace("demo")
 	policy.SetUID("policy-uid")

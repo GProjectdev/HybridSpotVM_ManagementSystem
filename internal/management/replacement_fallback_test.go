@@ -384,7 +384,7 @@ func mustReplacementSpec(t *testing.T, op *unstructured.Unstructured) replacemen
 func replacementFallbackReconcilerFixture(t *testing.T, now time.Time, objects ...client.Object) *replacementStagesFixture {
 	t.Helper()
 	scheme := runtime.NewScheme()
-	for _, gvk := range []string{"TrainingPolicy", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy", "StatefulSet"} {
+	for _, gvk := range []string{"NodeRequest", "TrainingRuntime", "SpotRecovery", "NodeProvision", "FluidCRMigration", "PropagationPolicy", "StatefulSet"} {
 		obj := trainingpolicy.NewObject(gvk)
 		scheme.AddKnownTypeWithName(obj.GroupVersionKind(), &unstructured.Unstructured{})
 		listGVK := obj.GroupVersionKind()
@@ -420,7 +420,7 @@ func replacementFallbackFixtures(t *testing.T, now time.Time, stale bool) (*unst
 		"pods":                        []interface{}{map[string]interface{}{"rank": int64(1), "sourcePod": "trainer-1", "sourcePodUID": "trainer-1-uid", "sourceNode": "trainer-1-node"}},
 		"partialRestore":              map[string]interface{}{"preventPeriodicResume": true, "targetRanks": []interface{}{int64(1)}, "preservedSurvivors": []interface{}{map[string]interface{}{"rank": int64(0), "podName": "trainer-0", "podUID": "trainer-0-uid", "nodeName": "trainer-0-node"}}},
 	}
-	policy := trainingpolicy.NewObject("TrainingPolicy")
+	policy := trainingpolicy.NewObject("NodeRequest")
 	policy.SetNamespace("demo")
 	policy.SetName("policy")
 	policy.SetUID(types.UID("policy"))

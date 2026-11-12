@@ -49,7 +49,7 @@ func TestManagementRBACRespectsUserOwnedIntent(t *testing.T) {
 		}
 		return false
 	}
-	for _, resource := range []string{"trainingpolicies", "spotriskprofiles"} {
+	for _, resource := range []string{"noderequests", "spotriskprofiles"} {
 		for _, verb := range []string{"create", "update", "delete"} {
 			if allowed(resource, verb) {
 				t.Errorf("management must not %s user-owned %s", verb, resource)
@@ -62,7 +62,7 @@ func TestManagementRBACRespectsUserOwnedIntent(t *testing.T) {
 	if allowed("spotriskprofiles", "patch") {
 		t.Fatal("collector must not patch risk input spec")
 	}
-	if !allowed("trainingpolicies", "patch") || !allowed("trainingruntimes", "create") {
+	if !allowed("noderequests", "patch") || !allowed("trainingruntimes", "create") {
 		t.Fatal("missing policy intent annotation or runtime creation permissions")
 	}
 }

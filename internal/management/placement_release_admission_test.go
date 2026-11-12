@@ -67,7 +67,7 @@ func TestPlacementReleaseAdmissionJSONRoundTrip(t *testing.T) {
 			}
 			plan.SetAnnotations(map[string]string{groupFenceAnnotation: string(encodedReceipt)})
 
-			policy := p.NewObject("TrainingPolicy")
+			policy := p.NewObject("NodeRequest")
 			policy.SetName("policy")
 			policy.SetNamespace("demo")
 			policy.SetUID("policy-uid")
