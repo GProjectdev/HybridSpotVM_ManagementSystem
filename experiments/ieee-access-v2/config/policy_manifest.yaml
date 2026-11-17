@@ -1,0 +1,33 @@
+{
+  "status": "E2 NOT LOCKED",
+  "common": {
+    "alpha": 0.8,
+    "forecastSeconds": 3600,
+    "minOnDemand": 1,
+    "targetWorkers": 2,
+    "replacement_enabled": true,
+    "annotations": {
+      "training.dcnlab.com/planned-partial": "disabled"
+    },
+    "adaptive_interval_bounds_seconds": [
+      60,
+      600
+    ]
+  },
+  "N0_annotations": {
+    "training.dcnlab.com/periodic-checkpoint": "disabled"
+  },
+  "Static": {
+    "fixedOnDemand": 1
+  },
+  "Proposed": {
+    "fixedOnDemand": "omit field, do not set 0"
+  },
+  "unresolved": [
+    "SARIMA input source timestamps/195s causal aggregation/population and 28d/7d lock",
+    "existing VM rule uses independent Spot survival and optional expected-loss economics, not proven identical to Desai section 4.3 effective-throughput switching rule",
+    "measure asynchronous paperProfile only if actually supported; do not claim synchronous CRIU duration as GPU-to-DRAM time",
+    "common full-group emergency path and post-restore natural interruption handoff require actual verification",
+    "numeric AWS GPU quotas could not be read with current IAM permissions"
+  ]
+}

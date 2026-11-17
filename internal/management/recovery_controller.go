@@ -590,7 +590,7 @@ func (r *RecoveryReconciler) verifyAndDeleteNodeProvision(ctx context.Context, r
 	if oldNP.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
 		return "Pending", fmt.Errorf("old NodeProvision policy uid mismatch")
 	}
-	if err := verifyOldNodeRIC(oldNP, spec, restore); err != nil {
+	if err := r.verifyOldNodeOrigin(ctx, oldNP, spec, restore); err != nil {
 		return "Pending", err
 	}
 

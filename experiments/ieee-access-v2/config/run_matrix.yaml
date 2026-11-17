@@ -1,0 +1,79 @@
+{
+  "runs": [
+    {
+      "run": "N0",
+      "initial_on_demand": 2,
+      "initial_spot": 0,
+      "periodic_checkpoint": "disabled",
+      "risk_aware_vm_transition": false,
+      "scheduled_fis": false,
+      "policy_fixed_on_demand": 2,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "run": "N1",
+      "initial_on_demand": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "Adaptive",
+      "risk_aware_vm_transition": false,
+      "scheduled_fis": false,
+      "policy_fixed_on_demand": 1,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "run": "S0",
+      "initial_on_demand": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "Adaptive",
+      "risk_aware_vm_transition": false,
+      "scheduled_fis": false,
+      "policy_fixed_on_demand": 1,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "run": "S1",
+      "initial_on_demand": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "Adaptive",
+      "risk_aware_vm_transition": false,
+      "scheduled_fis": true,
+      "policy_fixed_on_demand": 1,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "run": "P0",
+      "initial_on_demand": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "Adaptive",
+      "risk_aware_vm_transition": true,
+      "scheduled_fis": false,
+      "policy_fixed_on_demand": null,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "run": "P1",
+      "initial_on_demand": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "Adaptive",
+      "risk_aware_vm_transition": true,
+      "scheduled_fis": true,
+      "policy_fixed_on_demand": null,
+      "mandatory_new_run": true,
+      "status": "NOT_RUN"
+    }
+  ],
+  "e2_common_checkpoint": "same existing Adaptive implementation and parameters; actual interval may change with composition",
+  "e2_common_restore": "full-group route for all four arms; verify before E2. Do not compare Static group recovery with Proposed partial recovery as an ON/OFF-only ablation.",
+  "event_rule": "elapsed 1800 seconds from first synchronized committed global step, derived from 60-minute normal target; not disclosed to policy",
+  "fis_action": "aws:ec2:send-spot-instance-interruptions",
+  "durationBeforeInterruption": "PT2M",
+  "fis_scope": "one UID-owned live Spot instance from this run; if no eligible Spot, record exposure removed and skip",
+  "natural_interruption_in_no_failure_arm": "retain failed/interrupted attempt and mark condition contaminated; never silently relabel",
+  "time_scale": "trace 1 hour = wall-clock 1 hour",
+  "analysis": "S1-S0 vs P1-P0 differences of cost and time; no significance claim from one run"
+}

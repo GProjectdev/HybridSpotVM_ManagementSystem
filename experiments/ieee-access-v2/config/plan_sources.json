@@ -1,0 +1,14 @@
+{
+  "supersedes": "N1/N2 plus F1-F4 fixed/adaptive ablation plan",
+  "sources": [
+    {
+      "name": "Hybrid_DDP_IEEE_Access_Experiment_Plan_v2.md",
+      "sha256": "895f62407ba7e3b85bdb948f70e0c98b8cc9d8584393d6a870528873c4f5e438"
+    },
+    {
+      "name": "Hybrid_DDP_IEEE_Access_정량평가_Codex_실행계획_v2_20261117.pdf",
+      "sha256": "ae6533b690d8ee3e572092b13bd2f4f2e6268f137e1c00544b16a853996ca95b"
+    }
+  ],
+  "formal_results": false
+}
