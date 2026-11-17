@@ -7,7 +7,7 @@
   "nfs_server": "10.50.1.98",
   "storage_class": "nfs-client",
   "checkpoint_size": "10Gi",
-  "goal_steps": null,
+  "goal_steps": 24470,
   "batch_size": 32,
   "seed": 42,
   "max_seconds": 7200,
@@ -27,7 +27,7 @@
     "instance_type": "g5.xlarge",
     "gpus_per_worker": 1,
     "architecture": "x86_64",
-    "reason": "only existing GPU C/R proof; alternatives remain eligible; select on 2026-11-18 before paid run"
+    "reason": "ResNet GPU pilot passed on two g5.xlarge OD; Spot capacity unavailable in existing ap-northeast-2c subnet. Select supply and freeze comparison before formal execution."
   },
   "existing_policy": {
     "method": "paper-eq6-7",
@@ -68,10 +68,10 @@
     "learning_rate": 0.1,
     "momentum": 0.9,
     "weight_decay": 0.0005,
-    "goal_steps": null,
+    "goal_steps": 24470,
     "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
     "asset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
-    "status": "BLOCKED_UNTIL_RESNET_GPU_PILOT_TARGET_AND_BATCH_LOCK"
+    "status": "MEASURED_CANDIDATE_PENDING_FORMAL_HARDWARE_AND_PAIR_FREEZE"
   },
   "system_lock": {
     "image_references": {
@@ -112,7 +112,13 @@
   },
   "target_provenance": {
     "model": "resnet50",
-    "status": "PILOT_REQUIRED",
-    "rule": "do not reuse GPT-2 4747-step sizing; lock per-model target after selected hardware pilot"
+    "status": "MEASURED_CANDIDATE_NOT_FORMAL_FREEZE",
+    "pilot_evidence": "../reports/evening-evidence/resnet-gpu-pilot.json",
+    "pilot_sha256": "047b46a240468204b97172b2fc0dd6b26f2fc46d04eb229229a2b2e2380045c4",
+    "median_iteration_seconds": 0.14712376400007088,
+    "rule": "ceil(3600 / max(per-rank median iteration time)); 60s warmup + 180s normal measurement",
+    "candidate_goal_steps": 24470,
+    "candidate_fault_step": 12235,
+    "invalidated_if": "hardware, batch, image, dataset or training recipe changes"
   }
 }

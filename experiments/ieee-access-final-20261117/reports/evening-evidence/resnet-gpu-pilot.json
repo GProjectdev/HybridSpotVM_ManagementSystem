@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-11-17T09:52:15.707144+00:00",
+  "snapshot": "/home/ubuntu/v6-readiness-20261117/evening-acceptance/resnet50/snapshots/2026-11-17T09-52-15.707144+00-00-2544ed28",
+  "rank_max_step": {
+    "0": 1708,
+    "1": 1709
+  },
+  "events": 3427,
+  "completed_ranks": [],
+  "restored_ranks": [],
+  "lifecycle_events": [],
+  "common_training_elapsed_seconds": 260.729,
+  "warmup_seconds": 60,
+  "normal_measurement_window_seconds": 180,
+  "iteration_samples": {
+    "0": 1179,
+    "1": 1179
+  },
+  "median_iteration_seconds": {
+    "0": 0.1470762689999674,
+    "1": 0.14712376400007088
+  },
+  "status": "MEASURED_TWO_OD_ACCEPTANCE_ONLY",
+  "model": "resnet50",
+  "dataset": "CIFAR-10",
+  "batch_per_rank": 32,
+  "world_size": 2,
+  "seed": 42,
+  "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b"
+}

@@ -1,0 +1,62 @@
+{
+  "semantics": "application pause/save/resume observations; interval setting is not equated with pause-start spacing; use CR completion/export timestamps for scheduler/archive timing",
+  "complete_rounds": [
+    {
+      "checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g1-t1794909152539881260",
+      "first_pause_utc": "2026-11-17T09:53:02.943633+00:00",
+      "last_resume_utc": "2026-11-17T09:53:22.560953+00:00",
+      "application_pause_span_seconds": 19.61732
+    },
+    {
+      "checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909318002725190",
+      "first_pause_utc": "2026-11-17T09:55:48.266830+00:00",
+      "last_resume_utc": "2026-11-17T09:56:07.479196+00:00",
+      "application_pause_span_seconds": 19.212366
+    },
+    {
+      "checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909483003096484",
+      "first_pause_utc": "2026-11-17T09:58:07.463870+00:00",
+      "last_resume_utc": "2026-11-17T09:58:28.645768+00:00",
+      "application_pause_span_seconds": 21.181898
+    },
+    {
+      "checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909623003368760",
+      "first_pause_utc": "2026-11-17T10:00:53.211819+00:00",
+      "last_resume_utc": "2026-11-17T10:01:21.852860+00:00",
+      "application_pause_span_seconds": 28.641041
+    },
+    {
+      "checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909796003045841",
+      "first_pause_utc": "2026-11-17T10:03:24.153891+00:00",
+      "last_resume_utc": "2026-11-17T10:03:44.118539+00:00",
+      "application_pause_span_seconds": 19.964648
+    }
+  ],
+  "incomplete_checkpoint_ids": [],
+  "cadence": [
+    {
+      "previous_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g1-t1794909152539881260",
+      "next_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909318002725190",
+      "pause_start_to_pause_start_seconds": 165.323197,
+      "previous_application_resume_to_next_pause_seconds": 145.705877
+    },
+    {
+      "previous_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909318002725190",
+      "next_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909483003096484",
+      "pause_start_to_pause_start_seconds": 139.19704,
+      "previous_application_resume_to_next_pause_seconds": 119.984674
+    },
+    {
+      "previous_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909483003096484",
+      "next_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909623003368760",
+      "pause_start_to_pause_start_seconds": 165.747949,
+      "previous_application_resume_to_next_pause_seconds": 144.566051
+    },
+    {
+      "previous_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909623003368760",
+      "next_checkpoint_id": "eval-rn-gpu-171818-periodic-4a5a4349-g3-t1794909796003045841",
+      "pause_start_to_pause_start_seconds": 150.942072,
+      "previous_application_resume_to_next_pause_seconds": 122.301031
+    }
+  ]
+}

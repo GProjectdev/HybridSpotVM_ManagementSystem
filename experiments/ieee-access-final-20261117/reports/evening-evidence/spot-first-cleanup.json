@@ -1,0 +1,16 @@
+{
+  "namespace": "eval-final-rn-fis-172015",
+  "ec2_found": [],
+  "no_live_trial_instances": true,
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-rn-fis-172015-worker-01",
+      "deleted": true,
+      "source_namespace_and_creation_time_verified": true,
+      "no_active_consumers": true
+    }
+  ],
+  "fis_started": false,
+  "od_requested": false,
+  "completed_at": "2026-11-17T11:28:25.525256+00:00"
+}

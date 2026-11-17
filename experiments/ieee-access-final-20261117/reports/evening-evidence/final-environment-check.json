@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-11-17T11:46:42.764458+00:00",
+  "karmada_noderequests": [],
+  "aws_nodeprovisions": [],
+  "aws_nodes": [
+    "ip-10-50-1-80"
+  ],
+  "collector_ready": 1,
+  "collector_images": [
+    "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508"
+  ],
+  "temporary_ca_mount_absent": true,
+  "temporary_ca_env_absent": true,
+  "MGMT_deployments": [],
+  "MGMT_services": [],
+  "MGMT_secrets": [],
+  "MGMT_configmaps": [],
+  "KARMADA_spotriskprofiles": []
+}

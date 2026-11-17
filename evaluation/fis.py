@@ -17,7 +17,13 @@ def aws(region, *args):
         raise RuntimeError(p.stderr[-2000:])
     return json.loads(p.stdout)
 
+def require_legacy_scope(run):
+    if run.get("protocol") == "ieee-access-final-20261117":
+        raise ValueError("final E2 requires per-run NodeRequest/Pod UID and committed-step integration; do not use the legacy fixed-namespace FIS executor")
+
+
 def target(run):
+    require_legacy_scope(run)
     runner.owned(run, "karmada", "trainingpolicy", run["policy"], run["policy_uid"])
     nodes = runner.get("aws", "nodeprovisions", selector=runner.POLICY_UID+"="+run["policy_uid"])["items"]
     spots = [n for n in nodes if n.get("spec", {}).get("marketType")=="Spot" and not n["metadata"].get("deletionTimestamp")]
@@ -37,6 +43,7 @@ def target(run):
 
 def plan(evidence, role, alarm):
     run=runner.read(evidence/"run.json")
+    require_legacy_scope(run)
     if run.get("phase")!="running" or run["scenario"]!="interruption":
         raise ValueError("requires running scenario=interruption")
     identity=aws(run["region"],"sts","get-caller-identity")
@@ -65,6 +72,7 @@ def start(evidence, confirm, allow_no_alarm, expected_target=None, deadline_mono
             type(deadline_monotonic) not in (int, float) or not math.isfinite(deadline_monotonic)):
         raise ValueError("deadline_monotonic must be finite")
     run=runner.read(evidence/"run.json")
+    require_legacy_scope(run)
     if run["run_id"]!=confirm or run.get("phase")!="running" or run["scenario"]!="interruption":
         raise ValueError("running interruption scenario and exact --confirm run_id required")
     if (evidence/"fis-started.json").exists():

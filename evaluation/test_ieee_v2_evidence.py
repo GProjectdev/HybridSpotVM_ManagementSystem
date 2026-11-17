@@ -23,6 +23,29 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):AWSReader('new-account-v2','000000000000','ap-northeast-2',run).observe(owned,'now')
         np['metadata']['uid']='recreated'
         with self.assertRaises(ValueError):ownership([np],'policy',owned)
+    def test_missing_historical_id_does_not_hide_live_replacement_or_prove_termination(self):
+        ids=['i-0123456789abcdef0','i-0123456789abcdef1'];owned={i:{'policy_uid':'p','nodeprovision_uid':'np'} for i in ids}
+        def runner(args,**kw):
+            if 'sts' in args:return CompletedProcess(args,0,json.dumps({'Account':'935317843233'}),'')
+            selected=args[args.index('--instance-ids')+1:args.index('--output')]
+            if ids[0] in selected:return CompletedProcess(args,255,'','An error occurred (InvalidInstanceID.NotFound) when calling DescribeInstances')
+            return CompletedProcess(args,0,json.dumps({'Reservations':[{'Instances':[{'InstanceId':ids[1],'State':{'Name':'running'}}]}]}),'')
+        rows=AWSReader('explicit','935317843233','ap-northeast-2',runner).observe(owned,'now')
+        states={r['instance_id']:r['state'] for r in rows}
+        self.assertEqual(states[ids[0]],'NOT_OBSERVED');self.assertEqual(states[ids[1]],'running')
+
+    def test_provider_uid_and_running_volume_receipts_are_preserved(self):
+        np={'metadata':{'name':'vm','namespace':'ns','uid':'np','labels':{'training.dcnlab.com/policy-uid':'policy'}},'spec':{'marketType':'Spot'},'status':{'instanceId':'i-0123456789abcdef0'}}
+        instance={'InstanceId':'i-0123456789abcdef0','State':{'Name':'running'},'KeyName':'nodeprovision-vm','Tags':[{'Key':'node-provision-uid','Value':'np'},{'Key':'node-provision-name','Value':'vm'},{'Key':'node-provision-namespace','Value':'ns'}],'BlockDeviceMappings':[{'DeviceName':'/dev/sda1','Ebs':{'VolumeId':'vol-123','DeleteOnTermination':True}}]}
+        def run(args,**kw):
+            return CompletedProcess(args,0,json.dumps({'Account':'935317843233'} if 'sts' in args else {'Reservations':[{'Instances':[instance]}]}),'')
+        reader=AWSReader('new-account-v2','935317843233','ap-northeast-2',run)
+        row=reader.observe(ownership([np],'policy'),'now')[0]
+        self.assertTrue(row['provider_ownership_verified']);self.assertEqual(row['ebs_volumes'][0]['volume_id'],'vol-123')
+        self.assertEqual(row['key_name'],'nodeprovision-vm')
+        instance['Tags'][0]['Value']='foreign'
+        with self.assertRaises(ValueError):reader.observe(ownership([np],'policy'),'now')
+
     def test_pause_union_and_missing_evidence_are_explicit(self):
         def event(rank,kind,at):return {'checkpoint_id':'cp','rank':rank,'event':kind,'timestamp':'2026-11-17T00:'+at+'Z','pod_uid':'p'+str(rank),'attempt_id':'attempt'}
         events=[event(0,'checkpoint_pause','00:00'),event(1,'checkpoint_pause','00:02'),event(0,'training_resumed','01:00'),event(1,'training_resumed','01:10')]

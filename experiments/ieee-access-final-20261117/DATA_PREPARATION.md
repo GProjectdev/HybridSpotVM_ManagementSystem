@@ -155,3 +155,8 @@ Restore Verified, 두 rank의 first valid resumed step을 구분한다.
 
 FIS receipt 필드는 [AWS GetExperiment 공식 문서](https://docs.aws.amazon.com/cli/latest/reference/fis/get-experiment.html)를 따른다.
 CIFAR 배포본은 [공식 데이터 페이지](https://www.cs.toronto.edu/~kriz/cifar.html)를 기준으로 했다.
+
+
+## 야간 추가 결과
+
+ResNet-50 2-GPU 파일럿·5,000 step·동일 Pod 복원 5회 및 격리 live Collector 연동을 확인했다. 정식 목표 후보는 24,470 step이나 Spot 공급 및 최종 freeze는 남아 있다. 자세한 한계·계측·정리 결과는 [야간 검증 보고](EVENING_ACCEPTANCE.md)를 따른다.

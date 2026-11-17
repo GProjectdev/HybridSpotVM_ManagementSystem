@@ -1,0 +1,14 @@
+{
+  "read_only_filtered_inventory": true,
+  "size_gib": 100,
+  "availability_zone": "ap-northeast-2c",
+  "creation_window": [
+    "2026-11-17T09:23:11.973337+00:00",
+    "2026-11-17T11:10:55.509004+00:00"
+  ],
+  "candidate_volumes": [],
+  "no_matching_remaining_volumes": true,
+  "exact_original_volume_ids_captured": false,
+  "deleted_any_volumes": false,
+  "interpretation": "absence scan for trial root-volume size/AZ/creation window; not an exact original volume-ID deletion receipt"
+}

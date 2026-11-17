@@ -23,7 +23,7 @@ class ProtocolTests(unittest.TestCase):
         self.risk = {'status':'LOCKED','wall_seconds_per_trace_hour':3600,'trace_sha256':'c'*64,
                      'forecast_sha256':'d'*64,'profile_spec':{'provider':'aws','region':'ap-northeast-2',
                      'availabilityZone':'ap-northeast-2c','instanceType':'g5.xlarge',
-                     'paperEstimator':{'feedEndpoint':'https://feed.example/feed'}}}
+                     'paperEstimator':{'method':'sarima','feedEndpoint':'https://feed.example/feed'}}}
 
     def test_new_runs_are_fully_namespace_scoped_without_changing_legacy_globals(self):
         for rid in ('n0-first','n0-repeat'):

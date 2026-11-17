@@ -45,7 +45,19 @@
     "target_steps_provisional": 4747,
     "freeze_after_hardware_selection": true,
     "scheduled_fis_max_count": 1,
-    "exact_owned_spot_only": true
+    "exact_owned_spot_only": true,
+    "provisional_step_model": "gpt2",
+    "per_model_provisional": {
+      "gpt2": {
+        "goal_steps": 4747,
+        "fault_step": 2374
+      },
+      "resnet50": {
+        "goal_steps": 24470,
+        "fault_step": 12235
+      }
+    },
+    "formal_freeze_required": true
   },
   "external_trace_required": false,
   "policy_ablation": false,
@@ -61,5 +73,5 @@
     "resnet50"
   ],
   "model_rule": "Run E1/E2 independently for each model; no cross-model baseline reuse or throughput comparison. GPT-2 tokens; ResNet-50 samples.",
-  "resnet50_target": "requires own selected-hardware pilot; GPT-2 goal/fault steps are not transferable"
+  "resnet50_target": "GPU-measured 24470-step candidate at batch32/rank on g5.xlarge; formal hardware/supply and pair freeze still required"
 }

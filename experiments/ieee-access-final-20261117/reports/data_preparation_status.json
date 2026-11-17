@@ -1,5 +1,5 @@
 {
-  "updated_at_utc": "2026-11-17T08:30:20.585128+00:00",
+  "updated_at_utc": "2026-11-17T11:46:11.276539+00:00",
   "data_ready_target_kst": "2026-11-18",
   "experiment_end_target_kst": "2026-11-27",
   "today_stop_deadline_kst": "2026-11-17T22:00:00+09:00",
@@ -29,7 +29,12 @@
     "formal_gpu_batch_locked": false,
     "formal_goal_steps": null,
     "seed": 42,
-    "rank_local_bn_buffers_differ_legitimately": true
+    "rank_local_bn_buffers_differ_legitimately": true,
+    "gpu_two_rank_training_5000_steps_passed": true,
+    "gpu_full_group_periodic_checkpoint_cycles": 5,
+    "gpu_restore_audit_events_passed": 10,
+    "gpu_final_state_audit_passed": true,
+    "formal_goal_steps_candidate": 24470
   },
   "member_nfs_read": true,
   "server_dry_run": {
@@ -48,14 +53,17 @@
     "required_before_policy_run": [
       "choose and freeze static or historical proxy input identically within each comparison pair",
       "if external feed chosen, bind existing TLS endpoint and per-run clock"
-    ]
+    ],
+    "external_runtime_feed_isolated_live_test_passed": true,
+    "fresh_stale_recovered_price_gate_passed": true
   },
   "prices": {
     "read_only_current_quote_saved": true,
     "refresh_required_before_each_real_run": true,
     "tools": [
       "evaluation/price_receipt.py",
-      "evaluation/ieee_v2_prices.py"
+      "evaluation/ieee_v2_prices.py",
+      "evaluation/price_watch.py"
     ]
   },
   "fis": {
@@ -66,8 +74,8 @@
   },
   "tests": {
     "evaluation": {
-      "run": 229,
-      "passed": 227,
+      "run": 242,
+      "passed": 240,
       "skipped_no_host_torch": 2
     },
     "resnet_unit": {
@@ -81,13 +89,14 @@
     }
   },
   "remaining": [
-    "Select GPU and lock per-model batch/goal/deadline; ResNet needs its own GPU pilot",
-    "Actual new-GPU CUDA/NCCL/full-group controller restore acceptance remains unverified",
-    "Before E2, verify final committed-step single-FIS targeting/deadline integration",
-    "At run time verify exact image, new namespace/UID/PVC, clock and current prices"
+    "Select available Spot supply/hardware; freeze per-model measured batch/goal and comparison hashes",
+    "New-VM ResNet CUDA/NCCL/full-group controller RestoreRequest Verified remains unverified; same-Pod process restores passed",
+    "Connect final committed-step gate with scoped single-FIS executor and validate on actual owned Spot",
+    "Before each run verify image, namespace/UID/PVC, risk clock and fresh prices"
   ],
-  "paid_vm_actions_today": false,
+  "paid_vm_actions_today": true,
   "fis_actions_today": false,
   "evidence_directory": "/home/ubuntu/v6-readiness-20261117/data-preparation",
-  "original_plan_pdf_unchanged": true
+  "original_plan_pdf_unchanged": true,
+  "evening_report": "../EVENING_ACCEPTANCE.md"
 }

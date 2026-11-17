@@ -1,0 +1,35 @@
+{
+  "instances_terminated": [
+    "i-0ecde5eae050849e0",
+    "i-03fc72d94bb49288b"
+  ],
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-rn-gpu-171818-worker-01",
+      "deleted": true,
+      "confirmed_instance_key_match": true
+    },
+    {
+      "name": "nodeprovision-eval-rn-gpu-171818-worker-00",
+      "deleted": true,
+      "confirmed_instance_key_match": true
+    }
+  ],
+  "known_volume_ids": [],
+  "cloudtrail_extracted_volume_receipts": [
+    {
+      "instance_id": "i-0ecde5eae050849e0",
+      "volume_ids": [],
+      "lookup_unavailable": true
+    },
+    {
+      "instance_id": "i-03fc72d94bb49288b",
+      "volume_ids": [],
+      "lookup_unavailable": true
+    }
+  ],
+  "ebs_independent_deletion_verified": false,
+  "ebs_note": "root DeleteOnTermination=true configured; termination response has no mappings; do not claim independent volume-ID deletion proof if IDs unavailable",
+  "gpu_compute_upper_bound_usd": 4.021974243304444,
+  "gpu_compute_bound_semantics": "launch to terminated-observed, two OD at public 1.237/h; conservative estimate, not actual invoice; EBS/network excluded"
+}

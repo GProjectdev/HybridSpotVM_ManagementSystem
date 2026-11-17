@@ -1,0 +1,39 @@
+{
+  "started_at": "2026-11-17T11:31:20.417722+00:00",
+  "no_node_request_created": true,
+  "active_experiment_risk_binding_changed": false,
+  "live_collector_fresh_ready": true,
+  "lambda_per_hour": 0.3702637197335419,
+  "prices": {
+    "onDemandPricePerHour": 1.237,
+    "spotPricePerHour": 0.6241
+  },
+  "provenance": {
+    "aggregateForecastPreemptionsPerHour": 0.3702637197335419,
+    "forecastSHA256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "historicalForecastHour": "1970-01-29T00:00:00+00:00",
+    "historicalLastInputHour": "1970-01-28T23:00:00+00:00",
+    "host": "risk-replay.risk-feed-check-20261117.svc:8443",
+    "inputKind": "historical-external-proxy-replay",
+    "maxLambdaPerHour": 100,
+    "notMeasuredSeoulRisk": true,
+    "ondemandReceiptSHA256": "1d983d6f57826c7209682bc1b2c528dea051ab7088365c70a298731058a5a18d",
+    "perInstanceLambdaApproximation": "one requested availability slot in 1-node trace; proxy assumption, not observed at-risk running instances",
+    "priceObservedAt": "2026-11-17T11:31:21.319568+00:00",
+    "provenance": "paper-availability-count-sarima",
+    "replayHour": 0,
+    "replayStartUTC": "2026-11-17T11:31:25.182105+00:00",
+    "retrainWindowWeeks": 4,
+    "riskPopulation": 1,
+    "rollingMeanHours": 3,
+    "seasonalPeriodHours": 24,
+    "traceSHA256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "type": "paper-sarima",
+    "wallSecondsPerTraceHour": 3600
+  },
+  "stale_prices_failed_closed": true,
+  "fresh_prices_recovered": true,
+  "collector_original_trust_restored": true,
+  "test_resources_cleanup_requested": true,
+  "finished_at": "2026-11-17T11:34:08.455640+00:00"
+}

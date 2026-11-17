@@ -78,6 +78,14 @@ class FinalProtocolTests(unittest.TestCase):
         self.assertEqual(self.source['spec']['capacity']['aws']['instanceType'],'g5.xlarge')
         c['goal_steps']=3001
         with self.assertRaises(ValueError):final.render(c,self.source,'bad','E1-B')
+    def test_paper_risk_source_requires_actual_crd_method(self):
+        source=json.loads((Path(__file__).resolve().parents[1]/'experiments/ieee-access-v2/config/risk_replay_manifest.json').read_text())['profile_spec']
+        self.assertEqual(source['paperEstimator']['method'],'sarima')
+        c=copy.deepcopy(self.c);c['existing_risk_spec']=copy.deepcopy(source)
+        self.assertEqual(final.render(c,self.source,'paper','E1-B')[0]['existing_risk_spec']['paperEstimator']['method'],'sarima')
+        c['existing_risk_spec']['paperEstimator'].pop('method')
+        with self.assertRaises(ValueError):final.render(c,self.source,'bad','E1-B')
+
     def test_e3_and_mismatched_profile_are_blocked(self):
         with self.assertRaises(ValueError):final.render(self.c,self.source,'e3','E3')
         c=copy.deepcopy(self.c);c['existing_risk_spec']['instanceType']='g6.xlarge'

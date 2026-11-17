@@ -90,6 +90,8 @@ def render(config, source, run_id, arm, *, risk_source=None):
         if not isinstance(risk_source, dict) or risk_source.get("status") != "LOCKED":
             raise ValueError("E2 needs a pre-registered LOCKED risk source; controlled smoke inputs are not formal E2 inputs")
         spec = risk_source.get("profile_spec", {})
+        if spec.get("paperEstimator", {}).get("method") != "sarima":
+            raise ValueError("paperEstimator.method=sarima is required by the installed CRD")
         if not spec.get("paperEstimator", {}).get("feedEndpoint") or "staticLambdaPerHour" in spec:
             raise ValueError("E2 needs the same causal paperEstimator feed in all arms")
         if risk_source.get("wall_seconds_per_trace_hour") != 3600:

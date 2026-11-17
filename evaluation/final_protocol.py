@@ -88,6 +88,8 @@ def render(config, source, run_id, arm):
     else:annotations.pop('training.dcnlab.com/periodic-checkpoint',None)
     risk=next(o for o in objects if o['kind']=='SpotRiskProfile')
     risk['spec']=copy.deepcopy(c['existing_risk_spec'])
+    if 'paperEstimator' in risk['spec'] and risk['spec']['paperEstimator'].get('method')!='sarima':
+        raise ValueError('paperEstimator.method=sarima required by the installed CRD')
     if any(risk['spec'].get(k)!=c[v] for k,v in [('region','region'),('availabilityZone','availability_zone'),('instanceType','instance_type')]):
         raise ValueError('existing risk profile must match chosen hardware/location')
     sts=next(o for o in objects if o['kind']=='StatefulSet')

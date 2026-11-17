@@ -22,7 +22,8 @@
       "feedEndpoint": "https://paper-risk-replay.hybridspot-system.svc:8443/risk",
       "rollingMeanHours": 3,
       "retrainWindowWeeks": 4,
-      "seasonalPeriodHours": 24
+      "seasonalPeriodHours": 24,
+      "method": "sarima"
     }
   },
   "initial_forecast_lambda_per_hour": 0.3702637197335419,

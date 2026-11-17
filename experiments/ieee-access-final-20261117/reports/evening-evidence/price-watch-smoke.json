@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "exact_configmap_uid": "d80c5a6e-02d6-4bb6-9a64-1af184e61eab",
+  "only_price_leaf_changed": true,
+  "forecast_unchanged": true,
+  "manifest_unchanged": true,
+  "actual_aws_price_query": true,
+  "immutable_receipts": 1,
+  "price_observed_at": "2026-11-17T11:35:53.147766+00:00"
+}
