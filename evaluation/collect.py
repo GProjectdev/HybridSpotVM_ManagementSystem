@@ -24,7 +24,8 @@ PARENT_LABEL = "training.dcnlab.com/scheduled-parent"
 PARENT_UID = "training.dcnlab.com/scheduled-parent-uid"
 PREFIX = "EVAL_EVENT "
 EVENTS = {"worker_started", "step", "restored", "completed",
-          "restore_audit_fresh", "restore_audit", "update_audit"}
+          "restore_audit_fresh", "restore_audit", "update_audit",
+          "checkpoint_pause", "checkpoint_saved", "training_resumed", "completion_audit"}
 NAME = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\Z")
 INSTANCE = re.compile(r"i-[0-9a-f]{8,17}\Z")
 
@@ -89,6 +90,21 @@ def event_from_message(message):
             if not isinstance(raw[key], str) or not NAME.fullmatch(raw[key]):
                 raise ValueError("invalid event session identity")
             result[key] = raw[key]
+    if raw['event'] in {'checkpoint_pause','checkpoint_saved','training_resumed'}:
+        cid = raw.get('checkpoint_id')
+        if not isinstance(cid,str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}',cid):
+            raise ValueError('lifecycle event requires checkpoint identity')
+        if raw.get('role') not in {'target','survivor'}:
+            raise ValueError('lifecycle event requires rank role')
+        result.update(checkpoint_id=cid, role=raw['role'])
+    if raw['event'] == 'completion_audit':
+        if type(raw.get('passed')) is not bool:
+            raise ValueError('final state requires boolean passed')
+        result['passed'] = raw['passed']
+        for field in ('model_sha256','optimizer_sha256','data_contract_sha256'):
+            if not isinstance(raw.get(field),str) or not re.fullmatch('[0-9a-f]{64}',raw[field]):
+                raise ValueError('invalid final-state digest')
+            result[field] = raw[field]
     if "step_seconds" in raw:
         value = raw["step_seconds"]
         if type(value) not in (int, float) or not math.isfinite(value) or value < 0:

@@ -18,11 +18,13 @@ try:
     from .e1_experiment import evidence_resource
     from .ieee_v2 import ARMS, canonical_hash
     from .run import save
+    from .ieee_v2_ledger import AWSReader, ownership
 except ImportError:
     from collect import event_from_message, timestamp, PREFIX
     from e1_experiment import evidence_resource
     from ieee_v2 import ARMS, canonical_hash
     from run import save
+    from ieee_v2_ledger import AWSReader, ownership
 
 KINDS = ('pods', 'statefulsets', 'noderequests', 'nodeprovisions', 'trainingruntimes',
          'spotriskprofiles', 'fluidcrmigrations', 'spotreplacements', 'spotrecoveries',
@@ -63,13 +65,30 @@ def log_events(text, info, pod):
         yield e
 
 
+POLICY_FIELDS = set("policyUID policyNamespace policyName policyGeneration workloadUID riskName riskGeneration riskObservedGeneration riskObservedAt riskValidUntil riskFresh lambdaPerHour riskSource method vmPolicyStage onDemandWorkers spotWorkers costEvaluated economicsSource checkpointIntervalSeconds onDemandHoldUntil reason decisionObservedAt".split())
+
+
+def policy_events(text, policy_uid, namespace):
+    for line in text.splitlines():
+        try:
+            raw = json.loads(line.split(' ',1)[1])
+        except (ValueError, IndexError):
+            continue
+        if raw.get('msg') != 'EvaluationPolicyDecision' or raw.get('policyUID') != policy_uid or raw.get('policyNamespace') != namespace:
+            continue
+        yield {k:v for k,v in raw.items() if k in POLICY_FIELDS}
+
+
 class Observer:
-    def __init__(self, directory, kubeconfigs):
+    def __init__(self, directory, kubeconfigs, aws_reader=None):
         self.directory = Path(directory)
         self.info = json.loads((self.directory / 'run.json').read_text())
         validate_run(self.info)
         self.ns = self.info['namespace']
         self.kubeconfigs = kubeconfigs
+        self.aws_reader = aws_reader
+        cache = self.directory / "instance-ownership.json"
+        self.owned = json.loads(cache.read_text()) if cache.exists() else {}
 
     def command(self, cluster, *args):
         p = subprocess.run(['kubectl', '--kubeconfig=' + self.kubeconfigs[cluster], '--request-timeout=15s',
@@ -85,15 +104,46 @@ class Observer:
         target.mkdir(parents=True, mode=0o700)
         errors = []
         pods = []
+        nodes = []
+        policy_uid = None
         for cluster in self.kubeconfigs:
+            if cluster == 'mgmt':continue
             for kind in KINDS:
                 try:
                     obj = json.loads(self.command(cluster, 'get', kind, '-o', 'json'))
+                    if kind == 'nodeprovisions' and cluster == 'aws':
+                        nodes = obj['items']
+                    if kind == 'noderequests' and cluster == 'karmada':
+                        policies = [p for p in obj['items'] if p['metadata'].get('labels', {}).get('training.dcnlab.com/evaluation-run') == self.info['run_id']]
+                        if len(policies) == 1:
+                            policy_uid = policies[0]['metadata']['uid']
                     if kind == 'pods' and cluster == 'aws':
                         pods = obj['items']
                     save(target / (cluster + '-' + kind + '.json'), evidence_resource(obj))
                 except (RuntimeError, ValueError, subprocess.TimeoutExpired):
                     errors.append({'cluster':cluster, 'kind':kind, 'error':'unavailable'})
+        if self.kubeconfigs.get('mgmt') and policy_uid:
+            try:
+                since = self.info.get('started_at', instant)
+                cmd = ['kubectl', '--kubeconfig='+self.kubeconfigs['mgmt'], '--request-timeout=15s',
+                       '-n', 'hybridspot-system', 'logs', 'deployment/spot-vm-management-controller',
+                       '--timestamps=true', '--since-time='+since, '--limit-bytes=10000000']
+                p = subprocess.run(cmd, text=True, capture_output=True, timeout=25)
+                if p.returncode:raise RuntimeError('policy logs unavailable')
+                save(target / 'policy-decisions.json', list(policy_events(p.stdout, policy_uid, self.ns)))
+            except (RuntimeError, ValueError, subprocess.TimeoutExpired):
+                errors.append({'operation':'policy_decision_logs','error':'unavailable'})
+        if self.aws_reader:
+            try:
+                known_uids = {v['policy_uid'] for v in self.owned.values()}
+                if policy_uid and known_uids and known_uids != {policy_uid}:
+                    raise ValueError('run policy recreated')
+                if policy_uid:
+                    self.owned = ownership(nodes, policy_uid, self.owned)
+                    save(self.directory / 'instance-ownership.json', self.owned)
+                save(target / 'aws-instance-ledger.json', self.aws_reader.observe(self.owned, instant))
+            except (RuntimeError, ValueError, subprocess.TimeoutExpired):
+                errors.append({'operation':'exact_instance_ledger', 'error':'unavailable_or_identity_mismatch'})
         events = []
         for pod in pods:
             if pod.get('metadata', {}).get('labels', {}).get('training.dcnlab.com/evaluation-run') != self.info['run_id']:
@@ -119,14 +169,22 @@ def main():
     p.add_argument('--directory', type=Path, required=True)
     p.add_argument('--seconds', type=int, default=0, help='0 = once; bounded read-only watch otherwise')
     p.add_argument('--interval', type=int, default=20)
+    p.add_argument('--aws-profile')
+    p.add_argument('--aws-account-id')
+    p.add_argument('--aws-region', default='ap-northeast-2')
     a = p.parse_args()
+    if bool(a.aws_profile) != bool(a.aws_account_id):
+        p.error('AWS profile and expected account must be supplied together')
     if not 0 <= a.seconds <= 18000 or not 5 <= a.interval <= 300:
         p.error('seconds must be 0..18000, interval 5..300')
     keys = {name:os.environ.get(env) for name,env in [('karmada','KARMADA_KUBECONFIG'),('aws','AWS_KUBECONFIG')]}
     if not all(keys.values()):
         p.error('KARMADA_KUBECONFIG and AWS_KUBECONFIG required')
+    if os.environ.get('MGMT_KUBECONFIG'):
+        keys['mgmt'] = os.environ['MGMT_KUBECONFIG']
     os.umask(0o077)
-    observer = Observer(a.directory, keys)
+    reader = AWSReader(a.aws_profile, a.aws_account_id, a.aws_region) if a.aws_profile else None
+    observer = Observer(a.directory, keys, reader)
     with (a.directory / '.observer.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         end = time.monotonic() + a.seconds

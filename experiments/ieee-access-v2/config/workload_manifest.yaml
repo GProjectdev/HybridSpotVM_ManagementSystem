@@ -25,5 +25,8 @@
   "sampler": "existing training implementation; preserve checkpoint RNG/data progress; no algorithm change",
   "fresh_namespace_and_checkpoint_claim_per_attempt": true,
   "rank0_placement": "OnDemand, verify actual instance market before rank1 starts",
-  "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:82a5550821138dedddd82ff8b63eda3c47d4a598c8cc87ab6479ba4a09971cb6"
+  "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "previous_pilot_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:82a5550821138dedddd82ff8b63eda3c47d4a598c8cc87ab6479ba4a09971cb6",
+  "payload_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+  "instrumentation": "opt-in lifecycle and final state audit; sizing workload/goal/model/data unchanged; exclude final hashing from useful training time, include billed lifetime"
 }

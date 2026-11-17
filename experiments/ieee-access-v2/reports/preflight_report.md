@@ -175,3 +175,25 @@ artifact/SpotWatcher DaemonSet desired=0인 상태는 새 GPU에서의 검증 �
 승인 조건을 실제로 확인해야 한다. GPU quota 수치는 권한 부족으로 미검증으로
 남기며, 이를 해결하라고 반복 요구하지 않는다. 이번 추가 작업에서는 새 유료
 VM/FIS를 만들지 않았다. 이미지 digest와 원문/예측 해시는 `upgrade_checks.json` 참조.
+
+## 계측·재생 연결 보완 — 후속 작업
+
+위험 재생 HTTPS 서버, 현재 시간대/만료 검사, 실제 실행 가격의 별도 입력,
+Policy UID별 결정 로그, 원본 verification/provenance 수집, 정확한 Instance ID
+한정 조회, opt-in DDP pause/saved/resume 이벤트, 최종 두 rank 상태 검산을
+추가했다. 평가 도구와 Runtime 계측 변경을 검사하고 관련 이미지를 게시했다.
+
+초기 위험값이 높아 Proposed가 처음부터 2OD가 될 수 있음을 확인해,
+공통 bootstrap(1OD+1Spot, static risk)과 첫 committed Step 이후의 위험/정책
+활성화를 분리했다. StatefulSet도 VM Ready 이전 UID binding을 막기 위해
+준비 리소스 묶음에서 분리했다. 여섯 arm의 suspended 파일과 공통 해시를
+오프라인 생성·검산했다. API 적용이나 유료 실험은 수행하지 않았다.
+
+MGMT 정책 로그 이미지와 두 Member의 webhook Payload 설정을 업데이트했다.
+재생 서버는 실행 시점 UTC/TLS 설정이 필요한 관계로 배포·활성화하지 않았다.
+기존 알고리즘, 정상 복구 게이트, Karmada upstream은 변경하지 않았다.
+
+이것은 정식 평가 GO나 공통 전체 GPU 복구 성공 판정이 아니다. 실행 시점의
+신규 UID·admission 적용·시간 제한/정상 정리 절차 연결, 공통 전체 GPU 복구 및
+전환 중 자연 선점 처리의 실제 검증은 남아 있다. 완전 자동 유료 실행기는
+이번 도구에 포함되지 않는다. 자세한 결과/제한은 evidence_upgrade.json 참조.

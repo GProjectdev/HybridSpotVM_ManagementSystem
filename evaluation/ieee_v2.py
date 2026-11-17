@@ -82,7 +82,7 @@ def render(config, source, run_id, arm, *, risk_source=None):
         "ml.dcn.ssu.ac.kr/provider": "AWS", "ml.dcn.ssu.ac.kr/node-provision-namespace": ns}
     env = sts["spec"]["template"]["spec"]["containers"][0]["env"]
     env.extend({"name": k, "value": str(v)} for k, v in {
-        "NCCL_IB_DISABLE": 1, "FLUIDCR_CHECKPOINT_WATCHDOG_TIMEOUT": 240,
+        "EVAL_COMPLETION_AUDIT": 1, "EVAL_LIFECYCLE_EVENTS": 1, "NCCL_IB_DISABLE": 1, "FLUIDCR_CHECKPOINT_WATCHDOG_TIMEOUT": 240,
         "CTRL_CHECKPOINT_TIMEOUT": 300, "FLUIDCR_DISABLE_ENUMERATE_PATCH": 1,
         "FLUIDCR_DISABLE_ITER_PATCH": 1, "FLUIDCR_DISABLE_EPOCH_RANGE_PATCH": 1}.items())
     risk = next(o for o in resources if o["kind"] == "SpotRiskProfile")
@@ -111,6 +111,10 @@ def render(config, source, run_id, arm, *, risk_source=None):
     info["workload_lock_sha256"] = canonical_hash({k: c[k] for k in (
         "training_image", "goal_steps", "batch_size", "sequence_length", "seed", "learning_rate",
         "nfs_server", "nfs_dataset_path", "nfs_model_path", "asset_manifest_sha256")})
+    info['bootstrap_risk'] = 'static 0.05 shared by all arms; activate locked replay for all E2 arms after first committed step'
+    info['bootstrap_on_demand'] = 2 if arm == 'N0' else 1
+    info['policy_activation'] = 'after both ranks first committed step; UID-bound patch removes bootstrap fixedOnDemand only for Proposed'
+    info["completion_audit_required"] = True
     info["checkpoint_lock_sha256"] = canonical_hash(checkpoint)
     info["render_sha256"] = canonical_hash({"member": member, "resources": resources, "policy": policy})
     return info, member, resources, policy
@@ -180,6 +184,7 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
         if key in seen:
             continue
         seen.add(key)
+        e["pod_uid"] = raw["pod_uid"]
         records.append((timestamp(e["timestamp"]), e))
     records.sort(key=lambda x: x[0])
     if request_at:
@@ -192,8 +197,19 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
     if common_steps:
         first_step = min(common_steps)
         first = max(min(at for at, e in records if e["event"] == "step" and e["rank"] == r and e["global_step"] == first_step) for r in (0, 1))
+    goal_events = {r:[at for at,e in records if e['rank']==r and e['event']=='step' and e['global_step']==goal] for r in (0,1)}
     done = all(completed.values())
+    if info.get('completion_audit_required'):
+        done = done and all(goal_events.values())
     finish = max(min(at for at, _ in completed[r]) for r in (0, 1)) if done else None
+    if done and info.get('completion_audit_required'):
+        # Final hashing/verification time is billed, but not useful training time.
+        finish = max(min(goal_events[r]) for r in (0,1))
+    audits = {r:[e for _,e in records if e['rank']==r and e['event']=='completion_audit' and e['global_step']==goal] for r in (0,1)}
+    audit_ok = all(audits.values()) and all(e['passed'] for rows in audits.values() for e in rows)
+    if audit_ok:
+        audit_ok = all(len({e[field] for rows in audits.values() for e in rows}) == 1
+                       for field in ('model_sha256','optimizer_sha256','data_contract_sha256'))
     result = {"run_id": info["run_id"], "arm": info["arm"], "all_rank_completion_observed": done,
               "quality": "REQUIRES_STATE_AND_PROTOCOL_REVIEW" if done else "INCOMPLETE",
               "target_steps": goal, "useful_tokens": goal * info["tokens_per_committed_step"] if done else None,
@@ -202,6 +218,14 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
               "T_startup_seconds": None, "T_E2E_seconds": None, "T_training_seconds": None,
               "UsefulThroughput_tokens_per_second": None, "estimated_gpu_compute_cost_usd": None,
               "cost_per_useful_step_usd": None, "checkpoint_stall_seconds": None}
+    try:
+        from .ieee_v2_lifecycle import analyze
+    except ImportError:
+        from ieee_v2_lifecycle import analyze
+    result['ddp_lifecycle'] = analyze([e for _,e in records])
+    result['final_state_audit_passed'] = bool(audit_ok)
+    if done and info.get('completion_audit_required') and not audit_ok:
+        result['quality'] = 'FINAL_STATE_AUDIT_MISSING_OR_MISMATCHED'
     request = timestamp(request_at) if request_at else None
     if request and first:
         if request > first:
@@ -249,8 +273,16 @@ def main():
         info, member, resources, policy = render(read(a.config), read(a.policy_source), a.run_id, a.arm,
                                                 risk_source=read(a.risk_source) if a.risk_source else None)
         a.out.mkdir(parents=True)
-        for name, obj in [("run.json", info), ("member-storage.json", {"apiVersion": "v1", "kind": "List", "items": member}),
-                          ("karmada.json", {"apiVersion": "v1", "kind": "List", "items": resources}), ("policy.unbound.json", policy)]:
+        bootstrap = copy.deepcopy(policy)
+        bootstrap['spec']['policy']['fixedOnDemand'] = info['bootstrap_on_demand']
+        risk = next(o for o in resources if o['kind']=='SpotRiskProfile')
+        bootstrap_risk = copy.deepcopy(risk)
+        bootstrap_risk['spec'].pop('paperEstimator',None)
+        bootstrap_risk['spec']['staticLambdaPerHour'] = 0.05
+        workload = next(o for o in resources if o['kind']=='StatefulSet')
+        prerequisites = [o for o in resources if o['kind'] not in {'StatefulSet','SpotRiskProfile'}]
+        for name, obj in [("risk.bootstrap.json", bootstrap_risk), ("risk.armed.json", risk), ("workload.stopped.json", workload), ("policy.bootstrap.json", bootstrap), ("run.json", info), ("member-storage.json", {"apiVersion": "v1", "kind": "List", "items": member}),
+                          ("karmada.json", {"apiVersion": "v1", "kind": "List", "items": prerequisites}), ("policy.unbound.json", policy)]:
             legacy.save(a.out / name, obj)
         print("Rendered suspended/unbound manifests only. No API calls, VM creation or FIS.")
     else:

@@ -74,6 +74,20 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if err := r.applyPaperResidency(ctx, input, runtimeSnapshot, riskSnapshot, &decision); err != nil {
 		return ctrl.Result{}, err
 	}
+	ctrl.LoggerFrom(ctx).Info("EvaluationPolicyDecision",
+		"policyUID", string(input.PolicyUID), "policyNamespace", input.Namespace,
+		"policyName", input.PolicyName, "policyGeneration", input.Generation,
+		"workloadUID", string(input.WorkloadRef.UID), "riskName", riskSnapshot.Name,
+		"riskGeneration", riskSnapshot.Generation, "riskObservedGeneration", riskSnapshot.ObservedGeneration,
+		"riskObservedAt", riskSnapshot.ObservedAt, "riskValidUntil", riskSnapshot.ValidUntil,
+		"riskFresh", trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, r.now()),
+		"lambdaPerHour", riskSnapshot.LambdaPerHour, "riskSource", riskSnapshot.Source,
+		"method", input.VMPolicyMethod, "vmPolicyStage", decision.VMPolicyStage,
+		"onDemandWorkers", decision.OnDemandWorkers, "spotWorkers", decision.SpotWorkers,
+		"costEvaluated", decision.CostEvaluated, "economicsSource", decision.EconomicsSource,
+		"checkpointIntervalSeconds", decision.CheckpointIntervalSeconds,
+		"onDemandHoldUntil", decision.OnDemandHoldUntil, "reason", decision.Reason,
+		"decisionObservedAt", r.now().UTC().Format(time.RFC3339Nano))
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, r.now()) {
 		decision.ProvisioningBlocked = true
 		decision.Reason = "risk_not_fresh"

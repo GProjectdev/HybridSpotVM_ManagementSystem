@@ -1,0 +1,115 @@
+{
+  "utc": "2026-11-17T05:20:05.646376+00:00",
+  "scope": "non-paid evidence/replay preparation; no EC2 create/delete or FIS API executed",
+  "images": {
+    "payload": {
+      "image": "docker.io/jeongseungjun/fluidcr-payload:v6.0-payload-evidence-ad0c90dcf4c8",
+      "pinned": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+      "source_sha256": "ad0c90dcf4c84435abd4adb75eeb909338a91373cd888cb69a2100913b8556ec",
+      "registry_verified": true
+    },
+    "training": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-training-evidence-d02e5acb42a3",
+      "pinned": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+      "source_sha256": "d02e5acb42a34b29a5742e402f54d038d78ab84ce2c1e84ebaa8885adb4a958e",
+      "registry_verified": true
+    },
+    "replay": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-replay-evidence-819bb607e1e6",
+      "pinned": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:b126b181f274d581824c81f56fe99866a400a9fd237e029f15e8892db7350af0",
+      "source_sha256": "819bb607e1e695b5b1f247623928604e68afd992ed7d87feefa32e0097172436",
+      "registry_verified": true
+    }
+  },
+  "deployments": {
+    "AWS": {
+      "payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+      "rollout": "healthy"
+    },
+    "ONPRE1": {
+      "payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+      "rollout": "healthy"
+    },
+    "MGMT": {
+      "policy_decision_log_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:d57532aa4702eed2b905ac5b86a73337f6203a52408a9bc036786a64235031b1",
+      "rollout": "healthy"
+    },
+    "replay": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:b126b181f274d581824c81f56fe99866a400a9fd237e029f15e8892db7350af0",
+      "deployed": false,
+      "reason": "per-run start clock and trusted TLS binding must accompany an experiment; not activated now"
+    }
+  },
+  "checks": {
+    "evaluation": "216 tests PASS; 2 skipped",
+    "new_replay_and_evidence": "10 tests PASS",
+    "runtime": "28 CPU/mock tests PASS; 6 distributed tests deselected; earlier distributed attempt stopped and not claimed successful",
+    "management": "go test ./internal/management PASS",
+    "https_replay": "actual nonroot image: trusted TLS, frozen current hour, exhausted series returns 503 PASS",
+    "six_arm_preparation": {
+      "N0": {
+        "namespace": "eval-v2-n0-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 2,
+        "proposed_final_has_fixed": true,
+        "phase": "rendered-only; no API calls"
+      },
+      "N1": {
+        "namespace": "eval-v2-n1-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 1,
+        "proposed_final_has_fixed": true,
+        "phase": "rendered-only; no API calls"
+      },
+      "S0": {
+        "namespace": "eval-v2-s0-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 1,
+        "proposed_final_has_fixed": true,
+        "phase": "rendered-only; no API calls"
+      },
+      "S1": {
+        "namespace": "eval-v2-s1-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 1,
+        "proposed_final_has_fixed": true,
+        "phase": "rendered-only; no API calls"
+      },
+      "P0": {
+        "namespace": "eval-v2-p0-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 1,
+        "proposed_final_has_fixed": false,
+        "phase": "rendered-only; no API calls"
+      },
+      "P1": {
+        "namespace": "eval-v2-p1-draft",
+        "checkpoint_lock": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "workload_lock": "c456b556568a08e1dcccb88cccaf55ac7e1f5a717b9e4320dea60ac2c353d8df",
+        "bootstrap_od": 1,
+        "proposed_final_has_fixed": false,
+        "phase": "rendered-only; no API calls"
+      }
+    }
+  },
+  "input_lock": "config/risk_replay_manifest.json: same first held-out hour for every E2 arm; explicitly external proxy; no live clock activated",
+  "bootstrap": "common static risk and fixed 1OD+1Spot until both ranks first committed Step; then E2 source activated and Proposed fixed composition removed with UID guards",
+  "remaining": [
+    "full-group GPU checkpoint/restore/recovery acceptance",
+    "interruption during replacement acceptance; prior partial handoff failure not repaired by instrumentation",
+    "per-run UID/admission/TLS/start-clock and bounded normal cleanup binding before paid execution",
+    "tools remain offline preparation/read-only observation, not an unattended paid-run launcher"
+  ],
+  "not_claimed": [
+    "formal E1/E2 completion",
+    "Seoul eviction prediction accuracy",
+    "paper elastic DP scale-out",
+    "exact provider billing end from polling",
+    "pure checkpoint I/O stall from pause-to-resume duration"
+  ]
+}

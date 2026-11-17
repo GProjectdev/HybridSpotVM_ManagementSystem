@@ -78,3 +78,75 @@ clock/population assumptions and remains **PREVIEW_NOT_LOCKED**. See
 `reports/upgrade_checks.json` and the dated preflight addendum. No new paid VM
 was started for this upgrade. Full-group GPU recovery/interruption acceptance
 and live-run gates remain outstanding.
+
+## Evidence and replay follow-up
+
+`config/risk_replay_manifest.json` locks the existing forecast hash and the
+first held-out hour, before any paid E2 outcome. It declares an external
+US-V100 availability proxy, not observed Seoul eviction risk. The clock/TLS
+binding is deliberately not activated now. The replay image accepts only the
+current hour, uses TLS, expires after the frozen series, and preserves both
+historical and live publication timestamps. It never refits the estimator.
+Optional current execution prices are separate from the historical risk input;
+stale/invalid supplied prices make the feed unavailable rather than silently
+reusing a price. Without prices the policy remains throughput-only.
+
+Preparation now emits separate files so applying prerequisites cannot bind a
+zero-replica Workload too early or start the Proposed composition too early:
+
+- `member-storage.json`, `karmada.json`: reviewed storage/prerequisite objects;
+  the latter excludes the StatefulSet and risk profile.
+- `risk.bootstrap.json`: common static lambda=.05 while initial VMs prepare.
+- `policy.bootstrap.json`: suspended/unbound, initial 2OD for N0, 1OD+1Spot
+  otherwise. Unsuspending can create paid VMs; it was not done in this upgrade.
+- `workload.stopped.json`: create only after bootstrap VMs are Ready. Stage
+  rank0 onto an actual OD node before starting rank1, as the pilot did.
+- `risk.armed.json`: same locked replay for every E2 arm. Bind the per-run
+  replay start clock after both ranks' first committed Step, switch from the
+  bootstrap profile with exact UID/generation guards, and wait for fresh risk.
+- `policy.unbound.json`: desired policy reference, **not** a second CR to apply
+  over the live object. For P0/P1 remove only `fixedOnDemand` using a UID- and
+  resourceVersion-tested patch after risk activation. S0/S1 remain fixed=1.
+
+The first frozen risk value is already high. Enabling Proposed before this
+bootstrap would change initial composition and defeat the common-start protocol.
+Bootstrap and activation times must be retained in every run's event record.
+
+Useful read-only/offline commands (from repository root):
+
+```bash
+python3 evaluation/ieee_v2.py prepare --config experiments/ieee-access-v2/config/run_config.json --policy-source /PRIVATE/current-capacity-template.json --risk-source experiments/ieee-access-v2/config/risk_replay_manifest.json --run-id p0-unique --arm P0 --out /PRIVATE/new-run
+python3 evaluation/ieee_v2_observe.py --directory /PRIVATE/new-run --seconds 7200 --aws-profile new-account-v2 --aws-account-id 935317843233
+python3 evaluation/ieee_v2_prices.py --profile new-account-v2 --account 935317843233 --ondemand-receipt /PRIVATE/current-public-od-receipt.json --out /PRIVATE/prices.json
+python3 internal/collector/paper_sarima_replay.py --forecasts /PRIVATE/trace-forecast-preview.json --manifest experiments/ieee-access-v2/config/risk_replay_manifest.json --start-utc RUN_ACTIVATION_UTC --bind 0.0.0.0 --port 8443 --cert /TLS/tls.crt --key /TLS/tls.key --prices /PRIVATE/prices.json
+```
+
+Observer requires explicit Karmada/AWS kubeconfig environment variables; set
+`MGMT_KUBECONFIG` to archive policy decision logs too. Refresh prices at least
+every five minutes. The OD receipt must be reviewed/refreshed within 24 hours.
+The replay certificate must cover the service hostname, and its CA must be
+trusted by the Collector (e.g. mounted CA and `SSL_CERT_FILE`); never disable
+verification. No replay Deployment or clock was activated in this follow-up.
+
+The observer retains UID-bound policy/restore evidence and exact-instance EC2
+observations after CR deletion. Missing instances are NOT_OBSERVED, not evidence
+of termination. Polling termination time is an upper bound, not exact billing
+end. Keep provider termination responses and reviewed price segments.
+
+Opt-in runtime events identify application checkpoint pause, checkpoint saved,
+and resume boundaries. Their union includes recovery waits, not just I/O stall;
+unmatched boundaries remain incomplete. They do not measure NCCL degradation
+before a coordinated pause. Unexpected natural failure uses actual provider,
+watcher and last/next committed-Step evidence; a gap alone is not a CP stall.
+
+New runs require both-rank matching final model/optimizer/data-contract hashes
+and goal Step observations. Final hashing is excluded from useful training
+completion time and remains part of billed VM lifetime. Protocol review remains
+required even when hashes match. See `reports/evidence_upgrade.json`.
+
+Before any paid run, bind fresh Namespace/Policy/Workload UIDs, extend only that
+namespace's admission selector if necessary, verify injection, and install the
+run-specific deadline/normal-cleanup procedure. **max_seconds in a rendered JSON
+file does not itself stop EC2.** The new tools are not an unattended live runner.
+Existing VM provisioning, C/R, UID/fencing and cleanup controllers are retained.
+Full-group GPU acceptance and interruption-during-transition remain unresolved.

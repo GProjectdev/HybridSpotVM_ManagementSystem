@@ -81,10 +81,11 @@ class Events:
         self.config = config
         self.stream = sys.stdout if stream is None else stream
         self.attempt_id = uuid.uuid4().hex
+        os.environ["EVAL_ATTEMPT_ID"] = self.attempt_id
 
     def emit(self, event, global_step, **fields):
         if event not in {"worker_started", "restored", "step", "completed",
-                         "restore_audit_fresh", "restore_audit", "update_audit"}:
+                         "restore_audit_fresh", "restore_audit", "update_audit", "completion_audit"}:
             raise ValueError("unknown evaluation event")
         if type(global_step) is not int or global_step < 0:
             raise ValueError("global_step must be a nonnegative integer")
@@ -179,6 +180,7 @@ def resumed_step(fluidcr, optimizer, goal_steps):
 
 def train_updates(config, fluidcr, torch, model, optimizer, loader, device, events, audit=None):
     step = resumed_step(fluidcr, optimizer, config.goal_steps)
+    resume_evidence_pending = step > 0 and os.environ.get("EVAL_LIFECYCLE_EVENTS") == "1"
     if step == config.goal_steps:
         return step
     model.train()
@@ -215,6 +217,16 @@ def train_updates(config, fluidcr, torch, model, optimizer, loader, device, even
         events.emit("step", step, loss=loss_value, **token_fields,
                     step_seconds=time.monotonic() - started,
                     samples_seen=step * config.batch_size * config.world_size)
+        if resume_evidence_pending:
+            try:
+                from fluidcr.evaluation import emit as evaluation_emit
+                from fluidcr.ctrl import restore_checkpoint_binding, _read_status, _default_checkpoint_path
+                binding = restore_checkpoint_binding() or _read_status(_default_checkpoint_path())
+                evaluation_emit('training_resumed', step, binding.get('checkpointID', ''))
+            except Exception:
+                # Missing evidence remains missing; never change recovery behavior.
+                pass
+            resume_evidence_pending = False
         if step == config.goal_steps:
             return step
         started = time.monotonic()
@@ -322,6 +334,14 @@ def main(argv=None):
     loader = DataLoader(dataset, batch_sampler=sampler, num_workers=0, generator=generator)
     step = train_updates(config, fluidcr, torch, model, optimizer, loader, device, events, audit=audit)
     dist.barrier()
+    if os.environ.get('EVAL_COMPLETION_AUDIT') == '1':
+        from restore_audit import fingerprint
+        finite = all(bool(torch.isfinite(p).all()) for p in model.parameters())
+        events.emit('completion_audit', step, model_sha256=fingerprint(model.module.state_dict()),
+                    optimizer_sha256=fingerprint(optimizer.state_dict()),
+                    data_contract_sha256=fingerprint(model.module._evaluation_contract), passed=finite)
+        if not finite:
+            raise RuntimeError('nonfinite final model')
     hold_completed(fluidcr, events, step)
 
 

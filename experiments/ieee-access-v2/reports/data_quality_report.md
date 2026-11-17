@@ -5,8 +5,16 @@
 - Raw events preserve Pod UID, attempt and replayed steps. Never sum both ranks or replayed tokens as useful work.
 - No N0/N1/S0/S1/P0/P1 formal completion, cost savings or statistical significance is claimed.
 - CR checkpoint wall time and asynchronous export time are recorded separately. Exact CP-only DDP stall needs additional control-event instrumentation.
-- Some checkpoint CR pod entries report rank 0 for both pods. Use actual runtime rank/Pod UID mapping, not that field, for analysis; this inconsistency remains to be corrected.
+- Some checkpoint CR pod entries report rank 0 for both pods. Use actual runtime rank/Pod UID mapping, not that field, for analysis; this was corrected and the Checkpoint image was rolled out subsequently; actual latest full-group GPU acceptance remains pending.
 - A natural Spot interruption contaminated the reverse-transition debug run. Retain the attempt; do not relabel it as no-failure or FIS success.
 - Numeric account GPU quotas are not verified because IAM denies Service Quotas reads.
 - Historic terminated instance records may disappear from a later EC2 response. Retain the earlier direct AWS terminated receipt and its timestamp; absence alone is not termination proof.
 - Installed digest/rollout evidence is separate from actual GPU E2E evidence. AWS artifact desired=0 after cleanup cannot prove execution on a future worker.
+
+- Evidence follow-up preserves policy stage/source, residency, iteration windows
+  and verification receipts that older projection filters omitted.
+- New lifecycle instrumentation is opt-in and CPU-tested, not GPU acceptance.
+- Final state matching and actual goal-Step observations are now required by new
+  prepared runs. Missing audit evidence never becomes a quality pass.
+- Historical replay definition is frozen independently of paid outcomes. Live
+  start-clock/TLS binding and run-specific cleanup remain execution prerequisites.
