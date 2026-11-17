@@ -36,7 +36,11 @@ def utc_now():
 def timestamp(value):
     if not isinstance(value, str):
         raise ValueError("timestamp must be a timezone-aware string")
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # Kubernetes emits RFC3339 nanoseconds. Python 3.10 accepts only
+    # millisecond/microsecond fractions; retain the original string for log
+    # identity/deduplication while comparing at datetime precision.
+    normalized = re.sub(r"(\.\d{6})\d{1,3}(?=Z$|[+-]\d{2}:\d{2}$)", r"\1", value)
+    result = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
     if result.tzinfo is None:
         raise ValueError("timestamp requires a timezone")
     return result.astimezone(timezone.utc)

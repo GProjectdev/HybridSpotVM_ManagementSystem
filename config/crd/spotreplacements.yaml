@@ -32,6 +32,8 @@ spec:
             x-kubernetes-validations:
             - rule: self == oldSelf
               message: SpotReplacement operations are immutable; create a new operation
+            - rule: self.sourceCluster == self.targetCluster
+              message: SpotReplacement requires the same registered source and target cluster
             required:
             - operation
             - policyRef
@@ -66,10 +68,14 @@ spec:
                   uid: {type: string, minLength: 1, maxLength: 128}
               sourceCluster:
                 type: string
-                enum: [aws]
+                minLength: 1
+                maxLength: 253
+                pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
               targetCluster:
                 type: string
-                enum: [aws]
+                minLength: 1
+                maxLength: 253
+                pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
               oldNodeProvisionRef:
                 type: object
                 required: [name, uid]

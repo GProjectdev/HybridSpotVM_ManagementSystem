@@ -182,6 +182,11 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 		if err != nil || time.Since(stamp) > 30*time.Second || time.Until(stamp) > 5*time.Second {
 			return fmt.Errorf("pod %s stale runtime sample", pod.Name)
 		}
+		// A launcher/worker registry can exist while a large model is still
+		// initializing. Do not expose it as checkpoint-ready before an update.
+		if sample.GlobalStep == 0 {
+			return fmt.Errorf("pod %s has not completed its first optimizer update", pod.Name)
+		}
 		if sample.State != "Running" || sample.WorldSize != expected || sample.Rank < 0 || sample.Rank >= expected || sample.GlobalStep < 0 || seen[sample.Rank] {
 			return fmt.Errorf("pod %s invalid rank membership", pod.Name)
 		}

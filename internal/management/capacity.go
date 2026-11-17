@@ -221,7 +221,7 @@ func (r *PolicyReconciler) ensurePreparedReplacementNodeProvision(ctx context.Co
 	if !apierrors.IsNotFound(err) {
 		return false, err
 	}
-	if policyObj.GetAnnotations()[groupIntentAnnotation] != "" || input.SourceCluster != "aws" || input.Capacity.AWSCluster != "aws" {
+	if policyObj.GetAnnotations()[groupIntentAnnotation] != "" || input.Capacity.AWSCluster == "" || input.SourceCluster != input.Capacity.AWSCluster {
 		return false, errPartialReplacementNotReady
 	}
 	if active, err := activeGroupRestore(ctx, r.reader(), input); err != nil {

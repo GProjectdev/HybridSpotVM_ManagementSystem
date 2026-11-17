@@ -112,6 +112,8 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 			return false, fmt.Errorf("missing source NodeProvision spec")
 		}
 		delete(spec, "fence")
+		// Bootstrap SSH identity belongs to the new NodeProvision, never its source.
+		unstructured.RemoveNestedField(spec, "awsConfig", "keyPairName")
 		spec["marketType"] = market
 		spec["hostname"] = replacementName
 		replacement.Object["spec"] = spec

@@ -20,8 +20,10 @@ func TestPlannedPartialRouting(t *testing.T) {
 		selected, reject                     bool
 		emergency, wrongInstance, notReady   bool
 		specFence, statusFence, otherCluster bool
+		renamedCluster                       bool
 	}{
 		{name: "healthy nonzero rank", rank: 1, selected: true},
+		{name: "renamed AWS member", rank: 1, renamedCluster: true, selected: true},
 		{name: "healthy rank zero", rank: 0, selected: true},
 		{name: "stale health waits", rank: 1, stale: true},
 		{name: "changed UID refuses", rank: 1, changed: true, selected: true, reject: true},
@@ -41,6 +43,10 @@ func TestPlannedPartialRouting(t *testing.T) {
 			input.Generation = 1
 			input.RuntimeRefName = "runtime"
 			input.Capacity.AWSCluster = "aws"
+			if tc.renamedCluster {
+				input.SourceCluster = "aws1"
+				input.Capacity.AWSCluster = "aws1"
+			}
 			if tc.otherCluster {
 				input.Capacity.AWSCluster = "another-cluster"
 			}
@@ -108,7 +114,7 @@ func TestPlannedPartialRouting(t *testing.T) {
 			if tc.stale {
 				observed = now.Add(-3 * time.Minute)
 			}
-			rt.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": "aws", "status": map[string]interface{}{"observedGeneration": int64(1), "sourceWorldUID": "workload", "sourcePods": snapshots, "phase": "Running", "workloadUID": "workload", "memberWorkloadUID": "member-world", "readyRanks": int64(2), "worldSize": int64(2), "observedAt": observed.Format(time.RFC3339), "pods": pods}}}}
+			rt.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": input.SourceCluster, "status": map[string]interface{}{"observedGeneration": int64(1), "sourceWorldUID": "workload", "sourcePods": snapshots, "phase": "Running", "workloadUID": "workload", "memberWorkloadUID": "member-world", "readyRanks": int64(2), "worldSize": int64(2), "observedAt": observed.Format(time.RFC3339), "pods": pods}}}}
 			sts := p.NewObject("StatefulSet")
 			sts.SetName("trainer")
 			sts.SetNamespace("demo")

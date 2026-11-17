@@ -175,3 +175,65 @@ func TestGroupReleaseRejectsNonPreparedTarget(t *testing.T) {
 		t.Fatal("release accepted a target outside Prepared")
 	}
 }
+
+func TestGroupReplacementDoesNotReuseSourceSSHKey(t *testing.T) {
+	cp, input := groupCheckpointFixture()
+	input.PolicyName = "policy"
+	input.RuntimeRefName = "runtime"
+	input.Capacity.AWSCluster = "aws"
+	policy := p.NewObject("NodeRequest")
+	policy.SetName("policy")
+	policy.SetNamespace("demo")
+	policy.SetUID(input.PolicyUID)
+	policy.SetAnnotations(map[string]string{groupIntentAnnotation: "np-origin-0"})
+	policy.Object["status"] = map[string]interface{}{"checkpoint": map[string]interface{}{"periodicQuiesced": true, "replacementOperation": "np-origin-0", "reason": "group_intent_quiesced"}}
+	rt := p.NewObject("TrainingRuntime")
+	rt.SetName("runtime")
+	rt.SetNamespace("demo")
+	rt.SetUID("runtime-uid")
+	rt.SetGeneration(1)
+	rt.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload"}}
+	snapshots := []interface{}{}
+	objects := []*unstructured.Unstructured{cp, policy, rt}
+	var old *unstructured.Unstructured
+	for rank := 0; rank < 2; rank++ {
+		name := fmt.Sprintf("trainer-%d", rank)
+		node := name + "-node"
+		snapshots = append(snapshots, map[string]interface{}{"name": name, "uid": name + "-CURRENT", "nodeName": node, "rank": int64(rank)})
+		np := p.NewObject("NodeProvision")
+		np.SetNamespace("demo")
+		np.SetName(fmt.Sprintf("np-%d", rank))
+		np.SetUID(types.UID("np-origin-" + fmt.Sprint(rank)))
+		np.SetLabels(map[string]string{p.LabelPolicyUID: "policy"})
+		np.Object["spec"] = map[string]interface{}{"marketType": "Spot"}
+		np.Object["status"] = map[string]interface{}{"nodeName": node, "instanceId": "instance-" + fmt.Sprint(rank), "memberUID": "np-member-" + fmt.Sprint(rank), "phase": "Ready"}
+		objects = append(objects, np)
+		if rank == 0 {
+			old = np
+		}
+	}
+	rt.Object["status"] = map[string]interface{}{"clusters": []interface{}{map[string]interface{}{"clusterName": "aws", "status": map[string]interface{}{"observedGeneration": int64(1), "sourceWorldUID": "workload", "sourcePods": snapshots, "phase": "Unavailable"}}}}
+	sts := p.NewObject("StatefulSet")
+	sts.SetNamespace("demo")
+	sts.SetName("trainer")
+	sts.SetUID("workload")
+	sts.Object["spec"] = map[string]interface{}{"template": map[string]interface{}{"spec": map[string]interface{}{
+		"containers": []interface{}{map[string]interface{}{"name": "trainer", "volumeMounts": []interface{}{map[string]interface{}{"name": "checkpoint", "mountPath": "/checkpoint"}}}},
+		"volumes":    []interface{}{map[string]interface{}{"name": "checkpoint", "persistentVolumeClaim": map[string]interface{}{"claimName": "shared"}}},
+	}}}
+
+	_ = unstructured.SetNestedField(old.Object, "source-key", "spec", "awsConfig", "keyPairName")
+	fixture := checkpointReconcilerFixture(t, time.Now, append(objects, sts)...)
+	r := &PolicyReconciler{Client: fixture.Client, APIReader: fixture.Client, GroupStage: groupStageCapacity}
+	_, _ = r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "")
+	created := p.NewObject("NodeProvision")
+	if err := r.Get(context.Background(), client.ObjectKey{Namespace: "demo", Name: "replacement"}, created); err != nil {
+		t.Fatal(err)
+	}
+	if value := stringField(created.Object, "spec", "awsConfig", "keyPairName"); value != "" {
+		t.Fatalf("source SSH identity inherited: %s", value)
+	}
+	if value := stringField(old.Object, "spec", "awsConfig", "keyPairName"); value != "source-key" {
+		t.Fatal("source identity changed")
+	}
+}

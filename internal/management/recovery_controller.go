@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	awsNodeProvisionCluster     = "aws"
 	phaseCleanupRequested       = "CleanupRequested"
 	spotInterruptionNotice      = "InterruptionNotice"
 	spotRebalanceRecommendation = "RebalanceRecommendation"
@@ -194,9 +193,6 @@ func (s recoverySpec) validateStaticContract() error {
 	if s.Operation == "" || s.SourceCluster == "" || s.TargetCluster == "" {
 		return fmt.Errorf("operation, sourceCluster, and targetCluster are required")
 	}
-	if s.SourceCluster != awsNodeProvisionCluster {
-		return fmt.Errorf("sourceCluster must be aws for SpotRecovery node deletion")
-	}
 	if s.SourceCluster == s.TargetCluster && !s.sameClusterReplacement() {
 		return fmt.Errorf("same-cluster restore is allowed only for explicit replacement operations")
 	}
@@ -240,6 +236,9 @@ func (r *RecoveryReconciler) verifyPolicy(ctx context.Context, ns string, spec r
 	}
 	if string(policy.GetUID()) != spec.PolicyUID || policy.GetGeneration() != spec.PolicyGeneration {
 		return fmt.Errorf("policyRef does not match current NodeRequest uid/generation")
+	}
+	if spec.SourceCluster != configuredAWSCluster(policy) {
+		return fmt.Errorf("sourceCluster must match the NodeRequest configured AWS cluster")
 	}
 	if stringField(policy.Object, "spec", "workloadRef", "uid") != spec.WorkloadUID {
 		return fmt.Errorf("NodeRequest workloadRef.uid mismatch")

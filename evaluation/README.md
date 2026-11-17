@@ -1,3 +1,5 @@
+> 2026-11-17 이후 정량 평가는 [새 사전 점검 절차](../docs/evaluation-readiness-20261117.md)를 우선 적용합니다. 아래 고정 namespace/과거 E1·E2 명칭은 이전 실행용이며 새 평가에 재사용하지 않습니다.
+
 # ResNet18 / CIFAR-10 평가 도구
 
 > ResNet-50 / GPT-2: [실행 위치별 새 모델 가이드](../docs/evaluation-multimodel-guide-20261015.md).

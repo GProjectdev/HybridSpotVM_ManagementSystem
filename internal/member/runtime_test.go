@@ -159,3 +159,26 @@ func TestRuntimeCollectIncludesPodNodeName(t *testing.T) {
 		t.Fatalf("runtime pods missing nodeName evidence: %#v", pods)
 	}
 }
+
+func TestRuntimeWaitsForFirstCompletedUpdate(t *testing.T) {
+	sample := RuntimeObservation{Rank: 0, WorldSize: 1, State: "Running", ObservedAt: time.Now().UTC().Format(time.RFC3339Nano)}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _ = json.NewEncoder(w).Encode(sample) }))
+	defer server.Close()
+	host, ps, _ := net.SplitHostPort(server.Listener.Addr().String())
+	port, _ := strconv.ParseInt(ps, 10, 64)
+	s := runtime.NewScheme()
+	_ = corev1.AddToScheme(s)
+	_ = appsv1.AddToScheme(s)
+	controller := true
+	sts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "trainer", Namespace: "default", UID: "member", Labels: map[string]string{"training.dcnlab.com/workload-uid": "origin"}}, Spec: appsv1.StatefulSetSpec{Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "trainer"}}}}
+	pod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "trainer-0", Namespace: "default", UID: "pod", Labels: map[string]string{"app": "trainer"}, OwnerReferences: []metav1.OwnerReference{{UID: sts.UID, Controller: &controller}}}, Status: corev1.PodStatus{Phase: corev1.PodRunning, PodIP: host}}
+	c := fake.NewClientBuilder().WithScheme(s).WithObjects(sts, pod).Build()
+	r := &RuntimeReconciler{Client: c, HTTP: server.Client()}
+	if e := r.collect(context.Background(), "default", "trainer", "origin", 1, port, map[string]interface{}{}); e == nil || !strings.Contains(e.Error(), "first optimizer update") {
+		t.Fatalf("uninitialized worker accepted: %v", e)
+	}
+	sample.GlobalStep = 1
+	if e := r.collect(context.Background(), "default", "trainer", "origin", 1, port, map[string]interface{}{}); e != nil {
+		t.Fatalf("initialized worker rejected: %v", e)
+	}
+}

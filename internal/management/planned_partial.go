@@ -33,7 +33,7 @@ func (r *PolicyReconciler) ensurePlannedPartialReplacement(ctx context.Context, 
 	if !apierrors.IsNotFound(err) {
 		return true, false, err
 	}
-	if policy.GetAnnotations()[groupIntentAnnotation] != "" || input.SourceCluster != "aws" || input.Capacity.AWSCluster != "aws" {
+	if policy.GetAnnotations()[groupIntentAnnotation] != "" || input.Capacity.AWSCluster == "" || input.SourceCluster != input.Capacity.AWSCluster {
 		return false, false, nil
 	}
 	if active, err := activeGroupRestore(ctx, r.reader(), input); err != nil {

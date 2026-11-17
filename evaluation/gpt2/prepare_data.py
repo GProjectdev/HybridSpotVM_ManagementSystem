@@ -1,6 +1,7 @@
 """Prepare offline WikiText parquet splits as deterministic packed token blocks."""
 import argparse
 import hashlib
+import itertools
 import json
 import os
 from pathlib import Path
@@ -65,9 +66,11 @@ def parquet_rows(paths):
             yield from batch.column(0).to_pylist()
 
 
-def prepare(model_root, data_root, output, sequence_length=512):
+def prepare(model_root, data_root, output, sequence_length=512, max_train_blocks=None):
     if not 2 <= sequence_length <= 1024:
         raise ValueError("sequence length must be in [2, 1024]")
+    if max_train_blocks is not None and (type(max_train_blocks) is not int or max_train_blocks < 1):
+        raise ValueError("max_train_blocks must be a positive integer")
     model_root, output = Path(model_root), Path(output)
     if not model_root.is_dir():
         raise ValueError("model root must be a local directory")
@@ -84,12 +87,17 @@ def prepare(model_root, data_root, output, sequence_length=512):
     manifest = dict(format_version=1, recipe=RECIPE, dtype="uint32-le",
                     sequence_length=sequence_length, tokenizer=tokenizer_identity(model_root),
                     eos_token_id=tokenizer.eos_token_id, splits={})
+    if max_train_blocks is not None:
+        manifest["selection"] = {"max_train_blocks": max_train_blocks, "purpose": "functional-preflight-only"}
     for split, paths in sorted(splits.items()):
         print("Preparing " + split + ": " + str(len(paths)) + " parquet shards", flush=True)
         target = output / (split + ".bin")
         blocks = 0
         with target.open("xb") as stream:
-            for block in packed_blocks(parquet_rows(paths), tokenizer, sequence_length):
+            selected = packed_blocks(parquet_rows(paths), tokenizer, sequence_length)
+            if split == "train" and max_train_blocks is not None:
+                selected = itertools.islice(selected, max_train_blocks)
+            for block in selected:
                 stream.write(struct.pack("<" + "I" * sequence_length, *block))
                 blocks += 1
         if split == "train" and blocks == 0:
@@ -113,8 +121,9 @@ def main(argv=None):
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--sequence-length", type=int, default=512)
+    parser.add_argument("--max-train-blocks", type=int, help="Explicit functional-preflight subset; omit for full evaluation data")
     args = parser.parse_args(argv)
-    prepare(args.model_root, args.data_root, args.output, args.sequence_length)
+    prepare(args.model_root, args.data_root, args.output, args.sequence_length, args.max_train_blocks)
 
 
 if __name__ == "__main__":

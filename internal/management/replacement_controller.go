@@ -350,8 +350,8 @@ func readReplacementSpec(op *unstructured.Unstructured) (replacementSpec, error)
 	if spec.WorkloadAPIVersion != "apps/v1" || spec.WorkloadKind != "StatefulSet" || spec.WorkloadName == "" || spec.WorkloadUID == "" {
 		return spec, fmt.Errorf("StatefulSet workloadRef apiVersion/kind/name/uid is required")
 	}
-	if spec.SourceCluster != awsNodeProvisionCluster || spec.TargetCluster != awsNodeProvisionCluster {
-		return spec, fmt.Errorf("SpotReplacement currently supports only same-cluster aws replacement")
+	if spec.SourceCluster == "" || spec.SourceCluster != spec.TargetCluster {
+		return spec, fmt.Errorf("SpotReplacement supports only same-cluster configured AWS replacement")
 	}
 	if spec.OldNodeProvisionName == "" || spec.OldNodeProvisionUID == "" || spec.ReplacementNodeProvisionName == "" {
 		return spec, fmt.Errorf("old and replacement NodeProvision refs are required")
@@ -412,6 +412,9 @@ func (r *ReplacementReconciler) verifyReplacementPolicy(ctx context.Context, ns 
 	}
 	if string(policy.GetUID()) != spec.PolicyUID || policy.GetGeneration() != spec.PolicyGeneration {
 		return fmt.Errorf("policyRef does not match current NodeRequest uid/generation")
+	}
+	if spec.SourceCluster != configuredAWSCluster(policy) || spec.TargetCluster != configuredAWSCluster(policy) {
+		return fmt.Errorf("replacement clusters must match the NodeRequest configured AWS cluster")
 	}
 	if stringField(policy.Object, "spec", "workloadRef", "uid") != spec.WorkloadUID {
 		return fmt.Errorf("NodeRequest workloadRef.uid mismatch")
