@@ -62,3 +62,30 @@ func TestRecoveryEconomicsRequiresVerifiedIdentity(t *testing.T) {
 		t.Fatal("verified recovery was not connected to economics")
 	}
 }
+
+func TestPaperRecoveryLossUsesElapsedCheckpointAge(t *testing.T) {
+	cp, input := groupCheckpointFixture()
+	now := time.Date(2026, 9, 28, 0, 5, 0, 0, time.UTC)
+	input.RuntimeRefName = "runtime"
+	input.VMPolicyMethod = "paper-eq6-7"
+	input.Economics = p.EconomicsPolicy{Enabled: true, LossCostPerEviction: -1, MaxAgeSeconds: 600}
+	req := newRestoreRequest()
+	req.SetName("restore")
+	req.SetNamespace(input.Namespace)
+	req.SetUID("req")
+	req.SetGeneration(1)
+	req.SetCreationTimestamp(metav1.NewTime(now.Add(-time.Minute)))
+	req.SetLabels(map[string]string{p.LabelPolicyUID: string(input.PolicyUID)})
+	req.SetAnnotations(map[string]string{"training.dcnlab.com/recovery-operation": "op"})
+	req.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": string(input.WorkloadRef.UID)}, "checkpointRef": map[string]interface{}{"checkpointID": "round"}, "sourceCluster": "aws", "targetCluster": "aws", "trainingRuntimeRef": map[string]interface{}{"name": "runtime", "uid": "rt"}}
+	req.Object["status"] = map[string]interface{}{"phase": "Verified", "observedGeneration": int64(1), "verification": map[string]interface{}{"requestUID": "req", "operation": "op", "checkpointID": "round", "sourceCluster": "aws", "targetCluster": "aws", "trainingRuntimeRef": map[string]interface{}{"name": "runtime", "uid": "rt"}, "verifiedAt": now.Format(time.RFC3339)}}
+	r := PolicyReconciler{Client: fake.NewClientBuilder().WithRuntimeObjects(cp, req).Build(), Clock: func() time.Time { return now }}
+	risk := p.RiskSnapshot{SpotPricePerHour: 12, OnDemandPricePerHour: 60}
+	if err := r.applyRecoveryEconomics(context.Background(), &input, p.RuntimeSnapshot{}, risk); err != nil {
+		t.Fatal(err)
+	}
+	// 300 seconds since actual full checkpoint + 60 seconds verified recovery.
+	if input.Economics.LossCostPerEviction != 2 || input.Economics.Source != "verified-request-latency-and-elapsed-checkpoint-age" {
+		t.Fatalf("unexpected loss: %+v", input.Economics)
+	}
+}

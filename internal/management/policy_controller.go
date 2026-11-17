@@ -71,6 +71,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, r.now())
+	if err := r.applyPaperResidency(ctx, input, runtimeSnapshot, riskSnapshot, &decision); err != nil {
+		return ctrl.Result{}, err
+	}
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, r.now()) {
 		decision.ProvisioningBlocked = true
 		decision.Reason = "risk_not_fresh"

@@ -32,6 +32,17 @@ func (r *PolicyReconciler) applyRecoveryEconomics(ctx context.Context, input *p.
 	if latest.IsZero() || !positiveFinite(risk.SpotPricePerHour) || !positiveFinite(risk.OnDemandPricePerHour) {
 		return nil
 	}
+	if input.VMPolicyMethod == "paper-eq6-7" {
+		round, err := selectGroupCheckpoint(ctx, r.reader(), *input)
+		// No measured loss is preferable to inventing a checkpoint age.
+		if err != nil || round.CompletedAt.After(r.now()) {
+			return nil
+		}
+		input.Economics.LossCostPerEviction = r.now().Sub(round.CompletedAt).Seconds()/3600*risk.SpotPricePerHour + seconds/3600*risk.OnDemandPricePerHour
+		input.Economics.ObservedAt = r.now().Format(time.RFC3339Nano)
+		input.Economics.Source = "verified-request-latency-and-elapsed-checkpoint-age"
+		return nil
+	}
 	interval, evaluated := p.AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, 1, r.now())
 	if !evaluated || interval <= 0 {
 		// A bootstrap interval is not evidence of lost work.

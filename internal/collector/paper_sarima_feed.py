@@ -147,19 +147,16 @@ def load_availability_trace(path: Path) -> AvailabilityTrace:
 
 
 def validate_trace(trace: AvailabilityTrace) -> AvailabilityTrace:
-    if trace.gap_seconds <= 0:
-        raise ValueError("gap_seconds must be positive")
-    if 3600 % trace.gap_seconds != 0:
-        raise ValueError("gap_seconds must divide one hour so hourly bins are complete")
+    if not 0 < trace.gap_seconds <= 3600:
+        raise ValueError("gap_seconds must be positive and no more than one hour")
     if len(trace.counts) < 2:
         raise ValueError("need at least two availability samples")
     if trace.start_time is None:
         raise ValueError("start_time is required")
-    if trace.start_time.minute or trace.start_time.second or trace.start_time.microsecond:
-        raise ValueError("start_time must be aligned to an hour boundary")
-    total_seconds = (len(trace.counts) - 1) * trace.gap_seconds
-    if total_seconds < 3600 or total_seconds % 3600 != 0:
-        raise ValueError("availability evidence must cover complete hourly bins")
+    end = trace.start_time + timedelta(seconds=(len(trace.counts) - 1) * trace.gap_seconds)
+    first_full_hour = pd.Timestamp(trace.start_time).ceil("h")
+    if pd.Timestamp(end).floor("h") <= first_full_hour:
+        raise ValueError("availability evidence must cover at least one complete hourly bin")
     return trace
 
 
@@ -170,12 +167,19 @@ def hourly_preemption_rates(trace: AvailabilityTrace) -> pd.Series:
     base = trace.start_time
     for idx in range(1, len(trace.counts)):
         raw_count = max(0, trace.counts[idx - 1] - trace.counts[idx])
-        interval_start = base + timedelta(seconds=(idx - 1) * trace.gap_seconds)
-        hour = pd.Timestamp(interval_start).floor("h")
+        # The loss is first observable at the RIGHT endpoint. Assigning a
+        # straddling interval to its start would leak a later sample into an
+        # earlier forecast hour (e.g. the 195-second trace). Use right-closed
+        # bins (h, h+1], retaining exact-hour samples in the preceding bin.
+        observed = pd.Timestamp(base + timedelta(seconds=idx * trace.gap_seconds))
+        hour = (observed - pd.Timedelta(nanoseconds=1)).floor("h")
         rows.append((hour, raw_count))
     if not rows:
         raise ValueError("need at least two availability samples")
     frame = pd.DataFrame(rows, columns=["hour", "preemptions"])
+    first = pd.Timestamp(base).ceil("h")
+    end = pd.Timestamp(base + timedelta(seconds=(len(trace.counts) - 1) * trace.gap_seconds)).floor("h")
+    frame = frame[(frame["hour"] >= first) & (frame["hour"] < end)]
     hourly = frame.groupby("hour", sort=True)["preemptions"].sum().astype(float)
     return require_complete_hourly_index(hourly)
 
@@ -228,7 +232,8 @@ def forecast_aggregate_preemptions_per_hour(rate: pd.Series, config: EstimatorCo
             enforce_stationarity=False,
             enforce_invertibility=False,
         )
-        fitted = model.fit(disp=False)
+        # Fixed numerical budget; model/order/window are unchanged.
+        fitted = model.fit(disp=False, maxiter=500)
         if not fitted.mle_retvals.get("converged", False):
             raise ValueError("SARIMA fit did not converge")
     predicted = float(fitted.forecast(steps=1).iloc[0])
@@ -263,6 +268,8 @@ def feed_payload(input_path: Path, config: EstimatorConfig, now: datetime | None
             "retrainWindowWeeks": config.retrain_window_weeks,
             "seasonalPeriodHours": config.seasonal_period_hours,
             "samplingGapSeconds": trace.gap_seconds,
+            "hourlyBinning": "right-endpoint-right-closed-complete-utc-hours-v1",
+            "partialEdgeHours": "discarded; no interpolation or rescaling",
             "riskPopulation": trace.risk_population,
             "maxLambdaPerHour": config.max_lambda_per_hour,
             "aggregateForecastPreemptionsPerHour": aggregate_forecast_per_hour,

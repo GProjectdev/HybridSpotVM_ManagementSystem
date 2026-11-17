@@ -71,19 +71,19 @@ def get(cluster, kind, name=None, selector=None):
         args += ["-l", selector]
     return json.loads(kubectl(cluster, *args, "-o", "json"))
 
-def meta(name, run_id, namespaced=True):
+def meta(name, run_id, namespaced=True, *, namespace=None):
     value = {"name": name, "labels": {LABEL: run_id}}
     if namespaced:
-        value["namespace"] = NS
+        value["namespace"] = namespace or NS
     return value
 
-def resource(api, kind, name, run_id, spec=None, namespaced=True):
-    obj = {"apiVersion": api, "kind": kind, "metadata": meta(name, run_id, namespaced)}
+def resource(api, kind, name, run_id, spec=None, namespaced=True, *, namespace=None):
+    obj = {"apiVersion": api, "kind": kind, "metadata": meta(name, run_id, namespaced, namespace=namespace)}
     if spec is not None:
         obj["spec"] = spec
     return obj
 
-def validate(c, run_id, experiment, arm):
+def validate(c, run_id, experiment, arm, *, namespace=None):
     model = c.get("model", "resnet18")
     if model not in ("resnet18", "resnet50", "gpt2"):
         raise ValueError("model must be resnet18, resnet50, or gpt2")
@@ -97,8 +97,11 @@ def validate(c, run_id, experiment, arm):
         length = c.get("sequence_length", 512)
         if type(length) is not int or not 2 <= length <= 1024:
             raise ValueError("sequence_length must be between 2 and 1024")
-    if c.get("namespace") != NS:
-        raise ValueError("namespace must remain " + NS)
+    expected_namespace = namespace or NS
+    if not isinstance(expected_namespace, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,61}[a-z0-9]|[a-z]", expected_namespace):
+        raise ValueError("invalid namespace")
+    if c.get("namespace") != expected_namespace:
+        raise ValueError("namespace must match " + expected_namespace)
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,15}[a-z0-9]|[a-z]", run_id):
         raise ValueError("run-id: 1-17 lowercase letters/digits/hyphens, start with letter")
     if arm not in ({"A", "B"} if experiment == "cost" else {"F60", "F300", "F600", "F1200", "D"}):
@@ -142,8 +145,12 @@ def has_risk_schedule(config):
         config["scenario"] == "interruption" and "risk_schedule" in config)
 
 
-def render(c, source, run_id, experiment, arm):
-    validate(c, run_id, experiment, arm)
+def render(c, source, run_id, experiment, arm, *, namespace=None):
+    from functools import partial
+    ns = namespace or NS
+    resource_for_run = partial(resource, namespace=ns)
+    meta_for_run = partial(meta, namespace=ns)
+    validate(c, run_id, experiment, arm, namespace=ns)
     model = c.get("model", "resnet18")
     data_mount = "/datasets/wikitext103-tokenized" if model == "gpt2" else "/datasets/cifar10"
     entrypoint = "train_gpt2.py" if model == "gpt2" else "train_resnet18.py"
@@ -178,30 +185,30 @@ def render(c, source, run_id, experiment, arm):
                       maxIntervalSeconds=3600 if dynamic else interval,
                       riskBands=[{"maxLambdaPerHour": 1.0, "intervalSeconds": interval}], resume=True)
     policy_spec["checkpoint"] = checkpoint
-    policy = resource("training.dcnlab.com/v1alpha1", "TrainingPolicy", app, run_id, policy_spec)
+    policy = resource_for_run("training.dcnlab.com/v1alpha1", "TrainingPolicy", app, run_id, policy_spec)
     policy["metadata"]["annotations"] = {"training.dcnlab.com/suspend": "true"}
     if experiment == "cost" and arm == "A":
         policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"] = "disabled"
     if experiment == "checkpoint":
         policy["metadata"]["annotations"]["training.dcnlab.com/planned-partial"] = "disabled"
-    risk = resource("training.dcnlab.com/v1alpha1", "SpotRiskProfile", app+"-risk", run_id,
+    risk = resource_for_run("training.dcnlab.com/v1alpha1", "SpotRiskProfile", app+"-risk", run_id,
                     {"provider": "aws", "region": c["region"], "availabilityZone": c["availability_zone"],
                      "instanceType": c["instance_type"], "staticLambdaPerHour": c["initial_risk"],
                      "pollSeconds": 30, "maxAgeSeconds": 3600})
     data_name = app + "-data"
-    pv = resource("v1", "PersistentVolume", data_name, run_id,
+    pv = resource_for_run("v1", "PersistentVolume", data_name, run_id,
                   {"capacity": {"storage": "1Gi"}, "accessModes": ["ReadOnlyMany"],
                    "persistentVolumeReclaimPolicy": "Retain", "storageClassName": "",
-                   "claimRef": {"namespace": NS, "name": data_name},
+                   "claimRef": {"namespace": ns, "name": data_name},
                    "mountOptions": ["ro"], "nfs": {"server": c["nfs_server"], "path": c["nfs_dataset_path"], "readOnly": True}}, False)
-    data_pvc = resource("v1", "PersistentVolumeClaim", data_name, run_id,
+    data_pvc = resource_for_run("v1", "PersistentVolumeClaim", data_name, run_id,
                         {"accessModes": ["ReadOnlyMany"], "storageClassName": "", "volumeName": data_name,
                          "resources": {"requests": {"storage": "1Gi"}}})
-    ckpt = resource("v1", "PersistentVolumeClaim", app+"-checkpoint", run_id,
+    ckpt = resource_for_run("v1", "PersistentVolumeClaim", app+"-checkpoint", run_id,
                     {"accessModes": ["ReadWriteMany"], "storageClassName": c["storage_class"],
                      "resources": {"requests": {"storage": c.get("checkpoint_size", "10Gi")}}})
     env = [{"name": k, "value": str(v)} for k, v in {
-        "WORLD_SIZE": 2, "LOCAL_RANK": 0, "MASTER_ADDR": app+"-0."+app+"."+NS+".svc.cluster.local",
+        "WORLD_SIZE": 2, "LOCAL_RANK": 0, "MASTER_ADDR": app+"-0."+app+"."+ns+".svc.cluster.local",
         "MASTER_PORT": 29500, "NCCL_SOCKET_IFNAME": "eth0",
         "FLUIDCR_CHECKPOINT_PATH": "/checkpoint/$(POD_NAME)/latest.pt",
         "FLUIDCR_REGISTRY_DIR": "/tmp/fluidcr-workers", "FLUIDCR_DISTRIBUTED": 1,
@@ -230,7 +237,7 @@ def render(c, source, run_id, experiment, arm):
                  "volumeMounts": [{"name":"training-script","mountPath":"/workspace","readOnly":True},
                                   {"name":"dataset","mountPath":data_mount,"readOnly":True},
                                   {"name":"shm","mountPath":"/dev/shm"}]}
-    sts = resource("apps/v1","StatefulSet",app,run_id,
+    sts = resource_for_run("apps/v1","StatefulSet",app,run_id,
                    {"serviceName":app,"replicas":0,"podManagementPolicy":"Parallel","updateStrategy":{"type":"OnDelete"},
                     "selector":{"matchLabels":{"app":app}},
                     "template":{"metadata":{"labels":labels,"annotations":{
@@ -249,26 +256,26 @@ def render(c, source, run_id, experiment, arm):
     if model == "gpt2":
         model_name = app + "-model"
         model_pv, model_pvc = copy.deepcopy(pv), copy.deepcopy(data_pvc)
-        model_pv["metadata"] = meta(model_name, run_id, False)
+        model_pv["metadata"] = meta_for_run(model_name, run_id, False)
         model_pv["spec"]["claimRef"]["name"] = model_name
         model_pv["spec"]["nfs"]["path"] = c["nfs_model_path"]
-        model_pvc["metadata"] = meta(model_name, run_id)
+        model_pvc["metadata"] = meta_for_run(model_name, run_id)
         model_pvc["spec"]["volumeName"] = model_name
         member.extend([model_pv, model_pvc])
         container["volumeMounts"].append({"name": "model", "mountPath": "/models/gpt2", "readOnly": True})
         sts["spec"]["template"]["spec"]["volumes"].append({"name": "model", "persistentVolumeClaim": {
             "claimName": model_name, "readOnly": True}})
-    service = resource("v1","Service",app,run_id,
+    service = resource_for_run("v1","Service",app,run_id,
                        {"clusterIP":"None","publishNotReadyAddresses":True,"selector":{"app":app},
                         "ports":[{"name":"control","port":8298},{"name":"rendezvous","port":29500}]})
-    script = resource("v1","ConfigMap",app+"-script",run_id)
+    script = resource_for_run("v1","ConfigMap",app+"-script",run_id)
     script["data"] = {p.name: p.read_text(encoding="utf-8") for p in (HERE/"resnet18").glob("*.py") if not p.name.startswith("test")}
     if model == "gpt2":
         script["data"].update({p.name: p.read_text(encoding="utf-8") for p in (HERE/"gpt2").glob("*.py")
                                if not p.name.startswith("test")})
     if entrypoint not in script["data"]:
         raise ValueError("missing training entrypoint")
-    placement = resource("policy.karmada.io/v1alpha1","PropagationPolicy",app+"-placement",run_id,
+    placement = resource_for_run("policy.karmada.io/v1alpha1","PropagationPolicy",app+"-placement",run_id,
                          {"resourceSelectors":[{"apiVersion":o["apiVersion"],"kind":o["kind"],"name":o["metadata"]["name"]} for o in [service,script,sts]],
                           "placement":{"clusterAffinity":{"clusterNames":[c["cluster"]]}}})
     run = dict(c, run_id=run_id, app=app, policy=app, risk=app+"-risk", experiment=experiment, arm=arm,

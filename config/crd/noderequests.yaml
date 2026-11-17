@@ -114,6 +114,10 @@ spec:
               policy:
                 type: object
                 properties:
+                  method:
+                    type: string
+                    enum: [legacy-survival, paper-eq6-7]
+                    default: legacy-survival
                   alpha:
                     type: number
                     minimum: 0
@@ -139,6 +143,11 @@ spec:
                       enabled:
                         type: boolean
                         default: false
+                      onDemandDurationSeconds:
+                        type: integer
+                        minimum: 1
+                        maximum: 86400
+                        default: 3600
                       lossCostPerEviction:
                         type: number
                         minimum: 0
@@ -347,6 +356,12 @@ spec:
                   observedAt:
                     type: string
                     format: date-time
+                  vmPolicySource:
+                    type: string
+                  vmPolicyStage:
+                    type: string
+                  onDemandHoldUntil:
+                    type: string
                   decisionStage:
                     type: string
                   intervalSource:

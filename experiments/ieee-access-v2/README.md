@@ -40,3 +40,41 @@ Protocol controls already present in source:
 
 Raw artifacts, credentials and model/data files stay outside Git. Missing event
 measurements remain missing; rank steps and replayed tokens must not be summed.
+
+## Original-paper upgrade (2026-11-17)
+
+`Cost_effective.pdf` §4.3 has now been checked. Select the opt-in
+`spec.policy.method: paper-eq6-7`; legacy allocations keep their prior default.
+Eq.6 discounts each shard's throughput by `exp(-lambda * horizonHours)`.
+Eq.7 switches to OD when that ratio is below alpha **or** measured expected
+loss exceeds `OD hourly price * onDemandDurationSeconds / 3600`.
+With no valid loss observation, only the throughput leg runs. With a complete
+durable checkpoint and UID-bound Verified recovery, the economic leg is added
+automatically. Lost work uses actual checkpoint age, not half an interval.
+Request-to-verification recovery latency is explicitly an operational proxy.
+OD residency starts at the exact replacement's Verified full-group restore.
+This is a fixed-world adaptation, without the paper's elastic DP scale-out.
+
+New tools (offline preparation and read-only observation, not a live launcher):
+
+```bash
+python3 evaluation/ieee_v2.py prepare --help
+python3 evaluation/ieee_v2_observe.py --help
+python3 evaluation/ieee_v2.py metrics --help
+```
+
+Preparation derives a fresh namespace per run and writes suspended, unbound
+policies. E2 requires a separately locked risk manifest. Observation stores
+sanitized run/Pod-UID-scoped events; metrics deduplicate replay and require both
+ranks' completion plus a reviewed, terminated-instance billing ledger for cost.
+They leave missing stalls/state review incomplete rather than inventing values.
+The legacy live runner must still not be used for the new matrix.
+
+The 195-second causal binning fix is tested. A four-week fit / next-seven-day
+preview now generates 168 forecasts; 65 cross the throughput switch threshold.
+Numerical optimization uses a fixed 500-iteration budget; model, window, seasonal
+period, alpha and data split are unchanged. This preview has declared relative
+clock/population assumptions and remains **PREVIEW_NOT_LOCKED**. See
+`reports/upgrade_checks.json` and the dated preflight addendum. No new paid VM
+was started for this upgrade. Full-group GPU recovery/interruption acceptance
+and live-run gates remain outstanding.

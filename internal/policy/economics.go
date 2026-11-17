@@ -7,11 +7,12 @@ import (
 
 // Loss is per individual eviction, in the same currency as the hourly VM price.
 type EconomicsPolicy struct {
-	Source              string
-	Enabled             bool
-	LossCostPerEviction float64
-	ObservedAt          string
-	MaxAgeSeconds       int64
+	Source                  string
+	Enabled                 bool
+	LossCostPerEviction     float64
+	ObservedAt              string
+	MaxAgeSeconds           int64
+	OnDemandDurationSeconds int64
 }
 
 func economicFallback(input PolicyInput, risk RiskSnapshot, now time.Time) (bool, bool) {
@@ -29,7 +30,15 @@ func economicFallback(input PolicyInput, risk RiskSnapshot, now time.Time) (bool
 	}
 	hours := float64(maxInt64(1, input.ForecastSeconds)) / 3600
 	probability := -math.Expm1(-risk.LambdaPerHour * hours)
-	odCost := risk.OnDemandPricePerHour * hours
+	odHours := hours
+	if input.VMPolicyMethod == "paper-eq6-7" {
+		seconds := e.OnDemandDurationSeconds
+		if seconds <= 0 {
+			seconds = 3600
+		}
+		odHours = float64(seconds) / 3600
+	}
+	odCost := risk.OnDemandPricePerHour * odHours
 	expectedLoss := probability * e.LossCostPerEviction
 	if !finite(odCost) || !finite(expectedLoss) {
 		return false, false

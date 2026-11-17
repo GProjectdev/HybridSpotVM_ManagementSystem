@@ -1,3 +1,5 @@
+> 아래 초기 판정은 당시 점검 기록이다. 이후 수정 결과는 문서 끝의 “원논문 확인 후 추가 점검”을 함께 읽는다.
+
 # 2026-11-17 사전 점검 — 개정 계획 기준
 
 정식 평가 결과가 아닌 기능 점검/예비 측정 보고서다. 기준 문서는
@@ -139,3 +141,37 @@ artifact/SpotWatcher DaemonSet desired=0인 상태는 새 GPU에서의 검증 �
 백업: `/home/ubuntu/v6-readiness-20261117`; 이 문서와 설정만 Git에 반영하며 원본 비밀
 자료는 반영하지 않는다. 예정된 18:00보다 일찍 유료 점검을 마쳤다. 다음 유료 Run을
 자동 예약하거나 시작하지 않았다.
+
+## 원논문 확인 후 추가 점검 — 2026-11-17
+
+추가된 `/home/ubuntu/graduate/Evaluation/Cost_effective.pdf`의 §4.3 식 (6),
+(7)을 직접 확인했다. 원문 미확인과 195초 입력 거부는 해소됐다.
+
+- opt-in `paper-eq6-7` 구현: shard별 처리율 조건 OR 예상 손실 비용 조건.
+  초기에는 없는 측정값을 0으로 채우지 않고 처리율 조건만 적용한다.
+  실제 durable full checkpoint와 UID-bound Verified RestoreRequest가 모이면
+  비용 조건을 자동 활성화한다. T_wasted는 마지막 저장 이후 실제 경과시간이며,
+  T_recover는 request→verification 실측 지연이라는 운영상 대용치다.
+- 예측 horizon과 OD 유지 시간은 분리했다. 후자는 3600초이며, 정확한 UID로
+  Verified된 full-group OD 대체 자원을 그 시간 동안 유지한다.
+  fixed-world=2 적용이며 원논문의 elastic DP 확장 전체 재현은 아니다.
+- MGMT 정책 이미지와 기존 Karmada/AWS/ONPRE1 NodeRequest CRD schema를
+  업데이트했다. MGMT API에 없는 CRD는 새로 설치하지 않았다.
+- StatefulSet 전체 Checkpoint rank가 모두 0으로 기록되던 오류를 수정했다.
+  AWS/ONPRE1 Checkpoint Deployment rollout을 확인했다.
+- run별 namespace 준비 도구, 읽기 전용 수집기, 양 rank 완료·중복 제거·
+  소유 VM 전체 청구 구간 검산 도구를 추가했다. 새 라이브 실행기는 아직 아니다.
+- Go 전체 검사 통과. 평가 도구 209개 통과(2 skip). SARIMA/preview CPU
+  컨테이너 검사 18개 통과(skip 없음). Checkpoint rank 검사 통과.
+- 실제 Trace 28일 학습/이후 7일 168시간 인과 예측 생성. 기본 최적화 반복
+  한도로 수렴 실패한 뒤 모델/계수 선택 방식은 유지하고 반복 상한을 500으로
+  고정하니 수렴했다. 65시간에서 식(6)/(7)의 처리율 전환 조건이 성립했다.
+  상대 시계와 population=1 가용성 proxy 가정은 명시적으로 보존했다.
+  서울 실측 위험, 정식 risk lock 또는 실제 정책 전환 결과로 해석하지 않는다.
+
+**현재 판정:** E2 준비의 코드·입력 장벽 일부를 해결했으나, 정식 평가 완료나
+최종 GO는 아니다. 공통 full-group GPU 복구와 전환 중 중단 처리, risk provenance/
+구간 선택 규칙 잠금, 새 Run의 bounded orchestration 및 완료 상태·stall 계측
+승인 조건을 실제로 확인해야 한다. GPU quota 수치는 권한 부족으로 미검증으로
+남기며, 이를 해결하라고 반복 요구하지 않는다. 이번 추가 작업에서는 새 유료
+VM/FIS를 만들지 않았다. 이미지 digest와 원문/예측 해시는 `upgrade_checks.json` 참조.

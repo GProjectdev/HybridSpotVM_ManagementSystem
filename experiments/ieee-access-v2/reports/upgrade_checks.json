@@ -1,0 +1,61 @@
+{
+  "utc": "2026-11-17T04:26:24.422021+00:00",
+  "original_paper": {
+    "path": "/home/ubuntu/graduate/Evaluation/Cost_effective.pdf",
+    "sha256": "125910564e18eda0cba1becf95e3e6545bafc93ccf06f1af82c4982deb2e5346",
+    "section": "4.3 equations 6/7"
+  },
+  "checks": {
+    "management_go": "go test ./... PASS",
+    "evaluation": "209 tests PASS; 2 skipped",
+    "collector": "18 CPU container tests PASS; no skips",
+    "checkpoint": "internal/checkpoint PASS"
+  },
+  "trace_preview": {
+    "status": "PREVIEW_NOT_LOCKED",
+    "forecast_count": 168,
+    "throughput_switch_hours": 65,
+    "lambda_min": 0.0,
+    "lambda_max": 1.6915754094475826,
+    "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "source_trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "optimizer_maxiter": 500,
+    "training_hours": 672,
+    "held_out_hours": 168,
+    "wall_seconds_per_trace_hour": 3600,
+    "relative_clock_assumption": true,
+    "population_proxy_assumption": true
+  },
+  "deployments": {
+    "management": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:4884188a7c81c8c96b0fbb04a58651eda9db82ef000d5f41d7f51bfa4a020586",
+      "schemas": {
+        "MGMT": "CRD absent; no new installation",
+        "KARMADA": "additive CRD schema applied",
+        "AWS": "additive CRD schema applied",
+        "ONPRE1": "additive CRD schema applied"
+      },
+      "vm_or_experiment_created": false
+    },
+    "checkpoint": {
+      "pinned": "docker.io/jeongseungjun/stateful-migration-system@sha256:65371cdbe157d0152357d47230a28ed799330eb9a4ad44bfd008046e696d4ea3",
+      "registry_verified": true,
+      "source_sha256": "98606fbd286687be22ebcc3f0ed946115f198f091555dc18891687423d338098",
+      "image": "docker.io/jeongseungjun/stateful-migration-system:v6.0-checkpoint-ranks-98606fbd2866"
+    },
+    "feed_image": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system:paper-sarima-v6.0-causal-832482456488",
+      "pinned": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:805aa190cd02dae16cc3faeee06a520b2b8555ee8085187b8b9a25887bf97744",
+      "source_sha256": "832482456488d0da025db0c5ccc6da9a45fb8841d911a90fdbc2c9ed02b94002",
+      "registry_verified": true,
+      "cpu_tests_passed": true,
+      "deployed": false
+    }
+  },
+  "paid_gpu_test_in_this_upgrade": false,
+  "remaining_gates": [
+    "full-group end-to-end GPU recovery and interruption during replacement",
+    "E2 risk input provenance and selection-rule lock",
+    "bounded fresh-run live orchestration and actual completion-state/stall acceptance"
+  ]
+}

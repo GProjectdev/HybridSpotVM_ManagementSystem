@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	NodeRequestGVK    = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "NodeRequest"}
+	NodeRequestGVK       = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "NodeRequest"}
 	SpotRiskProfileGVK   = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "SpotRiskProfile"}
 	TrainingRuntimeGVK   = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "TrainingRuntime"}
 	SpotRecoveryGVK      = schema.GroupVersionKind{Group: Group, Version: Version, Kind: "SpotRecovery"}
@@ -164,6 +164,7 @@ type PolicyInput struct {
 	Capacity        CapacityDefaults
 	Checkpoint      CheckpointPolicy
 	Economics       EconomicsPolicy
+	VMPolicyMethod  string
 }
 
 type Decision struct {
@@ -182,6 +183,9 @@ type Decision struct {
 	IntervalCostEvaluated     bool
 	ProvisioningBlocked       bool
 	Reason                    string
+	VMPolicySource            string
+	VMPolicyStage             string
+	OnDemandHoldUntil         string
 }
 
 func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
@@ -206,13 +210,15 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 		TargetWorkers:   nestedIntDefault(obj.Object, 0, "spec", "targetWorkers"),
 		MinOnDemand:     nestedIntDefault(obj.Object, 0, "spec", "policy", "minOnDemand"),
 		FixedOnDemand:   fixedOnDemand,
+		VMPolicyMethod:  nestedStringDefault(obj.Object, "legacy-survival", "spec", "policy", "method"),
 		Alpha:           clampAlpha(nestedFloatDefault(obj.Object, DefaultAlpha, "spec", "policy", "alpha")),
 		ForecastSeconds: maxInt64(1, nestedIntDefault(obj.Object, DefaultForecastHorizonSeconds, "spec", "policy", "forecastHorizonSeconds")),
 		Economics: EconomicsPolicy{
-			Enabled:             nestedBoolDefault(obj.Object, false, "spec", "policy", "economics", "enabled"),
-			LossCostPerEviction: nestedFloatDefault(obj.Object, -1, "spec", "policy", "economics", "lossCostPerEviction"),
-			ObservedAt:          nestedStringDefault(obj.Object, "", "spec", "policy", "economics", "observedAt"),
-			MaxAgeSeconds:       nestedIntDefault(obj.Object, 600, "spec", "policy", "economics", "maxAgeSeconds"),
+			Enabled:                 nestedBoolDefault(obj.Object, false, "spec", "policy", "economics", "enabled"),
+			LossCostPerEviction:     nestedFloatDefault(obj.Object, -1, "spec", "policy", "economics", "lossCostPerEviction"),
+			ObservedAt:              nestedStringDefault(obj.Object, "", "spec", "policy", "economics", "observedAt"),
+			MaxAgeSeconds:           nestedIntDefault(obj.Object, 600, "spec", "policy", "economics", "maxAgeSeconds"),
+			OnDemandDurationSeconds: nestedIntDefault(obj.Object, 3600, "spec", "policy", "economics", "onDemandDurationSeconds"),
 		},
 		Capacity: CapacityDefaults{
 			AWSCluster:         nestedStringDefault(obj.Object, DefaultAWSCluster, "spec", "capacity", "aws", "karmadaCluster"),
@@ -339,6 +345,12 @@ func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decis
 }
 
 func ValidateFixedComposition(input PolicyInput) error {
+	if input.VMPolicyMethod != "" && input.VMPolicyMethod != "legacy-survival" && input.VMPolicyMethod != "paper-eq6-7" {
+		return fmt.Errorf("unsupported spec.policy.method")
+	}
+	if input.VMPolicyMethod == "paper-eq6-7" && (input.MinOnDemand < 0 || input.MinOnDemand > input.TargetWorkers || input.Economics.OnDemandDurationSeconds < 0 || input.Economics.OnDemandDurationSeconds > 86400) {
+		return fmt.Errorf("invalid paper policy minimum capacity or OD duration")
+	}
 	if input.FixedOnDemand == nil {
 		return nil
 	}
@@ -361,6 +373,15 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 		return Decision{DesiredWorkers: desired, Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: applyIntervalBounds(conservativeInterval(input.Checkpoint), input.Checkpoint), CostEvaluated: false, ProvisioningBlocked: true, Reason: "risk_unavailable"}
 	}
 	spot := maxStableSpotWorkers(desired, risk.LambdaPerHour, float64(horizonSeconds)/3600, alpha)
+	if input.VMPolicyMethod == "paper-eq6-7" {
+		// Eq.6/7 is per DP shard; the shared baseline throughput cancels.
+		// Do not multiply the hazard by the number of Spot shards as the
+		// legacy joint-survival allocation does.
+		spot = maxInt64(0, desired-input.MinOnDemand)
+		if math.Exp(-risk.LambdaPerHour*float64(horizonSeconds)/3600) < alpha {
+			spot = 0
+		}
+	}
 	onDemand := desired - spot
 	if onDemand < input.MinOnDemand {
 		onDemand = input.MinOnDemand
@@ -384,6 +405,19 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 		spot = desired - onDemand
 		reason = "fixed_worker_composition"
 	}
+	vmSource, vmStage := "legacy-independent-survival", "Bootstrap"
+	if input.VMPolicyMethod == "paper-eq6-7" {
+		vmSource, vmStage = "desai-section-4.3-equations-6-7-fixed-world", "ThroughputOnlyBootstrap"
+		if costEvaluated {
+			vmStage = "MeasuredLossAndThroughput"
+		}
+		if reason == "independent_spot_survival" {
+			reason = "paper_effective_spot_throughput"
+		}
+	}
+	if input.FixedOnDemand != nil {
+		vmStage = "StaticCompositionControl"
+	}
 	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, now)
 	interval = applyIntervalBounds(interval, input.Checkpoint)
 	stage, source := "Bootstrap", "risk-band-bootstrap"
@@ -403,7 +437,7 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 			economicsSource = "operator-calibration"
 		}
 	}
-	return Decision{DecisionStage: stage, IntervalSource: source, PriceEvaluated: priceEvaluated, EconomicsSource: economicsSource, DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
+	return Decision{VMPolicySource: vmSource, VMPolicyStage: vmStage, DecisionStage: stage, IntervalSource: source, PriceEvaluated: priceEvaluated, EconomicsSource: economicsSource, DesiredWorkers: desired, OnDemandWorkers: maxInt64(0, onDemand), SpotWorkers: maxInt64(0, spot), Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: interval, CostEvaluated: costEvaluated, IntervalCostEvaluated: intervalEvaluated, Reason: reason}
 }
 
 // MeasuredCostMaxAge allows one configured checkpoint interval plus completion

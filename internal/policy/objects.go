@@ -155,6 +155,9 @@ func NewFluidCRMigration(input PolicyInput, runtime RuntimeSnapshot, startedAt t
 func PolicyStatus(decision Decision, observedAt time.Time) map[string]interface{} {
 	return map[string]interface{}{
 		"decisionStage":                         decision.DecisionStage,
+		"vmPolicySource":                        decision.VMPolicySource,
+		"vmPolicyStage":                         decision.VMPolicyStage,
+		"onDemandHoldUntil":                     decision.OnDemandHoldUntil,
 		"intervalSource":                        decision.IntervalSource,
 		"priceEvaluated":                        decision.PriceEvaluated,
 		"economicsSource":                       decision.EconomicsSource,

@@ -8,6 +8,36 @@ import paper_sarima_feed as sarima
 
 
 class PaperSARIMAPreprocessingTest(unittest.TestCase):
+    def test_195_second_cross_boundary_drop_never_enters_previous_hour(self):
+        # Sample 18 is at 00:58:30; sample 19 at 01:01:45 first reveals loss.
+        start = datetime(2026, 9, 26, tzinfo=timezone.utc)
+        values = [1] * 19 + [0] * 20
+        trace = sarima.validate_trace(sarima.AvailabilityTrace(values, 195, 1, start))
+        rates = sarima.hourly_preemption_rates(trace)
+        self.assertEqual(list(rates), [0.0, 1.0])
+        # A future change in the partial tail must not alter completed bins.
+        trace.counts[-1] = 100
+        self.assertEqual(list(sarima.hourly_preemption_rates(trace)), [0.0, 1.0])
+
+    def test_non_aligned_start_and_partial_tail_are_discarded(self):
+        start = datetime(2026, 9, 26, 0, 15, tzinfo=timezone.utc)
+        trace = sarima.validate_trace(sarima.AvailabilityTrace([10, 9, 8, 7, 6, 5], 1800, 10, start))
+        rates = sarima.hourly_preemption_rates(trace)
+        self.assertEqual(list(rates), [2.0])
+        self.assertEqual(rates.index[0], sarima.pd.Timestamp("2026-09-26T01:00:00Z"))
+
+    def test_missing_start_population_and_incomplete_hour_still_fail_closed(self):
+        start = datetime(2026, 9, 26, tzinfo=timezone.utc)
+        for trace in [sarima.AvailabilityTrace([1, 0], 195, 1, start),
+                      sarima.AvailabilityTrace([1, 0], 3601, 1, start),
+                      sarima.AvailabilityTrace([1, 0], 3600, 1, None)]:
+            with self.assertRaises(ValueError):
+                sarima.validate_trace(trace)
+        path = self.write_json({"metadata": {"gap_seconds": 195}, "data": [1] * 40})
+        self.addCleanup(path.unlink)
+        with self.assertRaisesRegex(ValueError, "risk_population"):
+            sarima.load_availability_trace(path)
+
     def write_json(self, payload):
         handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
         try:
