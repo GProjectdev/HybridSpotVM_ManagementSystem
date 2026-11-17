@@ -1,0 +1,82 @@
+{
+  "scope": "validation in existing namespace only; no persisted resources, no Pod admission/real mount or GPU proof",
+  "results": [
+    {
+      "cluster": "karmada",
+      "kind": "Service",
+      "name": "eval-data-api-check",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "karmada",
+      "kind": "ConfigMap",
+      "name": "eval-data-api-check-script",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "karmada",
+      "kind": "StatefulSet",
+      "name": "eval-data-api-check",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "karmada",
+      "kind": "SpotRiskProfile",
+      "name": "eval-data-api-check-risk",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "karmada",
+      "kind": "PropagationPolicy",
+      "name": "eval-data-api-check-placement",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "karmada",
+      "kind": "NodeRequest",
+      "name": "eval-data-api-check",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "aws",
+      "kind": "PersistentVolume",
+      "name": "eval-data-api-check-data",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "aws",
+      "kind": "PersistentVolumeClaim",
+      "name": "eval-data-api-check-data",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "aws",
+      "kind": "PersistentVolumeClaim",
+      "name": "eval-data-api-check-checkpoint",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "aws",
+      "kind": "PersistentVolume",
+      "name": "eval-data-api-check-model",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    },
+    {
+      "cluster": "aws",
+      "kind": "PersistentVolumeClaim",
+      "name": "eval-data-api-check-model",
+      "server_dry_run_passed": true,
+      "diagnostic": ""
+    }
+  ]
+}

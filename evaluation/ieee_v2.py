@@ -210,6 +210,8 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
     if audit_ok:
         audit_ok = all(len({e[field] for rows in audits.values() for e in rows}) == 1
                        for field in ('model_sha256','optimizer_sha256','data_contract_sha256'))
+    if info.get('model') == 'resnet50':
+        audit_ok = audit_ok and all(e.get('model_digest_scope') == 'parameters' and e.get('rank_local_buffers_sha256') for rows in audits.values() for e in rows)
     result = {"run_id": info["run_id"], "arm": info["arm"], "all_rank_completion_observed": done,
               "quality": "REQUIRES_STATE_AND_PROTOCOL_REVIEW" if done else "INCOMPLETE",
               "target_steps": goal, "useful_tokens": goal * info["tokens_per_committed_step"] if done else None,

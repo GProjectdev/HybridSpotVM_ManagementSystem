@@ -1,0 +1,13 @@
+{
+  "source_url": "https://raw.githubusercontent.com/skypilot-org/spot-traces/main/availability/1-node/aws-02-15-2023/us-east-2a_v100_1.json",
+  "sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+  "public_bytes_match": true,
+  "samples": 20158,
+  "gap_seconds": 195,
+  "historical_region": "us-east-2a",
+  "gpu": "V100",
+  "measured_seoul_hazard": false,
+  "actual_evictions": false,
+  "replay_manifest": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/ieee-access-v2/config/risk_replay_manifest.json",
+  "earlier_source_manifest_blockers_superseded_by_replay_manifest": true
+}

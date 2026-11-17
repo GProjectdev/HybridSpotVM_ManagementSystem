@@ -1,0 +1,93 @@
+{
+  "updated_at_utc": "2026-11-17T08:30:20.585128+00:00",
+  "data_ready_target_kst": "2026-11-18",
+  "experiment_end_target_kst": "2026-11-27",
+  "today_stop_deadline_kst": "2026-11-17T22:00:00+09:00",
+  "learning_data_preparation": "COMPLETE",
+  "gpt2": {
+    "dataset": "WikiText-103",
+    "reuse_existing": true,
+    "processed_manifest_sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988",
+    "combined_asset_receipt_sha256": "cac21bb171fea20c0dcfbdb5b662d6c04c211c342b3595b59c4f90ec39c8b9f3",
+    "combined_asset_receipt": "/home/ubuntu/v6-preflight-20261116T091400Z/live/full-evaluation-assets.json",
+    "raw_and_model_files_verified": true,
+    "processed_splits_verified": true,
+    "per_rank_batch": 4,
+    "seed": 42,
+    "goal_steps": 4747,
+    "goal_status": "provisional; only prior same-hardware GPT-2 sizing reusable"
+  },
+  "resnet50": {
+    "dataset": "CIFAR-10",
+    "archive_md5": "c58f30108f718f92721af3b95e74349a",
+    "manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+    "cpu_real_two_rank_fresh_process_restore_passed": true,
+    "cpu_smoke_per_rank_batch": 2,
+    "cpu_smoke_steps": 4,
+    "current_training_image_cpu_passed": true,
+    "formal_gpu_batch_candidate": 32,
+    "formal_gpu_batch_locked": false,
+    "formal_goal_steps": null,
+    "seed": 42,
+    "rank_local_bn_buffers_differ_legitimately": true
+  },
+  "member_nfs_read": true,
+  "server_dry_run": {
+    "passed": 11,
+    "total": 11,
+    "no_persisted_resources": true,
+    "fixed_bug": "spec.capacity.aws.instanceType; removed invalid top-level instanceType"
+  },
+  "risk": {
+    "current_live_input": "static-experiment-spec",
+    "continuous_actual_aws_preemption_history": false,
+    "recovered_current_snapshot_points": 6,
+    "external_skypilot_input": "offline compatible; relative clock and explicit proxy population; not Seoul measured hazard",
+    "existing_model_redeveloped": false,
+    "external_runtime_feed_activated": false,
+    "required_before_policy_run": [
+      "choose and freeze static or historical proxy input identically within each comparison pair",
+      "if external feed chosen, bind existing TLS endpoint and per-run clock"
+    ]
+  },
+  "prices": {
+    "read_only_current_quote_saved": true,
+    "refresh_required_before_each_real_run": true,
+    "tools": [
+      "evaluation/price_receipt.py",
+      "evaluation/ieee_v2_prices.py"
+    ]
+  },
+  "fis": {
+    "executed_today": false,
+    "read_only_receipt_tool": "evaluation/fis_receipt.py",
+    "collection_time": "E2 execution only",
+    "remaining_execution_gate": "legacy fault executor needs final committed-step/NodeRequest UID integration before use"
+  },
+  "tests": {
+    "evaluation": {
+      "run": 229,
+      "passed": 227,
+      "skipped_no_host_torch": 2
+    },
+    "resnet_unit": {
+      "run": 19,
+      "passed": 17,
+      "skipped_no_host_torch": 2
+    },
+    "cpu_collective": {
+      "passed": 4,
+      "initial_optimizer_case_timeout_fixed_by_valid_explicit_test_manifest": true
+    }
+  },
+  "remaining": [
+    "Select GPU and lock per-model batch/goal/deadline; ResNet needs its own GPU pilot",
+    "Actual new-GPU CUDA/NCCL/full-group controller restore acceptance remains unverified",
+    "Before E2, verify final committed-step single-FIS targeting/deadline integration",
+    "At run time verify exact image, new namespace/UID/PVC, clock and current prices"
+  ],
+  "paid_vm_actions_today": false,
+  "fis_actions_today": false,
+  "evidence_directory": "/home/ubuntu/v6-readiness-20261117/data-preparation",
+  "original_plan_pdf_unchanged": true
+}

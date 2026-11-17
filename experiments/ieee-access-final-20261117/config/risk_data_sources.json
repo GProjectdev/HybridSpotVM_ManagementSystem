@@ -1,0 +1,24 @@
+{
+  "current_collector_input": "static-experiment-spec",
+  "continuous_actual_aws_history_available": false,
+  "external_input_status": "OFFLINE_COMPATIBLE_WITH_EXISTING_PAPER_ESTIMATOR; NOT_ACTIVATED",
+  "source_url": "https://raw.githubusercontent.com/skypilot-org/spot-traces/main/availability/1-node/aws-02-15-2023/us-east-2a_v100_1.json",
+  "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "matches_previous_locked_forecast": true,
+  "clock": "relative, 1 historical hour per wall hour; no original absolute timestamps",
+  "training_hours": 672,
+  "held_out_hours": 168,
+  "model": "existing SARIMA(1,1,1)(1,0,1)[24]",
+  "meaning": "external US V100 availability proxy; not actual Seoul/g5 preemption hazard",
+  "risk_population_assumption": "one requested availability slot in 1-node trace; proxy assumption, not observed at-risk running instances",
+  "runtime_gates": [
+    "choose and freeze input for identical Hybrid comparison pairs",
+    "explicit per-run UTC origin",
+    "trusted TLS endpoint",
+    "collector CA and exact profile binding",
+    "fresh actual hardware prices"
+  ],
+  "actual_preemption_data_collected_at": "E2 only; exact FIS/NodeProvision/EC2/rank evidence",
+  "mandatory_for_core_E1_E2": false
+}

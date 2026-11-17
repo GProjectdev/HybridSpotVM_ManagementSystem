@@ -55,5 +55,11 @@
     "condition_date": "2026-11-25",
     "do_not_develop_4_rank_support_for_this_plan": true
   },
-  "paid_run_authorized_by_document": false
+  "paid_run_authorized_by_document": false,
+  "models": [
+    "gpt2",
+    "resnet50"
+  ],
+  "model_rule": "Run E1/E2 independently for each model; no cross-model baseline reuse or throughput comparison. GPT-2 tokens; ResNet-50 samples.",
+  "resnet50_target": "requires own selected-hardware pilot; GPT-2 goal/fault steps are not transferable"
 }

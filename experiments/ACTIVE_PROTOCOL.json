@@ -4,5 +4,10 @@
   "source": "/home/ubuntu/graduate/Evaluation/Hybrid_DDP_Evaluation_Plan_E1_E2_E3_20261117.md",
   "date_kst": "2026-11-17",
   "previous_protocol": "ieee-access-v2",
-  "status": "day-1 preparation; not a paid-run approval"
+  "status": "day-1 preparation; not a paid-run approval",
+  "supplement": "experiments/ieee-access-final-20261117/DATA_PREPARATION.md",
+  "models": [
+    "gpt2",
+    "resnet50"
+  ]
 }

@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "scope": "CPU Gloo real CIFAR-10/ResNet-50; fresh-process FluidCR restore and next update exact per rank; not GPU/controller acceptance",
+  "rows": [
+    {
+      "rank": 0,
+      "step": 4,
+      "model_sha256": "1cbbbd658b75504e6d94cb91a9a1f5078e07e1df7df3d5983f9487ea6ad9247b",
+      "parameters_sha256": "4eecce2a96c003d3fd822e4df3c9de7b04f190d7e53f1292e80efcf6c93a870a",
+      "buffers_sha256": "ea08eeefb1f7eb9ff993db1ed3d05bca4a3e754e330e6527fd2f7e188387ea43",
+      "optimizer_sha256": "33c9fd3a3e5bf1a09f060b5a8633613f7f79e6dc5fa71d858e54cf8b8a1717f7",
+      "rng_sha256": "264c3303c2c54298cd0312633eb27f6c599121527bb7f45c14d4fe5d8637a5db"
+    },
+    {
+      "rank": 1,
+      "step": 4,
+      "model_sha256": "62c7572fc5a4949f3b93c55eb66048a579427b631bbd05932f0623f1f0ba1831",
+      "parameters_sha256": "4eecce2a96c003d3fd822e4df3c9de7b04f190d7e53f1292e80efcf6c93a870a",
+      "buffers_sha256": "d56920b45926256f0b9d254bbffcf06676348736adf5ca62fa1a8ab925d400e2",
+      "optimizer_sha256": "33c9fd3a3e5bf1a09f060b5a8633613f7f79e6dc5fa71d858e54cf8b8a1717f7",
+      "rng_sha256": "e1ba3f4f41508f56406669b421b5fa02da3814376557f486e504a7015d5426ab"
+    }
+  ]
+}

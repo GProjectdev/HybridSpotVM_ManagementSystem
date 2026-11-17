@@ -7,7 +7,56 @@ class FinalProtocolTests(unittest.TestCase):
     def setUp(self):
         root=Path(__file__).resolve().parents[1]
         self.c=json.loads((root/'experiments/ieee-access-final-20261117/config/run_config.provisional.json').read_text())
-        self.source={'spec':{'capacity':{'instanceType':'g5.xlarge','aws':{'ami':'ami-reviewed','subnetId':'subnet-a','vpcId':'vpc-a','securityGroupIds':['sg-a'],'credentialsRef':{'name':'credentials','namespace':'old'}}}}}
+        self.source={'spec':{'capacity':{'aws':{'instanceType':'g5.xlarge','ami':'ami-reviewed','subnetId':'subnet-a','vpcId':'vpc-a','securityGroupIds':['sg-a'],'credentialsRef':{'name':'credentials','namespace':'old'}}}}}
+    def resnet(self):
+        c=copy.deepcopy(self.c)
+        c.update(model='resnet50',sequence_length=None,batch_size=8,goal_steps=100,
+                 learning_rate=.1,momentum=.9,weight_decay=.0005,
+                 dataset={'name':'cifar10','split':'train','examples':50000},
+                 target_provenance={'model':'resnet50','status':'PILOT_REQUIRED'},
+                 nfs_dataset_path='/mnt/nfs/reviewed-cifar10',nfs_model_path=None)
+        c['training_lock'].update({k:c[k] for k in ('model','sequence_length','batch_size','goal_steps','learning_rate','momentum','weight_decay')})
+        return c
+
+    def test_resnet_uses_cifar_samples_and_cannot_mix_gpt_baseline(self):
+        c=self.resnet()
+        values={a:final.render(c,self.source,'rn-'+a.lower(),a) for a in final.ARMS}
+        for info,member,objects,policy in values.values():
+            self.assertEqual(info['model'],'resnet50');self.assertEqual(info['useful_unit'],'samples')
+            self.assertIsNone(info['tokens_per_committed_step']);self.assertEqual(info['samples_per_committed_step'],16)
+            sts=next(o for o in objects if o['kind']=='StatefulSet')
+            env={v['name']:v.get('value') for v in sts['spec']['template']['spec']['containers'][0]['env']}
+            self.assertEqual(env['EVAL_MODEL'],'resnet50');self.assertEqual(env['EVAL_MOMENTUM'],'0.9')
+            self.assertNotIn('EVAL_MODEL_ROOT',env)
+            self.assertFalse(any(p['metadata']['name'].endswith('-model') for p in member))
+        self.assertTrue(final.compatible_baseline_config(values['E1-B'][0],values['E2-B'][0]))
+        gpt=final.render(self.c,self.source,'gpt','E1-B')[0]
+        self.assertFalse(final.compatible_baseline_config(gpt,values['E2-B'][0]))
+        c['target_provenance']['model']='gpt2'
+        with self.assertRaises(ValueError):final.render(c,self.source,'bad','E1-B')
+
+    def test_model_mismatch_and_resnet_unit_reporting_fail_closed(self):
+        c=self.resnet();c['training_lock']['model']='gpt2'
+        with self.assertRaises(ValueError):final.render(c,self.source,'bad','E1-A')
+        info=final.render(self.resnet(),self.source,'rn-metrics','E1-A')[0]
+        result=final.metrics(info,[])
+        self.assertEqual(result['useful_unit'],'samples');self.assertIsNone(result['useful_tokens'])
+        self.assertIsNone(result['cost_per_useful_token_usd']);self.assertIsNone(result['useful_samples'])
+
+    def test_resnet_completion_reports_samples_and_keeps_rank_local_bn_buffers(self):
+        info=final.render(self.resnet(),self.source,'rn-complete','E1-B')[0]
+        events=[]
+        for rank in (0,1):
+            for kind,step,second in [('step',1,1),('step',100,2),('completion_audit',100,3),('completed',100,4)]:
+                e=dict(run_id=info['run_id'],rank=rank,world_size=2,pod_uid='p'+str(rank),attempt_id='attempt',event=kind,global_step=step,timestamp='2026-11-17T00:00:0'+str(second)+'Z')
+                if kind=='completion_audit':e.update(passed=True,model_sha256='a'*64,optimizer_sha256='b'*64,data_contract_sha256='c'*64,model_digest_scope='parameters',rank_local_buffers_sha256=str(rank)*64)
+                events.append(e)
+        result=final.metrics(info,events)
+        self.assertTrue(result['final_state_audit_passed']);self.assertEqual(result['useful_samples'],1600)
+        self.assertEqual(result['UsefulThroughput_samples_per_second'],1600);self.assertIsNone(result['useful_tokens'])
+        events[6].pop('model_digest_scope')
+        self.assertFalse(final.metrics(info,events)['final_state_audit_passed'])
+
     def test_final_pair_has_same_operational_contract_and_no_trace_requirement(self):
         values={a:final.render(self.c,self.source,a.lower(),a) for a in final.ARMS}
         for a,(info,storage,objects,policy) in values.items():
@@ -25,8 +74,8 @@ class FinalProtocolTests(unittest.TestCase):
     def test_alternative_gpu_and_explicit_new_target_are_supported_without_algorithm_change(self):
         c=copy.deepcopy(self.c);c['instance_type']='g6.xlarge';c['hardware_selection'].update(instance_type='g6.xlarge',status='SELECTED');c['existing_risk_spec']['instanceType']='g6.xlarge';c['goal_steps']=3000;c['training_lock'].update(goal_steps=3000,status='LOCKED')
         info,_,_,policy=final.render(c,self.source,'g6-draft','E2-B')
-        self.assertEqual(policy['spec']['capacity']['instanceType'],'g6.xlarge');self.assertEqual(info['fault_trigger']['value'],1500)
-        self.assertEqual(self.source['spec']['capacity']['instanceType'],'g5.xlarge')
+        self.assertNotIn('instanceType',policy['spec']['capacity']);self.assertEqual(policy['spec']['capacity']['aws']['instanceType'],'g6.xlarge');self.assertEqual(info['fault_trigger']['value'],1500)
+        self.assertEqual(self.source['spec']['capacity']['aws']['instanceType'],'g5.xlarge')
         c['goal_steps']=3001
         with self.assertRaises(ValueError):final.render(c,self.source,'bad','E1-B')
     def test_e3_and_mismatched_profile_are_blocked(self):

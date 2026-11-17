@@ -105,6 +105,14 @@ def event_from_message(message):
             if not isinstance(raw.get(field),str) or not re.fullmatch('[0-9a-f]{64}',raw[field]):
                 raise ValueError('invalid final-state digest')
             result[field] = raw[field]
+        if 'model_digest_scope' in raw:
+            if raw['model_digest_scope'] not in {'parameters','state_dict'}:
+                raise ValueError('invalid model digest scope')
+            result['model_digest_scope']=raw['model_digest_scope']
+        if 'rank_local_buffers_sha256' in raw:
+            if not isinstance(raw['rank_local_buffers_sha256'],str) or not re.fullmatch('[0-9a-f]{64}',raw['rank_local_buffers_sha256']):
+                raise ValueError('invalid rank-local buffer digest')
+            result['rank_local_buffers_sha256']=raw['rank_local_buffers_sha256']
     if "step_seconds" in raw:
         value = raw["step_seconds"]
         if type(value) not in (int, float) or not math.isfinite(value) or value < 0:

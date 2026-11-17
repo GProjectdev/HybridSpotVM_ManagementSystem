@@ -22,15 +22,15 @@ except ImportError:
 PROTOCOL='ieee-access-final-20261117'
 ARMS={'E1-A','E1-B','E2-A','E2-B'}
 SCHEMA={
- 'training_rank0.csv':['run_id','utc','rank','global_step','tokens','iteration_time','loss','valid_step','pod_uid','attempt_id'],
- 'training_rank1.csv':['run_id','utc','rank','global_step','tokens','iteration_time','loss','valid_step','pod_uid','attempt_id'],
+ 'training_rank0.csv':['model','useful_unit','samples','run_id','utc','rank','global_step','tokens','iteration_time','loss','valid_step','pod_uid','attempt_id'],
+ 'training_rank1.csv':['model','useful_unit','samples','run_id','utc','rank','global_step','tokens','iteration_time','loss','valid_step','pod_uid','attempt_id'],
  'vm_events.csv':['run_id','utc','instance_id','nodeprovision_uid','event','market','launch_time','observation_semantics'],
  'risk_policy.csv':['run_id','utc','policy_uid','risk_observed_at','lambda_per_hour','decision','checkpoint_interval_seconds','input_source'],
  'checkpoint_events.csv':['run_id','utc','checkpoint_uid','checkpoint_id','checkpoint_step','event','bytes','stall_seconds','periodic_or_emergency'],
  'interruption_events.csv':['run_id','utc','fis_experiment_id','instance_id','event','notice_time','actual_interruption_time'],
  'restore_events.csv':['run_id','utc','request_uid','checkpoint_id','rank','event','first_valid_step'],
  'price_snapshot.csv':['run_id','utc','instance_type','availability_zone','market','price_per_hour','currency','source'],
- 'results.csv':['run_id','arm','quality','gpu_vm_compute_cost_usd','T_startup_seconds','T_E2E_seconds','T_training_seconds','useful_tokens','useful_tokens_per_second','cost_per_useful_token_usd','checkpoint_stall_seconds','fault_resume_gap_seconds','rollback_steps','fault_window_nonproductive_vm_seconds','evidence'],
+ 'results.csv':['model','useful_unit','useful_samples','useful_samples_per_second','cost_per_useful_sample_usd','run_id','arm','quality','gpu_vm_compute_cost_usd','T_startup_seconds','T_E2E_seconds','T_training_seconds','useful_tokens','useful_tokens_per_second','cost_per_useful_token_usd','checkpoint_stall_seconds','fault_resume_gap_seconds','rollback_steps','fault_window_nonproductive_vm_seconds','evidence'],
 }
 
 
@@ -50,15 +50,26 @@ def render(config, source, run_id, arm):
         raise ValueError('reviewed 1-GPU x86_64 hardware manifest required')
     if selection.get('status') not in {'PROVISIONAL','SELECTED'}:
         raise ValueError('hardware selection status missing')
+    model=c.get('model')
+    if model not in {'gpt2','resnet50'}:
+        raise ValueError('explicit gpt2 or resnet50 model required')
     lock=c.get('training_lock',{})
-    fields=('goal_steps','batch_size','sequence_length','seed','learning_rate','training_image','asset_manifest_sha256')
+    if lock.get('model') != model:
+        raise ValueError('model must match explicit training lock')
+    fields=('model','goal_steps','batch_size','sequence_length','seed','learning_rate','training_image','asset_manifest_sha256')
+    if model=='resnet50':
+        fields+=('momentum','weight_decay')
+        if c.get('sequence_length') is not None or not c.get('dataset',{}).get('name')=='cifar10':
+            raise ValueError('ResNet-50 requires CIFAR-10 and no token sequence length')
+        if c.get('target_provenance',{}).get('model')!='resnet50':
+            raise ValueError('ResNet-50 target must not reuse GPT-2 pilot')
     if any(lock.get(k)!=c.get(k) for k in fields):
         raise ValueError('training fields differ from explicit run lock')
     if not IMAGE.fullmatch(c.get('training_image','')) or not SHA.fullmatch(c.get('asset_manifest_sha256','')):
         raise ValueError('pinned image and asset hash required')
     if type(c.get('max_seconds')) is not int or not 0<c['max_seconds']<=18000:
         raise ValueError('deadline within daily 5-hour limit required')
-    c.update(namespace=ns,model='gpt2',scenario='constant',restore_audit=True)
+    c.update(namespace=ns,scenario='constant',restore_audit=True)
     c.pop('risk_schedule',None)
     info,member,objects,policy=legacy.render(c,source,run_id,'checkpoint','D',namespace=ns)
     policy['kind']='NodeRequest'
@@ -67,7 +78,8 @@ def render(config, source, run_id, arm):
     policy['spec']['policy']['fixedOnDemand']=2 if arm=='E1-A' else 1
     policy['spec']['checkpoint']=copy.deepcopy(c['existing_checkpoint'])
     policy['spec']['replacement']=copy.deepcopy(c['existing_replacement'])
-    policy['spec']['capacity']['instanceType']=c['instance_type']
+    policy['spec']['capacity'].pop('instanceType',None)
+    policy['spec']['capacity']['aws']['instanceType']=c['instance_type']
     policy['spec']['capacity']['aws']['credentialsRef']['namespace']=ns
     annotations=policy['metadata']['annotations']
     annotations['training.dcnlab.com/suspend']='true'
@@ -84,12 +96,17 @@ def render(config, source, run_id, arm):
     controls={'EVAL_COMPLETION_AUDIT':1,'EVAL_LIFECYCLE_EVENTS':1,'NCCL_IB_DISABLE':1,'FLUIDCR_CHECKPOINT_WATCHDOG_TIMEOUT':240,'CTRL_CHECKPOINT_TIMEOUT':300,'FLUIDCR_DISABLE_ENUMERATE_PATCH':1,'FLUIDCR_DISABLE_ITER_PATCH':1,'FLUIDCR_DISABLE_EPOCH_RANGE_PATCH':1}
     env[:]=[e for e in env if e['name'] not in controls]
     env.extend({'name':k,'value':str(v)} for k,v in controls.items())
-    workload_lock=canonical_hash({k:c[k] for k in fields+('instance_type','nfs_server','nfs_model_path','nfs_dataset_path')})
+    if model=='resnet50':
+        env.extend({'name':'EVAL_'+k.upper(),'value':str(c[k])} for k in ('momentum','weight_decay'))
+    workload_lock=canonical_hash({k:c.get(k) for k in fields+('instance_type','nfs_server','nfs_model_path','nfs_dataset_path','dataset','target_provenance')})
     # E1-B may serve as E2-A only when this full operational contract matches.
     comparison=canonical_hash({'workload':workload_lock,'policy':policy['spec']['policy'],'checkpoint':policy['spec']['checkpoint'],'replacement':policy['spec']['replacement'],'risk':risk['spec'],'route':c['planned_partial_mode'],'annotations':{'periodic':arm!='E1-A'},'training_code':info['training_code_sha256'],'system_lock':c['system_lock'],'aws_account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size']})
     info.update(protocol=PROTOCOL,arm=arm,experiment=arm.split('-')[0],namespace=ns,
                 phase='rendered-suspended',ready_for_paid_execution=False,world_size=2,
-                completion_audit_required=True,tokens_per_committed_step=2*c['batch_size']*c['sequence_length'],
+                completion_audit_required=True,
+                tokens_per_committed_step=2*c['batch_size']*c['sequence_length'] if model=='gpt2' else None,
+                samples_per_committed_step=2*c['batch_size'] if model=='resnet50' else None,
+                useful_unit='tokens' if model=='gpt2' else 'samples',
                 workload_lock_sha256=workload_lock,comparison_lock_sha256=comparison,
                 checkpoint_lock_sha256=canonical_hash(policy['spec']['checkpoint']),
                 external_trace_required=False,policy_ablation=False,
@@ -131,10 +148,19 @@ def compare_e2(base_info,fault_info,base_result,fault_result):
 
 def metrics(info,events,**kwargs):
     if info.get('protocol')!=PROTOCOL or info.get('arm') not in ARMS:raise ValueError('not final E1/E2')
-    adapted=dict(info,protocol='ieee-access-v2',arm='N0' if info['arm']=='E1-A' else 'N1')
+    unit='samples' if info['model']=='resnet50' else 'tokens'
+    per_step=info['samples_per_committed_step'] if unit=='samples' else info['tokens_per_committed_step']
+    adapted=dict(info,protocol='ieee-access-v2',arm='N0' if info['arm']=='E1-A' else 'N1',tokens_per_committed_step=per_step)
     result=previous_metrics(adapted,events,**kwargs);result['arm']=info['arm'];result['protocol']=PROTOCOL
     cost,tokens=result['estimated_gpu_compute_cost_usd'],result['useful_tokens']
-    result['cost_per_useful_token_usd']=cost/tokens if cost is not None and tokens else None
+    result.update(model=info['model'],useful_unit=unit)
+    result['cost_per_useful_token_usd']=cost/tokens if unit=='tokens' and cost is not None and tokens else None
+    result['useful_samples']=tokens if unit=='samples' else None
+    result['UsefulThroughput_samples_per_second']=result['UsefulThroughput_tokens_per_second'] if unit=='samples' else None
+    result['cost_per_useful_sample_usd']=cost/tokens if unit=='samples' and cost is not None and tokens else None
+    if unit=='samples':
+        result['useful_tokens']=None
+        result['UsefulThroughput_tokens_per_second']=None
     result['cost_scope']='GPU VM Compute Cost; excludes NFS/network/storage'
     return result
 
@@ -192,7 +218,9 @@ def main():
         events=[json.loads(line) for line in a.events.read_text().splitlines() if line.strip()]
         result=metrics(json.loads(a.run.read_text()),events,request_at=a.request_at,billing=ledger.get('segments'),owned_instances=ledger.get('instances'))
         a.out.mkdir(parents=True,mode=0o700);legacy.save(a.out/'metrics.json',result)
-        row={'run_id':result['run_id'],'arm':result['arm'],'quality':result['quality'],
+        row={'model':result['model'],'useful_unit':result['useful_unit'],
+             'useful_samples':result['useful_samples'],'useful_samples_per_second':result['UsefulThroughput_samples_per_second'],
+             'cost_per_useful_sample_usd':result['cost_per_useful_sample_usd'],'run_id':result['run_id'],'arm':result['arm'],'quality':result['quality'],
              'gpu_vm_compute_cost_usd':result['estimated_gpu_compute_cost_usd'],
              'T_startup_seconds':result['T_startup_seconds'],'T_E2E_seconds':result['T_E2E_seconds'],
              'T_training_seconds':result['T_training_seconds'],'useful_tokens':result['useful_tokens'],

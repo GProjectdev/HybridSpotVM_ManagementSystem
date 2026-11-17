@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "job_uid": "b8fa9225-5485-445a-89d7-931d3abaf22e",
+  "node": "ip-10-50-1-80",
+  "gpu_requested": false,
+  "vm_created": false,
+  "job_status": {
+    "completionTime": "2026-11-17T07:56:15Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-17T07:56:15Z",
+        "lastTransitionTime": "2026-11-17T07:56:15Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-17T07:56:15Z",
+        "lastTransitionTime": "2026-11-17T07:56:15Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-17T07:54:40Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "scoped_job_cleanup_requested": true
+}

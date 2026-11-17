@@ -47,8 +47,8 @@ def parse_config(argv=None, environ=None):
     parser.add_argument("--data-root", default=env.get("EVAL_DATA_ROOT"))
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     parser.add_argument("--learning-rate", type=float, default=env.get("EVAL_LEARNING_RATE"))
-    parser.add_argument("--momentum", type=float, default=0.9)
-    parser.add_argument("--weight-decay", type=float, default=5e-4)
+    parser.add_argument("--momentum", type=float, default=env.get("EVAL_MOMENTUM", "0.9"))
+    parser.add_argument("--weight-decay", type=float, default=env.get("EVAL_WEIGHT_DECAY", "0.0005"))
     args = parser.parse_args(argv)
     if args.model not in ("resnet18", "resnet50", "gpt2") or not 2 <= args.sequence_length <= 1024:
         parser.error("invalid model or sequence length (must be in [2, 1024])")
@@ -337,7 +337,9 @@ def main(argv=None):
     if os.environ.get('EVAL_COMPLETION_AUDIT') == '1':
         from restore_audit import fingerprint
         finite = all(bool(torch.isfinite(p).all()) for p in model.parameters())
-        events.emit('completion_audit', step, model_sha256=fingerprint(model.module.state_dict()),
+        events.emit('completion_audit', step, model_sha256=fingerprint(dict(model.module.named_parameters()) if config.model == "resnet50" else model.module.state_dict()),
+                    model_digest_scope="parameters" if config.model == "resnet50" else "state_dict",
+                    rank_local_buffers_sha256=fingerprint(dict(model.module.named_buffers())),
                     optimizer_sha256=fingerprint(optimizer.state_dict()),
                     data_contract_sha256=fingerprint(model.module._evaluation_contract), passed=finite)
         if not finite:

@@ -68,6 +68,16 @@ class DataTests(unittest.TestCase):
         self.assertTrue(all(0 <= top <= 8 and 0 <= left <= 8 for top, left, _ in params))
         self.assertNotEqual(first[0], first[3])
 
+    def test_full_cifar50k_resume_crosses_epoch_with_real_evaluation_dimensions(self):
+        for rank in (0,1):
+            full=list(train.StepBatchSampler(50000,32,2,rank,42,0,783))
+            for step in (0,780,781,782,783):
+                self.assertEqual(list(train.StepBatchSampler(50000,32,2,rank,42,step,783)),full[step:])
+            self.assertEqual(full[780][0][0],0)
+            self.assertEqual(full[781][0][0],1)
+        cfg=train.parse_config([],{'RANK':'0','WORLD_SIZE':'2','EVAL_RUN_ID':'resnet','EVAL_MODEL':'resnet50','EVAL_MOMENTUM':'0.8','EVAL_WEIGHT_DECAY':'0.001'})
+        self.assertEqual(cfg.model,'resnet50');self.assertEqual(cfg.momentum,.8);self.assertEqual(cfg.weight_decay,.001)
+
     def test_empty_or_invalid_sampler_fails(self):
         for args in ((3, 2, 2, 0, 0, 0, 1), (20, 2, 2, 2, 0, 0, 1), (20, 2, 2, 0, 0, 2, 1)):
             with self.assertRaises(ValueError):

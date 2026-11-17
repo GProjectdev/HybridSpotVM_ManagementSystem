@@ -1,0 +1,12 @@
+{
+  "scanned_candidate_json_files": 35,
+  "recovered_distinct_points": 6,
+  "sources": {
+    "static": 6
+  },
+  "first_observed_at": "2026-11-17T06:39:59.539338931Z",
+  "last_observed_at": "2026-11-17T06:39:59.707472592Z",
+  "continuous_time_series": false,
+  "aws_observed_preemption_history": false,
+  "current_status_is_overwritten_each_poll": true
+}

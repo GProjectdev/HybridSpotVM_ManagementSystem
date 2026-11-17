@@ -68,7 +68,8 @@
     "learning_rate": 5e-05,
     "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
     "asset_manifest_sha256": "cac21bb171fea20c0dcfbdb5b662d6c04c211c342b3595b59c4f90ec39c8b9f3",
-    "status": "PROVISIONAL until hardware selection; reuse existing g5 pilot only if hardware/workload unchanged"
+    "status": "PROVISIONAL until hardware selection; reuse existing g5 pilot only if hardware/workload unchanged",
+    "model": "gpt2"
   },
   "system_lock": {
     "image_references": {

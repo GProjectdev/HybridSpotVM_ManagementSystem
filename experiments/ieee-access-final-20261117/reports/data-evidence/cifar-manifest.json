@@ -1,0 +1,53 @@
+{
+  "dataset": "CIFAR-10 Python version",
+  "source_url": "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+  "archive_md5": "c58f30108f718f92721af3b95e74349a",
+  "archive_sha256": "6d958be074577803d12ecdefd02955f39262c83c16fe9348329d7fe0b5c001ce",
+  "path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1",
+  "training_examples_expected": 50000,
+  "test_examples_expected": 10000,
+  "files": [
+    {
+      "path": "batches.meta",
+      "bytes": 158,
+      "sha256": "f962466ef690d46b226450fb9aadc74ba4bc64a76aa526b5827fe4bc5c7125cb"
+    },
+    {
+      "path": "data_batch_1",
+      "bytes": 31035704,
+      "sha256": "54636561a3ce25bd3e19253c6b0d8538147b0ae398331ac4a2d86c6d987368cd"
+    },
+    {
+      "path": "data_batch_2",
+      "bytes": 31035320,
+      "sha256": "766b2cef9fbc745cf056b3152224f7cf77163b330ea9a15f9392beb8b89bc5a8"
+    },
+    {
+      "path": "data_batch_3",
+      "bytes": 31035999,
+      "sha256": "0f00d98ebfb30b3ec0ad19f9756dc2630b89003e10525f5e148445e82aa6a1f9"
+    },
+    {
+      "path": "data_batch_4",
+      "bytes": 31035696,
+      "sha256": "3f7bb240661948b8f4d53e36ec720d8306f5668bd0071dcb4e6c947f78e9682b"
+    },
+    {
+      "path": "data_batch_5",
+      "bytes": 31035623,
+      "sha256": "d91802434d8376bbaeeadf58a737e3a1b12ac839077e931237e0dcd43adcb154"
+    },
+    {
+      "path": "readme.html",
+      "bytes": 88,
+      "sha256": "4d1c3fb199d6a183ae03f5162b469d7bc04edf2fad9547bd5f224271d52f98e5"
+    },
+    {
+      "path": "test_batch",
+      "bytes": 31035526,
+      "sha256": "f53d8d457504f7cff4ea9e021afcf0e0ad8e24a91f3fc42091b8adef61157831"
+    }
+  ],
+  "prepared_utc": "2026-11-17T07:14:50.078122+00:00",
+  "status": "ARCHIVE_VERIFIED; torchvision loader validation pending"
+}
