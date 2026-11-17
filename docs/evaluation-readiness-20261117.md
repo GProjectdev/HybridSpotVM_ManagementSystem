@@ -90,3 +90,15 @@ IAM 변경 후 전파를 기다린 뒤 템플릿을 생성한다. Role의 대상
 운영자의 해당 템플릿 실행 권한을 시뮬레이션으로 확인한다. 이 검사는 실제 FIS 중단 성공과
 구분하며, 이전 실행의 Role/템플릿을 새 VM에 그대로 적용하지 않는다.
 공식 권한 정의: https://docs.aws.amazon.com/service-authorization/latest/reference/list_fis.html
+
+## 완료 기록과 다음 설정 세대
+
+`RecoveryReconciler`는 `spot-vm-management-controller` 프로세스가 담당한다.
+완료된 SpotRecovery는 후속 NodeRequest 설정 변경으로 Rejected로 덮어쓰지 않는다.
+이미 덮어써진 기록의 재구성은 원본 NodeProvision 부재, 동일 policy/workload UID,
+Completed SpotReplacement, 해당 replacement UID, Verified RestoreRequest와 기존
+복원·source fencing 증거가 모두 일치할 때만 허용한다. 이 재구성 경로에는 삭제 동작이 없다.
+진행 중인 새 삭제 작업의 policy generation 검증은 계속 엄격하게 적용한다.
+
+정상 학습 Pilot은 Checkpoint/프로세스 재시작 대기 시간을 제외한 연속 Step 구간을
+15분 이상 확인한다. 타이머 경과만으로 정상 학습 15분을 확보했다고 기록하지 않는다.

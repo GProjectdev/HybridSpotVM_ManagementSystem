@@ -79,6 +79,14 @@ func (r *RecoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
+	// A verified immutable cleanup receipt remains historical evidence after
+	// later policy edits; never re-actuate or rewrite it as Rejected.
+	if stringField(recovery.Object, "status", "phase") == "Completed" &&
+		intField(recovery.Object, "status", "observedGeneration") == recovery.GetGeneration() &&
+		stringField(recovery.Object, "status", "verifiedCheckpointID") != "" &&
+		stringField(recovery.Object, "status", "verifiedCheckpointID") == stringField(recovery.Object, "spec", "checkpointID") {
+		return ctrl.Result{}, nil
+	}
 	phase, err := r.recover(ctx, recovery)
 	status := map[string]interface{}{
 		"observedGeneration":         recovery.GetGeneration(),
@@ -110,6 +118,11 @@ func (r *RecoveryReconciler) recover(ctx context.Context, recovery *unstructured
 	spec := readRecoverySpec(recovery)
 	if err := spec.validateStaticContract(); err != nil {
 		return "Rejected", err
+	}
+	// Repair only the receipt of an already completed operation with the
+	// original source absent. This path cannot delete a NodeProvision.
+	if r.completedHistoricalCleanup(ctx, recovery.GetNamespace(), spec) {
+		return "Completed", nil
 	}
 	if err := r.verifyPolicy(ctx, recovery.GetNamespace(), spec); err != nil {
 		return "Rejected", err
