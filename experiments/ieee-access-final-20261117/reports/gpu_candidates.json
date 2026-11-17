@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-11-17T05:52:56.746058+00:00",
+  "region": "ap-northeast-2",
+  "availability_zone": "ap-northeast-2c",
+  "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/ap-northeast-2/index.csv",
+  "qualification": "Linux Shared NA Hrs USD; CapacityStatus Used; RunInstances; exact APN2-BoxUsage; exclude UnusedCapacityReservation/zero rows",
+  "candidates": [
+    {
+      "instance_type": "g6.xlarge",
+      "gpu": "L4",
+      "gpu_count": 1,
+      "architectures": [
+        "x86_64"
+      ],
+      "az_offering_listed": true,
+      "od_usd_per_hour": 0.9896,
+      "od_sku": "GUYHYNSCZRRV7MEQ",
+      "spot_usd_per_hour": 0.4693,
+      "spot_effective_at": "2026-11-17T00:00:00+00:00",
+      "two_od_hourly_compute_only": 1.9792,
+      "one_od_one_spot_hourly_compute_only": 1.4589,
+      "actual_gpu_cr_proof": "UNVERIFIED",
+      "current_spot_od_supply": "NOT_PROVEN; no allocation attempted"
+    },
+    {
+      "instance_type": "g6e.xlarge",
+      "gpu": "L40S",
+      "gpu_count": 1,
+      "architectures": [
+        "x86_64"
+      ],
+      "az_offering_listed": false,
+      "od_usd_per_hour": 2.288,
+      "od_sku": "64EEC4MD9QGS4KSC",
+      "spot_usd_per_hour": null,
+      "spot_effective_at": null,
+      "two_od_hourly_compute_only": 4.576,
+      "one_od_one_spot_hourly_compute_only": null,
+      "actual_gpu_cr_proof": "UNVERIFIED",
+      "current_spot_od_supply": "NOT_PROVEN; no allocation attempted"
+    },
+    {
+      "instance_type": "g5.xlarge",
+      "gpu": "A10G",
+      "gpu_count": 1,
+      "architectures": [
+        "x86_64"
+      ],
+      "az_offering_listed": true,
+      "od_usd_per_hour": 1.237,
+      "od_sku": "4AUJ6QQUZG7XS5UC",
+      "spot_usd_per_hour": 0.6222,
+      "spot_effective_at": "2026-11-17T00:00:00+00:00",
+      "two_od_hourly_compute_only": 2.474,
+      "one_od_one_spot_hourly_compute_only": 1.8592,
+      "actual_gpu_cr_proof": "existing 2-rank g5 proof only",
+      "current_spot_od_supply": "NOT_PROVEN; no allocation attempted"
+    },
+    {
+      "instance_type": "g4dn.xlarge",
+      "gpu": "T4",
+      "gpu_count": 1,
+      "architectures": [
+        "x86_64"
+      ],
+      "az_offering_listed": true,
+      "od_usd_per_hour": 0.647,
+      "od_sku": "NPWTV4PDSKJ9WCNH",
+      "spot_usd_per_hour": 0.3331,
+      "spot_effective_at": "2026-11-17T04:00:00+00:00",
+      "two_od_hourly_compute_only": 1.294,
+      "one_od_one_spot_hourly_compute_only": 0.9801,
+      "actual_gpu_cr_proof": "UNVERIFIED",
+      "current_spot_od_supply": "NOT_PROVEN; no allocation attempted"
+    }
+  ],
+  "quota": "previously AccessDenied; not retried",
+  "selection": "not finalized; g5 remains provisional solely for existing proof",
+  "cost_scope": "GPU VM Compute Cost only; not a budget authorization"
+}

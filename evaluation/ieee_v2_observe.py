@@ -33,9 +33,12 @@ KINDS = ('pods', 'statefulsets', 'noderequests', 'nodeprovisions', 'trainingrunt
 
 
 def validate_run(info):
-    if info.get('protocol') != 'ieee-access-v2' or info.get('arm') not in ARMS:
-        raise ValueError('not an IEEE v2 run')
-    if info.get('namespace') != 'eval-v2-' + info.get('run_id', ''):
+    final = info.get('protocol') == 'ieee-access-final-20261117'
+    arms = {'E1-A','E1-B','E2-A','E2-B'} if final else ARMS
+    if info.get('protocol') not in {'ieee-access-v2','ieee-access-final-20261117'} or info.get('arm') not in arms:
+        raise ValueError('not a supported IEEE evaluation run')
+    prefix = 'eval-final-' if final else 'eval-v2-'
+    if info.get('namespace') != prefix + info.get('run_id', ''):
         raise ValueError('run namespace identity mismatch')
     if info.get('world_size') != 2 or not info.get('workload_lock_sha256'):
         raise ValueError('missing two-rank workload lock')

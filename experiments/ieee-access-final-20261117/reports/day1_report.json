@@ -1,0 +1,204 @@
+{
+  "date_kst": "2026-11-17",
+  "today_status": "day-1 analysis and non-paid preparation completed; formal runs NOT_RUN",
+  "source_documents": "config/plan_sources.json",
+  "active_protocol": "ieee-access-final-20261117",
+  "critical_changes": [
+    "E2 same Hybrid no-fault vs one FIS; retire Static/Proposed as mandatory",
+    "external trace is optional sensitivity work, not core gate",
+    "GPU type selected before pair; do not hardcode g5",
+    "fault at fixed committed Global Step rather than old 1800-second trigger",
+    "E3 only with preexisting real 4-rank proof and capacity; no development for E3 now"
+  ],
+  "controller_crd_review": {
+    "source": "previous controller/CRD audit reused; relevant latest source reread",
+    "management": [
+      "public-cloud-vm-collector",
+      "spot-vm-management-controller",
+      "training-lifecycle-controller",
+      "checkpoint-recovery-coordinator",
+      "placement-webhook"
+    ],
+    "member": [
+      "training-runtime-controller",
+      "spot-watcher"
+    ],
+    "system_crds": [
+      "NodeRequest",
+      "SpotRiskProfile",
+      "TrainingRuntime",
+      "SpotReplacement",
+      "SpotRecovery"
+    ],
+    "integrations": {
+      "provisioner": [
+        "NodeProvision",
+        "NodeProvisionNetConfig",
+        "RemoteCluster"
+      ],
+      "checkpoint_restore": [
+        "FluidCRMigration",
+        "RestoreRequest",
+        "RestorePlan"
+      ],
+      "pv_karmada": [
+        "PVMetadata",
+        "PVMigration",
+        "PropagationPolicy",
+        "ResourceBinding",
+        "Work",
+        "ResourceInterpreterCustomization"
+      ]
+    },
+    "upstream_karmada_changed": false,
+    "algorithms_changed": false
+  },
+  "capability": {
+    "2_rank": {
+      "proven": [
+        "normal GPT2 two-OD 900-second sizing window",
+        "durable NFS checkpoint and actual new-VM partial restore",
+        "model/optimizer/RNG/step audit and training resumption",
+        "forward Spot-to-OD old instance terminated"
+      ],
+      "not_proven_latest": [
+        "latest common full-group GPU route",
+        "interruption during replacement handoff; previous partial reverse-transition failure retained"
+      ],
+      "fault_route_requirement": {
+        "configuration": "fixedOnDemand=1 with planned-partial=disabled for both Hybrid arms",
+        "reason": "current emergency replacement code rejects fixed-composition emergency replacement without full-group opt-in",
+        "source": "internal/management/emergency_replacement.go:67",
+        "implication": "prior planned partial proof does not certify final fixed-composition fault path; preserve guard, do not redesign"
+      }
+    },
+    "4_rank": {
+      "code": "generic rank/world-size loops and mock 4-rank cases exist",
+      "real_four_gpu_training_restore_proof": false,
+      "evaluation_runner_admission": "2-rank only; do not equate generic code with acceptance",
+      "E3": "DEFERRED; reassess by 11/25 only if real proof already available"
+    }
+  },
+  "workload": {
+    "model": "GPT-2 Small",
+    "dataset": "full WikiText-103 tokenized train",
+    "dataset_revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+    "model_revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "world_size": 2,
+    "batch_per_rank": 4,
+    "sequence_length": 512,
+    "seed": 42,
+    "optimizer": "AdamW",
+    "learning_rate": 5e-05,
+    "provisional_goal_steps": 4747,
+    "provisional_useful_tokens": 19443712,
+    "source": "existing independent pilot only for sizing; not formal E1-A baseline",
+    "recalibrate_rule": "different hardware/workload requires new sizing and pre-run target lock"
+  },
+  "environment": {
+    "AWS_account": "935317843233",
+    "profile": "new-account-v2",
+    "region": "ap-northeast-2",
+    "availability_zone": "ap-northeast-2c",
+    "kubeconfigs": {
+      "MGMT": "/etc/kubernetes/admin.conf",
+      "KARMADA": "/etc/karmada/karmada-apiserver.config",
+      "AWS": "/root/aws-cluster/aws1.kubeconfig",
+      "ONPRE1": "/root/on-premise/member/onpre1.kubeconfig"
+    },
+    "NFS": "10.50.1.98:/mnt/nfs",
+    "evidence_basis": "reuse prior access/rollout/NFS proofs; not a fresh health certification"
+  },
+  "logging": {
+    "gpu_vm": "exact instance observations and reviewed billing ledger; termination polling is not exact billing end",
+    "risk_policy": "UID-scoped decision and risk snapshots available; log archival required during Run",
+    "rank_progress": "step/iteration/attempt/Pod UID events and final-state audit implemented",
+    "checkpoint": "CR start/completion/export separate; new app pause/saved/resume opt-in; old 89-second CP wall is not exact DDP stall",
+    "restore": "request/verification and app resumed-step observations available; request-to-Verified is an end-to-end proxy",
+    "group_loss": "pair common rank evidence; distinguish resumed replay from first new unique frontier",
+    "nonproductive_vm_seconds": "clip reviewed no-progress windows to each actual running/billed VM interval; no GPU utilization claim",
+    "missing_values": "N/A, not zero or inferred gap",
+    "clock_sync": "UTC event schema; actual new GPU node time synchronization must be checked at Run startup"
+  },
+  "checks": {
+    "final_tools_and_evidence": "16 tests PASS",
+    "evaluation_suite": "223 tests run: 221 passed, 2 skipped",
+    "four_arms_prepared": {
+      "E1-A": {
+        "protocol": "ieee-access-final-20261117",
+        "namespace": "eval-final-e1a-draft",
+        "world_size": 2,
+        "comparison_lock_sha256": "09c737fb8353a75a6035c76d60499a5393d99ba3925f1b2cb818b73fbc7e1ba0",
+        "workload_lock_sha256": "311e82ea598b5cb8031c818428f24a6cde74c8337b314e83c85020309c377d40",
+        "checkpoint_lock_sha256": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "scheduled_fis": false,
+        "fault_trigger": null,
+        "external_trace_required": false,
+        "ready_for_paid_execution": false
+      },
+      "E1-B": {
+        "protocol": "ieee-access-final-20261117",
+        "namespace": "eval-final-e1b-draft",
+        "world_size": 2,
+        "comparison_lock_sha256": "f68c1f32994612b24a5b4c161ec39544b2eb6e974870eee85d6bcfa7231dde57",
+        "workload_lock_sha256": "311e82ea598b5cb8031c818428f24a6cde74c8337b314e83c85020309c377d40",
+        "checkpoint_lock_sha256": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "scheduled_fis": false,
+        "fault_trigger": null,
+        "external_trace_required": false,
+        "ready_for_paid_execution": false
+      },
+      "E2-A": {
+        "protocol": "ieee-access-final-20261117",
+        "namespace": "eval-final-e2a-draft",
+        "world_size": 2,
+        "comparison_lock_sha256": "f68c1f32994612b24a5b4c161ec39544b2eb6e974870eee85d6bcfa7231dde57",
+        "workload_lock_sha256": "311e82ea598b5cb8031c818428f24a6cde74c8337b314e83c85020309c377d40",
+        "checkpoint_lock_sha256": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "scheduled_fis": false,
+        "fault_trigger": null,
+        "external_trace_required": false,
+        "ready_for_paid_execution": false
+      },
+      "E2-B": {
+        "protocol": "ieee-access-final-20261117",
+        "namespace": "eval-final-e2b-draft",
+        "world_size": 2,
+        "comparison_lock_sha256": "f68c1f32994612b24a5b4c161ec39544b2eb6e974870eee85d6bcfa7231dde57",
+        "workload_lock_sha256": "311e82ea598b5cb8031c818428f24a6cde74c8337b314e83c85020309c377d40",
+        "checkpoint_lock_sha256": "29621758ef745667ddae463bdcc25760c75e150155c3d7a99240b19c28eee362",
+        "scheduled_fis": true,
+        "fault_trigger": {
+          "type": "committed_global_step",
+          "value": 2374,
+          "status": "PROVISIONAL until hardware selection; reuse existing g5 pilot only if hardware/workload unchanged"
+        },
+        "external_trace_required": false,
+        "ready_for_paid_execution": false
+      }
+    },
+    "existing_gpu_proofs_not_rerun": true,
+    "cloud_create_delete_or_FIS_executed": false
+  },
+  "remaining_for_11_18": [
+    "select actual GPU type using supply/AMI compatibility and current prices; numeric quota remains unverified without repeated IAM requests",
+    "confirm/reuse g5 sizing only if workload/hardware unchanged; otherwise new pilot before target lock",
+    "bind current AMI/controller images/risk source/admission/UID/PVC and deadline normal-cleanup procedure",
+    "report exact paid targets/time/cost before starting cloud changes per final plan",
+    "validate missing latest full-group route only when authorized; do not repeat successful checks without change"
+  ],
+  "notes": [
+    "No formal E1/E2 result or graph fabricated; output CSV files contain headers only",
+    "No new prediction/checkpoint/recovery algorithm implemented",
+    "Historical v2 artifacts preserved but not active core protocol",
+    "Old functional E1/E2 migration proofs are not the new quantitative baseline"
+  ],
+  "today_completion_criteria": {
+    "controller_crd_and_integration_inventory": "DONE from existing audit plus relevant source review",
+    "2_and_4_rank_evidence_separated": "DONE; E3 deferred",
+    "logging_fields_and_gaps_listed": "DONE; UTC templates and missing-value rules saved",
+    "final_E1_E2_runs_prepared_offline": "DONE; no API apply",
+    "GPU_candidates_read_only": "DONE; current supply not proven",
+    "formal_experiments": "NOT_RUN as scheduled for later dates"
+  }
+}

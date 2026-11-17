@@ -57,7 +57,7 @@ class EvidenceTests(unittest.TestCase):
         from pathlib import Path
         import tempfile
         now=datetime(2026,11,17,tzinfo=timezone.utc)
-        row={'TermType':'OnDemand','Unit':'Hrs','Currency':'USD','Instance Type':'g5.xlarge','Tenancy':'Shared','Operating System':'Linux','Pre Installed S/W':'NA','Region Code':'ap-northeast-2','PricePerUnit':'1.237'}
+        row={'TermType':'OnDemand','Unit':'Hrs','Currency':'USD','Instance Type':'g5.xlarge','Tenancy':'Shared','Operating System':'Linux','Pre Installed S/W':'NA','Region Code':'ap-northeast-2','PricePerUnit':'1.237','CapacityStatus':'Used','operation':'RunInstances','usageType':'APN2-BoxUsage:g5.xlarge'}
         class Reader:
             def observe(self,owned,at):self.owned=owned
             def command(self,*args):

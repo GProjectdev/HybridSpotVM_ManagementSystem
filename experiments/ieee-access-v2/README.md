@@ -1,3 +1,5 @@
+> Historical protocol. The active final plan is `../ieee-access-final-20261117/`; see `../ACTIVE_PROTOCOL.json`. The Static/Proposed E2 matrix and mandatory replay below are not current core requirements.
+
 # IEEE Access evaluation v2 — 2026-11-17 revision
 
 The source plan is `Hybrid_DDP_IEEE_Access_Experiment_Plan_v2.md` and its

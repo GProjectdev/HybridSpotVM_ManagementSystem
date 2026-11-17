@@ -1,0 +1,16 @@
+{
+  "active_protocol": "ieee-access-final-20261117",
+  "sources": [
+    {
+      "path": "/home/ubuntu/graduate/Evaluation/Hybrid_DDP_Evaluation_Plan_E1_E2_E3_20261117.md",
+      "sha256": "bd17e4672a8cc36c1cc68bfd104b720899e9a4209d936c78e0cfb5e9fc6a776e"
+    },
+    {
+      "path": "/home/ubuntu/graduate/Evaluation/Hybrid_DDP_Evaluation_Plan_E1_E2_E3_20261117.pdf",
+      "sha256": "91923e7ad65f86e9ad52a7de18546880a3efd5a444c089beced146c0ae52b266"
+    }
+  ],
+  "pdf_pages": 14,
+  "effective_kst_date": "2026-11-17",
+  "supersedes": "Static/Proposed E2 matrix in ieee-access-v2; retain old functional proofs as historical evidence"
+}

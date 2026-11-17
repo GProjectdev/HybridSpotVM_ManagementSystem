@@ -197,3 +197,56 @@ MGMT 정책 로그 이미지와 두 Member의 webhook Payload 설정을 업데�
 신규 UID·admission 적용·시간 제한/정상 정리 절차 연결, 공통 전체 GPU 복구 및
 전환 중 자연 선점 처리의 실제 검증은 남아 있다. 완전 자동 유료 실행기는
 이번 도구에 포함되지 않는다. 자세한 결과/제한은 evidence_upgrade.json 참조.
+
+## 최종 E1·E2·E3 계획에 따른 11/17 작업 완료
+
+최신 기준은 Evaluation의 `Hybrid_DDP_Evaluation_Plan_E1_E2_E3_20261117.md`와
+동명 PDF(14쪽)다. 두 문서와 기존 증거를 읽고, 앞 절의 Static/Proposed 비교와
+필수 외부 Trace Replay를 현재 핵심 평가에서 제외했다. 기존 결과는 삭제하지
+않고 기능 점검·과거 계획 기록으로 보존한다.
+
+오늘 일정의 Controller/CRD·연동·2/4-Rank 지원 증거·계측 누락 분석을 완료했다.
+2-Rank는 기존 정상 학습/저장/실제 새 VM 부분 복원 증거를 재사용한다. 4-Rank는
+일반화 코드와 mock 사례만 확인되며 실제 GPU 실행·복원 증거가 없어 E3를
+보류한다. Quota 조회의 기존 AccessDenied를 반복 요청하지 않았다.
+
+읽기 전용 조회에서 ap-northeast-2c의 g4dn.xlarge, g5.xlarge, g6.xlarge 등록을
+확인했다. 이는 실제 공급 보장이 아니다. Linux Shared Used BoxUsage 공개 OD
+요율과 해당 AZ Spot 이력을 분리 저장했다. g6e.xlarge는 리전 사양은 조회되지만
+해당 AZ offering/Spot 가격은 이번 조회에서 확인되지 않았다. 유형은 내일 선정한다.
+현재 GPU C/R 실증은 g5만 있으며 다른 유형의 AMI·드라이버·메모리 적합성은 미검증이다.
+
+최종 네 arm E1-A/E1-B/E2-A/E2-B의 suspended/unbound 준비 파일을 오프라인
+생성했다. E1-B/E2-A/E2-B의 전체 운영 설정 해시 일치를 확인했다. 정상 완료·
+무중단·상태·비용 검토까지 충족해야 E1-B를 E2-A로 재사용할 수 있다. 기존
+Sizing Pilot을 정식 E1-A 결과로 재사용하지 않는다.
+
+FIS 시점은 과거 1800초 대신 사전 고정된 committed Global Step 기준으로
+분리했다. 4747 Step과 중간 2374 Step은 기존 g5 Pilot을 근거로 한 잠정값이다.
+GPU/학습 조건을 바꾸면 예비 측정 후 모든 Run 전에 다시 잠근다. 외부 Trace
+재생은 필요할 때만 별도 민감도 평가로 분리하며 오늘 활성화하지 않았다.
+
+현재 fixedOnDemand=1 긴급 대체 경로는 코드상 planned-partial=disabled인
+full-group 경로를 요구한다. 이 보호 조건을 제거하지 않았다. 기존 계획적 부분
+이전 성공을 이 경로의 실제 GPU 검증 성공으로 표시하지 않는다.
+
+UTC CSV 명세와 빈 헤더를 준비하고, 종료된 Spot의 대기 시간 과대 계산·
+중복 구간·Rollback·동일 설정 및 정상 기준 재사용 검사를 추가했다. 미측정 값은
+N/A이며 원본 시간·가격·소유 VM 증거 없이 비용과 중단시간을 채우지 않는다.
+평가 도구 전체 223개 실행 중 221개 통과, 2개 skip. 새 범위 관련 16개 통과.
+이번 변경은 준비/분석 도구이며 Controller·Desai·Checkpoint/Restore 알고리즘과
+배포 이미지는 바꾸지 않았다. EC2 생성·종료 및 FIS 실행도 하지 않았다.
+
+오늘 일정은 완료했으나 정식 평가 GO를 의미하지 않는다. 내일 GPU 선정·필요한
+미검증 경로·Run별 시간 제한/정상 정리·가격·시계 동기화·UID/admission 등을
+확정하고, 최종 문서 지시에 따라 실제 유료 작업의 대상·예상 시간/비용을 먼저
+보고해야 한다. 상세 JSON과 명령 진입점은 다음 경로를 사용한다.
+
+- `experiments/ACTIVE_PROTOCOL.json`
+- `experiments/ieee-access-final-20261117/reports/day1_report.json`
+- `experiments/ieee-access-final-20261117/reports/gpu_candidates.json`
+- `python3 evaluation/final_protocol.py prepare --help`
+- `python3 evaluation/final_protocol.py metrics --help`
+
+기존 namespace 고정 실행기나 v2 S0/P0/FIS 1800초 설정을 새 정량 평가에
+사용하지 않는다. 실제 평가 자료가 없어 오늘 결과 그래프는 생성하지 않았다.

@@ -1,0 +1,59 @@
+{
+  "protocol": "ieee-access-final-20261117",
+  "runs": [
+    {
+      "arm": "E1-A",
+      "world_size": 2,
+      "initial_od": 2,
+      "initial_spot": 0,
+      "periodic_checkpoint": "disabled",
+      "scheduled_fis_count": 0,
+      "status": "NOT_RUN"
+    },
+    {
+      "arm": "E1-B",
+      "world_size": 2,
+      "initial_od": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "same existing Adaptive",
+      "scheduled_fis_count": 0,
+      "status": "NOT_RUN"
+    },
+    {
+      "arm": "E2-A",
+      "world_size": 2,
+      "initial_od": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "same existing Adaptive",
+      "scheduled_fis_count": 0,
+      "status": "NOT_RUN"
+    },
+    {
+      "arm": "E2-B",
+      "world_size": 2,
+      "initial_od": 1,
+      "initial_spot": 1,
+      "periodic_checkpoint": "same existing Adaptive",
+      "scheduled_fis_count": 1,
+      "status": "NOT_RUN"
+    }
+  ],
+  "baseline_reuse": "E1-B may serve as E2-A only when comparison hash, completion/state quality, no-interruption classification and configuration all match",
+  "fault_rule": {
+    "kind": "committed-global-step",
+    "provisional_step": 2374,
+    "target_steps_provisional": 4747,
+    "freeze_after_hardware_selection": true,
+    "scheduled_fis_max_count": 1,
+    "exact_owned_spot_only": true
+  },
+  "external_trace_required": false,
+  "policy_ablation": false,
+  "E3": {
+    "status": "DEFERRED_NOT_VERIFIED",
+    "reason": "generic rank code exists, but no verified 4-GPU execution/restore evidence",
+    "condition_date": "2026-11-25",
+    "do_not_develop_4_rank_support_for_this_plan": true
+  },
+  "paid_run_authorized_by_document": false
+}
