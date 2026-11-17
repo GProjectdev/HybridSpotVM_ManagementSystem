@@ -59,3 +59,34 @@ Checkpoint 벽시계 시간과 실제 DDP 진행 공백은 각각 기록한다.
 하루 최대 5시간과 승인된 종료 시각 중 이른 시각을 적용하고 정상 정리에 필요한 여유를 둔다.
 성공 조건이 충족되면 일찍 종료한다. 자동 정리 타이머를 실험 전에 설치하고, 종료 후 해제한다.
 AWS/Git 인증정보, kubeconfig, Secret, 개인 키, 원본 학습 데이터는 Git에 넣지 않는다.
+
+## v2 원본 CSV 내보내기
+
+수집한 `training-events.jsonl`에서 현재 Run만 내보낸다. Node/EC2 매핑은
+NodeProvision UID와 AWS provider ID를 대조해 별도 JSON으로 작성한다.
+
+```bash
+python3 evaluation/export_v2.py --events /path/to/training-events.jsonl \
+  --output /path/to/experiments/PREFLIGHT --run-id RUN_ID \
+  --policy-id NODE_REQUEST_UID --node-instances /path/to/node-instances.json
+```
+
+동일 이벤트 재수집은 제거하지만 다른 attempt의 재실행 Step은 보존한다.
+누락 Instance ID는 빈 값으로 두고 추정으로 채우지 않는다. 이 CSV만으로 비용,
+완료 여부, 유효 처리율을 확정하지 않는다. VM/Checkpoint/Restore/FIS 원본 증거와
+연결한 후 별도로 계산한다. 나노초 원본 시각은 유지하며 Python 3.10에서도 비교할 수 있다.
+
+## 공통 이미지 준비와 FIS 범위
+
+Provisioner의 기존 `NodeProvisionNetConfig.spec.softwareConfig.imagePrepulls`에
+동일한 digest의 학습 이미지를 `nodeTarget: gpu`로 등록할 수 있다. 모든 비교군에
+같은 설정을 적용하고, `PrePullingImages` 완료부터 Ready까지의 시간도 기록한다.
+이미지를 준비하는 동안 기존 학습이 계속됐는지와 실제 진행 공백을 구분한다.
+
+FIS 템플릿 생성 권한은 템플릿뿐 아니라 지정한 action ARN에도 필요하다.
+`aws:ec2:send-spot-instance-interruptions` 하나만 허용하고, 실행 Role의 EC2 권한은
+현재 Run에서 UID를 확인한 Spot Instance ARN 및 Run 태그에 모두 제한한다.
+IAM 변경 후 전파를 기다린 뒤 템플릿을 생성한다. Role의 대상 허용 및 다른 VM 거부,
+운영자의 해당 템플릿 실행 권한을 시뮬레이션으로 확인한다. 이 검사는 실제 FIS 중단 성공과
+구분하며, 이전 실행의 Role/템플릿을 새 VM에 그대로 적용하지 않는다.
+공식 권한 정의: https://docs.aws.amazon.com/service-authorization/latest/reference/list_fis.html
