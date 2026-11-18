@@ -1,0 +1,8 @@
+{
+  "at": "2026-11-18T07:58:42.329525+00:00",
+  "code": "InsufficientInstanceCapacity",
+  "source": "scoped provider RunInstances log; transient status was overwritten by retry",
+  "namespace": "eval-v3-gpt4-g5r-1816",
+  "error_count": 59,
+  "exact_ec2_instances_observed": []
+}

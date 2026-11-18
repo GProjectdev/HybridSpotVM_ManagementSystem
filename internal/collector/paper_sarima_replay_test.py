@@ -55,3 +55,18 @@ class ReplayTests(unittest.TestCase):
         for key,value in source.items():self.assertEqual(result['source'][key],value)
         with self.assertRaises(ValueError):replay.attach_prices({'source':{}},prices,now,instance_type='g6.xlarge',availability_zone='us-east-2a')
         with self.assertRaises(ValueError):replay.attach_prices({'source':{}},prices,now,instance_type=None)
+
+    def test_reviewed_nonzero_offset_preserves_full_hash_and_wall_clock(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'forecast.json';p.write_bytes(self.body)
+            e=Path(d)/'selection.json';e.write_text(json.dumps({'forecast_sha256':self.manifest['forecast_sha256'],'candidate_window':{'start_hour':14,'change_hour':15}}))
+            m=dict(self.manifest,selection_rule='first-native-eligible-adjacent-transition',start_hour=14,selection_evidence_sha256=hashlib.sha256(e.read_bytes()).hexdigest())
+            data=replay.load_locked(p,m,e);start=datetime(2026,11,18,tzinfo=timezone.utc)
+            self.assertEqual(len(data['forecasts']),168)
+            for seconds,hour in [(0,14),(3599,14),(3600,15)]:
+                result=replay.payload(data,m,start,start+timedelta(seconds=seconds))
+                self.assertEqual(result['source']['heldOutHour'],hour)
+                self.assertEqual(result['lambdaPerHour'],hour/100)
+            with self.assertRaises(ValueError):replay.load_locked(p,m)
+            e.write_text('{}')
+            with self.assertRaises(ValueError):replay.load_locked(p,m,e)

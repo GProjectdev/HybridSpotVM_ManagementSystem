@@ -1,0 +1,6 @@
+{
+  "at": "2026-11-18T08:29:26.770314+00:00",
+  "path": "NFS /mnt/nfs",
+  "df": "   1B-blocks         Used        Avail\n527295578112 108535685120 418743115776\n",
+  "not_vm_action": true
+}

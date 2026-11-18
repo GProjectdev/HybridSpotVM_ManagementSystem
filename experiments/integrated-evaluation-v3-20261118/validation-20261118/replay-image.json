@@ -1,0 +1,8 @@
+{
+  "pinned": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:6e697411850508d60a648c9e2e90f272fa401b43baf814fcd7f7187345d1bbd5",
+  "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:paper-replay-v3-offset-239b5663483e",
+  "source_sha256": "239b5663483e6427f8a321ce7b8b280b15ad4954c41c2174e29cb3bed8a91d8b",
+  "registry_verified": true,
+  "source_file_sha256": "5974e6a6f8d77a610fb21450177777353a07c03acc6e59d0f9cb45202683a3f1",
+  "at": "2026-11-18T08:06:44.970508+00:00"
+}

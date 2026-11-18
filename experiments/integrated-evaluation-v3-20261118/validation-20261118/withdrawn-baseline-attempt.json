@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-18T08:15:19.613275+00:00",
+  "reason": "working checkout was older In-aws-create-WorkerNode branch; freshly built image omitted existing main runtime/fence/default-ownership fixes",
+  "withdrawn_image": "sha256:5586765f0757aad88666bea082b23631a18d62b24d106de9579362522807fe83",
+  "source_checkout_corrected_to_main_base": "abea04d42d2b7707bcb0c51f02ec28ce950b9ea7",
+  "action": "stop before training/FIS; restore previous deployed image; normal cleanup; carry only cooldown fix onto actual deployed main baseline",
+  "training_started": false,
+  "FIS_started": false,
+  "not_formal_result": true
+}

@@ -172,15 +172,17 @@ def compute_cost(segments, owned_instances):
 
 
 def metrics(info, events, *, request_at=None, billing=None, owned_instances=None, checkpoint_stalls=None):
-    if info.get("protocol") != "ieee-access-v2" or info.get("arm") not in ARMS:
+    v3=info.get("protocol")=="HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118"
+    world=4 if v3 else 2
+    if (v3 and (info.get("arm") not in {"A","B","C"} or info.get("world_size")!=4)) or (not v3 and (info.get("protocol") != "ieee-access-v2" or info.get("arm") not in ARMS)):
         raise ValueError("not an IEEE v2 run")
     goal = info["goal_steps"]
     records, seen = [], set()
     for raw in events:
         e = event_from_message(PREFIX + json.dumps(raw))
-        if e is None or e["run_id"] != info["run_id"] or e["rank"] not in (0, 1):
+        if e is None or e["run_id"] != info["run_id"] or e["rank"] not in range(world):
             raise ValueError("foreign or invalid event in run")
-        if not raw.get("pod_uid") or not e.get("attempt_id") or raw.get("world_size") != 2:
+        if not raw.get("pod_uid") or not e.get("attempt_id") or raw.get("world_size") != world:
             raise ValueError("Pod UID, attempt ID and world_size=2 are required")
         key = (raw.get("pod_uid"), e.get("attempt_id"), e["rank"], e["event"], e["global_step"], e["timestamp"])
         if key in seen:
@@ -193,21 +195,21 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
         request_time = timestamp(request_at)
         records = [(at, e) for at, e in records if at >= request_time]
     # Each rank must actually attest completion at the exact locked goal.
-    completed = {r: [(at, e) for at, e in records if e["rank"] == r and e["event"] == "completed" and e["global_step"] == goal] for r in (0, 1)}
-    common_steps = set.intersection(*({e["global_step"] for _, e in records if e["event"] == "step" and e["rank"] == r} for r in (0, 1)))
+    completed = {r: [(at, e) for at, e in records if e["rank"] == r and e["event"] == "completed" and e["global_step"] == goal] for r in range(world)}
+    common_steps = set.intersection(*({e["global_step"] for _, e in records if e["event"] == "step" and e["rank"] == r} for r in range(world)))
     first = None
     if common_steps:
         first_step = min(common_steps)
-        first = max(min(at for at, e in records if e["event"] == "step" and e["rank"] == r and e["global_step"] == first_step) for r in (0, 1))
-    goal_events = {r:[at for at,e in records if e['rank']==r and e['event']=='step' and e['global_step']==goal] for r in (0,1)}
+        first = max(min(at for at, e in records if e["event"] == "step" and e["rank"] == r and e["global_step"] == first_step) for r in range(world))
+    goal_events = {r:[at for at,e in records if e['rank']==r and e['event']=='step' and e['global_step']==goal] for r in range(world)}
     done = all(completed.values())
     if info.get('completion_audit_required'):
         done = done and all(goal_events.values())
-    finish = max(min(at for at, _ in completed[r]) for r in (0, 1)) if done else None
+    finish = max(min(at for at, _ in completed[r]) for r in range(world)) if done else None
     if done and info.get('completion_audit_required'):
         # Final hashing/verification time is billed, but not useful training time.
-        finish = max(min(goal_events[r]) for r in (0,1))
-    audits = {r:[e for _,e in records if e['rank']==r and e['event']=='completion_audit' and e['global_step']==goal] for r in (0,1)}
+        finish = max(min(goal_events[r]) for r in range(world))
+    audits = {r:[e for _,e in records if e['rank']==r and e['event']=='completion_audit' and e['global_step']==goal] for r in range(world)}
     audit_ok = all(audits.values()) and all(e['passed'] for rows in audits.values() for e in rows)
     if audit_ok:
         audit_ok = all(len({e[field] for rows in audits.values() for e in rows}) == 1
@@ -243,6 +245,7 @@ def metrics(info, events, *, request_at=None, billing=None, owned_instances=None
         result["UsefulThroughput_tokens_per_second"] = result["useful_tokens"] / duration
         if request:
             result["T_E2E_seconds"] = (finish - request).total_seconds()
+            result["useful_units_per_E2E_second"] = result["useful_tokens"] / result["T_E2E_seconds"]
     if billing is not None:
         cost = compute_cost(billing, owned_instances)
         result["estimated_gpu_compute_cost_usd"] = cost

@@ -1,0 +1,16 @@
+계측 표기 정정 — 2026-11-18
+
+과거 evaluation_readiness_20261118.txt 123행의 “GPT2 step당8192tokens”는
+문서 표기 오류다. 고정 sequence512, global batch8인 현재 설정의 정확한 값은
+4096 tokens / committed optimizer step이다.
+2-Rank × per-rank batch4 ×512 =4096,
+4-Rank × per-rank batch2 ×512 =4096이다.
+8192는 이 설정에서 두 optimizer step의 총 token presentations에 해당한다.
+
+기존 코드의 실제 계산은4096이었으며 이번4-Rank renderer/metrics 회귀
+검증에서도 goal2 ->8192 total useful tokens, E2E70s ->8192/70 tokens/s를
+확인했다. 이 숫자는 단위 테스트용 합성 입력의 기대값이며 GPU 측정 결과가
+아니다. ResNet50은4 ×16 =64 sample presentations / step이다.
+
+과거 보고서/해시 스냅샷은 이력을 보존한다. 정식 실험 설정과 후속 보고서에는
+본 정정을 적용한다. 실제 정량 A/B/C 결과가 수집됐다는 의미는 아니다.

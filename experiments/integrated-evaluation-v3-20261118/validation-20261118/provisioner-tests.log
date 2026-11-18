@@ -1,0 +1,14 @@
+ok  	dcn.ssu.ac.kr/infra/api/ml/v1alpha1	0.075s
+?   	dcn.ssu.ac.kr/infra/api/v1	[no test files]
+ok  	dcn.ssu.ac.kr/infra/cmd	0.045s
+ok  	dcn.ssu.ac.kr/infra/internal/controller	0.026s [no tests to run]
+ok  	dcn.ssu.ac.kr/infra/internal/controller/ml	3.926s
+?   	dcn.ssu.ac.kr/infra/pkg/argocd	[no test files]
+?   	dcn.ssu.ac.kr/infra/pkg/kubeadm	[no test files]
+ok  	dcn.ssu.ac.kr/infra/pkg/nodesoftware	2.091s
+ok  	dcn.ssu.ac.kr/infra/pkg/runtime	(cached)
+?   	dcn.ssu.ac.kr/infra/pkg/ssh	[no test files]
+ok  	dcn.ssu.ac.kr/infra/provider/aws	0.620s
+?   	dcn.ssu.ac.kr/infra/provider/gcp	[no test files]
+ok  	dcn.ssu.ac.kr/infra/provider/onprem	0.009s
+?   	dcn.ssu.ac.kr/infra/test/utils	[no test files]

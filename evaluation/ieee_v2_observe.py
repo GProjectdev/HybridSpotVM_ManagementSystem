@@ -33,6 +33,11 @@ KINDS = ('pods', 'statefulsets', 'noderequests', 'nodeprovisions', 'trainingrunt
 
 
 def validate_run(info):
+    if info.get('protocol') == 'HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118':
+        if (info.get('arm') not in {'A','B','C'} or info.get('world_size')!=4
+            or info.get('namespace')!='eval-v3-'+info.get('run_id','') or not info.get('workload_lock_sha256')):
+            raise ValueError('four-rank v3 run/namespace/workload lock required')
+        return
     final = info.get('protocol') == 'ieee-access-final-20261117'
     arms = {'E1-A','E1-B','E2-A','E2-B'} if final else ARMS
     if info.get('protocol') not in {'ieee-access-v2','ieee-access-final-20261117'} or info.get('arm') not in arms:
@@ -45,6 +50,7 @@ def validate_run(info):
 
 
 def log_events(text, info, pod):
+    world = 4 if info.get('protocol')=='HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118' else 2
     created = timestamp(pod['metadata']['creationTimestamp'])
     after = max(created, timestamp(info['started_at'])) if info.get('started_at') else created
     expected = next((e.get('value') for c in pod['spec']['containers'] if c['name'] == 'trainer'
@@ -59,11 +65,11 @@ def log_events(text, info, pod):
             e = event_from_message(PREFIX + json.dumps(raw))
         except (TypeError, ValueError):
             continue
-        if e is None or e['run_id'] != expected or e['rank'] not in (0, 1) or timestamp(e['timestamp']) < after:
+        if e is None or e['run_id'] != expected or e['rank'] not in range(world) or timestamp(e['timestamp']) < after:
             continue
-        if raw.get('world_size') != 2 or not e.get('attempt_id'):
+        if raw.get('world_size') != world or not e.get('attempt_id'):
             continue
-        e.update(world_size=2, pod_uid=pod['metadata']['uid'], pod_name=pod['metadata']['name'],
+        e.update(world_size=world, pod_uid=pod['metadata']['uid'], pod_name=pod['metadata']['name'],
                  node=pod['spec'].get('nodeName', ''))
         yield e
 

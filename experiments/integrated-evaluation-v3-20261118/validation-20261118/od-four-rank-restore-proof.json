@@ -1,0 +1,175 @@
+{
+  "passed": true,
+  "formal_result": false,
+  "no_Spot_or_FIS": true,
+  "at": "2026-11-18T07:43:00.463103+00:00",
+  "request_uid": "6f70c8d2-35b2-4c6a-9aac-8a5223ee3888",
+  "new_provider_id": "i-026b50960e5332efa",
+  "old_provider_id": "i-026bc6517370e0e04",
+  "rank_audits": [
+    {
+      "rank": 0,
+      "pod_uid": "6c3b7da3-e958-49e5-aec4-a5dc11eaa55d",
+      "restore_audit": {
+        "timestamp": "2026-11-18T07:42:37.274Z",
+        "global_step": 109,
+        "rank": 0,
+        "run_id": "gpt4-od-1816",
+        "event": "restore_audit",
+        "attempt_id": "2f9c940157354d6da59f30ed7118ed19",
+        "passed": true,
+        "checks": {
+          "model": true,
+          "optimizer": true,
+          "rng": true,
+          "step": true
+        },
+        "world_size": 4,
+        "pod_uid": "6c3b7da3-e958-49e5-aec4-a5dc11eaa55d",
+        "pod_name": "eval-gpt4-od-1816-0",
+        "node": "eval-gpt4-od-1816-worker-00-acceptance-new"
+      },
+      "update_audit": {
+        "timestamp": "2026-11-18T07:42:49.409Z",
+        "global_step": 110,
+        "rank": 0,
+        "run_id": "gpt4-od-1816",
+        "event": "update_audit",
+        "attempt_id": "2f9c940157354d6da59f30ed7118ed19",
+        "passed": true,
+        "gradients_finite": true,
+        "gradients_nonzero": true,
+        "parameters_changed": true,
+        "input_sha256": "7647288d4af449003773c751ed3c13fc913fa72729ff596cde2eb4dacc7c1bc6",
+        "parameter_sha256": "19f24ab828a335cf8ad681ac72017d3358503886ab37bcfe4cef4fccc322a79d",
+        "world_size": 4,
+        "pod_uid": "6c3b7da3-e958-49e5-aec4-a5dc11eaa55d",
+        "pod_name": "eval-gpt4-od-1816-0",
+        "node": "eval-gpt4-od-1816-worker-00-acceptance-new"
+      }
+    },
+    {
+      "rank": 1,
+      "pod_uid": "ff8eda3b-cf55-49c1-9469-3c6018d42ce0",
+      "restore_audit": {
+        "timestamp": "2026-11-18T07:42:39.447Z",
+        "global_step": 109,
+        "rank": 1,
+        "run_id": "gpt4-od-1816",
+        "event": "restore_audit",
+        "attempt_id": "4c7116cab1034621ad7eec730d20cdc8",
+        "passed": true,
+        "checks": {
+          "model": true,
+          "optimizer": true,
+          "rng": true,
+          "step": true
+        },
+        "world_size": 4,
+        "pod_uid": "ff8eda3b-cf55-49c1-9469-3c6018d42ce0",
+        "pod_name": "eval-gpt4-od-1816-1",
+        "node": "eval-gpt4-od-1816-worker-02"
+      },
+      "update_audit": {
+        "timestamp": "2026-11-18T07:42:49.560Z",
+        "global_step": 110,
+        "rank": 1,
+        "run_id": "gpt4-od-1816",
+        "event": "update_audit",
+        "attempt_id": "4c7116cab1034621ad7eec730d20cdc8",
+        "passed": true,
+        "gradients_finite": true,
+        "gradients_nonzero": true,
+        "parameters_changed": true,
+        "input_sha256": "0a6a9d94a01b2c5eb5fcfc1f55c037bff9dae43d06dc4af19003ad64e8bbb636",
+        "parameter_sha256": "19f24ab828a335cf8ad681ac72017d3358503886ab37bcfe4cef4fccc322a79d",
+        "world_size": 4,
+        "pod_uid": "ff8eda3b-cf55-49c1-9469-3c6018d42ce0",
+        "pod_name": "eval-gpt4-od-1816-1",
+        "node": "eval-gpt4-od-1816-worker-02"
+      }
+    },
+    {
+      "rank": 2,
+      "pod_uid": "7ea3d63a-3a8e-4452-8de8-fc9899084c33",
+      "restore_audit": {
+        "timestamp": "2026-11-18T07:42:34.952Z",
+        "global_step": 109,
+        "rank": 2,
+        "run_id": "gpt4-od-1816",
+        "event": "restore_audit",
+        "attempt_id": "8e554ca2393a4e6f968312c9a1aebcca",
+        "passed": true,
+        "checks": {
+          "model": true,
+          "optimizer": true,
+          "rng": true,
+          "step": true
+        },
+        "world_size": 4,
+        "pod_uid": "7ea3d63a-3a8e-4452-8de8-fc9899084c33",
+        "pod_name": "eval-gpt4-od-1816-2",
+        "node": "eval-gpt4-od-1816-worker-03"
+      },
+      "update_audit": {
+        "timestamp": "2026-11-18T07:42:49.549Z",
+        "global_step": 110,
+        "rank": 2,
+        "run_id": "gpt4-od-1816",
+        "event": "update_audit",
+        "attempt_id": "8e554ca2393a4e6f968312c9a1aebcca",
+        "passed": true,
+        "gradients_finite": true,
+        "gradients_nonzero": true,
+        "parameters_changed": true,
+        "input_sha256": "af9956b7c5d1e982f498210dbf809dbad4407554aad664dcd177e38c95ec774c",
+        "parameter_sha256": "19f24ab828a335cf8ad681ac72017d3358503886ab37bcfe4cef4fccc322a79d",
+        "world_size": 4,
+        "pod_uid": "7ea3d63a-3a8e-4452-8de8-fc9899084c33",
+        "pod_name": "eval-gpt4-od-1816-2",
+        "node": "eval-gpt4-od-1816-worker-03"
+      }
+    },
+    {
+      "rank": 3,
+      "pod_uid": "07c09800-7a52-48af-baf5-496b12725268",
+      "restore_audit": {
+        "timestamp": "2026-11-18T07:42:31.052Z",
+        "global_step": 109,
+        "rank": 3,
+        "run_id": "gpt4-od-1816",
+        "event": "restore_audit",
+        "attempt_id": "4294868392a24cf3a462eba14613d0c2",
+        "passed": true,
+        "checks": {
+          "model": true,
+          "optimizer": true,
+          "rng": true,
+          "step": true
+        },
+        "world_size": 4,
+        "pod_uid": "07c09800-7a52-48af-baf5-496b12725268",
+        "pod_name": "eval-gpt4-od-1816-3",
+        "node": "eval-gpt4-od-1816-worker-01"
+      },
+      "update_audit": {
+        "timestamp": "2026-11-18T07:42:49.554Z",
+        "global_step": 110,
+        "rank": 3,
+        "run_id": "gpt4-od-1816",
+        "event": "update_audit",
+        "attempt_id": "4294868392a24cf3a462eba14613d0c2",
+        "passed": true,
+        "gradients_finite": true,
+        "gradients_nonzero": true,
+        "parameters_changed": true,
+        "input_sha256": "2cad6ea17803ee6afd43f9920120dbe87a108666952dcd8810180cb741350ebe",
+        "parameter_sha256": "19f24ab828a335cf8ad681ac72017d3358503886ab37bcfe4cef4fccc322a79d",
+        "world_size": 4,
+        "pod_uid": "07c09800-7a52-48af-baf5-496b12725268",
+        "pod_name": "eval-gpt4-od-1816-3",
+        "node": "eval-gpt4-od-1816-worker-01"
+      }
+    }
+  ]
+}

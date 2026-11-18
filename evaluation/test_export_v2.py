@@ -11,6 +11,18 @@ except ImportError:
 
 
 class V2ExportTest(unittest.TestCase):
+    def test_four_rank_export_retains_rank2_rank3_and_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);src=root/'in.jsonl';out=root/'out'
+            events=[dict(run_id='four',timestamp='2026-11-18T07:00:00Z',event='step',global_step=1,rank=r,world_size=4,attempt_id='attempt',pod_uid='pod'+str(r)) for r in range(4)]
+            src.write_text('\n'.join(json.dumps(x) for x in events+events))
+            self.assertEqual(export_v2.export(src,out,'four',world_size=4),{r:1 for r in range(4)})
+            before=(out/'rank3_training.csv').read_text()
+            with self.assertRaisesRegex(ValueError,'preserve'):export_v2.export(src,out,'four',world_size=4)
+            self.assertEqual((out/'rank3_training.csv').read_text(),before)
+            events[3]['world_size']=2;src.write_text('\n'.join(json.dumps(x) for x in events))
+            with self.assertRaisesRegex(ValueError,'four-rank'):export_v2.export(src,root/'invalid','four',world_size=4)
+            self.assertFalse((root/'invalid').exists())
     def test_dedup_keeps_replay_attempts_and_excludes_unvalidated_payload(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

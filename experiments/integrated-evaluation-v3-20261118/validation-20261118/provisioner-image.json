@@ -1,0 +1,9 @@
+{
+  "pinned": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+  "source_sha256": "b7dd43f59d87b742e8cdaf7578112bfa649afc85d0b587d087e8fb8c6e8c6f36",
+  "build_recipe_sha256": "744e4ef036d2a87f0fb9319a3ef40598283a6349537089ae6c57f2bb1ebc81b8",
+  "envtest_suites": "not run; TestControllers excluded; unit/fake-client suites executed",
+  "registry_verified": true,
+  "tag": "docker.io/jeongseungjun/my-publiccloudvm-provisioner:v6.0-failure-cooldown-b7dd43f59d87",
+  "at": "2026-11-18T08:16:34.430708+00:00"
+}

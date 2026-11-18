@@ -1,0 +1,7 @@
+{
+  "pinned": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+  "source_sha256": "0d65c18da6cec5d49c6db75918d79bb7455d691806e68cbf149621fc2053d9b9",
+  "registry_verified": true,
+  "tag": "docker.io/jeongseungjun/stateful-migration-system:v6.0-group-launcher-ready-0d65c18da6ce",
+  "at": "2026-11-18T07:40:40.927850+00:00"
+}

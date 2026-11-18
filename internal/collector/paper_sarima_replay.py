@@ -21,7 +21,7 @@ def instant(value):
     return t.astimezone(timezone.utc)
 
 
-def load_locked(forecast_path, manifest):
+def load_locked(forecast_path, manifest, selection_evidence_path=None):
     body = Path(forecast_path).read_bytes()
     if manifest.get('status') != 'LOCKED' or manifest.get('forecast_sha256') != hashlib.sha256(body).hexdigest():
         raise ValueError('locked manifest and exact forecast hash required')
@@ -30,8 +30,23 @@ def load_locked(forecast_path, manifest):
         raise ValueError('unexpected estimator/data split')
     if manifest.get('trace_sha256') != data['normalization']['trace_sha256']:
         raise ValueError('trace hash mismatch')
-    if manifest.get('selection_rule') != 'first-held-out-hour' or manifest.get('start_hour') != 0 or manifest.get('wall_seconds_per_trace_hour') != 3600:
-        raise ValueError('fixed first-hour selection and uncompressed clock required')
+    selected=manifest.get('selection_rule')=='first-native-eligible-adjacent-transition'
+    if manifest.get('wall_seconds_per_trace_hour') != 3600:
+        raise ValueError('uncompressed clock required')
+    if selected:
+        start=manifest.get('start_hour')
+        if type(start) is not int or not 0<=start<167 or not selection_evidence_path:
+            raise ValueError('reviewed offset and selection evidence required')
+        evidence_body=Path(selection_evidence_path).read_bytes()
+        if hashlib.sha256(evidence_body).hexdigest()!=manifest.get('selection_evidence_sha256'):
+            raise ValueError('selection evidence hash mismatch')
+        evidence=json.loads(evidence_body)
+        if (evidence.get('forecast_sha256')!=manifest['forecast_sha256']
+            or evidence.get('candidate_window',{}).get('start_hour')!=start
+            or evidence.get('candidate_window',{}).get('change_hour')!=start+1):
+            raise ValueError('selection evidence does not bind this forecast/adjacent window')
+    elif manifest.get('selection_rule') != 'first-held-out-hour' or manifest.get('start_hour') != 0:
+        raise ValueError('explicit reviewed selection required')
     if manifest.get('provenance') != 'external-US-V100-availability-proxy' or not manifest.get('population_assumption'):
         raise ValueError('explicit external proxy provenance required')
     n = data['normalization']['risk_population']
@@ -55,9 +70,10 @@ def load_locked(forecast_path, manifest):
 def payload(data, manifest, start, now):
     elapsed = (now - start).total_seconds()
     index = math.floor(elapsed/3600)
-    if index < 0 or index >= len(data['forecasts']):
+    base=manifest.get('start_hour',0)
+    if type(base) is not int or base<0 or index < 0 or base+index >= len(data['forecasts']):
         raise ValueError('replay not started or exhausted')
-    row = data['forecasts'][index]
+    row = data['forecasts'][base+index]
     at = start + timedelta(hours=index)
     return {'lambdaPerHour': row['lambda_per_hour'], 'observedAt': at.isoformat(),
             'validUntil': (at+timedelta(hours=1)).isoformat(),
@@ -69,7 +85,9 @@ def payload(data, manifest, start, now):
                        'inputKind':'historical-external-proxy-replay', 'forecastSHA256':manifest['forecast_sha256'],
                        'traceSHA256':manifest['trace_sha256'], 'historicalForecastHour':row['relative_forecast_hour'],
                        'historicalLastInputHour':row['last_input_hour'], 'replayStartUTC':start.isoformat(),
-                       'replayHour':index, 'wallSecondsPerTraceHour':3600,
+                       'replayHour':index, 'heldOutHour':base+index, 'selectedStartHour':base,
+                       'selectionEvidenceSHA256':manifest.get('selection_evidence_sha256'),
+                       'wallSecondsPerTraceHour':3600,
                        'notMeasuredSeoulRisk':True}}
 
 
@@ -97,11 +115,12 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--forecasts',type=Path,required=True);p.add_argument('--manifest',type=Path,required=True)
     p.add_argument('--start-utc',required=True);p.add_argument('--bind',default='127.0.0.1');p.add_argument('--port',type=int,default=8443)
+    p.add_argument('--selection-evidence',type=Path,help='exact hashed native-policy selection receipt for nonzero reviewed offset')
     p.add_argument('--prices',type=Path,help='optional current-price file; refresh every <=5min; absent means throughput-only bootstrap')
     p.add_argument('--execution-instance-type',default='g5.xlarge',help='must match the execution profile and price receipt; does not change historical trace provenance')
     p.add_argument('--execution-availability-zone',default='ap-northeast-2c',help='must match the execution profile and price receipt')
     p.add_argument('--cert',required=True);p.add_argument('--key',required=True)
-    a=p.parse_args();manifest=json.loads(a.manifest.read_text());data=load_locked(a.forecasts,manifest);start=instant(a.start_utc)
+    a=p.parse_args();manifest=json.loads(a.manifest.read_text());data=load_locked(a.forecasts,manifest,a.selection_evidence);start=instant(a.start_utc)
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path != '/risk':self.send_error(404);return

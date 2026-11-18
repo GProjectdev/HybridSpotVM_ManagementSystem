@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -16,6 +17,7 @@ func main() {
 	prices := flag.String("environment", "", "read-only environment receipt with execution prices")
 	workers := flag.Int64("workers", 2, "scenario world size: S1 v2=4, S2=2")
 	controlOD := flag.Int64("control-od", 1, "fixed-control On-Demand count; v3 A=world size")
+	types := flag.String("instance-types", "g5.xlarge,g6.xlarge", "comma-separated reviewed one-GPU execution products")
 	flag.Parse()
 	if *workers != 2 && *workers != 4 {
 		panic("reviewed scenario world must be 2 or 4")
@@ -50,7 +52,10 @@ func main() {
 	out["fixed_control_on_demand"] = *controlOD
 	out["checkpoint_execution_not_probed"] = true
 	rows := []interface{}{}
-	for _, typ := range []string{"g5.xlarge", "g6.xlarge"} {
+	for _, typ := range strings.Split(*types, ",") {
+		if typ == "" || strings.TrimSpace(typ) != typ {
+			panic("explicit execution instance types required")
+		}
 		var price struct {
 			Spot float64 `json:"spotPricePerHour"`
 			OD   float64 `json:"onDemandPricePerHour"`

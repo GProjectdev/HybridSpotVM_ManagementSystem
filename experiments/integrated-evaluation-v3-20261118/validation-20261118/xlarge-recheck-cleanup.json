@@ -1,0 +1,16 @@
+{
+  "completed_at": "2026-11-18T07:58:58.679425+00:00",
+  "provider_crs_removed": true,
+  "ec2_terminated": [],
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-gpt4-g5r-1816-worker-01",
+      "deleted": true
+    }
+  ],
+  "volume_receipts": [],
+  "gpu_compute_conservative_upper_estimate_usd": 0,
+  "cost_scope": "launch through terminated observation at OD price 1.237/h; not invoice; EBS/network/FIS excluded",
+  "no_forced_finalizers": true,
+  "checkpoint_pvc_pv_nfs_preserved": true
+}

@@ -33,7 +33,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True);p.add_argument('--profile',required=True);p.add_argument('--account',required=True);p.add_argument('--ondemand-receipt',type=Path,required=True);p.add_argument('--deadline-utc',required=True);p.add_argument('--interval',type=int,default=240);p.add_argument('--seconds',type=int,default=0,help='0=single refresh; otherwise bounded <=5 hours')
     for x in ('publish-kubeconfig','publish-namespace','configmap','configmap-uid'):p.add_argument('--'+x)
     a=p.parse_args();info=json.loads((a.directory/'run.json').read_text())
-    if info.get('protocol')!='ieee-access-final-20261117' or info.get('expected_aws_account')!=a.account:raise ValueError('explicit final Run/account required')
+    if info.get('protocol') not in {'ieee-access-final-20261117','HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118'} or info.get('expected_aws_account')!=a.account:raise ValueError('explicit final Run/account required')
     if info.get('region')!='ap-northeast-2' or info.get('availability_zone')!='ap-northeast-2c':raise ValueError('reviewed execution location required')
     if not 30<=a.interval<=300 or not 0<=a.seconds<=18000:raise ValueError('refresh every <=5 minutes within bounded 5-hour Run')
     binding=[a.publish_kubeconfig,a.publish_namespace,a.configmap,a.configmap_uid]

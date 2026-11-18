@@ -151,6 +151,9 @@ def render(c, source, run_id, experiment, arm, *, namespace=None):
     resource_for_run = partial(resource, namespace=ns)
     meta_for_run = partial(meta, namespace=ns)
     validate(c, run_id, experiment, arm, namespace=ns)
+    world = c.get("world_size", 2)
+    if type(world) is not int or world not in (2, 4):
+        raise ValueError("reviewed workload world_size must be 2 or 4")
     model = c.get("model", "resnet18")
     data_mount = "/datasets/wikitext103-tokenized" if model == "gpt2" else "/datasets/cifar10"
     entrypoint = "train_gpt2.py" if model == "gpt2" else "train_resnet18.py"
@@ -167,7 +170,7 @@ def render(c, source, run_id, experiment, arm, *, namespace=None):
                instanceType=c["instance_type"], karmadaCluster=c["cluster"],
                hardwareType="gpu", nodeLabel="gpu")
     policy_spec.update(workloadRef={"apiVersion": "apps/v1", "kind": "StatefulSet", "name": app, "uid": "BOUND_DURING_PREPARE"},
-                       sourceCluster=c["cluster"], expectedWorldSize=2, targetWorkers=2,
+                       sourceCluster=c["cluster"], expectedWorldSize=world, targetWorkers=world,
                        runtimeRef={"name": app + "-runtime"}, riskProfileRef={"name": app + "-risk"},
                        replacement={"enabled": True})
     policy_spec["policy"] = copy.deepcopy(source["spec"].get("policy", {}))
@@ -208,7 +211,7 @@ def render(c, source, run_id, experiment, arm, *, namespace=None):
                     {"accessModes": ["ReadWriteMany"], "storageClassName": c["storage_class"],
                      "resources": {"requests": {"storage": c.get("checkpoint_size", "10Gi")}}})
     env = [{"name": k, "value": str(v)} for k, v in {
-        "WORLD_SIZE": 2, "LOCAL_RANK": 0, "MASTER_ADDR": app+"-0."+app+"."+ns+".svc.cluster.local",
+        "WORLD_SIZE": world, "LOCAL_RANK": 0, "MASTER_ADDR": app+"-0."+app+"."+ns+".svc.cluster.local",
         "MASTER_PORT": 29500, "NCCL_SOCKET_IFNAME": "eth0",
         "FLUIDCR_CHECKPOINT_PATH": "/checkpoint/$(POD_NAME)/latest.pt",
         "FLUIDCR_REGISTRY_DIR": "/tmp/fluidcr-workers", "FLUIDCR_DISTRIBUTED": 1,
@@ -280,7 +283,7 @@ def render(c, source, run_id, experiment, arm, *, namespace=None):
                           "placement":{"clusterAffinity":{"clusterNames":[c["cluster"]]}}})
     run = dict(c, run_id=run_id, app=app, policy=app, risk=app+"-risk", experiment=experiment, arm=arm,
                model=model, dataset="wikitext-103-raw-v1" if model == "gpt2" else "cifar10",
-               world_size=2, created_at=now(), phase="rendered")
+               world_size=world, created_at=now(), phase="rendered")
     run["learning_rate"] = c.get("learning_rate", 5e-5 if model == "gpt2" else 0.1)
     run["sequence_length"] = c.get("sequence_length", 512) if model == "gpt2" else None
     run["training_code_sha256"] = hashlib.sha256(

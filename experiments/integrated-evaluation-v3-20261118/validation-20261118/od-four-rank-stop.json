@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-18T07:44:19.221709+00:00",
+  "reason": "component C/R passed and each rank performed at least100 new optimizer steps; end diagnostic before Spot retry",
+  "formal_result": false,
+  "goal8000_completed": false,
+  "goal_not_changed": true,
+  "remaining_goal_validation": "separate shorter4rank acceptance; do not treat this as formalA",
+  "rank_steps": {
+    "0": 211,
+    "1": 211,
+    "2": 211,
+    "3": 211
+  },
+  "restore_request_uid": "6f70c8d2-35b2-4c6a-9aac-8a5223ee3888"
+}

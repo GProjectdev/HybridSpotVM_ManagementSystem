@@ -1,0 +1,14 @@
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/api/fluidcr/v1alpha1	(cached)
+?   	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/api/v1alpha1	[no test files]
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/cmd/manager	0.045s
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/artifact	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/checkpoint	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/ctrlapi	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/deployment	0.027s
+?   	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/groupcontract	[no test files]
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/interpreter	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/kubelet	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/management	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/member	0.215s
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/internal/suspension	(cached)
+ok  	github.com/GProjectdev/Stateful-Migration-Operator-with-PV/runtime/crio	(cached)

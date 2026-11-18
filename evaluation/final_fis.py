@@ -24,13 +24,14 @@ except ImportError:
 LABEL='training.dcnlab.com/'
 
 def validate_run(run,now):
-    if (run.get('protocol')!='ieee-access-final-20261117' or run.get('arm')!='E2-B'
-        or run.get('phase')!='running' or run.get('world_size')!=2):
+    v3=run.get('protocol')=='HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118'
+    valid_identity=(run.get('arm')=='C' and run.get('world_size')==4) if v3 else (run.get('protocol')=='ieee-access-final-20261117' and run.get('arm')=='E2-B' and run.get('world_size')==2)
+    if not valid_identity or run.get('phase')!='running':
         raise ValueError('running final E2-B with two ranks required')
     if not re.fullmatch(r'[0-9]{12}',run.get('expected_aws_account','')):raise ValueError('explicit 12-digit account required')
     if not re.fullmatch(r'[a-z][a-z0-9-]{0,15}[a-z0-9]|[a-z]',run.get('run_id','')):
         raise ValueError('bounded Run identity required')
-    if run.get('namespace')!='eval-final-'+run['run_id'] or not run.get('policy_uid') or not run.get('workload_uid'):
+    if run.get('namespace')!=('eval-v3-' if v3 else 'eval-final-')+run['run_id'] or not run.get('policy_uid') or not run.get('workload_uid'):
         raise ValueError('exact namespace/policy/workload UIDs required')
     if (run.get('region')!='ap-northeast-2' or run.get('availability_zone')!='ap-northeast-2c'
         or run.get('ready_for_paid_execution') is not True):
@@ -65,38 +66,62 @@ class Live:
         return p.stdout
     def snapshot(self,now):
         r=self.run;validate_run(r,now)
+        v3=r.get('world_size')==4;world=4 if v3 else 2
         self.cloud.observe({},now)
         policy=json.loads(self.kub('karmada','get','noderequest',r['policy'],'-o','json'))
         workload=json.loads(self.kub('karmada','get','statefulset',r['app'],'-o','json'))
         if (policy['metadata']['uid']!=r['policy_uid'] or policy['metadata'].get('deletionTimestamp')
             or policy['spec']['workloadRef']['uid']!=r['workload_uid'] or workload['metadata']['uid']!=r['workload_uid']
-            or workload['metadata'].get('deletionTimestamp') or policy['spec']['policy'].get('fixedOnDemand')!=1
-            or workload['spec'].get('replicas')!=2 or policy['metadata'].get('annotations',{}).get(LABEL+'suspend')=='true'):
+            or workload['metadata'].get('deletionTimestamp') or (policy['spec']['policy'].get('fixedOnDemand') is not None if v3 else policy['spec']['policy'].get('fixedOnDemand')!=1)
+            or workload['spec'].get('replicas')!=world or policy['metadata'].get('annotations',{}).get(LABEL+'suspend')=='true'):
             raise ValueError('live policy/workload/composition differs or is suspended')
         if canonical_hash({'policy_spec':policy['spec'],'workload_spec':workload['spec']})!=r['live_spec_sha256']:raise ValueError('frozen live policy/workload specs changed')
         nodes=json.loads(self.kub('aws','get','nodeprovisions','-o','json'))['items']
-        if len(nodes)!=2 or any(n['metadata'].get('labels',{}).get(LABEL+'policy-uid')!=r['policy_uid'] or n['metadata'].get('deletionTimestamp') or n.get('status',{}).get('phase')!='Ready' for n in nodes):
+        if len(nodes)!=world or any(n['metadata'].get('labels',{}).get(LABEL+'policy-uid')!=r['policy_uid'] or n['metadata'].get('deletionTimestamp') or n.get('status',{}).get('phase')!='Ready' for n in nodes):
             raise ValueError('stable owned two-worker world required')
         spots=[n for n in nodes if n.get('spec',{}).get('marketType')=='Spot'];ods=[n for n in nodes if n.get('spec',{}).get('marketType')=='OnDemand']
-        if len(spots)!=1 or len(ods)!=1:raise ValueError('one owned Spot and one OD required')
+        if (not spots or not ods) if v3 else (len(spots)!=1 or len(ods)!=1):raise ValueError('owned Spot and healthy OD required')
+        if v3:
+            spots=[n for n in spots if n.get('status',{}).get('instanceId')==r.get('fis_target_instance_id')]
+            ods=[n for n in ods if n.get('status',{}).get('instanceId')==r.get('fis_stop_alarm_instance_id')]
+            if len(spots)!=1 or len(ods)!=1:raise ValueError('pinned exact Spot/OD identity changed; never retarget')
         spot=spots[0];owned=ownership(nodes,r['policy_uid']);rows=self.cloud.observe(owned,now)
-        if len(rows)!=2 or any(x['state']!='running' or not x.get('provider_ownership_verified') for x in rows):raise ValueError('running provider UID ownership required')
+        if len(rows)!=world or any(x['state']!='running' or not x.get('provider_ownership_verified') for x in rows):raise ValueError('running provider UID ownership required')
+        if v3 and (len(r.get('initial_instance_ids',[]))!=world or set(owned)!=set(r['initial_instance_ids'])):
+            raise ValueError('pre-fault world changed; record deviation, never retarget')
         iid=spot['status']['instanceId'];odid=ods[0]['status']['instanceId']
-        raw=self.cloud.command('ec2','describe-instances','--instance-ids',iid,odid)['Reservations']
+        all_ids=[n['status']['instanceId'] for n in nodes] if v3 else [iid,odid]
+        raw=self.cloud.command('ec2','describe-instances','--instance-ids',*all_ids)['Reservations']
         xs=[x for reservation in raw for x in reservation['Instances']]
-        if {x['InstanceId'] for x in xs}!={iid,odid} or len(xs)!=2 or any(x['State']['Name']!='running' or x['Placement']['AvailabilityZone']!=r['availability_zone'] or x['InstanceType']!=r['instance_type'] for x in xs):
+        if {x['InstanceId'] for x in xs}!=set(all_ids) or len(xs)!=world or any(x['State']['Name']!='running' or x['Placement']['AvailabilityZone']!=r['availability_zone'] or x['InstanceType']!=r['instance_type'] for x in xs):
             raise ValueError('exact running worker types/AZ required')
         markets={x['InstanceId']:x.get('InstanceLifecycle','on-demand') for x in xs}
         if markets[iid]!='spot' or markets[odid]!='on-demand':raise ValueError('provider market composition differs')
+        if v3 and any(markets[n['status']['instanceId']]!=('spot' if n['spec']['marketType']=='Spot' else 'on-demand') for n in nodes):
+            raise ValueError('one or more provider markets differ from owned NP')
         member=json.loads(self.kub('aws','get','statefulset',r['app'],'-o','json'));member_uid=member['metadata']['uid']
         pods=json.loads(self.kub('aws','get','pods','-l','app='+r['app'],'-o','json'))['items'];current={};events=[]
         for pod in pods:
             m=pod['metadata'];name=m['name']
-            if m.get('deletionTimestamp') or name not in [r['app']+'-0',r['app']+'-1']:raise ValueError('unexpected or terminating rank Pod')
+            if m.get('deletionTimestamp') or name not in [r['app']+'-'+str(i) for i in range(world)]:raise ValueError('unexpected or terminating rank Pod')
             rank=int(name.rsplit('-',1)[1]);owners=m.get('ownerReferences',[])
             if m.get('labels',{}).get(LABEL+'workload-uid')!=r['workload_uid'] or not any(o.get('controller') is True and o['uid']==member_uid for o in owners):raise ValueError('rank workload ownership required')
             if rank in current:raise ValueError('duplicate rank')
+            if v3:
+                cs=[c for c in pod['spec']['containers'] if c['name']=='trainer']
+                if len(cs)!=1 or any(str(cs[0].get('resources',{}).get(k,{}).get('nvidia.com/gpu'))!='1' for k in ('requests','limits')):
+                    raise ValueError('one actual requested and limited GPU per rank required')
             current[rank]=m['uid'];events.extend(log_events(self.kub('aws','logs',name,'-c','trainer','--since=120s','--tail=500'),r,pod))
+        if v3:
+            assigned=[p['spec'].get('nodeName') for p in pods]
+            if len(assigned)!=4 or len(set(assigned))!=4 or set(assigned)!={n['status']['nodeName'] for n in nodes}:
+                raise ValueError('four distinct current owned worker nodes required')
+            try:
+                from .integrated_protocol import durable_group_checkpoint
+            except ImportError:
+                from integrated_protocol import durable_group_checkpoint
+            cps=json.loads(self.kub('karmada','get','fluidcrmigrations','-o','json'))['items']
+            if not any(durable_group_checkpoint(x,r,current) for x in cps):raise ValueError('durable complete current four-rank checkpoint required')
         # Re-evaluate after bounded reads rather than granting freshness at read start.
         observed=datetime.now(timezone.utc).isoformat();validate_run(r,observed)
         gate=check(r,events,now=observed,current_pods=current)

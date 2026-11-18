@@ -1,0 +1,41 @@
+{
+  "collector_original_trust_restored": true,
+  "removed_exact_owned_objects": [
+    {
+      "kind": "SpotRiskProfile",
+      "name": "selected-window",
+      "uid": "0be3d2f4-f388-418d-ad62-4ae2df78e59e"
+    },
+    {
+      "kind": "Service",
+      "name": "risk-replay",
+      "uid": "be64238c-b1e6-4d11-bf2a-7d6d79c0cbf8"
+    },
+    {
+      "kind": "Deployment",
+      "name": "risk-replay",
+      "uid": "65fd7c95-bdf5-4f06-a3d7-a8a7992b31f7"
+    },
+    {
+      "kind": "ConfigMap",
+      "name": "replay-code",
+      "uid": "66b4ccb8-219e-492f-bd28-809ac6ee6f9e"
+    },
+    {
+      "kind": "ConfigMap",
+      "name": "replay-input",
+      "uid": "f158bde3-afe6-4bbe-8f54-7af28dd621ef"
+    },
+    {
+      "kind": "Secret",
+      "name": "v3-window-ca",
+      "uid": "7c9dc966-f4a8-4af6-bb4c-f78d525733ec"
+    },
+    {
+      "kind": "Secret",
+      "name": "replay-tls",
+      "uid": "da22339a-351e-416b-b4a3-4b8c2af727b3"
+    }
+  ],
+  "namespaces_retained": true
+}
