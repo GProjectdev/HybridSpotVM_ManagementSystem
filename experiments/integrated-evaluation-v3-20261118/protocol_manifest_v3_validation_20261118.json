@@ -526,7 +526,7 @@
     "evaluation/ieee_v2_observe.py": "4bc63e2b699f6a178444d4e01cf845de649c5ff21fd07d70d73a1d6abc80de6b"
   },
   "source_heads_scope": "baseline before this preparation commit; exact inspected working-tree files hashed separately, no core rollout",
-  "snapshot_at_utc": "2026-11-18T13:17:38.079191+00:00",
+  "snapshot_at_utc": "2026-11-18T13:54:10.138994+00:00",
   "source_draft_sha256": "c036442e65a97c608a73d5b54c894b761b2549e92f324f3122bdb15e6395e8fc",
   "source_draft_preserved": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
   "source_provenance_note": "P prior1235 was old local branch, not operationalmain abea04d; corrected to main plus minimal cooldown. Originalbranch retained; withdrawn build/attempt preserved.",
@@ -545,7 +545,8 @@
     "previous_g62_checkpoint_failure": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-12-g62-fast/bounded-failure-stop.json",
     "native_clock_with_live_workers": "NOT_PERFORMED; CPU live1h feed reused, discrete GPU fixture has a separate nonformal scope",
     "fast_input_fixture": "unchanged verified forecast14/15 values, current prices; generic HTTPS Collector endpoint; high after actual durable4rank CP and commonstep100; NOT compressed formal replay",
-    "final_idle_audit": "/home/ubuntu/v3-validation-20261118/final-idle-audit.json"
+    "final_idle_audit": "/home/ubuntu/v3-validation-20261118/final-idle-audit.json",
+    "new_batch_reconfiguration": "2/4rank controller+races and two idle rollouts passed; actual GPU batch unverified"
   },
   "policy_or_risk_algorithm_redeveloped": false,
   "validation_runtime_images": {
@@ -581,7 +582,7 @@
           "OriginalSize": 500,
           "OriginalVolumeType": "standard",
           "OriginalMultiAttachEnabled": false,
-          "Progress": 23,
+          "Progress": 43,
           "StartTime": "2026-11-18T12:25:40+00:00"
         }
       ]
@@ -589,10 +590,10 @@
     "formal_execution_gate": "EBS modification completed before formal A/B/C; same storage settings and no background storage conversion across arms; current optimization-phase diagnostics are functional evidence only"
   },
   "current_deployed_image_references": {
-    "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:c779629ce8f2fdf99b1963a5abfd82c5791d0a3f9464ea46bef80bf97d8d7b69",
+    "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:8c003b5b2bb655af223a5cf41af8352718dc9ed89bdec7447ca84815f2fc6eb4",
     "MGMT/deployments/hybridspot-system/placement-webhook/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
     "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
-    "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:2b85db01cd4345a564a2c42f6c2dcac6efd8b8448805ec25c1ce2bc2d72015a9",
+    "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:07d457991eff7a8a7023467afadc597ab18932c0f69a56aabfa0f15dcd7fab1f",
     "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
     "MGMT/deployments/stateful-migration-system/stateful-management/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
     "AWS/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
@@ -613,5 +614,29 @@
     "ONPRE1/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5"
   },
   "formal_dispatch_allowed": false,
-  "unusable_checkpoint_note": "C09 first postrestore step17 has only producer ranks0/1 markers after watchdog on2/3; do not use as fullgroup checkpoint despite container archive Completed. Require subsequent all4 producer+durable+updates proof."
+  "unusable_checkpoint_note": "C09 first postrestore step17 has only producer ranks0/1 markers after watchdog on2/3; do not use as fullgroup checkpoint despite container archive Completed. Require subsequent all4 producer+durable+updates proof.",
+  "batch_reconfiguration_followup": {
+    "status": "IMPLEMENTED_CPU_TESTED_IDLE_ROLLOUT_GPU_BATCH_NOT_VERIFIED",
+    "implementation_commit": "6d574a6c0002290b36351b74ecfb72acfa2b1516",
+    "source_corpus_sha256": "4426f95b3104583ec2a1bcb54be4f099950d05c2c1b68c17c77d563ce9ae2347",
+    "default_batch_size": 1,
+    "recommended_acceptance_options": [
+      2,
+      3
+    ],
+    "peak_worker_instances_by_batch_size": {
+      "1": 5,
+      "2": 6,
+      "3": 7
+    },
+    "formal_selection": "NOT_FROZEN",
+    "policy_or_risk_algorithm_changed": false,
+    "two_and_four_rank_controller_tests": true,
+    "all_worker_fencing_and_verified_required": true,
+    "actual_GPU_batch_verified": false,
+    "actual_speedup_measured": false,
+    "report": "/home/ubuntu/graduate/Evaluation/risk_reconfiguration_batch_update_20261118.txt",
+    "partial_preparation": "wait; no source deletion or automatic target cancellation",
+    "direct_FIS_emergency": "existing single-victim route unchanged"
+  }
 }

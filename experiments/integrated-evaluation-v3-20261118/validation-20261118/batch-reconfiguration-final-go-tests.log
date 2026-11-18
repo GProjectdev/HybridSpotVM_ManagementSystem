@@ -1,0 +1,21 @@
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/checkpoint-coordinator	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/checkpoint-recovery-coordinator	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/placement-webhook	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/policy-manager	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/public-cloud-vm-collector	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/spot-recovery-controller	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/spot-vm-management-controller	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/spot-watcher	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/training-lifecycle-controller	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/training-runtime-collector	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/training-runtime-controller	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/cmd/vm-spot-risk-collector	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/evaluation/integrated_probe	[no test files]
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/evaluation/policy_probe	[no test files]
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/app	(cached)
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/collector	(cached)
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/management	2.608s
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/manifests	(cached)
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/member	(cached)
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy	(cached)
+?   	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/resource	[no test files]

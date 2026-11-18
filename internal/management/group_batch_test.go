@@ -459,3 +459,123 @@ func TestPolicyBatchBoundTwoDoesNotAllocateThirdTarget(t *testing.T) {
 		t.Fatalf("bounded batch inventory=%d", len(list.Items))
 	}
 }
+
+func TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections(t *testing.T) {
+	for _, reverse := range []bool{false, true} {
+		t.Run(fmt.Sprint(reverse), func(t *testing.T) {
+			ctx := context.Background()
+			r, policy, input, _ := batchFixture(t, reverse)
+			input.TargetWorkers = 2
+			a := policy.GetAnnotations()
+			a[groupBatchSizeAnnotation] = "2"
+			a[groupIntentAnnotation] = "old-0"
+			policy.SetAnnotations(a)
+			_ = unstructured.SetNestedField(policy.Object, int64(2), "spec", "targetWorkers")
+			_ = unstructured.SetNestedField(policy.Object, "old-0", "status", "checkpoint", "replacementOperation")
+			if err := r.Update(ctx, policy); err != nil {
+				t.Fatal(err)
+			}
+			_ = unstructured.SetNestedField(policy.Object, "old-0", "status", "checkpoint", "replacementOperation")
+			if err := r.Status().Update(ctx, policy); err != nil {
+				t.Fatal(err)
+			}
+			cp := p.NewObject("FluidCRMigration")
+			if err := r.Get(ctx, client.ObjectKey{Namespace: "demo", Name: "round"}, cp); err != nil {
+				t.Fatal(err)
+			}
+			groupReport(cp)["pods"] = groupReport(cp)["pods"].([]interface{})[:2]
+			if err := r.Update(ctx, cp); err != nil {
+				t.Fatal(err)
+			}
+			rt := p.NewObject("TrainingRuntime")
+			if err := r.Get(ctx, client.ObjectKey{Namespace: "demo", Name: "runtime"}, rt); err != nil {
+				t.Fatal(err)
+			}
+			status := rt.Object["status"].(map[string]interface{})["clusters"].([]interface{})[0].(map[string]interface{})["status"].(map[string]interface{})
+			status["sourcePods"] = status["sourcePods"].([]interface{})[:2]
+			if err := r.Update(ctx, rt); err != nil {
+				t.Fatal(err)
+			}
+			intent := groupOperation{PolicyUID: "policy", PolicyGeneration: 1}
+			for rank := 0; rank < 4; rank++ {
+				name := fmt.Sprintf("policy-worker-%02d", rank)
+				np := p.NewObject("NodeProvision")
+				if err := r.Get(ctx, client.ObjectKey{Namespace: "demo", Name: name}, np); err != nil {
+					t.Fatal(err)
+				}
+				if rank >= 2 {
+					if err := r.Delete(ctx, np); err != nil {
+						t.Fatal(err)
+					}
+					continue
+				}
+				oldMarket, newMarket := "Spot", "OnDemand"
+				if reverse {
+					oldMarket, newMarket = "OnDemand", "Spot"
+				}
+				_ = unstructured.SetNestedField(np.Object, oldMarket, "spec", "marketType")
+				if err := r.Update(ctx, np); err != nil {
+					t.Fatal(err)
+				}
+				intent.Batch = append(intent.Batch, groupBatchTarget{name, string(np.GetUID()), replacementNodeProvisionName(name, string(np.GetUID())), newMarket})
+			}
+			first := intent.Batch[0]
+			intent.OldName, intent.OldUID, intent.Replacement, intent.Market = first.OldName, first.OldUID, first.Replacement, first.Market
+			intent.Operation = replacementOperationName(first.OldName, first.OldUID)
+			if _, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil {
+				t.Fatal(err)
+			}
+			list := p.NewList("NodeProvision")
+			if err := r.List(ctx, list); err != nil {
+				t.Fatal(err)
+			}
+			if len(list.Items) != 4 {
+				t.Fatalf("two-rank overlap=%d, want2+2", len(list.Items))
+			}
+			readyBatchTargets(t, r, intent, 2)
+			r.GroupStage = groupStageRequest
+			if created, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil || !created {
+				t.Fatalf("created=%v err=%v", created, err)
+			}
+			req := batchRequest(t, r, intent)
+			pods, _, _ := unstructured.NestedSlice(req.Object, "spec", "pods")
+			if intField(req.Object, "spec", "groupRestore", "worldSize") != 2 || len(pods) != 2 {
+				t.Fatal("two-rank world shape changed")
+			}
+			for rank, raw := range pods {
+				if stringField(raw.(map[string]interface{}), "targetNode") != fmt.Sprintf("new-node-%d", rank) {
+					t.Fatal("two-rank destination map missing")
+				}
+			}
+			if created, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil || created {
+				t.Fatal("two-rank retry duplicated request")
+			}
+		})
+	}
+}
+
+func TestPolicyBatchRetirementWaitsForEverySourceIncludingNonPrimary(t *testing.T) {
+	ctx := context.Background()
+	r, policy, input, intent := batchFixture(t, false)
+	if _, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil {
+		t.Fatal(err)
+	}
+	readyBatchTargets(t, r, intent, 3)
+	r.GroupStage = groupStageRequest
+	if _, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil {
+		t.Fatal(err)
+	}
+	req := batchRequest(t, r, intent)
+	markBatchVerified(t, r, req)
+	// The primary may have completed its finalizer while a later pair is still terminating.
+	first := p.NewObject("NodeProvision")
+	first.SetNamespace("demo")
+	first.SetName(intent.Batch[0].OldName)
+	if err := r.Delete(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	pending, err := r.pendingVerifiedGroupRetirement(ctx, input)
+	if err != nil || pending != intent.Batch[1].OldName {
+		t.Fatalf("pending=%s err=%v", pending, err)
+	}
+}

@@ -1,0 +1,10 @@
+=== RUN   TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections
+=== RUN   TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections/false
+=== RUN   TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections/true
+--- PASS: TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections (0.10s)
+    --- PASS: TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections/false (0.05s)
+    --- PASS: TestTwoRankBatchUsesTwoNewWorkersAndOneFullRestoreBothDirections/true (0.05s)
+=== RUN   TestPolicyBatchRetirementWaitsForEverySourceIncludingNonPrimary
+--- PASS: TestPolicyBatchRetirementWaitsForEverySourceIncludingNonPrimary (0.08s)
+PASS
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/management	1.349s

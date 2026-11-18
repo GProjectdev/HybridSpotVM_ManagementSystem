@@ -1,0 +1,72 @@
+=== RUN   TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections
+=== RUN   TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections/false
+=== RUN   TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections/true
+--- PASS: TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections (0.02s)
+    --- PASS: TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections/false (0.01s)
+    --- PASS: TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections/true (0.01s)
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/duplicate-source
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/stale-policy
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/wrong-old-uid
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/partial-enabled
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/emergency
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/over-limit
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/no-checkpoint
+=== RUN   TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/suspended
+--- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs (0.01s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/duplicate-source (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/stale-policy (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/wrong-old-uid (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/partial-enabled (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/emergency (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/over-limit (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/no-checkpoint (0.00s)
+    --- PASS: TestPolicyBatchRejectsUnsafeInputsBeforeCreatingVMs/suspended (0.00s)
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/valid
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/unverified
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-second-target
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-second-source
+=== RUN   TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-receipt
+--- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors (0.04s)
+    --- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/valid (0.01s)
+    --- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/unverified (0.01s)
+    --- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-second-target (0.01s)
+    --- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-second-source (0.01s)
+    --- PASS: TestPolicyBatchCleanupValidatesAllUIDsBeforeDeletingAndRecordsAllSuccessors/bad-receipt (0.01s)
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/valid
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/duplicate
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/wrong-primary
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/emergency-owner
+=== RUN   TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/empty-uid
+--- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch (0.00s)
+    --- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/valid (0.00s)
+    --- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/duplicate (0.00s)
+    --- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/wrong-primary (0.00s)
+    --- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/emergency-owner (0.00s)
+    --- PASS: TestGroupBatchReceiptRejectsDuplicatesAndPrimaryMismatch/empty-uid (0.00s)
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/#00
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/1
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/2
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/3
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/4
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/0
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/5
+=== RUN   TestGroupBatchSizeIsExplicitAndBounded/x
+--- PASS: TestGroupBatchSizeIsExplicitAndBounded (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/#00 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/1 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/2 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/3 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/4 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/0 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/5 (0.00s)
+    --- PASS: TestGroupBatchSizeIsExplicitAndBounded/x (0.00s)
+=== RUN   TestPolicyBatchDispatchAndRestartKeepOnePinnedOperation
+--- PASS: TestPolicyBatchDispatchAndRestartKeepOnePinnedOperation (0.01s)
+=== RUN   TestPolicyBatchBoundTwoDoesNotAllocateThirdTarget
+--- PASS: TestPolicyBatchBoundTwoDoesNotAllocateThirdTarget (0.01s)
+PASS
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/management	0.122s
