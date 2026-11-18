@@ -1,0 +1,37 @@
+{
+  "date_kst": "2026-11-18",
+  "based_on_presentation_sha256": "51d7a509c6028f725514d8c6894e6041ea60193fe3b12d88d0c498b9f2e08ab3",
+  "legacy_E1_E2": "implementation evidence I1/I2; retained, not repeated formal experiments",
+  "legacy_E3": "superseded; numerical conclusions not reused",
+  "formal_experiments": [
+    "E1:2OD-no-periodic vs 1OD+1Spot-adaptive",
+    "E2:same hybrid zero vs single FIS"
+  ],
+  "models": [
+    "gpt2",
+    "resnet50"
+  ],
+  "blocks_planned": 1,
+  "formal_runs_planned": 6,
+  "results_status": "NOT_RUN",
+  "claims_excluded": [
+    "new risk predictor",
+    "Desai exact async optimizer always active",
+    "faster recovery than other systems",
+    "WAN cross-cloud synchronous training",
+    "natural Seoul preemption distribution",
+    "4-rank scalability",
+    "general convergence/accuracy equivalence"
+  ],
+  "stop_deadline_kst": "2026-11-18T18:00:00+09:00",
+  "no_new_paid_run_after_kst": "2026-11-18T16:30:00+09:00",
+  "cleanup_start_no_later_than_kst": "2026-11-18T17:00:00+09:00",
+  "updated_utc": "2026-11-18T00:13:28.921412+00:00",
+  "final_review": "IEEE_Access_Evaluation_Review_20261118.txt",
+  "core_runs": 6,
+  "stretch_runs": 18,
+  "final_priority": "core six, important paired replications, conditional R2/R3 supplements",
+  "formal_results": "NOT_RUN",
+  "paid_acceptance_today": "G6 two-rank train/checkpoint observed; FIS template creation failed; no fault/new-VM restore; normal cleanup verified",
+  "stretch_blocks": 3
+}

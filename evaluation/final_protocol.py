@@ -209,7 +209,7 @@ def write_prepared(out,info,member,objects,policy):
 def main():
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True)
     q=sub.add_parser('prepare');q.add_argument('--config',type=Path,required=True);q.add_argument('--policy-source',type=Path,required=True);q.add_argument('--run-id',required=True);q.add_argument('--arm',choices=sorted(ARMS),required=True);q.add_argument('--out',type=Path,required=True)
-    q=sub.add_parser('metrics');q.add_argument('--run',type=Path,required=True);q.add_argument('--events',type=Path,required=True);q.add_argument('--billing',type=Path);q.add_argument('--request-at');q.add_argument('--out',type=Path,required=True)
+    q=sub.add_parser('metrics');q.add_argument('--run',type=Path,required=True);q.add_argument('--events',type=Path,required=True);q.add_argument('--billing',type=Path);q.add_argument('--checkpoint-stalls',type=Path,help='reviewed JSON list of UTC [pause,resume] intervals; overlapping rank intervals are unioned');q.add_argument('--request-at');q.add_argument('--out',type=Path,required=True)
     a=p.parse_args()
     if a.command=='prepare':
         args=render(json.loads(a.config.read_text()),json.loads(a.policy_source.read_text()),a.run_id,a.arm)
@@ -218,7 +218,8 @@ def main():
         if a.out.exists():raise ValueError('preserve prior analysis output')
         ledger=json.loads(a.billing.read_text()) if a.billing else {}
         events=[json.loads(line) for line in a.events.read_text().splitlines() if line.strip()]
-        result=metrics(json.loads(a.run.read_text()),events,request_at=a.request_at,billing=ledger.get('segments'),owned_instances=ledger.get('instances'))
+        stalls=json.loads(a.checkpoint_stalls.read_text()) if a.checkpoint_stalls else None
+        result=metrics(json.loads(a.run.read_text()),events,request_at=a.request_at,billing=ledger.get('segments'),owned_instances=ledger.get('instances'),checkpoint_stalls=stalls)
         a.out.mkdir(parents=True,mode=0o700);legacy.save(a.out/'metrics.json',result)
         row={'model':result['model'],'useful_unit':result['useful_unit'],
              'useful_samples':result['useful_samples'],'useful_samples_per_second':result['UsefulThroughput_samples_per_second'],

@@ -68,7 +68,7 @@ def log_events(text, info, pod):
         yield e
 
 
-POLICY_FIELDS = set("policyUID policyNamespace policyName policyGeneration workloadUID riskName riskGeneration riskObservedGeneration riskObservedAt riskValidUntil riskFresh lambdaPerHour riskSource method vmPolicyStage onDemandWorkers spotWorkers costEvaluated economicsSource checkpointIntervalSeconds onDemandHoldUntil reason decisionObservedAt".split())
+POLICY_FIELDS = set("policyUID policyNamespace policyName policyGeneration workloadUID riskName riskGeneration riskObservedGeneration riskObservedAt riskValidUntil riskFresh lambdaPerHour riskSource method vmPolicySource vmPolicyStage decisionStage intervalSource intervalCostEvaluated onDemandWorkers spotWorkers costEvaluated economicsSource checkpointIntervalSeconds onDemandHoldUntil reason decisionObservedAt".split())
 
 
 def policy_events(text, policy_uid, namespace):

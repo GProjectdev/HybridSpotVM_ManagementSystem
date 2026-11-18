@@ -1,0 +1,25 @@
+{
+  "observed_at": "2026-11-18T01:33:21.870345+00:00",
+  "scope": "read-only exact day18 acceptance resource IDs; not full AWS account cleanup",
+  "expected_account_verified": true,
+  "exact_instances": [
+    {
+      "instance_id": "i-0f97eb7294733df6c",
+      "state": "terminated"
+    },
+    {
+      "instance_id": "i-02d8d85f94c087d24",
+      "state": "terminated"
+    }
+  ],
+  "cluster_access": {
+    "MGMT": true,
+    "KARMADA": true,
+    "AWS": true,
+    "ONPRE1": true
+  },
+  "acceptance_nodeprovisions": {
+    "KARMADA": 0,
+    "AWS": 0
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "order_randomization_seed": 20261118,
+  "hardware_freeze_pending": true,
+  "planned_blocks": [
+    {
+      "model": "gpt2",
+      "block": 1,
+      "training_seed": 42,
+      "order": [
+        "E1-B",
+        "E1-A",
+        "E2-B"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "CORE"
+    },
+    {
+      "model": "gpt2",
+      "block": 2,
+      "training_seed": 42,
+      "order": [
+        "E2-B",
+        "E1-A",
+        "E1-B"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "REPLICATION_STRETCH"
+    },
+    {
+      "model": "gpt2",
+      "block": 3,
+      "training_seed": 42,
+      "order": [
+        "E1-B",
+        "E2-B",
+        "E1-A"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "REPLICATION_STRETCH"
+    },
+    {
+      "model": "resnet50",
+      "block": 1,
+      "training_seed": 42,
+      "order": [
+        "E2-B",
+        "E1-B",
+        "E1-A"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "CORE"
+    },
+    {
+      "model": "resnet50",
+      "block": 2,
+      "training_seed": 42,
+      "order": [
+        "E1-A",
+        "E2-B",
+        "E1-B"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "REPLICATION_STRETCH"
+    },
+    {
+      "model": "resnet50",
+      "block": 3,
+      "training_seed": 42,
+      "order": [
+        "E1-A",
+        "E1-B",
+        "E2-B"
+      ],
+      "E2_A_reuse": "E1-B only after reviewed compatibility",
+      "status": "PLANNED_NOT_RUN",
+      "priority": "REPLICATION_STRETCH"
+    }
+  ],
+  "all_attempts_including_failures_required": true,
+  "statistical_significance_not_established": true,
+  "priority": "CORE_SIX_FIRST",
+  "core_runs": 6,
+  "stretch_runs": 18,
+  "core_definition": "block 1 only: two models x E1-A/E1-B/E2-B; E1-B reused as E2-A only after compatibility review",
+  "optional_supplements": "R2 matched trace pair and R3 one fixed-cadence fault run only after core data, distinguishability and acceptance gates; not mandatory"
+}

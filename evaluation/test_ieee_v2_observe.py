@@ -1,9 +1,19 @@
 import json
 import unittest
-from ieee_v2_observe import log_events, validate_run
+from ieee_v2_observe import log_events, policy_events, validate_run
 
 
 class ObserverTests(unittest.TestCase):
+    def test_policy_stage_fields_retained_only_for_exact_policy_and_namespace(self):
+        event = {'msg': 'EvaluationPolicyDecision', 'policyUID': 'p', 'policyNamespace': 'n',
+                 'intervalSource': 'checkpoint-cost-analytic', 'decisionStage': 'CheckpointMeasured',
+                 'intervalCostEvaluated': True, 'private_key': 'do-not-export'}
+        rows = list(policy_events('UTC '+json.dumps(event), 'p', 'n'))
+        self.assertEqual(rows[0]['intervalSource'], 'checkpoint-cost-analytic')
+        self.assertEqual(rows[0]['decisionStage'], 'CheckpointMeasured')
+        self.assertNotIn('private_key', rows[0])
+        self.assertEqual(list(policy_events('UTC '+json.dumps(event), 'other', 'n')), [])
+
     def setUp(self):
         self.info={'protocol':'ieee-access-v2','arm':'N1','namespace':'eval-v2-test','run_id':'test',
                    'world_size':2,'workload_lock_sha256':'a'*64,'started_at':'2026-11-17T01:00:00Z'}

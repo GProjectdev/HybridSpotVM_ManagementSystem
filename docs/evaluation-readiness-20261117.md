@@ -1,14 +1,12 @@
 # 2026-11-17 revised evaluation readiness
 
-The latest plan is `Hybrid_DDP_IEEE_Access_Experiment_Plan_v2.md`, with the
-matching Codex-plan PDF. It supersedes the older N1/N2 and F1–F4 matrix.
-
-The protocol, source hashes, workload sizing and current GO/NO-GO evidence are
-under [experiments/ieee-access-v2](../experiments/ieee-access-v2/README.md).
-N0 has no periodic checkpoints; N1 uses Adaptive. All S0/S1/P0/P1 arms use the
-same Adaptive implementation and common recovery route; only risk-based VM
-composition changes. An earlier Fixed interval calibration is no longer a
-required experiment and its waiting jobs were stopped.
+The active protocol is recorded in `experiments/ACTIVE_PROTOCOL.json`. The
+2026-11-18 methodology review is
+[here](../experiments/ieee-access-final-20261117/EVALUATION_PROTOCOL_20261118.txt).
+The original presentation E1/E2 are implementation evidence I1/I2. Its old E3
+is superseded by the new quantitative E1 (operating cost/time) and E2 (the same
+Hybrid configuration with/without one interruption). The earlier v2
+Static/Proposed matrix is historical and must not be dispatched by mistake.
 
 Functional validation, the normal sizing pilot and formal evaluation results
 must remain separate. A forward switch and verified restore do not establish
@@ -28,3 +26,5 @@ Use Buildah and registry-verified digest references for release. Preserve local
 changes and infrastructure. Clean only run-owned NodeRequests/Workloads and
 UID/provider-matched NodeProvisions, then verify all EC2/EBS/key pairs. Preserve
 NFS, PVC/PV and evidence. Remove only this run's webhook selector additions.
+
+The final added-requirement review is [IEEE_Access_Evaluation_Review_20261118.txt](../experiments/ieee-access-final-20261117/IEEE_Access_Evaluation_Review_20261118.txt). Core six Runs precede replication/stretch and conditional R2/R3 comparisons. Formal results are NOT_RUN; the G6 ResNet acceptance stopped before FIS and new-VM restoration remains pending.

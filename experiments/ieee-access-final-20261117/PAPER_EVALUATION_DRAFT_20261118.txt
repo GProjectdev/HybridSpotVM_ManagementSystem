@@ -1,0 +1,41 @@
+졸업논문·IEEE Access 평가 절 작성 초안 (2026-11-18)
+상태: 방법론 초안. 정식 실행의 측정값/반복 결과는 아직 없음.
+
+[논리 및 절 구성]
+1. 구현 및 동작 검증: 기존 발표 E1/E2를 I1/I2로 구분해 유지한다.
+2. 요구사항-구현-증거 추적: R1 요청 기반 반환, R2 위험 정책 연계/교체, R3 checkpoint 정책 분기, R4 선점 복원, R5 클러스터 이전을 연결한다.
+3. 정량 E1: 정상 운영 패키지의 비용–완료시간.
+4. 정량 E2: 동일 Hybrid에서 단일 중단의 전체 DDP 추가 손실.
+5. 반복별 원시 결과, 실패/제외 이유, 불확실성 및 한계.
+이 순서는 '시스템을 만들고 동작했다'와 '경제성/장애 손실을 실측했다'라는 서로 다른 근거를 섞지 않기 위한 것이다.
+
+[졸업논문 한국어 방법 절 초안]
+본 연구는 Karmada 기반 다중 클러스터 환경에서 요청 기반 GPU Worker 생성·반환, 기존 위험 정책에 따른 자원 관리, Checkpoint/Restore 요청 조율을 통합하였다. VM 공급과 분산학습 복구의 내부 알고리즘은 기존 구성요소를 활용하며, 관리 계층과 구성요소 사이의 실행 연계를 평가 대상으로 삼았다.
+기존 클라우드 이전 및 Spot 중단 후 학습 재개 사례는 구현 검증으로 제시하였다. 이를 비용 또는 복구 알고리즘의 우월성에 대한 정량 비교로 취급하지 않았다. 새 정량 평가는 정상 운영 시의 비용–완료시간(E1), 단일 Spot Worker 중단이 동기식 DDP 전체에 초래하는 운영 손실(E2)로 구성하였다.
+E1에서는 같은 GPU 유형과 동일한 학습 목표의 2 On-Demand 조건을 1 On-Demand+1 Spot 및 기존 checkpoint 운용 조건과 비교한다. 두 조건에서 구매 방식과 checkpoint가 함께 달라지므로 운영 방식 전체의 효과를 해석하며 checkpoint 정책만의 독립적 인과 효과는 주장하지 않는다. E2에서는 같은 Hybrid 구성과 정책을 유지하고 FIS 중단 유무만 바꾼다. 실제 Spot 종료, 대체 VM 및 Node 준비, 저장 상태 복원, 양 rank의 실제 optimizer update, 목표 완료와 자원 반환을 UID와 provider ID로 추적한다.
+GPT-2 Small/WikiText-103 및 CIFAR-10을 사용하는 ResNet-50 workload를 모델별로 독립 실행한다. 동일 비교 블록에서 초기 상태, 데이터 순서, seed, batch, 목표 step, image 및 정책을 고정한다. rollback으로 다시 처리한 step은 유효 진전에 중복 합산하지 않는다. 완료 시간과 모든 실험 GPU VM의 compute 비용을 함께 보고하며 저장소·네트워크 등 미포함 비용의 범위를 명시한다.
+
+[결과 절: 실행 후에만 채울 문장]
+모델 [MODEL]의 [N]개 비교 블록에서 GPU VM Compute Cost는 OD 조건 [C_OD]와 Hybrid 조건 [C_H]였고, 요청부터 목표 완료까지 시간은 [T_OD], [T_H]였다. 개별 Run 값과 산포는 표/그림 [X]에 제시하였다. 공급 실패 [A]회, 복구 실패 [B]회 및 사전 규칙에 따른 제외 [C]회를 별도 공개하였다.
+같은 Hybrid에서 단일 interruption을 주입했을 때 paired 추가 완료시간은 [DELTA_T], 추가 비용은 [DELTA_C]였다. 실제 중단과 새 VM 복원에 대한 전체 타임라인은 그림 [Y]와 provider/UID 영수증으로 제시하였다. [RESTORE_RESULT]는 단순 process reload와 구분하였다.
+이 칸은 실측 전 비워 둔다. 이전 E3의 15.6~28.5% 또는 다른 논문의 절감률을 넣지 않는다.
+
+[IEEE Access Methods draft]
+We evaluate an integrated management system that connects request-driven GPU worker provisioning, adopted risk-aware policies, and an existing checkpoint/restore stack across Kubernetes clusters managed by Karmada. The contribution evaluated here is the management integration and its measured operational behavior, rather than a new spot predictor or recovery algorithm.
+The earlier cross-cluster migration and spot-recovery demonstrations are retained as implementation evidence. Two quantitative studies are conducted separately for GPT-2 Small and a CIFAR-10 ResNet-50 workload. E1 compares an all-on-demand, two-worker operating configuration without periodic checkpoints against a one-on-demand/one-spot configuration using the existing checkpoint policy. This is an operational-package comparison; it does not isolate the causal effect of adaptive checkpointing. E2 holds the hybrid configuration and policy constant and compares an uninterrupted run with a run receiving one controlled spot interruption.
+Within each comparison block, we freeze the instance type, world size, initialization, data contract, batch size, seed, target optimizer steps, software images, and policy configuration. The interruption gate is a predeclared committed-step threshold observed on both current ranks. We record the later FIS dispatch, notification, and actual interruption separately. Unique committed progress excludes replayed optimizer steps after rollback; it does not denote distinct examples in the original dataset.
+We report request-to-completion latency, training elapsed time, application pause intervals, recovery-stage timing, rollback, non-productive billed VM time, and GPU VM compute cost. Provisioning, idle overlap, replacement workers, and delayed release are included in the VM accounting scope. Polling-derived timing bounds are distinguished from exact billing observations. Storage, networking, and other excluded services are identified explicitly. All attempted runs and protocol deviations are retained.
+
+[Threats to validity draft]
+The study concerns two-rank synchronous DDP under selected AWS hardware and one controlled interruption position. It does not estimate natural Seoul interruption rates or establish large-scale scalability. Public availability traces, if used, are historical proxy inputs with a frozen relative clock, not measured hazards for the evaluated GPU pool. Static risk inputs test policy integration under controlled conditions but do not demonstrate forecasting benefit. The current checkpoint implementation may use bootstrap or measured CRIU-cost branches; we identify the active branch instead of assuming that asynchronous model-based equations are always applicable. VM supply, image caches, network credits, storage load, and polling uncertainty can affect elapsed time. We therefore retain per-run observations and do not attribute a performance change to network bursting without corresponding evidence. A small number of blocks limits statistical power. Training-progress and recovery audits do not establish convergence equivalence or image-classification benchmark accuracy.
+
+[원시 결과가 없으면 쓰지 않을 주장]
+- '원래 시스템보다 복구가 빠르다': 동일 조건의 외부/수동 baseline을 측정하지 않으면 삭제.
+- '위험률 예측이 정확하다': 별도 held-out causal prediction 평가가 없으면 삭제.
+- '동적 checkpoint가 최적이다': 동일 조건의 비교 정책과 충분한 비용/장애 측정이 없으면 삭제.
+- 'Hybrid라서 빠르다': GPU 종류·네트워크·cache·수준별 기여를 분리하지 않으면 삭제.
+- '실제 총비용 절감': 비용 범위가 GPU compute뿐이면 이름을 그 범위로 제한.
+- '같은 정확도로 수렴': held-out 측정과 충분한 학습이 없으면 삭제.
+
+[근거]
+실행 조건·출처 URL·실측/설계 구분은 평가_타당성검토_실험실행계획_20261118.txt 14절을 따른다. IEEE Access reviewer guidelines는 충분한 방법, 기술적 타당성과 데이터에 따른 결론을 요구한다. 해당 지침이 이 개별 실험이나 게재를 보증하는 것은 아니다.

@@ -1,0 +1,84 @@
+{
+  "presentation": {
+    "original_sha256": "51d7a509c6028f725514d8c6894e6041ea60193fe3b12d88d0c498b9f2e08ab3",
+    "I1_I2": "implementation demonstrations retained",
+    "E3": "superseded; no quantitative reuse"
+  },
+  "R1": {
+    "evidence": "reports/evening-evidence/gpu-cleanup.json; final-environment-check.json",
+    "scope": "request-owned provisioning and explicitly requested normal release observed; no registered controller completion-signal-only baseline auto-release found; formal E1/E2 NOT_RUN"
+  },
+  "R2": {
+    "evidence": [
+      {
+        "kind": "SpotReplacement",
+        "uid": "0f93d9c8-cf79-469b-8b03-0a9b2a2dac06",
+        "name": "quick-g5-worker-01-e4f3247c-368-replace",
+        "phase": "Completed",
+        "source_file": "/home/ubuntu/v6-readiness-20261117/live/receipt-diagnostic-objects.json",
+        "qualification": "historical observation; not proof of every route/current generation"
+      },
+      {
+        "kind": "SpotRecovery",
+        "uid": "47bd31e5-3af8-4f57-94fd-ddfd865d623b",
+        "name": "quick-g5-worker-01-e4f3247c-368-replace-cleanup",
+        "phase": "Rejected",
+        "source_file": "/home/ubuntu/v6-readiness-20261117/live/receipt-diagnostic-objects.json",
+        "qualification": "historical observation; not proof of every route/current generation"
+      },
+      {
+        "kind": "RestoreRequest",
+        "uid": "032f4844-d48d-49c5-afa3-947dd7bee7db",
+        "name": "quick-g5-worker-01-e4f3247c-368-replace-restore",
+        "phase": "Verified",
+        "source_file": "/home/ubuntu/v6-readiness-20261117/live/receipt-diagnostic-objects.json",
+        "qualification": "historical observation; not proof of every route/current generation"
+      }
+    ],
+    "scope": "completed forward replacement/Verified restore observed, but rejected cleanup and reverse prerequisites also recorded; no blanket bidirectional acceptance claim",
+    "code": "internal/policy/contract.go:DecideAt and existing replacement/recovery reconcilers",
+    "formal_E1_E2": "fixed composition; does not isolate dynamic allocation benefit"
+  },
+  "R3": {
+    "code": [
+      "internal/policy/contract.go:AdaptiveCheckpointInterval",
+      "internal/policy/paper.go:SelectPaperInterval"
+    ],
+    "observed_stages": [
+      "risk-band-bootstrap",
+      "checkpoint-cost-analytic"
+    ],
+    "paper_async_measurement_required": true,
+    "iteration_always_used_in_active_cost_branch": false
+  },
+  "R4": {
+    "gpt2": "historical implementation evidence; not rerun without new reason",
+    "resnet50": "same-Pod process restore passed; new-VM/FIS acceptance remains pending"
+  },
+  "R5": {
+    "evidence": "original slide19, historical checkpoint/update audit",
+    "scope": "cross-cloud migration implementation proof; new AWS-only E1/E2 is not WAN DDP"
+  },
+  "formal_E1": {
+    "valid_for": "operating package cost-time tradeoff",
+    "not_valid_for": "adaptive checkpoint causal superiority"
+  },
+  "formal_E2": {
+    "valid_for": "single controlled fault group operating penalty",
+    "not_valid_for": "recovery algorithm superiority or natural hazard estimation"
+  },
+  "replication": "core block1/model=6; blocks2/3 optional stretch; statistical inference not established",
+  "reference_check": "EVALUATION_PROTOCOL_20261118.txt section14",
+  "unresolved": [
+    "actual ResNet new-VM Verified route",
+    "available hardware and per-model final sizing freeze",
+    "formal repeated data",
+    "old I1/I2 raw receipts must accompany retained historical slide claims"
+  ],
+  "final_review": "IEEE_Access_Evaluation_Review_20261118.txt",
+  "core_runs": 6,
+  "stretch_runs": 18,
+  "final_priority": "core six, important paired replications, conditional R2/R3 supplements",
+  "formal_results": "NOT_RUN",
+  "paid_acceptance_today": "G6 two-rank train/checkpoint observed; FIS template creation failed; no fault/new-VM restore; normal cleanup verified"
+}

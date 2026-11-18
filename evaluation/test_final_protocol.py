@@ -4,6 +4,22 @@ import final_protocol as final
 from ieee_v2_observe import validate_run
 
 class FinalProtocolTests(unittest.TestCase):
+    def test_metrics_cli_accepts_reviewed_rank_pause_intervals_without_double_count(self):
+        import subprocess, sys
+        info=final.render(self.c,self.source,'stall-cli','E1-B')[0]
+        with tempfile.TemporaryDirectory() as tmp:
+            d=Path(tmp)
+            (d/'run.json').write_text(json.dumps(info));(d/'events.jsonl').write_text('')
+            (d/'stalls.json').write_text(json.dumps([
+                ['2026-11-18T00:00:00Z','2026-11-18T00:00:03Z'],
+                ['2026-11-18T00:00:02Z','2026-11-18T00:00:05Z']]))
+            subprocess.run([sys.executable,final.__file__,'metrics','--run',str(d/'run.json'),
+                            '--events',str(d/'events.jsonl'),'--checkpoint-stalls',str(d/'stalls.json'),
+                            '--out',str(d/'out')],check=True,capture_output=True,text=True)
+            result=json.loads((d/'out'/'metrics.json').read_text())
+            self.assertEqual(result['checkpoint_stall_seconds'],5)
+            self.assertEqual(result['quality'],'INCOMPLETE')
+
     def setUp(self):
         root=Path(__file__).resolve().parents[1]
         self.c=json.loads((root/'experiments/ieee-access-final-20261117/config/run_config.provisional.json').read_text())

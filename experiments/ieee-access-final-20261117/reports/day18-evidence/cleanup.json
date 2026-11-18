@@ -1,0 +1,32 @@
+{
+  "completed_at": "2026-11-18T01:09:03.022884+00:00",
+  "provider_crs_removed": true,
+  "ec2_terminated": [
+    "i-0f97eb7294733df6c",
+    "i-02d8d85f94c087d24"
+  ],
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-rn-g6-180948-worker-01",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-rn-g6-180948-worker-00",
+      "deleted": true
+    }
+  ],
+  "volume_receipts": [
+    {
+      "volume_id": "vol-0bb9487eadc8419c2",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0d4e8835bee0a3a03",
+      "confirmed_absent": true
+    }
+  ],
+  "gpu_compute_conservative_upper_estimate_usd": 0.6652436856284445,
+  "cost_scope": "launch through terminated observation at OD price .9896/h; not invoice; EBS/network/FIS excluded",
+  "no_forced_finalizers": true,
+  "checkpoint_pvc_pv_nfs_preserved": true
+}

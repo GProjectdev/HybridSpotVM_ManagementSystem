@@ -4,6 +4,7 @@ try:
 except ImportError:
     from collect import event_from_message,PREFIX,timestamp
 import json
+from datetime import timedelta
 
 
 def check(run,events,*,already_started=False,now,current_pods,max_age_seconds=30):
@@ -38,4 +39,4 @@ def check(run,events,*,already_started=False,now,current_pods,max_age_seconds=30
     if any((timestamp(now)-v[0]).total_seconds()>max_age_seconds for v in latest.values()):return {'ready':False,'reason':'rank_progress_stale'}
     if any(v[2]=='completed' or v[1]>=run['goal_steps'] for v in latest.values()):return {'ready':False,'reason':'training_already_completed'}
     progress=min(v[1] for v in latest.values())
-    return {'ready':progress>=trigger['value'],'reason':'step_reached' if progress>=trigger['value'] else 'step_pending','committed_step_lower_bound':progress,'trigger_step':trigger['value']}
+    return {'ready':progress>=trigger['value'],'reason':'step_reached' if progress>=trigger['value'] else 'step_pending','committed_step_lower_bound':progress,'trigger_step':trigger['value'],'progress_valid_until_utc':(min(v[0] for v in latest.values())+timedelta(seconds=max_age_seconds)).isoformat()}

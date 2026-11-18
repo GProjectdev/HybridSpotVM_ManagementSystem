@@ -1,0 +1,60 @@
+실험 준비 및 증거 수집 명령 (2026-11-18)
+이 문서는 평가_타당성검토_실험실행계획_20261118.txt의 보조 실행서다.
+아래 준비 명령은 VM/FIS를 만들지 않는다. 실제 생성은 검토된 새 Run의 UID binding, 소유관계, watchdog 설치 뒤 수행한다. 이전 검증 namespace나 legacy fixed-namespace runner를 정식 Run에 재사용하지 않는다.
+
+1. root 환경에서 kubeconfig 명시
+export MGMT_KUBECONFIG=/etc/kubernetes/admin.conf
+export KARMADA_KUBECONFIG=/etc/karmada/karmada-apiserver.config
+export AWS_KUBECONFIG=/root/aws-cluster/aws1.kubeconfig
+export ONPRE1_KUBECONFIG=/root/on-premise/member/onpre1.kubeconfig
+aws sts get-caller-identity --profile new-account-v2 --region ap-northeast-2
+kubectl --kubeconfig="$KARMADA_KUBECONFIG" get noderequests -A
+kubectl --kubeconfig="$AWS_KUBECONFIG" get nodeprovisions -A
+
+2. 오프라인 manifest 작성 (값은 실행 전 동결한 파일을 지정)
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_protocol.py prepare --config /PRIVATE/frozen-model-config.json --policy-source /PRIVATE/reviewed-current-capacity.json --run-id UNIQUE_RUN_ID --arm E1-A --out /PRIVATE/new-run-directory
+E1-B/E2-B는 arm만 바꾸되 각 Run의 새 ID/디렉터리를 사용한다. 두 모델은 별도 config다. E2-A는 자격을 통과한 E1-B 결과만 재사용한다. 출력 CSV는 처음에는 header뿐이며 측정 결과가 아니다.
+
+3. 생성 전 확인
+- 생성된 member-storage, karmada-prerequisites, risk, workload.stopped, policy.unbound를 각 클러스터에 --dry-run=server --validate=strict로 검증한다.
+- Member namespace가 Karmada에서 자동 전파됐을 수 있다. 현재 Run label과 source namespace 생성 시각/소유를 대조하여 이 경우만 인정하며 이름만 보고 타 namespace를 사용하지 않는다.
+- 새 PVC의 실제 NFS path, Pod trainer GPU request/limit=1, required pod anti-affinity hostname, 하드웨어 GPU count=1을 확인한다.
+- NodeRequest는 suspend=true 상태에서 만들고, source StatefulSet UID를 얻어 workloadRef.uid에 바인딩한다. Ready/GPU 자격·watchdog·자산/이미지/정책을 확인한 후 요청을 활성화한다.
+- 각 rank는 다른 VM에 배치한다. 정상 2 ranks=VM 2대, 교체 중 최대3대의 일시 중첩은 장부에 남긴다.
+- source/member CR UID와 AWS provider UID tags를 같이 기록하고 helper가 읽은 Secret 값은 출력/보관/Git 업로드하지 않는다.
+- GPU 비용/시간 한도와 cleanup 시작·최종 stop 시각을 Run에 기록한다. API 호출 전 watchdog을 설치한다. 이전 namespace의 번호/시각을 복사하지 않는다.
+
+4. 실행 중 observer
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/ieee_v2_observe.py --directory /PRIVATE/new-run-directory --seconds 7200 --interval 15 --aws-profile new-account-v2 --aws-account-id 935317843233 --aws-region ap-northeast-2
+반드시 위 kubeconfig env를 설정한다. --seconds는 해당 Run의 남은 마감보다 짧게 설정한다. observer는 읽기 전용이며 정리 작업을 대신하지 않는다.
+
+5. 현재 가격 영수증 (외부 feed를 고른 경우 UID-bound CM 갱신 가능)
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/price_watch.py --directory /PRIVATE/new-run-directory --profile new-account-v2 --account 935317843233 --ondemand-receipt /PRIVATE/fresh-public-od-receipt.json --deadline-utc RUN_DEADLINE_UTC --seconds 3600 --interval 240
+Feed CM에 게시하려면 --publish-kubeconfig, --publish-namespace, --configmap, --configmap-uid 네 값을 모두 명시한다. source forecast/manifest/clock은 건드리지 않는다. OD receipt는 Used/RunInstances/Linux/shared 상품과 24시간 freshness를 확인한다. Run 종료 시 Spot history를 구간별로 보완한다.
+
+6. E2 단일 FIS (새 final dispatcher; 기존 fis.py 사용 금지)
+필수: running E2-B, 명시적 ready_for_paid_execution=true, frozen comparison hash, live source NodeRequest/StatefulSet spec의 reviewed live_spec_sha256, 절대 start/deadline, 현재 2 ranks/소유 provider, 현재 rank progress, 대상 Spot 한 개, 대상 Run의 OD에 묶인 건강 alarm 및 검토된 동일 계정 role.
+
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_fis.py plan --directory /PRIVATE/new-run-directory --profile new-account-v2 --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" --role-arn REVIEWED_FIS_ROLE_ARN --alarm-arn OWNED_OD_ALARM_ARN
+
+plan은 읽기 전용 cloud 조회와 파일 작성만 한다. source/workload 및 provider UID, workload spec hash, same-type/same-AZ 1OD+1Spot, Pod owner/현재 UID, 두 rank의 최근 step, 건강 alarm을 검사한다. 이 tool이 role/alarm/VM을 자동 생성하지는 않는다.
+
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_fis.py start --directory /PRIVATE/new-run-directory --profile new-account-v2 --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" --confirm EXACT_RUN_ID
+
+start는 실제 중단을 일으킨다. 생성된 FIS template 뒤에도 대상·progress·마감을 다시 검사하며 30분 복구/정리 여유가 필요하다. 한 Run의 atomic start intent가 생기면 응답 불명확 시 새로 시작하지 말고 해당 client token/template/experiment를 조사한다. stop-experiment가 이미 보낸 interruption을 되돌리지는 않는다.
+
+7. 실행 종료 및 정상 정리
+- 목표 완료+최종 감사 또는 사전 수용 검사 목표 달성 즉시 원시 증거를 저장한다. 분석 중 GPU를 켜두지 않는다.
+- source NodeRequest suspend, source workload 정리, exact-owned source NodeProvision 정상 삭제 순서를 지킨다. 필요한 Provisioner/C/R/Karmada 전파 Controller는 유지한다.
+- 마지막 source/member CR, CP/Restore/fence/verify, VM ledger와 EBS VolumeId/DeleteOnTermination, keypair, FIS receipt를 저장한다.
+- 실제 EC2 terminated를 exact IDs와 provider 소유로 확인한다. 사라진 CR이나 NotFound instance를 종료 성공으로 간주하지 않는다.
+- 같은 Run의 임시 keypair/inline role policy/alarm/template/credential clone 및 webhook allowlist만 정리한다. 다른 Run의 설정과 concurrent edits를 보존한다.
+- PVC/PV/namespace/NFS 학습 결과는 유지한다. finalizer 강제 제거·강제 namespace 삭제를 하지 않는다. 막히면 원인/잔여 과금 가능성을 보고한다.
+
+8. 결과 집계
+python3 /home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_protocol.py metrics --run /PRIVATE/new-run-directory/run.json --events /PRIVATE/new-run-directory/training-events.jsonl --billing /PRIVATE/reviewed-running-billing-ledger.json --request-at ACTUAL_NODEREQUEST_CREATION_UTC --out /PRIVATE/new-analysis-directory
+metrics에는 검토된 VM running 구간 장부를 제공한다. observer 원본 snapshot이나 LaunchTime→polling 시각을 정확한 invoice로 둔갑시키지 않는다. 단계별 누락값은 NA로 두고 결과 적격성 및 failure/deviation 목록을 별도 검토한다.
+
+보완: billing JSON은 segments 및 instances를 제공하는 검토된 장부다. 원시 snapshot은 그 자체로 billing 입력 형식이 아니다. 정상 rank 배치는 OD=rank0, Spot=rank1로 고정해 비교 블록의 장애 대상을 일정하게 유지한다. 다른 rank를 중단한 일반적 결과로 확장하지 않는다.
+
+11/18 최종 보완: final_fis.py는 계정 IAM 조건과 일치하는 검토된 run.fis_authorization_tag를 필수로 받는다. tag 누락으로 발생한 template 생성 실패 후 수정했으나 live FIS 시작/ResNet 새 VM 복원은 아직 미확인이다. metrics에 --checkpoint-stalls /PRIVATE/reviewed-pause-resume-intervals.json을 전달하면 rank별 pause/resume 구간 합집합을 반영한다. 새 분석은 management_evidence.py --directory RUN --out NEW_ANALYSIS로 UID-bound policy/coordinator 경로를 별도 추출한다. 핵심6/조건부 보조 평가 및 최종 판단은 IEEE_Access_Evaluation_Review_20261118.txt를 따른다.

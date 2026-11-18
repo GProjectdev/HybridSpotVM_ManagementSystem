@@ -1,0 +1,192 @@
+[11/18 추가 지시 반영: 최종 판단은 IEEE_Access_Evaluation_Review_20261118.txt를 우선한다. 핵심6 Run이 우선,18 Run은 확장 목표이며 R2/R3 보완·위험 입력·남은 gate는 최종 review를 따른다. 발표 원본은 수정하지 않았다.]
+
+하이브리드 클라우드 Spot DDP 시스템: 평가 타당성 검토 및 실행계획
+개정일: 2026-11-18 (KST) / 실험 종료 목표: 2026-11-27
+기준 발표: 정승준_졸업작품최종발표_실제발표.pptx (23쪽)
+적용 원칙: 기존 Controller와 C/R 구현 유지, 새 위험률 알고리즘 개발 없음.
+이 파일은 실험 계획이다. 아직 실행하지 않은 결과나 유의성을 주장하지 않는다.
+
+1. 판단: 무엇을 유지하고 무엇을 교체하는가
+
+발표 19~20쪽의 기존 E1(클라우드 이전)·E2(FIS 후 복구)는 구현 및 동작 검증이다. 이 두 검증은 I1/I2라는 식별자로 평가절과 구분해 유지한다. 이미 확인한 GPT-2 경로를 논문용 숫자를 만들기 위해 다시 실행하지 않는다. 과거 결과와 현재 버전의 관계·원시 증거 위치만 기록한다.
+
+발표 21쪽의 기존 E3를 새로운 정량 평가로 교체한다. 기존 '15.6~28.5% 비용 절감', '위험 상승 0.05→0.8/h', ResNet 시간 감소의 원인을 network bursting으로 단정한 설명은 새 평가의 결과 또는 인과 근거로 재사용하지 않는다. AWS가 burst 가능성을 문서화한 사실은 해당 Run의 성능 변화가 burst 때문이었다는 측정 증거가 아니다. 구 자료는 원본 파일에 보존한다.
+
+새 E1(정상 운영 비용–완료시간)과 E2(동일 Hybrid의 장애 유무 비교)는 의미가 있다. E1은 할인율을 다시 계산하는 실험이 아니라 자원 준비·저장·학습·정리까지 포함한 운영 방식 전체 비교다. E2는 새로운 복구 알고리즘의 우월성이 아니라, 한 Spot Rank 중단이 전체 동기식 DDP에 주는 시간·GPU 비용·재작업 손실을 측정한다.
+
+두 실험만으로 위험 예측 정확도, 동적 정책의 다른 정책 대비 최적성, 수렴 성능, 대규모 확장성, 자동화가 수동보다 빠르다는 주장을 입증할 수는 없다. 그러한 주장은 삭제하거나 별도 기준선/측정을 추가한다. 이번 필수 범위는 시스템 통합 구현 + 요구사항 연계 증거 + 두 모델의 운영 정량 평가다.
+
+2. 졸업 주제와 구현 요구사항의 연결
+
+R1 요청 기반 GPU 생성·배포·반환:
+  E1/E2에서 NodeRequest UID→Member NodeProvision UID→EC2 provider ID→Node/Pod UID를 연결한다. 요청, VM running, Node Ready/GPU 인식, 첫 step, 목표 step, 정상 삭제 요청, 실제 EC2 종료를 수집한다. CR 삭제만으로 반환 성공이라 하지 않는다.
+R2 위험률 기반 Spot/OD 구성 및 실행 중 교체:
+  E1/E2는 fixedOnDemand로 구성을 통제하므로 이 실험 자체는 동적 교체 정책을 검증하지 않는다. 기존 위험 변화/교체 로그와 정책 단위검사를 별도의 구현 근거로 보존한다. 수집된 risk timestamp→policy decision→replacement operation UID→Restore 검증→기존 VM 반환 연결이 있는지 점검한다. 없는 연결은 미검증으로 남긴다.
+R3 위험과 학습 상태를 이용한 Checkpoint 조정:
+  결정된 주기뿐 아니라 decisionStage/intervalSource, 입력 위험률, 현재 Runtime 및 실측 비용의 시각·출처를 보관한다. 현재 구현은 아래 3절처럼 여러 경로가 있으므로 모든 실행이 Desai 식을 사용한다고 쓰면 안 된다.
+R4 Spot interruption 대응·학습 복원:
+  I2의 기존 GPT-2 성공은 구현 근거다. 새 E2는 같은 기능의 장애 페널티를 정량화한다. ResNet의 '동일 Pod 프로세스 복원'은 새 VM/Pod로 복원하는 검증을 대체하지 않는다.
+R5 On-Premise→Public Cloud 상태 이전:
+  I1의 기존 상태·gradient·후속 update 근거를 유지한다. AWS 내부의 새 E1/E2를 cross-cloud migration 실험이라고 부르지 않는다. On-Premise와 AWS에 동시에 DDP Rank를 걸친 WAN 학습을 수행했다고도 쓰지 않는다.
+
+3. Desai 연결과 현재 코드의 정확한 범위
+
+제공 Cost_effective.pdf §4.1은 availability 감소분을 시간별로 집계하고 causal rolling mean 및 SARIMA로 다음 구간의 rate를 예측한다. §4.2는 async GPU→DRAM 및 storage 비용/메모리 제약과 iteration 기반 checkpoint 간격을 다룬다. §4.3 식(6)·(7)은 위험에 따른 유효 throughput 및 예상 손실비용을 이용해 Spot/OD를 바꾼다.
+
+현재 코드 internal/policy/contract.go, paper.go, economics.go의 실제 분기는 다음과 같다.
+- VM policy method=paper-eq6-7: fixed world에서 위험의 throughput 기준을 채택. fresh loss-cost 데이터가 있을 때만 economics 항을 평가한다. minOnDemand/fixedOnDemand는 시스템 제약/실험 통제다. 원문의 탄력적 DP 확장 전체를 구현했다는 의미는 아니다.
+- Checkpoint 초기/부족 데이터: risk-band-bootstrap. iteration time 수집 사실만으로 iteration 기반 최적화가 실행됐다고 주장하지 않는다.
+- 현재 CRIU 실측 비용 경로: checkpoint-cost-analytic. 위험과 measured checkpoint/copy seconds를 이용한 seconds-domain 방식이다. 이 분기는 iteration time을 직접 목적함수에 넣지 않는다.
+- paper.enabled + fresh aligned rank iteration + 실측 async GPU/DRAM/storage/buffer profile의 조건을 만족할 때만 paper-equations-1-5-analytic. 조건이 없으면 fallback. 현재 동기식/CRIU 저장 시간을 임의로 async profile에 넣어 이 경로를 활성화하지 않는다.
+
+따라서 발표의 '위험률과 iteration을 이용해 매번 Desai 주기를 계산한다'는 무조건적 표현은 피한다. '기존 정책을 관리 계층에 연계하며 실제 사용한 분기와 입력을 기록했다'로 기술한다. 정책 알고리즘은 채택 기술이며 본 연구의 신규 예측/복구 알고리즘으로 제시하지 않는다.
+
+4. 실험 환경과 동결 항목
+
+Management/Karmada와 AWS Member, On-Premise Member는 기존 등록/네트워크/CRI-O/CRIU/GPU 스택을 유지한다. 학습 GPU는 AWS의 기존 ap-northeast-2c subnet, 2-Rank, VM당 GPU 1개다. 공유 NFS는 10.50.1.98:/mnt/nfs이며 CNI/CSI/NFS 인프라와 기존 데이터는 보존한다.
+
+GPU 후보 g5.xlarge(A10G)를 우선한다. 11/17 실제 GPU 학습/파일럿 증거가 있어 추가 호환성 개발을 최소화한다. 단, Spot capacity가 없으면 정식 실행 가능이라고 표시하지 않는다. offerings/가격 조회는 실시간 공급 또는 quota 승인을 증명하지 않는다. 대안 g4dn/g6는 같은 비교 블록 전체를 동일 사양으로 바꾸고 해당 모델 파일럿·C/R 수용 검사를 새로 통과한 뒤 선택한다. 결과가 유리하도록 사후 유형을 섞지 않는다. quota 조회 권한 부족을 quota 여유로 간주하지 않는다.
+
+각 Run에 소스 커밋, 학습 코드 hash, Controller image digest, 학습 image digest, AMI, 드라이버/CUDA/NCCL/PyTorch 버전, K8s/Karmada 버전, instance type, CPU/GPU/RAM, AZ, NFS 경로, node age, UTC 동기화 상태를 저장한다. GPU/네트워크 지표를 수집할 수 없으면 원인 분석의 한계로 남긴다. 기존 동작 버전 중간 업데이트가 필요하면 새 버전 블록으로 분리하고 같은 비교 쌍의 조건을 다시 맞춘다.
+
+Seed/Batch/Optimizer/데이터/목표 step/Checkpoint 정책 범위를 비교 쌍 안에서 고정한다. warmup 및 파일럿 데이터는 정식 결과에 섞지 않는다. 매 Run 새 namespace, UID, checkpoint PVC와 path로 시작하고 이전 checkpoint를 초기 상태로 재사용하지 않는다.
+
+5. 모델과 학습 데이터
+
+GPT-2 Small:
+- 기존 WikiText-103 raw-v1, 기존 GPT-2 모델/토크나이저 파일을 우선 사용한다.
+- 처리된 block 길이 512, per-rank batch 4, global batch 8, seed 42.
+- 목표 후보 4747 step, FIS gate 후보 2374 step. 기존 같은 g5 사양 파일럿에 근거한 후보이며 실제 동결 기록이 필요하다.
+- 처리 manifest SHA256 42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988. 모델+원본 합산 receipt hash와 혼동하지 않는다.
+- 실제 nfs_model_path/nfs_dataset_path, tokenizer revision, block 순서/offset 및 optimizer 설정은 config/run_config.provisional.json과 자산 영수증에 고정한다.
+
+ResNet-50:
+- CIFAR-10 공식 train 50000/test 10000. 합성 데이터로 본실험을 대체하지 않는다. 이는 32x32 CIFAR용 ResNet 구성의 시스템 workload이며 ImageNet 성능/정확도 벤치마크가 아니다.
+- /mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1.
+- 공식 archive MD5 c58f30108f718f92721af3b95e74349a, manifest SHA256 7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1.
+- per-rank batch 32/global batch 64, seed 42, SGD lr .1, momentum .9, weight decay .0005. step-shuffle-crop-flip-v1 전처리.
+- 11/17 g5 OD 2대 파일럿: warmup 60s + 정상 관측 180s, rank별 1179 samples, max-rank median iteration .147123764초. ceil(3600/median) 규칙으로 목표 후보 24470, FIS gate 후보 12235. GPT-2 sizing을 재사용하지 않는다.
+- 어제 5000-step 검사와 5회 동일 Pod 복원은 수용 검사일 뿐 정식 E1/E2 값이 아니다. 새 VM 복원은 추가 확인이 필요하다.
+
+복원 데이터 순서:
+현재 학습 코드의 seed+global-step+rank 기반 block/샘플 순서와 augmentation state, Python/NumPy/Torch CPU/CUDA RNG, model, optimizer 및 step을 함께 저장/복원한다. 실제 checkpoint schema와 audit로 이를 확인한다. 단순히 DataLoader seed를 재설정했다고 순서 복원 성공이라 하지 않는다. rank별 샘플/순서 fingerprint가 있으면 함께 저장한다. BN buffer는 rank-local 특성을 인정하되 저장된 해당 rank의 상태와 대조한다.
+
+처리량의 '유효'는 rollback 재실행을 이중 계산하지 않는 보존된 optimizer 진전을 의미한다. epoch 반복 중 같은 원본 예제를 다시 처리하므로 distinct dataset examples/tokens 수를 뜻하지 않는다. GPT-2는 committed token positions, ResNet은 committed sample presentations로 단위를 표시한다. 서로 다른 모델의 token/samples 처리량을 직접 비교하지 않는다.
+
+6. E1: 정상 운영 방식의 GPU 비용–완료시간
+
+RQ1: Spot 사용에 필요한 저장 및 관리 오버헤드를 포함해, 동일 목표 학습을 완료할 때 비용 절감이 남는가?
+A: 2 On-Demand, 주기적 checkpoint 없음.
+B: 1 On-Demand + 1 Spot, 현재 운영의 adaptive checkpoint.
+통제: 같은 GPU type, 2 ranks, 데이터/초기상태/목표/batch/seed/코드, 같은 환경·자원 관리 흐름. FIS 없음. workload 시작 전 준비부터 반환까지 수집한다.
+
+E1은 구매 방식과 checkpoint 유무가 함께 바뀌는 '운영 패키지 비교'다. dynamic checkpoint의 독립 효과나 위험률 정책의 최적성을 인과 주장하지 않는다. 그 주장이 필요하면 같은 1OD+1Spot에서 fixed interval vs adaptive의 별도 paired 비교가 필요하지만 이번 필수 실험으로 무리하게 추가하지 않는다.
+
+결과: request→첫 양 rank step(startup), request→목표 완료(E2E), 첫 step→목표(training elapsed), VM별 사용/반환 시간, checkpoint pause union, GPU cost, cost/committed unit, useful throughput, 완료/실패 및 공급 대기. 실제 자연 interruption이 발생하면 그 기록을 삭제하지 않고 protocol deviation으로 분류한다. 정상 no-interruption 비교에서 제외된 이유와 전체 시도 횟수도 보고한다.
+
+7. E2: 동일 Hybrid에서 통제된 Spot 중단 1회
+
+RQ2: Spot Rank 1개 중단과 자동 자원 교체/복구가 전체 DDP 진행·비용에 만드는 추가 손실은 얼마인가?
+A: E1-B와 같은 1OD+1Spot·같은 checkpoint/risk 정책, FIS 0회.
+B: 같은 조건에서 정확히 소유가 확인된 Spot VM 하나에 FIS 1회.
+E1-B를 E2-A로 공유하려면 comparison hash, 초기상태, 버전, 목표, 위험 입력·clock, checkpoint 및 storage가 같고 양 rank 완료/감사·가격/비용·무장애 분류가 모두 유효해야 한다.
+
+장애 gate는 사전 동결한 target/2 단계다. 현재 Pod UID와 attempt에서 두 rank의 fresh committed step이 gate 이상임을 확인한다. wall-time 지연으로 '중간쯤' 실행하지 않는다. AWS FIS PT2M notice 때문에 실제 종료는 2분 뒤 더 진행한 step에서 발생할 수 있다. gate step, FIS dispatch step/time, notice step/time, 실제 중단 직전 step을 각각 보관한다. midpoint gate는 균일/자연적인 선점 분포라는 주장이 아니다.
+
+대상 검증: explicit profile/account, live NodeRequest UID+workload UID, 현재 Member NodeProvision UID, EC2 provider ID/UID tags, running Spot lifecycle, 동일 AZ를 모두 대조한다. ResourceArn 한 개만 대상으로 지정한다. 기존 legacy fixed-namespace fis.py는 final protocol에 쓰지 않는다. final_fault_gate는 오프라인 판정 도구다. 11/18 final_fis.py로 per-Run UID/spec hash, exact provider, 현재 Pod 및 step gate와 scoped dispatch를 연결했고, 대상 변경/rollback/중복/응답 불명확/마감 테스트를 통과했다. 실제 클라우드 수용검사 결과는 별도 영수증을 따른다. FIS start intent를 원자적으로 저장하고 API 응답 불명확 시 새 experiment로 재시도하지 않는다. 각 Run 한 번 제한, deadline/건강 gate를 통과해야 한다.
+
+FIS→notice→실제 종료→대체 요청→Node/GPU Ready→Restore 요청/시작/검증→양 rank optimizer update→목표 완료→VM 반환의 순서를 UID와 함께 저장한다. 누락 시 NA로 두고 CR 시각을 실제 EC2 종료 시각으로 대체하지 않는다. 실제 target이 종료되지 않았으면 fault case의 성공 표본으로 처리하지 않는다.
+
+'복구 성공'은 target VM 종료, source fencing, 양 rank가 동일 checkpoint generation/step에서 복원, model/optimizer/RNG 감사 통과, gradient와 실제 파라미터 update 및 step 증가, RestoreRequest Verified, 목표 step 최종 감사까지를 구분해 기록한다. 동일 Pod에서 torch.load를 한 것만으로 새 VM 복원 성공이라 하지 않는다. full-group/partial 경로가 바뀌면 동일 비교 블록에서 섞지 않는다. 기존 route를 고정하며 새 partial 기능을 개발하지 않는다.
+
+8. 위험률 입력과 정책의 재현성
+
+핵심 E1/E2는 같은 통제 입력 static lambda=.05/h를 기본 후보로 둔다. 이는 실제 서울 위험률이 아니라 재현 가능한 운영 정책 입력이다. 이 선택이면 실험은 실측 서울 가격·실제 VM·FIS 복구를 측정하지만 예측 기반 운용 이득을 입증하지 않는다. 정책 입력의 label과 provenance를 결과에 명시한다.
+
+SkyPilot trace를 쓰기로 사전 선택할 경우는 별도 입력 블록으로 분리한다. us-east V100 availability trace는 서울 A10G의 실제 위험률이 아니다. 동일 trace/forecast hash, 같은 replay start relative clock, 동일 wallSecondsPerTraceHour를 비교 Run에 적용한다. 전체 시계열에 fit하여 미래를 보게 하지 않고 causal preprocessing/forecast만 사용한다. 실행 후 결과에 유리한 trace 구간으로 바꾸지 않는다. proxy 감소율과 실제 running VM의 per-instance hazard 사이 가정을 밝힌다.
+
+11/17 격리 live TLS feed→Collector→SpotRiskProfile에서 fresh/stale price/recovery 동작을 이미 확인했으므로 같은 테스트를 되풀이하지 않는다. 정식 Run에서 선택한 feed binding·clock·TLS와 가격 갱신만 점검한다. 장기 AWS 이력을 새로 수집하거나 위험 모델을 재개발하지 않는다.
+
+9. 측정 정의와 계산 원칙
+
+t_request: NodeRequest 실제 생성 시각(의미를 따로 기록). t_first: 두 rank가 완료한 첫 optimizer step의 늦은 시각. t_done: 목표 step 양 rank 완료와 마지막 감사 경계를 분리해 보관.
+T_startup=t_first-t_request; T_E2E=t_done-t_request; T_train=t_done-t_first. workload scale 요청 시각을 NodeRequest 요청 시각으로 바꾸어 쓰지 않는다.
+Useful throughput=goal_steps * global_batch * seq_length / T_train (GPT-2), 또는 goal_steps * global_batch / T_train (ResNet). rollback 재학습은 분자에 더하지 않는다. audit/validation 시간을 포함했는지 명시한다.
+GPU VM Compute Cost: 모든 이 Run 소유 GPU VM(최초/대체/중첩/유휴/반환대기)의 billed running 구간에 실제 가격을 적분한다. AWS 상태별 과금 및 최소 단위를 적용한다. LaunchTime→terminated polling 시각은 청구 정확값이 아니라 보수적 bound/estimate다. pending/shutting-down을 확정 billed running이라고 쓰지 않는다. FIS/Spot 특수 청구가 확인되지 않으면 실제 invoice라고 부르지 않는다.
+Spot price는 유효 변경 시각별 history와 UTC 조회 receipt를 보관하고 OD는 region/type/Linux/shared/Used/RunInstances를 맞춘다. 실험 중 240초 갱신, Run 종료 시 구간별 history를 재조회한다. EBS/NFS/VPN/네트워크/FIS비를 제외하면 이름을 총클라우드비용으로 쓰지 않는다. 부수 비용은 별도 명세에 넣거나 미포함을 표시한다.
+Delta T/C는 동일 비교 블록의 fault minus no-fault. E1 절감률은 (C_OD-C_Hybrid)/C_OD. 음수/불리한 값도 그대로 보고한다.
+Rollback은 장애 직전 양 rank 공통 committed step minus 실제 restored checkpoint step. 긴급 checkpoint가 더 최신이면 실제 복원 step을 사용한다. callback request step과 저장 완료 step을 혼동하지 않는다.
+중단 구간은 장애 전 마지막 공통 step부터 복구 후 첫 공통 step까지. 기존 high-water mark를 다시 넘는 시각도 따로 기록해 단순 재개와 보존된 진전 재개를 구분한다.
+Nonproductive VM-seconds는 검토된 group no-progress 구간과 각 VM billed running 구간의 교집합 합계다. Rank마다 같은 중단을 두 번 세어 makespan으로 쓰지 않으며 GPU utilization이라고 부르지 않는다. phase가 겹치면 합산해 E2E를 만들지 않는다.
+주기 checkpoint stall은 양 rank pause→resume 구간의 union을 사용한다. archive I/O, CR 완료 latency와 분리한다. 설정120초와 pause-start spacing이 같아야 한다는 가정을 하지 않는다.
+
+10. 반복·편향·실패 처리
+
+모델별 A(2OD), B(Hybrid 정상), C(Hybrid FIS) 최소 3개 사전 계획 블록을 목표로 한다. B는 조건이 맞으면 E2-A로 공유한다. 총 2모델*3조건*3블록=18 Run. 최소 반복 3은 시간 제약하의 설계 선택이지 통계적 검정력이 입증된 표본수는 아니다.
+블록마다 같은 초기상태/seed/구성을 맞추고 순서는 고정 random seed로 사전에 정한다. pair는 가능한 인접 시간대에 실행한다. 공급 실패/취소/timeout/복구 실패를 포함한 모든 시도를 별도 목록으로 남긴다. '성공할 때까지' 돌리고 성공 Run만 평균내지 않는다.
+각 Run 원시점, median/range와 paired delta를 제시한다. n=3의 추정 불확실성이 크다는 점을 밝히고 유의성 주장을 하지 않는다. 일부 블록만 완료되면 case study/pilot로 등급을 낮춘다. no-fault 1개를 여러 fault 반복에 공유해 독립 표본인 것처럼 집계하지 않는다.
+모델의 학습 수렴까지 검증하는 실험은 아니다. loss trajectory/복원 직후 finite loss, gradient/update 및 상태 감사로 학습이 실제로 이어지는지 확인한다. 학습 정확도 향상/동일 수렴을 주장하려면 별도의 고정 validation/test protocol과 충분한 학습 목표가 필요하다. CIFAR test split을 정책 조정에 사용하지 않는다.
+주요 confounder: VM boot/capacity wait, network credit/node age, image pull/cache, NFS 부하, Spot 가격 변동, 긴급 checkpoint 성공 여부, 자연 interruption, policy stage 전환, 관측 polling 오차. 수집하지 못한 요인은 원인으로 단정하지 않는다.
+
+11. 오늘 11/18 할 일과 중단 기준 (18:00 KST)
+
+A. 이 타당성 검토와 발표 평가절 개정본, 본 실행계획 txt, claim-to-evidence 목록 작성.
+B. 기존 증거의 hash/UID 및 현재 코드 경로를 확인. 과거에 통과한 학습·데이터 준비·격리 feed 검사를 불필요하게 반복하지 않음.
+C. read-only로 네 클러스터 접근, 현 리전/계정/offerings/가격과 잔여 capacity CR 확인. 가격/offerings를 capacity 확보로 표시하지 않음.
+D. final E2의 scoped FIS dispatcher와 현재 rank step gate 연결이 부족하면 평가 도구 범위에서만 보완하고 의미 있는 실패/대상/마감 테스트를 실시. core controller 재설계 없음.
+E. 실제 GPU acceptance를 수행할 경우 Spot 먼저 확보하고 OD를 뒤에 요청. 별도 수용검사 Run으로 진행하며 본실험 설정을 중간에 바꾸지 않음. 새 VM ResNet 복원 통과 전 정식 E2 착수 금지.
+F. 16:30 이후 새 유료 Run 시작 금지, 17:00부터 정리, 17:40까지 실제 EC2 종료 확인, 18:00 모든 본 작업 중지. 목표·증거 확보가 먼저 끝나면 즉시 정리. 공급/복구가 막히면 실패 근거를 저장하고 미완료로 보고함.
+G. 유료 실행의 대상/시간/가격/정리 계획을 먼저 기록한다. 전날 22시 허용을 무기한 과금 승인으로 해석하지 않는다. 현재 작업 범위 밖의 새 기반 인프라/대규모 확장 생성은 하지 않는다.
+
+12. 11/27까지 우선순위와 결과물
+
+11/18: 방법론/발표 수정, hardware/단가/목표 후보 검토, 남은 scoped FIS·ResNet new-VM acceptance 준비/검증.
+11/19~20: 두 모델 E1 기본 블록. 매 B의 E2-A 재사용 적격성 판정.
+11/23~25: 동일 Hybrid C와 반복 블록, 실패/오류 분석. 버전 변경 시 비교 블록 재정렬.
+11/26: 부족한 핵심 반복 우선. 4-rank E3는 이미 지원/복원 검증·quota·공급·여유가 모두 있을 때만 선택; 현재 계획에서는 필수에서 제외.
+11/27: 원시 로그 lock/hash, 수식 검산, 조건별 개별 결과/분포/한계, figure와 표 확정.
+18 Run이 일일 시간·Spot 공급·마감에 맞지 않으면 완료 수/실패 수를 공개하고 일반화 범위를 축소한다. 반복 수를 채우려고 다른 모델/사양/버전을 하나의 평균에 섞지 않는다.
+
+필수 파일: run_config, source/image/data hashes, rank event logs, Runtime/CR timeline, risk/policy inputs와 stage, CP/Restore UID receipts, VM ledger+provider ownership, price receipts/history, FIS intent/template/experiment/notice/target, cleanup receipts, validation/audit, exclusion/deviation list. Secret/TLS private key/AWS credential은 논문 artifact나 Git에 넣지 않는다.
+필수 그림: E1 비용–E2E(각 반복 점), E2 rank progress+FIS/VM/Restore timeline, E2 paired 추가 시간/비용, 복구 단계와 no-progress VM-seconds. 아직 값이 없으면 placeholder에 '미실행'을 표시하고 이전 E3 그래프를 복사하지 않는다.
+
+13. 교수님/심사 질문에 대한 근거 있는 답변
+
+Q: Spot이 원래 저렴한데 새로 아는 것이 있나?
+A: 할인율이 아니라 요청부터 학습 완료·자원 반환까지 checkpoint/유휴/복구를 포함한 실행 비용이 이득을 남기는지 측정한다. 결과가 없으면 절감률을 주장하지 않는다.
+Q: 왜 fault vs no-fault인가? 기존 시스템보다 우수하다는 증거인가?
+A: 실제 통합 관리 경로의 장애 페널티를 분리하는 비교다. 다른 복구 알고리즘보다 우수하다는 증거는 아니며 그 주장은 하지 않는다.
+Q: 위험 예측이 핵심 아닌가? static이면 안 되는 것 아닌가?
+A: static 입력은 현재 평가의 통제를 위한 조건이며 예측 정확도를 검증하지 않는다. Collector와 위험 정책의 연계는 구현 증거로 보이고 정량 평가의 주장 범위를 통합 운영으로 제한한다. 예측 정책 이득을 주장하려면 별도 동일조건 입력/정책 비교가 필요하다.
+Q: 1회 FIS/2 ranks가 충분한가?
+A: 단일 Rank 상실의 최소 동기식 DDP 사례를 반복해 측정하는 범위다. 자연 선점 분포·대규모 확장·어떤 환경에서도 성공을 일반화하지 않는다.
+Q: 새 VM 복원인지 단순 재시작인지?
+A: 원본/대체 provider ID와 Node/Pod UID, checkpoint identity, source fencing, 상태/gradient/update, Verify를 연결한 증거로 구분한다.
+Q: 데이터 순서를 어떻게 보장했나?
+A: 실행 전 고정한 데이터/recipe hash, step/rank 순서, RNG 및 optimizer 상태 복원 감사로 설명한다. 단순 step 출력만으로 답하지 않는다.
+Q: 기존 E3 결론은 왜 제외했나?
+A: 중간 구성 전환·위험 시나리오·하드웨어 일시 성능의 confounder가 섞인 탐색 결과로, 새 운영 비교의 공정한 기준으로 쓰지 않는다.
+
+14. 참고 근거와 적용 범위 (2026-11-18 확인)
+
+[S1] 정승준 발표 원본: 요구사항 6쪽, 추가 구현 7~11쪽, 기존 구현 검증 19~20쪽, 교체할 기존 E3 21쪽. 19~20쪽 숫자는 과거 검증 결과이며 이번 새 정량값이 아니다.
+[S2] 제공 Cost_effective.pdf, Desai et al., EuroMLSys 2026, doi:10.1145/3805621.3807617. §4.1 SARIMA/availability proxy, §4.2 async checkpoint 가정, §4.3 식6/7, §5 평가 지표/반복 설계. 채택 알고리즘의 근거이며 본 실험 환경으로 원문 성능을 복제했다는 주장이 아니다.
+[S3] PyTorch DDP design note: https://docs.pytorch.org/docs/2.15/notes/ddp.html . gradient 동기화와 rank 결합성 근거. 현재 설치 PyTorch 버전도 별도 기록한다.
+[S4] AWS FIS tutorial: https://docs.aws.amazon.com/fis/latest/userguide/fis-tutorial-spot-interruptions.html . 통제된 interruption 및 PT2M notice 동작 근거. 자연 위험률을 측정하는 방법이 아니다.
+[S5] AWS EC2 lifecycle: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html . state별 과금과 잔여 EBS 비용 범위 근거.
+[S6] AWS network bandwidth: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-network-bandwidth.html . burst 가능성 근거만 제공하며 특정 Run 원인 확정은 별도 측정이 필요하다.
+[S7] SkyPilot spot-traces: https://github.com/skypilot-org/spot-traces . availability 입력 출처. Can't Be Late: https://www.usenix.org/conference/nsdi24/presentation/wu-zhanghao . 위험 정책 맥락 참고, 본 방식과 같은 알고리즘이라고 부르지 않는다.
+[S8] Bamboo NSDI23: https://www.usenix.org/conference/nsdi23/presentation/thorpe ; Parcae NSDI24: https://www.usenix.org/conference/nsdi24/presentation/duan . preemptible training의 비용/유효 진행을 평가한다는 관련연구 맥락이며, 본 코드와 직접 동등한 baseline 또는 성능 우위 근거가 아니다.
+[S9] CIFAR: https://cave.cs.toronto.edu/kriz/cifar.html ; WikiText: https://huggingface.co/datasets/Salesforce/wikitext . 실제 데이터 내용/버전은 보관한 manifest에 따른다.
+[S10] IEEE Access reviewer guidelines: https://ieeeaccess.ieee.org/reviewers/reviewer-guidelines/ ; reproducibility: https://ieeeaccess.ieee.org/authors/reproducibility/ . 충분한 방법·데이터·결론 근거와 재현성을 요구한다. 여기의 실험 방법을 IEEE가 보증하거나 게재가 보장된다는 의미는 아니다.
+
+연구자 설계 선택: 2 ranks, 목표 약1시간, midpoint fault, n=3, static .05/h, 날짜별 일정은 위 문헌에서 의무화한 값이 아니다. 최소 사례·시간/공급 제약과 통제 목적에 따른 본 평가의 사전 선택이다. 임의의 '논문 표준'으로 포장하지 않는다.
+
+15. 구현 증거 대조 보완
+11/17 진단 snapshot에는 SpotReplacement Completed 및 해당 RestoreRequest Verified와 함께 cleanup SpotRecovery Rejected도 존재한다. 이 한 snapshot으로 양방향 전환·후속 정리가 모두 성공했다고 쓰지 않는다. 최신 세대의 종료/정리 증거가 있는 경로만 주장하고, 나머지는 제한사항으로 남긴다. claim-evidence-review-20261118.json에 UID와 원시 경로를 연결했다.
+
+16. 11/18 단일 GPU 인스턴스 조건
+정상 2-Rank는 GPU 1개 인스턴스 2대, rank 1개/VM으로 실행한다. Pod GPU request/limit=1 및 hostname 기반 required anti-affinity로 배치를 제한한다. 교체 중 최대3대 중첩은 교체 비용에 포함하되 world size를 늘린 실험이 아니다. g5 공급 점수1, g6 점수9(기존 AZ, 11/18 조회; 원시 조회 파일에 시각/출처 보관)이며 보장된 공급을 뜻하지 않는다. 사용자 허용에 따라 g6에서 별도 최대1시간·GPU 추정 상한5USD 수용검사를 진행하고, g5 파일럿의 목표 step을 g6 정식 값으로 재사용하지 않는다.
+
+17. 연구 기여와 정량 방법의 구분
+E1/E2의 비교 방법이 타당하다는 사실만으로 연구의 차별성이 충분하다고 결론내리지는 않는다. 기존 Karmada 배포, VM Provisioner, DDP C/R 각각의 역할과 본 관리 계층이 추가한 UID-bound 요청·정책·실행 조율·반환 계약을 관련연구 및 아키텍처에서 구분한다. 계층별 기존 기능을 합친 사실과 실제 구현/실험에서 입증한 운영 특성을 설명한다. 무관리 시스템을 일부러 복구 불가능하게 만든 기준선이나 구현하지 않은 타 시스템을 가상 성능 기준으로 만들지 않는다. 외부 알고리즘보다 우수하다는 주장이 필요하다면 추가 공정한 기준선이 필요하며 현재 결과로 대체하지 않는다. 정상 OD=rank0, Spot=rank1을 고정하고 실제 대상으로 기록한다.
