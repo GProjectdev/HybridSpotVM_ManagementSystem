@@ -35,6 +35,9 @@ def render(config, source, run_id, condition):
         or sel.get('architecture')!='x86_64' or sel.get('status') not in {'PROVISIONAL','SELECTED'}):
         raise ValueError('reviewed one-GPU hardware selection required')
     if c.get('planned_partial_mode')!='disabled':raise ValueError('existing full-group route required')
+    batch=c.get('group_replacement_batch_size',1)
+    if type(batch) is not int or not 1<=batch<=4:
+        raise ValueError('group_replacement_batch_size must be an integer from 1 to 4')
     if not 0<c.get('max_seconds',0)<=18000:raise ValueError('bounded execution <=5h required')
     model=c.get('model');expected={'gpt2':(2,512),'resnet50':(16,None)}
     if model not in expected or (c.get('batch_size'),c.get('sequence_length'))!=expected[model]:
@@ -65,7 +68,7 @@ def render(config, source, run_id, condition):
     policy['spec']['replacement']=copy.deepcopy(c['existing_replacement'])
     policy['spec']['capacity'].pop('instanceType',None)
     policy['spec']['capacity']['aws']['credentialsRef']['namespace']=ns
-    policy['metadata']['annotations'].update({'training.dcnlab.com/suspend':'true','training.dcnlab.com/planned-partial':'disabled'})
+    policy['metadata']['annotations'].update({'training.dcnlab.com/suspend':'true','training.dcnlab.com/planned-partial':'disabled','training.dcnlab.com/group-replacement-batch-size':str(batch)})
     if condition=='A' or manual:policy['metadata']['annotations']['training.dcnlab.com/periodic-checkpoint']='disabled'
     risk=next(x for x in objects if x['kind']=='SpotRiskProfile');risk['spec']=copy.deepcopy(c['existing_risk_spec'])
     if any(risk['spec'].get(k)!=c[v] for k,v in [('region','region'),('availabilityZone','availability_zone'),('instanceType','instance_type')]):
@@ -77,9 +80,9 @@ def render(config, source, run_id, condition):
     if model=='resnet50':controls.update(EVAL_MOMENTUM=c['momentum'],EVAL_WEIGHT_DECAY=c['weight_decay'])
     env[:]=[e for e in env if e['name'] not in controls];env.extend({'name':k,'value':str(v)} for k,v in controls.items())
     workload=canonical_hash({k:c.get(k) for k in lock_fields+('world_size','instance_type','nfs_server','nfs_model_path','nfs_dataset_path')})
-    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':risk['spec'],'risk_lock':c.get('risk_lock_sha256'),'route':'full-group','system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
+    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':risk['spec'],'risk_lock':c.get('risk_lock_sha256'),'route':'full-group','group_replacement_batch_size':batch,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
     info.update(protocol=PROTOCOL,arm=condition,condition=condition,experiment='E1/E2' if condition!='C' else 'E2',
-                world_size=4,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
+                world_size=4,group_replacement_batch_size=batch,max_expected_worker_instances=4 if condition=='A' else 4+batch,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
                 formal_E1_E2_result=False,purpose=c['purpose'],manual_checkpoint_diagnostic=manual,completion_audit_required=True,
                 workload_lock_sha256=workload,comparison_lock_sha256=comparison,
                 tokens_per_committed_step=4*c['batch_size']*c['sequence_length'] if model=='gpt2' else None,

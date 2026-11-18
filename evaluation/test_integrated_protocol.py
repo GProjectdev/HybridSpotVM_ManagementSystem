@@ -25,6 +25,21 @@ class IntegratedProtocolTests(unittest.TestCase):
             self.assertEqual('training.dcnlab.com/periodic-checkpoint' in policy['metadata']['annotations'],a=='A')
             self.assertEqual(info['tokens_per_committed_step'],4096)
         self.assertEqual(runs['C'][0]['fault_trigger']['value'],4000)
+    def test_batch_size_is_shared_bc_condition_and_cost_overlap_lock(self):
+        baseline=v3.render(self.c,self.source,'serial','B')[0]
+        self.assertEqual(baseline['group_replacement_batch_size'],1)
+        self.assertEqual(baseline['max_expected_worker_instances'],5)
+        self.c['group_replacement_batch_size']=3
+        b,_,_,policy=v3.render(self.c,self.source,'batch','B')
+        c=v3.render(self.c,self.source,'batchc','C')[0]
+        self.assertEqual(policy['metadata']['annotations']['training.dcnlab.com/group-replacement-batch-size'],'3')
+        self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
+        self.assertNotEqual(baseline['comparison_lock_sha256'],b['comparison_lock_sha256'])
+        self.assertEqual(b['max_expected_worker_instances'],7)
+        self.assertEqual(v3.render(self.c,self.source,'batcha','A')[0]['max_expected_worker_instances'],4)
+        for value in (0,5,True,2.5,'3',None):
+            bad=dict(self.c,group_replacement_batch_size=value)
+            with self.assertRaisesRegex(ValueError,'batch_size'):v3.render(bad,self.source,'badbatch','B')
     def test_static_or_unfrozen_formal_config_rejected(self):
         self.c['purpose']='formal'
         with self.assertRaises(ValueError):v3.render(self.c,self.source,'bad','C')

@@ -141,6 +141,35 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 			result.Message = fmt.Sprintf("existing NodeProvision %s/%s uid=%s has immutable marketType=%s; desired=%s; replacement orchestration requires spec.replacement.enabled=true and an explicit UID-bound SpotReplacement", first.Node.GetNamespace(), first.Node.GetName(), string(first.Node.GetUID()), first.ExistingMarket, first.DesiredMarket)
 			return result, nil
 		}
+		batchSize, err := groupBatchSize(policyObj, input.TargetWorkers)
+		if err != nil {
+			return result, err
+		}
+		if batchSize > 1 && len(mismatches) > 1 && policyObj.GetAnnotations()["training.dcnlab.com/planned-partial"] == "disabled" {
+			active, err := (&CheckpointReconciler{Client: r.Client}).activeSpotReplacement(ctx, input)
+			if err != nil {
+				return result, err
+			}
+			if active != nil {
+				result.Message = "waiting for active SpotReplacement before a policy batch"
+				return result, nil
+			}
+			selected := mismatches
+			if len(selected) > batchSize {
+				selected = selected[:batchSize]
+			}
+			first := selected[0]
+			intent := groupOperation{PolicyUID: string(input.PolicyUID), PolicyGeneration: policyObj.GetGeneration(), OldName: first.Node.GetName(), OldUID: string(first.Node.GetUID()), Operation: first.OperationName, Replacement: first.ReplacementName, Market: first.DesiredMarket}
+			for _, m := range selected {
+				intent.Batch = append(intent.Batch, groupBatchTarget{OldName: m.Node.GetName(), OldUID: string(m.Node.GetUID()), Replacement: m.ReplacementName, Market: m.DesiredMarket})
+			}
+			_, err = r.ensureGroupBatchReplacement(ctx, policyObj, input, intent)
+			if err != nil {
+				return result, err
+			}
+			result.Message = fmt.Sprintf("policy batch prepares %d replacement workers for one full-group restore (up to %d overlapping workers)", len(selected), input.TargetWorkers+int64(len(selected)))
+			return result, nil
+		}
 		preparedCount := 0
 		if policyObj.GetAnnotations()["training.dcnlab.com/planned-partial"] != "disabled" {
 			for _, mismatch := range mismatches {
@@ -292,6 +321,9 @@ func (r *PolicyReconciler) ownedWorkerNodeProvisions(ctx context.Context, input 
 			owned[oldName] = item
 			continue
 		}
+		if successors[item.GetName()] != "" {
+			continue
+		}
 		if role == "worker" || role == "replacement" {
 			owned[item.GetName()] = item
 		}
@@ -364,17 +396,17 @@ func (r *PolicyReconciler) completedReplacementSuccessors(ctx context.Context, i
 		if validateGroupVerified(item) != nil {
 			continue
 		}
-		a := item.GetAnnotations()
-		oldName, oldUID, newName, newUID := a[groupOldName], a[groupOldUID], a[groupNewName], a[groupNewUID]
-		if oldName == "" || oldUID == "" || newName == "" || newUID == "" {
-			continue
+		pairs, err := groupReplacementPairs(item)
+		if err != nil {
+			return nil, err
 		}
-		if existing := edges[oldName]; existing != "" && (existing != newName || oldUIDs[oldName] != oldUID || newUIDs[oldName] != newUID) {
-			return nil, fmt.Errorf("conflicting group replacement successor")
+		for _, pair := range pairs {
+			oldName, oldUID, newName, newUID := pair.OldName, pair.OldUID, pair.NewName, pair.NewUID
+			if existing := edges[oldName]; existing != "" && (existing != newName || oldUIDs[oldName] != oldUID || newUIDs[oldName] != newUID) {
+				return nil, fmt.Errorf("conflicting group replacement successor")
+			}
+			edges[oldName], oldUIDs[oldName], newUIDs[oldName] = newName, oldUID, newUID
 		}
-		edges[oldName] = newName
-		oldUIDs[oldName] = oldUID
-		newUIDs[oldName] = newUID
 	}
 	successors := map[string]string{}
 	for oldName := range edges {

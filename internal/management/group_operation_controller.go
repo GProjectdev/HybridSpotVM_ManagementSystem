@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
@@ -29,11 +30,16 @@ type groupOperation struct {
 	Replacement      string
 	Market           string
 	Event            string
+	Batch            []groupBatchTarget `json:",omitempty"`
 }
 
 func (r *PolicyReconciler) recordGroupOperation(ctx context.Context, policy, old *unstructured.Unstructured, operation, replacement, market, event string) error {
-	intent := groupOperation{string(policy.GetUID()), policy.GetGeneration(), old.GetName(), string(old.GetUID()), operation, replacement, market, event}
-	if intent.PolicyUID == "" || intent.OldUID == "" || intent.Operation == "" || intent.Replacement == "" || !validReplacementMarket(market) {
+	intent := groupOperation{PolicyUID: string(policy.GetUID()), PolicyGeneration: policy.GetGeneration(), OldName: old.GetName(), OldUID: string(old.GetUID()), Operation: operation, Replacement: replacement, Market: market, Event: event}
+	return r.recordGroupIntent(ctx, policy, intent)
+}
+
+func (r *PolicyReconciler) recordGroupIntent(ctx context.Context, policy *unstructured.Unstructured, intent groupOperation) error {
+	if intent.PolicyUID == "" || intent.OldUID == "" || intent.Operation == "" || intent.Replacement == "" || !validReplacementMarket(intent.Market) {
 		return fmt.Errorf("incomplete group operation identity")
 	}
 	current := p.NewObject("NodeRequest")
@@ -42,6 +48,11 @@ func (r *PolicyReconciler) recordGroupOperation(ctx context.Context, policy, old
 	}
 	if current.GetUID() != policy.GetUID() || current.GetGeneration() != policy.GetGeneration() || !current.GetDeletionTimestamp().IsZero() {
 		return fmt.Errorf("group policy identity changed")
+	}
+	if len(intent.Batch) > 0 {
+		if err := validateGroupBatchIntent(current, p.ReadPolicyInput(current), intent); err != nil {
+			return err
+		}
 	}
 	annotations := current.GetAnnotations()
 	if annotations == nil {
@@ -52,7 +63,7 @@ func (r *PolicyReconciler) recordGroupOperation(ctx context.Context, policy, old
 		if err := json.Unmarshal([]byte(raw), &previous); err != nil {
 			return err
 		}
-		if previous == intent {
+		if reflect.DeepEqual(previous, intent) {
 			return nil
 		}
 		prior := newRestoreRequest()
@@ -147,6 +158,10 @@ func (r *PolicyReconciler) reconcileGroupOperation(ctx context.Context, req ctrl
 	}
 	producer := *r
 	producer.GroupStage = stage
+	if len(intent.Batch) > 0 {
+		_, err := producer.ensureGroupBatchReplacement(ctx, policy, input, intent)
+		return again, err
+	}
 	_, err := producer.ensureGroupReplacement(ctx, policy, input, old, intent.Operation, intent.Replacement, intent.Market, intent.Event)
 	return again, err
 }

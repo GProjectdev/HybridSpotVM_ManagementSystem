@@ -8,7 +8,6 @@ import (
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -70,33 +69,45 @@ func (r *GroupRecoveryReconciler) Reconcile(ctx context.Context, key ctrl.Reques
 		// The replacement controller owns the verified SpotRecovery cleanup gate.
 		return ctrl.Result{}, nil
 	}
-	if a[groupOldName] == "" {
-		return ctrl.Result{}, nil
-	}
-	replacement := p.NewObject("NodeProvision")
-	if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: a[groupNewName]}, replacement); err != nil {
+	pairs, err := groupReplacementPairs(req)
+	if err != nil {
 		return again, err
 	}
-	if string(replacement.GetUID()) != a[groupNewUID] || replacement.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) || stringField(replacement.Object, "status", "phase") != "Ready" {
-		return again, fmt.Errorf("verified replacement identity/readiness mismatch")
+	olds := []*unstructured.Unstructured{}
+	// Validate the complete batch before deleting any source. All targets must
+	// still be the exact Ready providers used by the verified destination world.
+	for _, pair := range pairs {
+		replacement := p.NewObject("NodeProvision")
+		if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: pair.NewName}, replacement); err != nil {
+			return again, err
+		}
+		if string(replacement.GetUID()) != pair.NewUID || replacement.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) || stringField(replacement.Object, "status", "phase") != "Ready" {
+			return again, fmt.Errorf("verified replacement identity/readiness mismatch")
+		}
+		if !replacement.GetDeletionTimestamp().IsZero() {
+			return again, fmt.Errorf("replacement NodeProvision is deleting")
+		}
+		old := p.NewObject("NodeProvision")
+		if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: pair.OldName}, old); apierrors.IsNotFound(err) {
+			continue
+		} else if err != nil {
+			return again, err
+		}
+		if string(old.GetUID()) != pair.OldUID || old.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) {
+			return again, fmt.Errorf("refuse deleting recreated source NodeProvision")
+		}
+		olds = append(olds, old)
 	}
-	old := p.NewObject("NodeProvision")
-	if !replacement.GetDeletionTimestamp().IsZero() {
-		return again, fmt.Errorf("replacement NodeProvision is deleting")
+	for _, old := range olds {
+		uid := old.GetUID()
+		if err := r.Delete(ctx, old, client.Preconditions{UID: &uid}); err != nil && !apierrors.IsNotFound(err) {
+			return again, err
+		}
 	}
-	if err := r.Reader.Get(ctx, client.ObjectKey{Namespace: req.GetNamespace(), Name: a[groupOldName]}, old); apierrors.IsNotFound(err) {
-		return ctrl.Result{}, nil
-	} else if err != nil {
-		return again, err
+	if len(olds) > 0 {
+		return again, nil
 	}
-	if string(old.GetUID()) != a[groupOldUID] || old.GetLabels()[p.LabelPolicyUID] != string(policy.GetUID()) {
-		return again, fmt.Errorf("refuse deleting recreated source NodeProvision")
-	}
-	uid := types.UID(a[groupOldUID])
-	if err := r.Delete(ctx, old, client.Preconditions{UID: &uid}); err != nil && !apierrors.IsNotFound(err) {
-		return again, err
-	}
-	return again, nil
+	return ctrl.Result{}, nil
 }
 
 func validateGroupVerified(req *unstructured.Unstructured) error {

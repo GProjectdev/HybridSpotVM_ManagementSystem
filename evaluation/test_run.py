@@ -798,6 +798,22 @@ class GroupRecoveryTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "all Verified"):
                     self.verify(Path(d), requests, {"karmada": [], "aws": []})
 
+    def test_batch_cleanup_checks_every_old_provider(self):
+        request=copy.deepcopy(self.request)
+        pairs=[dict(OldName='old-node',OldUID='karmada-old',NewName='new-one',NewUID='uid-new-one'),
+               dict(OldName='old-second',OldUID='uid-old-second',NewName='new-two',NewUID='uid-new-two')]
+        request['metadata']['annotations']['training.dcnlab.com/group-replacement-pairs']=json.dumps(pairs)
+        with tempfile.TemporaryDirectory() as d:
+            evidence=Path(d)
+            self.verify(evidence,[request],{'karmada':[],'aws':[]})
+            for cluster in ('karmada','aws'):
+                with self.assertRaisesRegex(RuntimeError,'old NodeProvision remains'):
+                    self.verify(evidence,[request],{c:([{'metadata':{'name':'old-second','uid':'any-member-uid'}}] if c==cluster else []) for c in ('karmada','aws')})
+            pairs[1]['NewUID']=pairs[0]['NewUID']
+            request['metadata']['annotations']['training.dcnlab.com/group-replacement-pairs']=json.dumps(pairs)
+            with self.assertRaisesRegex(RuntimeError,'unambiguous batch'):
+                self.verify(evidence,[request],{'karmada':[],'aws':[]})
+
     def test_group_missing_old_identity_fails_closed(self):
         request = copy.deepcopy(self.request)
         request["metadata"]["annotations"].pop("training.dcnlab.com/group-old-nodeprovision-uid")

@@ -153,3 +153,26 @@ Normal cleanup
  template/alarm and admission exception removal. Do not remove finalizers or
  delete infrastructure namespaces/storage. A blocked delete is an investigation,
  not an excuse for forced cleanup.
+
+Opt-in policy batch reconfiguration (2026-11-18)
+ group_replacement_batch_size in the render config defaults to1. Set3 to prepare
+ up to3 mismatched destination workers and issue one existing full-world restore.
+ The renderer writes training.dcnlab.com/group-replacement-batch-size="3" on the
+ suspended NodeRequest. B and C must use the same value; the comparison lock
+ includes it. A does not perform policy replacements. Same risk estimator and
+ checkpoint settings remain required; an emergency FIS victim uses the existing
+ single-worker recovery path.
+ Both spot-vm-management-controller AND checkpoint-recovery-coordinator must
+ run the batch-compatible image digests before enabling it. The Member protocol
+ and CRDs are unchanged. See docs/batch-group-reconfiguration-20261118.txt.
+ Four active workers plus a size3 batch may require7 simultaneous GPU instances;
+ size2 may require6. Existing private acceptance runners with a hard-coded5
+ provider guard must NOT be reused without a separately reviewed bound and
+ deadline/cleanup reserve. Do not change the cleanup ownership/UID checks.
+ A partially prepared batch waits without fencing/deleting the original world.
+ In-flight targets remain pinned; after Verified and normal old-provider
+ termination the current policy may initiate another operation. There is no
+ new automatic cancellation or rollback-prevention guarantee.
+ The batch path has controller/regression/race test evidence. Actual multi-VM
+ GPU batch restore, final4OD32vCPU supply/quota and end-to-end speedup remain
+ unverified; historical serial GPU success is not a batch performance result.

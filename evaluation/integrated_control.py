@@ -38,6 +38,10 @@ class Control:
     def policy(self):
         r=self.run;p=self.get('karmada','noderequest',r['policy'])
         if p is None or p['metadata']['uid']!=r['policy_uid']:raise ValueError('policy absent or recreated')
+        expected=r.get('group_replacement_batch_size',1)
+        actual=p['metadata'].get('annotations',{}).get('training.dcnlab.com/group-replacement-batch-size','1')
+        if type(expected) is not int or not 1<=expected<=4 or actual!=str(expected):
+            raise ValueError('live policy batch size differs from run comparison lock')
         return p
     def delete_owned(self,cluster,plural,obj):
         # Server-side UID precondition closes the read/delete recreation race.

@@ -836,12 +836,29 @@ def verify_group_recovery(evidence, run):
         old_uid = annotations.get("training.dcnlab.com/group-old-nodeprovision-uid")
         if not name or not old_uid:
             raise RuntimeError("group restore missing unambiguous old NodeProvision identities")
+        identities=[(name,old_uid)]
+        raw=annotations.get("training.dcnlab.com/group-replacement-pairs")
+        if raw is not None:
+            try:
+                pairs=json.loads(raw)
+                if not isinstance(pairs,list) or not 2<=len(pairs)<=4:
+                    raise ValueError("invalid batch size")
+                values=[(p["OldName"],p["OldUID"],p["NewName"],p["NewUID"]) for p in pairs]
+                if any(any(not isinstance(v,str) or not v for v in p) for p in values):raise ValueError("missing identity")
+                if values[0][:2]!=(name,old_uid):raise ValueError("primary identity mismatch")
+                names=[v for p in values for v in (p[0],p[2])]
+                uids=[v for p in values for v in (p[1],p[3])]
+                if len(set(names))!=len(names) or len(set(uids))!=len(uids):raise ValueError("duplicated identity")
+                identities=[p[:2] for p in values]
+            except (ValueError,TypeError,KeyError) as exc:
+                raise RuntimeError("group restore missing unambiguous batch NodeProvision identities") from exc
         # Run-unique old names must disappear in both clusters; member UIDs differ.
-        for cluster in ("karmada", "aws"):
-            for node in snapshots[cluster]:
-                metadata = node.get("metadata", {})
-                if metadata.get("name") == name:
-                    raise RuntimeError("group recovery/cleanup incomplete: old NodeProvision remains in "+cluster)
+        for name,old_uid in identities:
+            for cluster in ("karmada", "aws"):
+                for node in snapshots[cluster]:
+                    metadata = node.get("metadata", {})
+                    if metadata.get("name") == name:
+                        raise RuntimeError("group recovery/cleanup incomplete: old NodeProvision remains in "+cluster)
 
 def verify_scenario(evidence, run):
     if run.get("experiment") == "cost" and run.get("arm") == "A" and not run.get("periodic_disabled_observed"):

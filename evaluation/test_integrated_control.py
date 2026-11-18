@@ -14,6 +14,13 @@ class ControlBoundaryTests(unittest.TestCase):
             x=self.controller();x.run.update(change)
             with self.assertRaises(ValueError):x.mutate_gate()
             x.cloud.observe.assert_not_called()
+    def test_live_policy_batch_size_must_match_frozen_run(self):
+        x=self.controller();x.run.update(policy='name',group_replacement_batch_size=3)
+        x.get=Mock(return_value={'metadata':{'uid':'policy','annotations':{'training.dcnlab.com/group-replacement-batch-size':'2'}}})
+        with self.assertRaisesRegex(ValueError,'batch size differs'):x.policy()
+        x.get.return_value['metadata']['annotations']['training.dcnlab.com/group-replacement-batch-size']='3'
+        self.assertEqual(x.policy()['metadata']['uid'],'policy')
+        x.kub.assert_not_called()
     def test_cleanup_uses_server_uid_precondition_and_preserves_storage(self):
         x=self.controller();o={'apiVersion':'ml.dcn.ssu.ac.kr/v1alpha1','kind':'NodeProvision','metadata':{'name':'worker','namespace':x.run['namespace'],'uid':'exact-provider-uid'}}
         x.delete_owned('karmada','nodeprovisions',o)
