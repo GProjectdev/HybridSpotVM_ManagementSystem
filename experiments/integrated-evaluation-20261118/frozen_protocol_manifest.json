@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "protocol": "HybridSpotDDP-integrated-S1-S2-20261118",
+  "created_at_utc": "2026-11-18T05:10:35.178743+00:00",
+  "status": "DRAFT_BLOCKED_NOT_FORMALLY_FROZEN",
+  "formal_dispatch_authorized": false,
+  "frozen_scope": "research design, source documents, existing forecast/data/image identity; execution values below remain explicitly pending",
+  "design_sources": [
+    {
+      "path": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_통합정량평가_확정실험명세_20261118.txt",
+      "sha256": "6c60f49d64e3f16dcc120973d0137975f4eadadcb4271876a266e3a260b2a272"
+    },
+    {
+      "path": "/home/ubuntu/graduate/Evaluation/Codex_통합정량평가_실행프롬프트_20261118.txt",
+      "sha256": "08b18bdd8737fd461489f575ce00f429798be28a3abe3cac6c2125d6526660ba"
+    }
+  ],
+  "prior_review": {
+    "path": "/home/ubuntu/graduate/Evaluation/IEEE_Access_Evaluation_Review_20261118.txt",
+    "sha256": "c8a2b392a1e52c615fffdb85ce7e42889d5e5faf7dc9a351e6a5189323c570df",
+    "use": "historical evidence only; prior E1/E2 method superseded"
+  },
+  "basic_cells": [
+    "S1-P0",
+    "S1-P1",
+    "S2-00",
+    "S2-01",
+    "S2-10",
+    "S2-11"
+  ],
+  "basic_cell_count": 6,
+  "cell_count_resolution": "user clarified 2026-11-18: six enumerated cells; §7 eight is superseded by clarification",
+  "reference_cells": [
+    "POD-2OD"
+  ],
+  "repetitions_per_cell": null,
+  "models": {
+    "gpt2-small": {
+      "dataset": "WikiText-103 raw-v1",
+      "model_revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+      "dataset_revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+      "model_path": "/mnt/nfs/validation-assets-v6-20261116/models/gpt2-small",
+      "dataset_path": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1",
+      "processed_manifest_sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988",
+      "per_rank_batch": 4,
+      "global_batch": 8,
+      "sequence_length": 512,
+      "seed": 42,
+      "optimizer": "AdamW",
+      "learning_rate": 5e-05,
+      "weight_decay": 0.0005,
+      "goal_steps": null,
+      "fault_step": null,
+      "goal_status": "pending chosen-GPU sizing; G5 historical4747 not reused as G6 formal goal"
+    },
+    "resnet50": {
+      "dataset": "CIFAR-10",
+      "dataset_path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1",
+      "dataset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+      "archive_md5": "c58f30108f718f92721af3b95e74349a",
+      "preprocessing": "CIFAR stem/10classes; step-shuffle-crop-flip-v1; pad4 crop32 hflip normalization",
+      "per_rank_batch": 32,
+      "global_batch": 64,
+      "seed": 42,
+      "optimizer": "SGD",
+      "learning_rate": 0.1,
+      "momentum": 0.9,
+      "weight_decay": 0.0005,
+      "weights": "None",
+      "goal_steps": null,
+      "fault_step": null,
+      "goal_status": "pending chosen-GPU sizing; acceptance10000/earlyfault1000 is not formal goal"
+    }
+  },
+  "topology": {
+    "region": "ap-northeast-2",
+    "availability_zone": "ap-northeast-2c",
+    "world_size": 2,
+    "ranks_per_vm": 1,
+    "gpus_per_vm": 1,
+    "gpu_requests_and_limits_per_rank": 1,
+    "member": "aws1",
+    "ami_candidate": "ami-035e3088f6b7821fb",
+    "formal_instance_type": null,
+    "candidate_recommendation": "g6.xlarge after new-VM full-group restore acceptance; never mix G5/G6 within a pair/block"
+  },
+  "source_heads": {
+    "HybridSpotVM_ManagementSystem": "c81e623faa3dcf14e5f1370905560a64d43ebc37",
+    "PublicCloud-VM-Provisioner_test": "1235f288be6c6eb4aa14b238659c7f80d5fd74be",
+    "My_FluidCR": "4749e60a13beb859937f5bdfec4cba7cd4d06185",
+    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
+    "Stateful-Migration-Operator-with-PV": "eb41a1ee0bf4f549a33f918ebcfc0b39eedd9e5d"
+  },
+  "source_file_sha256": {
+    "internal/policy/contract.go": "94dc6a52634ae80947e5944e05a120c57eedad73c06df8e2b510fe1a33bedcad",
+    "internal/policy/economics.go": "e19351dc9777f77543e37ea4115b7bb0d2cf0217afe6255dbe2d1749822b09c8",
+    "internal/management/policy_controller.go": "91d863144980942dafcf90b8bb8c4e321830028c1316d32590a96049d9dcc686",
+    "internal/management/checkpoint_controller.go": "95b985d0366eb975e8b33b97f7fd4fb41641e711ab674f24dc05845389fe6f15",
+    "internal/management/checkpoint_schedule.go": "7a3b78ac4c5848d67b8e8a0d5933da6f07d14456cfdc78884973427a04a4c973",
+    "internal/management/group_producer.go": "5e9b8ae77babc4d21598b7725a3f9fc304b1f9cf913529c4dc3089def8ee8916",
+    "internal/management/paper_residency.go": "a5d7bc5a25de856e1738a19c5d75fc69ec2744ff0b807ceca3d2d8e3f08a0a58",
+    "internal/collector/paper_sarima_replay.py": "ea37c994a68ce7a3194b7124ae5febedc6942d5331bec10311ede97d3094e0b0",
+    "evaluation/final_protocol.py": "37579851b9b0789287c60fce4d7949a1e8e17f467701b2fe356398f67542a035",
+    "evaluation/final_fis.py": "64e5522c4c9a1486b42821a25fa0ca1d309b2c332dc9642104c31222190e8641",
+    "evaluation/integrated_probe/main.go": "986cb989c649e96fadb4802320e1a5ef8ed404d5f307683c9dd8f005edd831ed"
+  },
+  "deployed_image_baseline": {
+    "status": "historical references; AWS member currently stopped, actual live imageIDs require recheck before freeze",
+    "references": {
+      "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:c779629ce8f2fdf99b1963a5abfd82c5791d0a3f9464ea46bef80bf97d8d7b69",
+      "MGMT/deployments/hybridspot-system/placement-webhook/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+      "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+      "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:d57532aa4702eed2b905ac5b86a73337f6203a52408a9bc036786a64235031b1",
+      "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+      "MGMT/deployments/stateful-migration-system/stateful-management/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "AWS/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "AWS/deployments/nfs-provisioner/nfs-client-provisioner/nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "AWS/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:893407968c2e34977913100fd9e2c52731ddfb8994d6defdf40aab34ddbcb382",
+      "AWS/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:65371cdbe157d0152357d47230a28ed799330eb9a4ad44bfd008046e696d4ea3",
+      "AWS/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "AWS/daemonsets/hybridspot-system/spot-watcher/watcher": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+      "AWS/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "ONPRE1/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "ONPRE1/deployments/nfs-provisioner/e1-aws-nfs-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/nfs-provisioner/legacy-nfs-nfs-subdir-external-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:893407968c2e34977913100fd9e2c52731ddfb8994d6defdf40aab34ddbcb382",
+      "ONPRE1/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:65371cdbe157d0152357d47230a28ed799330eb9a4ad44bfd008046e696d4ea3",
+      "ONPRE1/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "ONPRE1/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "AWS/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+      "ONPRE1/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef"
+    }
+  },
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "risk": {
+    "provenance": "external-US-V100-availability-proxy; not measured Seoul hazard",
+    "forecast_path": "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json",
+    "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "training_hours": 672,
+    "held_out_hours": 168,
+    "wall_seconds_per_trace_hour": 3600,
+    "source_trace": "availability/1-node/aws-02-15-2023/us-east-2a_v100_1.json",
+    "population_assumption": "one requested availability slot, not observed at-risk running population",
+    "candidate_windows": {
+      "S1": {
+        "start_hour": 14,
+        "transition_hour": 15,
+        "lambda_per_hour": [
+          0.0009212361959754303,
+          0.3458397557619131
+        ]
+      },
+      "S2": {
+        "start_hour": 5,
+        "bootstrap_shared_exposure_end_exclusive": 15,
+        "first_four_hours_lambda_per_hour": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "selection_evidence": "evidence/risk-window-selection.json",
+    "final_windows_status": "candidate pending actual economics/gates, GPU/goal/clock binding; no arbitrary slicing or acceleration",
+    "per_run_start_utc": null,
+    "clock_anchor": null,
+    "replay_current_code_limitation": "load_locked requires start_hour=0 and first-held-out-hour; payload starts index0. Nonzero selected windows need minimal versioned extension before use; do not alter original forecast."
+  },
+  "policy": {
+    "method": "paper-eq6-7",
+    "alpha": 0.8,
+    "forecast_horizon_seconds": 3600,
+    "min_on_demand": 1,
+    "initial_composition": {
+      "on_demand": 1,
+      "spot": 1
+    },
+    "P0": {
+      "fixedOnDemand": 1,
+      "checkpoint_fixed_seconds": null
+    },
+    "P1": {
+      "fixedOnDemand": "absent",
+      "economics_enabled": true,
+      "on_demand_minimum_residency_seconds": 3600,
+      "checkpoint_bounds_candidate_seconds": [
+        60,
+        600
+      ],
+      "paper_async_enabled": false
+    },
+    "full_group_route": "training.dcnlab.com/planned-partial=disabled",
+    "fresh_runtime_loss_cost": "use actual existing controller calibration only; never fabricated",
+    "activation_and_loss_freshness_gate": "required at runtime"
+  },
+  "checkpoint": {
+    "f0_candidate_seconds": 600,
+    "f0_final_seconds": null,
+    "fallback_verified_seconds": 120,
+    "selection_rule": "S2 first eligible low input native bootstrap600; adopt only after safe durable round acceptance, otherwise documented safe120 fallback before formal results",
+    "p1_allowed_sources": [
+      "risk-band-bootstrap",
+      "checkpoint-cost-analytic"
+    ],
+    "paper_equations_1_5_actual_gpu_verified": false,
+    "stall_definition": "union of per-rank pause/resume intervals; archive/export separate"
+  },
+  "fault": {
+    "cells": [
+      "S2-01",
+      "S2-11"
+    ],
+    "action": "aws:ec2:send-spot-instance-interruptions",
+    "notice": "PT2M",
+    "trigger": "first fresh common committed step >= ceil(goal/2); immediate dispatch after ownership/durable gate, no wait for next scheduled CP",
+    "goal_fraction": 0.5,
+    "per_run_target_count": 1,
+    "instance_arn": null,
+    "nodeprovision_uid": null,
+    "policy_uid": null,
+    "workload_uid": null,
+    "on_missing_gate": "ineligible/cancelled attempt, never retarget another VM or silently shift phase",
+    "fis_authorization_family": "v6-readiness-20261117",
+    "api_only_permission_probe": "passed historical wait-only, not real Spot role/action acceptance",
+    "dispatcher_gap": "final_fis restricts old protocol/E2-B and fixedOnDemand=1; must add explicit S2-P1 path while preserving actual market/UID/frozenSpec checks"
+  },
+  "metrics": {
+    "time_reference": "UTC; KST reports labelled; collect clock offsets",
+    "request_time": "source NodeRequest.creationTimestamp",
+    "first_update": "first actual valid optimizer update on both ranks",
+    "goal_time": "both ranks valid goal update",
+    "release_time": "last exact-owned GPU EC2 actual termination; polling bounds retained",
+    "end_to_end_seconds": "t_goal-t_request",
+    "useful_throughput": "committed nonduplicated tokens or sample presentations / (t_goal-t_request)",
+    "gpu_compute_cost": "sum over exact-owned VM billed-running intervals of price(t)*dt/3600; include audit/cleanup/overlap; not invoice",
+    "S2_delta": "fault minus matched no-fault within each policy",
+    "S2_difference_in_differences": "(S2-11-S2-10)-(S2-01-S2-00), time and cost",
+    "rollback_steps": "common pre-interruption high-water minus restored durable step",
+    "failures": "preserve attempts/timeouts/censoring, missing != zero",
+    "exclusions": [
+      "EBS",
+      "NFS",
+      "VPN",
+      "network",
+      "FIS",
+      "control-plane"
+    ],
+    "schema_templates": "templates/"
+  },
+  "approval": {
+    "previous_gpu_acceptance_deadline_utc": "2026-11-18T03:22:59.864849+00:00",
+    "previous_window_closed": true,
+    "new_formal_or_acceptance_run_authorized": false,
+    "new_budget_usd": null,
+    "new_hard_deadline_utc": null,
+    "requires_before_paid_run": [
+      "start stopped member/NFS infrastructure and assess cost",
+      "bounded GPU count/type/overlap and spend/deadline",
+      "exact-owned Spot one-target FIS acceptance/formal faults",
+      "any IAM change separately scoped if necessary"
+    ],
+    "no_aws_mutation_this_task": true
+  },
+  "blocking_gates": [
+    "AWS member master and NFS stopped; no current runtime/image/storage verification",
+    "quota Spot/OD get-service-quota denied; value32 unverified",
+    "real Spot action/new-VM full-group restore not accepted",
+    "f0 safety and P1 unfixed interval acceptance pending",
+    "model-specific goal step on chosen GPU not frozen",
+    "selected replay offsets and common start binding not implemented",
+    "S1 low-to-high needs >3600 sec plus actual transition/restore margin",
+    "new S1/S2 orchestration/dispatcher/metrics adaptation pending",
+    "bounded paid approval not current"
+  ],
+  "schedule_reference": "evaluation_readiness_20261118.txt",
+  "data_order_resume": "StepBatchSampler deterministic seed/epoch/rank, resume optimizer step; deterministic augmentation seed/epoch/sample; restore RNG+optimizer+step, rank-local BN buffers separate"
+}

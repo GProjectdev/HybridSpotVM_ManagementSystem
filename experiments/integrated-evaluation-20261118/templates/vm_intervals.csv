@@ -1,0 +1,1 @@
+run_id,policy_uid,nodeprovision_uid,provider_id,market,instance_type,availability_zone,state,observed_at_utc,transition_lower_utc,transition_upper_utc,price_effective_at_utc,price_usd_per_hour,price_receipt_sha256,ownership_verified

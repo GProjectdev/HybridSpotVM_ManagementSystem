@@ -1,0 +1,18 @@
+{
+  "Codex_통합정량평가_실행프롬프트_20261118.txt": "08b18bdd8737fd461489f575ce00f429798be28a3abe3cac6c2125d6526660ba",
+  "HybridSpotDDP_통합정량평가_확정실험명세_20261118.txt": "6c60f49d64e3f16dcc120973d0137975f4eadadcb4271876a266e3a260b2a272",
+  "evaluation_readiness_20261118.txt": "89b976c2677b720d3ad68a21a76b4f964df117b58e146b5b6efc61a53adf7bc0",
+  "evidence/environment-readonly.json": "39c534f75597322d4b001ff40eee6838702fe51af5fc29b72ac7166bc0eea949",
+  "evidence/infra-states-readonly.json": "5c1a7951c853c1edda249941ab71b5a5855bd53b5b8f1b828b9f040f14529359",
+  "evidence/network-summary.json": "ed3010409e006b6b34344a70c4d0f92cba3b4cc0042db5b72aac4ba708e2e84f",
+  "evidence/policy-forecast-scan.json": "1a64b0f41e2a8ba07d5b72a09986c6323670581506ee47fc1218617a8febce68",
+  "evidence/preflight-readonly.json": "bee13c0b6b5ce20957cd7b687619f315e7b3d6151c062a6a259ee528aa8fe469",
+  "evidence/risk-window-selection.json": "fc50df50b93dad6bdbf87b8a171a2237d6a848cf4f7cc4cfc56c0ee5c098d20b",
+  "frozen_protocol_manifest.json": "652e47691a96ed22f8b940ed6ef8b103f93a0172f4102761d915124a46a79c98",
+  "previous_active_protocol.json": "928a5a89c3687a8c0b35b44dd761e6e9b3f8a975787562d0b5898af5d2fe779e",
+  "templates/capture_contract.json": "86a2851aa24d7f69ecc2d05f26ea5ae3644dae6fcd823c91049407d50b20d185",
+  "templates/events.csv": "a73119ad2320ab831b970db0d4c775aa924b100c2e07a22dc00bd8fb29393f77",
+  "templates/failures.csv": "3bf800ff155e602ba2a3281c978f57c123dc3d64a437343492eddcafb29ecff1",
+  "templates/metrics.csv": "7d50fa8485a5e5e7e2af6308a501a1f639c99d2d508eccb112f7a4620e54f4d3",
+  "templates/vm_intervals.csv": "4a0015a0d158ece546fdb78aee34e44a143634f0d7f8d24fd436a58a5ad4eb02"
+}

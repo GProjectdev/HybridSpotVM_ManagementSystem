@@ -1,0 +1,32 @@
+{
+  "status": "SCHEMA_ONLY_NOT_A_COMPLETED_RUNNER",
+  "required_artifacts": [
+    "run/config immutable snapshot",
+    "UTC clock offsets",
+    "raw allowlisted rank JSONL events",
+    "UID-bound source and member CR snapshots",
+    "actual Pod imageIDs/GPU request+limit/node placement",
+    "full forecast source row/hash and price receipt",
+    "checkpoint generation durableRef+sha+export",
+    "source fencing and verified RestoreRequest",
+    "both-rank optimizer/state/goal audits",
+    "exact original/replacement VM state and EBS cleanup receipts",
+    "all failed/cancelled/censored attempts"
+  ],
+  "existing_tools": [
+    "evaluation/ieee_v2_observe.py",
+    "evaluation/management_evidence.py",
+    "evaluation/ieee_v2_ledger.py",
+    "evaluation/price_watch.py",
+    "evaluation/fis_receipt.py"
+  ],
+  "mandatory_adjustments": [
+    "S1/S2 scoped preparer/runner, not legacy E1/E2 relabel",
+    "safe P1 FIS path without fixedOnDemand hard requirement; require actual1OD1Spot",
+    "rank pause interval UNION, not checkpoint span",
+    "primary useful progress/E2E denominator; old T_training metric separate",
+    "no-progress gaps and high-water crossing",
+    "price/state uncertainty bounds, cleanup tail",
+    "immutable per-run config/risk clock and capture coverage"
+  ]
+}

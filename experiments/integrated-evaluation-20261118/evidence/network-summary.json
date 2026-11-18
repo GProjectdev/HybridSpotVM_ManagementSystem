@@ -1,0 +1,46 @@
+{
+  "observed_at": "2026-11-18T05:10:35.178743+00:00",
+  "aws_api": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Unable to connect to the server: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)\n"
+  },
+  "nfs_ssh": {
+    "code": 255,
+    "stdout": "",
+    "stderr": "ssh: connect to host 13.125.179.70 port 22: Connection timed out\n"
+  },
+  "route": {
+    "code": 0,
+    "stdout": "10.50.1.80 dev wgaws1 src 10.201.0.2 uid 0 \n    cache \n",
+    "stderr": ""
+  },
+  "karmada_members": [
+    {
+      "name": "aws1",
+      "uid": "6375dfe2-8520-4435-83f2-921c1fe0c6d2",
+      "ready_conditions": [
+        {
+          "lastTransitionTime": "2026-11-18T03:27:04Z",
+          "message": "cluster is not reachable",
+          "reason": "ClusterNotReachable",
+          "status": "False",
+          "type": "Ready"
+        }
+      ]
+    },
+    {
+      "name": "onpre1",
+      "uid": "213056f9-692f-49b2-a84a-63355f7e9d05",
+      "ready_conditions": [
+        {
+          "lastTransitionTime": "2026-09-26T10:27:57Z",
+          "message": "cluster is healthy and ready to accept workloads",
+          "reason": "ClusterReady",
+          "status": "True",
+          "type": "Ready"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+서버 Codex에게 전달할 실행 지시 (2026-11-18)
+
+첨부된 'HybridSpotDDP_통합정량평가_확정실험명세_20261118.txt'를 최우선 평가 실행 명세로 읽어라. 이전 E1/E2/E3 실험 후보와 충돌할 경우 본 문서를 우선하되, 이전 검토 보고서 'IEEE_Access_Evaluation_Review_20261118.txt'는 기존 코드·검증 근거의 출처로 재사용하라.
+
+역할 구분: 연구 질문·실험 설계·PPT 내용은 연구자와 ChatGPT가 결정한다. 너는 서버 소스/환경의 준비, 게이트 검증, 명시 승인된 AWS 실험 실행, 로그·정량 지표 산출, TXT/CSV/JSON 결과 생성만 담당한다. 설계를 임의로 변경하거나 유리한 결과를 만들지 마라.
+
+우선 오늘 수행:
+1. 기존 근거를 재사용하여 각 항목을 '검증됨(동일 버전/조건)', '부분 검증', '미검증', '설정 변경으로 재검증 필요'로 나누고 수용검사 중복을 제거한다.
+2. S1용 잠근 held-out 시계열에서 실제 정책이 Spot 유지→OD 전환을 선택하는 최초 적격 시간 구간을 오프라인으로 찾고, 가격/체류시간/1h:1h clock 및 학습 목표시간을 함께 확인한다. 없으면 없다고 보고하고 수치를 만들지 마라.
+3. S2용 동일 Spot 노출 P0/P1 저위험 구간을 오프라인으로 확정할 수 있는지 검사한다. P1이 Spot을 반환하면 공동 노출 검증 실패이며 다른 VM을 FIS 대상으로 돌리지 않는다.
+4. 고정 Checkpoint 기준 f0를 실제 검증 기록과 S2 입력에 근거해 사전 선정하고, P1의 실제 intervalSource 및 주기 변경이 관측 가능한지 확인한다. 현재 미검증 Desai async/Iteration 식을 사용했다고 주장하지 마라.
+5. G5/G6 실제 후보·G계열 Spot vCPU quota32의 정확한 서비스 항목·OD quota·AZ offerings·가격과 FIS 권한, Full-group 새 VM Restore 경로, NFS archive 공간 및 평가 Run 계측을 확인한다.
+6. GPT-2 Small/WikiText-103 및 ResNet-50/CIFAR-10의 기존 검증 자산을 재사용하고, 선택 GPU에서 최종 목표 step/seed/이미지·학습 데이터 Hash를 Run 실행 전에 동결한다.
+7. readiness report와 frozen_protocol_manifest.json을 생성한다. 필요한 미확인 사항·실제 코드의 설계 충돌·승인이 필요한 AWS 유료/장애 조작을 명확히 보고한다.
+
+정식 실행에 대한 원칙:
+- S1: 같은 위험 시계열에서 P0 고정 Hybrid vs P1 통합 관리 정상 실행, 별도 2OD 운영 참고선. 실제 자원/CP 변경과 전체 비용·학습시간 기록. 외부 시계열 원본을 바꾸거나 시간을 임의 압축하지 마라.
+- S2: P0/P1 각각 무장애/FIS 1회라는 2x2. 실제 Spot 노출이 양쪽에서 성립해야 한다. 각 fault Run은 사전 지정 goal 50% committed step 이후 현재 소유 Spot 하나에만 FIS, 2분 통지/실제 종료/그룹 복원/두 rank optimizer update/목표완료/정리까지 기록한다.
+- 모든 Run: source NodeRequest→EC2/NodeProvision→Node/Pod/Rank→CP/Restore→실제 종료 UID 및 이벤트를 연결. CP Stall/복구/비용 경계를 혼동하지 말 것. 불리한·실패한·미완료 Run 보존.
+- 실제 AWS 인스턴스 생성·삭제, FIS 실행 및 계정 IAM 변경은 사용자 승인 조건을 먼저 확인. 실험 소유 외 리소스는 수정 금지. cleanup은 명시된 API로 소유권 검증 후 수행.
+- 이미 검증된 동일 버전의 C/R·Trace·정책 Probe·데이터 해시·Mock 테스트를 무의미하게 재실행하지 마라.
+
+산출물 경로를 실제 서버에서 만들어 보고하라:
+- evaluation_readiness_20261118.txt
+- frozen_protocol_manifest.json
+- 실험별 raw event/metrics.csv/price receipt/cleanup receipt/실패 목록
+- evaluation_results_interim_20261127.txt
+- evaluation_results_final_20261202.txt
+
+오늘은 현재 완료 수준·막힌 게이트·남은 최소 작업·실행 승인 필요한 조작을 담은 readiness TXT 및 frozen manifest 초안을 먼저 만들고 전체 경로를 보고하라. 준비가 안 된 부분을 성공 처리하거나 미래 작업이 완료됐다고 말하지 마라. 최종 연구 설계나 교수님 PPT를 별도로 다시 작성할 필요는 없다.

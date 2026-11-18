@@ -1,0 +1,130 @@
+{
+  "observed_at": "2026-11-18T05:05:00.253350+00:00",
+  "read_only": true,
+  "account_verified": true,
+  "offering": {
+    "InstanceTypeOfferings": [
+      {
+        "InstanceType": "g6.xlarge",
+        "LocationType": "availability-zone",
+        "Location": "ap-northeast-2c"
+      },
+      {
+        "InstanceType": "g5.xlarge",
+        "LocationType": "availability-zone",
+        "Location": "ap-northeast-2c"
+      }
+    ]
+  },
+  "hardware": [
+    {
+      "type": "g5.xlarge",
+      "vcpus": 4,
+      "architectures": [
+        "x86_64"
+      ],
+      "gpus": [
+        {
+          "Name": "A10G",
+          "Manufacturer": "NVIDIA",
+          "Count": 1,
+          "LogicalGpuCount": 1,
+          "GpuPartitionSize": 1.0,
+          "Workloads": [
+            "ml-ai",
+            "graphics"
+          ],
+          "MemoryInfo": {
+            "SizeInMiB": 22888
+          }
+        }
+      ]
+    },
+    {
+      "type": "g6.xlarge",
+      "vcpus": 4,
+      "architectures": [
+        "x86_64"
+      ],
+      "gpus": [
+        {
+          "Name": "L4",
+          "Manufacturer": "NVIDIA",
+          "Count": 1,
+          "LogicalGpuCount": 1,
+          "GpuPartitionSize": 1.0,
+          "Workloads": [
+            "ml-ai",
+            "graphics"
+          ],
+          "MemoryInfo": {
+            "SizeInMiB": 22888
+          }
+        }
+      ]
+    }
+  ],
+  "spot_g_vcpu": {
+    "unverified": true,
+    "error_code": "AccessDeniedException"
+  },
+  "ondemand_g_vcpu": {
+    "unverified": true,
+    "error_code": "AccessDeniedException"
+  },
+  "ami": [
+    {
+      "id": "ami-035e3088f6b7821fb",
+      "state": "available",
+      "architecture": "x86_64",
+      "name": "Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04) 20261113"
+    }
+  ],
+  "current_g_gpu_instances": [
+    {
+      "id": "i-09207544c3dce525e",
+      "type": "g6.8xlarge",
+      "state": "stopped",
+      "market": null,
+      "az": "ap-northeast-2a"
+    },
+    {
+      "id": "i-01fd168e807672176",
+      "type": "g6.8xlarge",
+      "state": "stopped",
+      "market": null,
+      "az": "ap-northeast-2a"
+    },
+    {
+      "id": "i-0b77725ab39e15afc",
+      "type": "g6.xlarge",
+      "state": "stopped",
+      "market": null,
+      "az": "ap-northeast-2a"
+    }
+  ],
+  "g5.xlarge_price": {
+    "observedAt": "2026-11-18T05:05:12.532772+00:00",
+    "currency": "USD",
+    "spotPricePerHour": 0.6287,
+    "onDemandPricePerHour": 1.237,
+    "spotPriceEffectiveAt": "2026-11-18T05:00:00+00:00",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g5.xlarge",
+    "ondemandReceiptSHA256": "fa365e513087f0a8e9b4f7510409bc36fe0c3be1bc587d4064dceb3401f6959b"
+  },
+  "g6.xlarge_price": {
+    "observedAt": "2026-11-18T05:05:16.029983+00:00",
+    "currency": "USD",
+    "spotPricePerHour": 0.4712,
+    "onDemandPricePerHour": 0.9896,
+    "spotPriceEffectiveAt": "2026-11-18T05:00:00+00:00",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g6.xlarge",
+    "ondemandReceiptSHA256": "3dc3bea9c8e44ced59081ef9ada90f7411bc386fc39edbc38b4d3903dceee793"
+  },
+  "nfs": {
+    "unverified": true,
+    "error_code": "COMMAND_FAILED"
+  }
+}
