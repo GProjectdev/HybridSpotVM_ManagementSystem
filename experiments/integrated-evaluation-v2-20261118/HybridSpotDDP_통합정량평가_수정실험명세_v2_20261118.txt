@@ -1,0 +1,113 @@
+하이브리드 클라우드 Spot DDP 지원 시스템 — 통합 정량 평가 실행 명세 (수정 v2)
+작성일: 2026-11-18
+평가 설계 책임: 연구자·ChatGPT / 환경 준비·실행·관측 책임: 서버 Codex
+실행 기간: 2026-11-18~2026-12-02 (11/27 우선 결과 목표)
+상태: 실행 전 평가계획. 성능 향상이나 완료를 예측·주장하지 않는다.
+본 문서는 'HybridSpotDDP_통합정량평가_확정실험명세_20261118.txt' 및 이전 실행 프롬프트보다 S1/S2 실험 규모에 관하여 우선 적용된다. 이전 보고서는 기존 구현·증거의 출처로 보존한다.
+
+[0] 핵심 연구 질문 및 설계 변경 이유
+연구 질문: Spot 위험률을 공통 입력으로 GPU 자원 구성과 Checkpoint 실행을 조율하는 Karmada 기반 관리 시스템을 실제 DDP 환경에 적용할 때, 고정 운영 대비 실제 시간·비용·교체·복원 오버헤드가 어떻게 달라지고 그 이점과 한계는 무엇인가?
+핵심 평가 1개, 상호 보완적인 두 시나리오:
+- S1 (4-Rank): 자원 구성에 선택지가 있는 상태에서 초기 위험 기반 구성 결정 및 위험 변화에 따른 실제 GPU Worker 재구성/Checkpoint 조율의 End-to-End 영향을 측정. 별도 인위적 선점 없음.
+- S2 (2-Rank): 단일 Spot Worker 중단이 다른 DDP Rank에도 영향을 주는 최소 멀티노드 사례에서 정상 대비 장애 추가 손실, 관리/복구 지연을 측정.
+S1의 최초 1OD+1Spot 고정 계획은 폐기한다. 2개 Worker/최소 OD1 조건에서는 1OD1Spot/2OD 두 조합만 가능하여 Spot:OD 비율 관리의 선택 범위가 지나치게 제한된다. S1은 사용자 요청 targetWorkers=4, 최소 OD=1을 기본 후보로 하여 가능한 구성 1OD3Spot/2OD2Spot/3OD1Spot/4OD를 정책 선택지로 확보한다. 실제 네 구성이 모두 코드에서 선택 가능하다고 주장하지 않으며 정책/가격/리스크 입력으로 결정되는 실제 구성만 사용한다.
+S2는 2-Rank, 1OD+1Spot을 유지한다. 이는 다른 Rank를 포함한 동기식 DDP에서 Spot 1대 상실·복원을 조건 통제하기 위한 최소 사례다.
+중요: S1(4-Rank)과 S2(2-Rank)는 Rank 수·상용 GPU 수·CP 데이터량이 다르다. 완료시간/총 GPU 비용을 그대로 비교하거나 합산하여 선점 손익분기를 주장하지 않는다. 각 시나리오 내부 동일 Rank·모델·하드웨어 pair끼리만 정책 비교/장애 추가 비용을 계산한다. 공통 정책의 관리 구조라는 결론만 함께 해석한다.
+채택한 Desai 위험 정책, SARIMA 모델, 기존 DDP C/R을 본 연구가 새로 발명한 알고리즘이라 주장하지 않는다. 차별성은 실제 VM/Rank/Checkpoint/Restore/반환 연계·비용·학습 진전 실측이다.
+
+[1] 공통 환경 및 통제 조건
+- AWS 지역·AZ: ap-northeast-2c. Karmada Management + AWS Member, 기존 On-Premise Member는 관리/이전 기능 증거로 유지. S1/S2 실제 학습 Rank들은 AWS Member GPU Worker에서 실행한다. cross-cloud WAN DDP 성능을 검증했다고 쓰지 않는다.
+- GPU: 기존 수용검사 완료한 G5.xlarge 또는 G6.xlarge 가운데 실제 Spot/OD 가용성·Quota·동일 모델 Full-group Restore 호환성으로 한 유형을 사전 동결. paired 비교에서 G5/G6 혼합 불가. Quota 'Spot 32'는 G 계열 vCPU quota인지 조회: 32대 보장이나 32 GPU 보장이 아니다. OD quota도 별도 확인. S1 4 GPU Worker+교체 중 중첩 VM의 quota/공급/예산을 계산한다.
+- Pod는 GPU 1개/Rank, 서로 다른 VM 배치를 required hostname anti-affinity로 검증. 동일 per-run namespace/UID, source/member Karmada ownership 및 NFS PVC/checkpoint identity 기록.
+- 주 모델 GPT-2 Small/WikiText-103; 교차 검증 ResNet-50/CIFAR-10. 실험 전에 실제 검증된 모델/데이터 코드·Hash·seed·학습 recipe·목표 유효 step을 고정한다.
+- Rank간 규모 비교나 S1/S2 공통 결과를 나란히 제시할 때는 Global Batch 및 모델별 학습 목표량을 통제한다. 기존 2-Rank GPT2 batch/rank4(global8), ResNet batch/rank32(global64)에 대응하여 4-Rank에서는 GPT2 batch/rank2(global8), ResNet batch/rank16(global64)를 후보로 검증한다. 해당 batch 지원·성능·복원은 현재 검증된 것으로 가정하지 않는다. S1 내 P0/P1은 각기 같은 Rank 수, 같은 batch와 목표 step을 사용한다.
+- GPU 비용은 최초/중첩/교체/대기/반환 지연 VM별 실제 billed-running 시간대별 가격으로 추정. GPU Compute Cost라고 명명하고 NFS/EBS/VPN/FIS/관리노드 비용 미포함 여부를 명시. 실제 인보이스와 추정값 구분.
+- 완료시간 T_E2E=실제 요청 NodeRequest 생성→양 Rank(4면 네 Rank)의 목표 유효 optimizer step 완료. 종료 요청부터 실제 VM 종료까지 별도 관측하고 GPU 비용에는 포함. CP stall은 Rank pause/resume의 시간 구간 합집합, 실제 checkpoint 저장/전파 latency와 분리.
+
+[2] 비교 대상 P0 / P1
+P0: 고정 운영. 기존 Controller·Karmada·Provisioner·Spot Watcher·Restore 기능은 유지. 초기 자원 구성은 실행 중 변경하지 않고 Checkpoint는 사전 확정한 고정 주기 f0. 위험률 데이터 수신·로그는 P1과 동일하되 리스크에 의한 구성·주기 결정은 고정.
+P1: 위험 기반 통합 관리. 기존 구현의 위험·가격·경제 조건을 사용해 초기 Spot/OD 구성 선택, 이후 갱신된 위험 입력에 따라 실제 교체(지원하는 정책 경로 범위) 및 Checkpoint 주기 조율 수행. 실제 활성 경로와 UID/세대/시간을 기록. 비동기 Desai 전체 수식이나 Iteration 직접 최적화가 GPU에서 동작한 것으로 미리 주장 금지.
+P0와 P1에 동일한 GPU 사양·모델·Global Batch·목표 step·초기 weight/seed·복원 엔진·storage·학습 종료·VM cleanup 절차 적용.
+P0의 f0는 현재 안전하게 수용된 CP 설정/실측 비용과 동일한 입력의 P1 초기 bootstrap를 확인하여 사전 lock. 검증된 120초는 안전 운영 후보이지 최적값이라는 뜻이 아니다. 정식 실험 결과를 보고 변경하지 않는다.
+
+[3] S1 (4-Rank) — 위험률 변화에 따른 자원·Checkpoint 통합 관리 효과
+목적: 4 Worker 요청을 받은 시스템이 위험·가격에 따라 초기 Spot/OD 비율을 결정하고, 학습 중 위험 변화에 대응해 실제 GPU VM·Checkpoint를 관리할 때 추가되는 관리 비용과 학습 영향 평가.
+실험군:
+  S1-P0: targetWorkers=4, 기존 정책으로 결정된 '공통 초기 구성'을 그대로 유지, 고정 CP f0, FIS 없음.
+  S1-P1: targetWorkers=4, P0와 동일한 공통 초기 구성으로 시작, 이후 기존 위험 기반 정책/Checkpoint 조율 활성, FIS 없음.
+초기 구성 선정 원칙:
+  a) 기존 검증된 SkyPilot 미국 V100 과거 가용성 Trace로부터 확보된 SARIMA held-out forecast(원본/예측 hash)를 사용. 서울 G5/G6의 실측 hazard가 아니다.
+  b) 고정한 GPU 상품가격·minOD1·policy 설정·residency·관측 clock에 대해 실제 DecideAt 실행 결과를 기반으로 '초기에 적어도 한 Spot이 포함된 합법적 4-Rank 혼합 구성'과 '이후 다른 구성 결정으로 변하는 최초 연속 적격 구간'을 시간순으로 선정. P0 초기 구성은 P1의 해당 최초 정책 결정으로부터 복제하여 동일한 상태로 만든다. P0가 P1과 다르게 시작하게 하지 않는다.
+  c) 두 Run에 같은 timestamped forecast·가격 조건·1시간 trace=실제1시간 원칙 적용. 미래를 학습에 사용하거나 결과를 보고 구간을 교체하지 않는다. 실제 적격 구간이 없으면 없는 사실과 제약을 보고하며 수치를 조작하지 않는다. 고위험 상태가 처음부터 존재하면 '상승'이라고 표현하지 않는다.
+  d) 초기 구성 정책 판정의 입력·출력과 EC2 생성/Ready 시간을 기능 및 실측 근거로 별도 기록. S1-P0/P1 페어의 핵심 인과 비교는 '동일 초기 구성에서 실행 중 적응 여부'이다. 초기 정책 선택의 독립적인 가격 최적성까지 이 pair로 증명했다고 주장하지 않는다.
+S1 실행 순서:
+  1. 임시 준비/정식 결과 분리, GPU4대+교체 시 중첩 대수·OD/Spot quota·NFS archive 공간·예산·4-Rank CP/Restore 수용을 검토.
+  2. 모델/데이터/Global Batch/target step/CP mode/f0/forecast replay/실제 GPU SKU·가격/정식 clock을 동결하고 신선한 Run UID로 생성.
+  3. 관리 시스템이 초기 구성 선택→실제 4개 GPU VM 공급 및 Karmada Member/Pod Ready→4-Rank DDP 첫 optimizer step까지 관측.
+  4. P0와 P1은 같은 정책 결정에서 나온 합법적 초기 4-VM 구성을 공유하되 서로 별개 clean Run으로 실행. 첫 durable CP 및 네 Rank 복원 계약은 해당 경로가 필요한 시점에 검증.
+  5. P0 구성/주기 고정, P1 위험률과 CP cost를 받아 기존 Controller 실행. 정책 결정→대체 NodeProvision→GPU Ready→전체 그룹 Restore/Resume→기존 NodeProvision actual termination까지 원시 이벤트 UID 연결.
+  6. 양쪽 목표 optimizer step, CP/stall/timeout/실패, 비용·종료를 수집. FIS는 S1에 주입하지 않음. 자연 Spot interruption 시 프로토콜 편차 기록.
+S1 결과: 동일 4-Rank P0/P1 간 전체 완료시간 ΔT, GPU compute cost ΔC, useful throughput, CP 수행 횟수/stall, 실제 VM 교체·전체 Rank 재개 지연, no-progress VM-seconds, 위험 입력/결정→실제 구성 일치 시간. 정상 운영 조건에서 정책 실행 오버헤드·이점/불리한 지표를 기록. 실제 선점 회피 효과는 측정하지 않는다.
+S1 실시 전 필수 확인: 기존 보고서에서 4-Rank GPU DDP, UID-bound full-group durable CP 및 새 VM Restore가 통과했다는 증거는 현재 확인되지 않는다. 새 CPU/GPU 개발을 하지 않고 최소 수용검사로 적격 여부 확인. 4-Rank route가 지원되지 않을 경우 2-Rank로 조용히 축소하지 않고 보고 후 설계 승인을 받는다.
+
+[4] S2 (2-Rank) — 공통 Spot 노출에서 중단·복구 운영 손실
+목적: 동기식 DDP의 최소 다중 VM 구조(1OD+1Spot)에서 동일 종류의 Spot 중단이 전체 DDP 학습에 주는 실제 비용·시간 손실과 CP/복구 연계 부담 측정.
+실험군 (2×2):
+  S2-00: P0 고정 운영, 중단 없음.
+  S2-01: P0 고정 운영, 단일 Spot FIS 1회.
+  S2-10: P1 통합 관리, 중단 없음.
+  S2-11: P1 통합 관리, 단일 Spot FIS 1회.
+모든 조건은 동일한 2-Rank/1OD1Spot 초기 및 장애 시점 Spot 유지가 검증된 외부 저위험 입력을 적용한다. P1이 OD 전환으로 Spot을 반환하여 동일 Spot 노출이 사라지는 조건은 S2의 직접 비교 자격 없음; 다른 계정/VM을 임의로 중단시키지 않는다.
+실행:
+  1. 기존 SkyPilot/SARIMA 보류 예측 데이터에서 P0/P1이 장애 시점까지 실제 1OD+1Spot을 유지하는 '최초 적격' 저위험 구간을 정책 함수로 사전 검색·lock. S1 4-Rank 위험 변화 구간과 달라도 된다.
+  2. P0의 f0를 사전 동결. P1의 실제 checkpoint policy 경로/주기 변경 여부 보존. 모든 Run에 같은 GPU·모델·batch·목표 step·restore engine.
+  3. fault는 양 Rank의 공통 유효 optimizer step이 목표의 50%에 도달한 직후, 최초 durable full-group checkpoint가 확인된 현재 해당 Run 소유 Spot ARN 1개에만 FIS를 실행. 50%는 진행 수준 통제이지 자연 선점 분포의 대표 시점이 아니다. 사전 확보 CP 조건이 만족되지 않으면 실패/미적격을 기록.
+  4. notice→실제 EC2 종료→Watcher/Controller→대체 VM 생성·GPU Ready→Checkpoint identity 및 source fencing→2-Rank restore/audit→기존 high-water 초과→goal/VM 반환을 시간과 UID로 연결.
+  5. 정식 정상/장애 Run 모두 완료하고 정상 대비 추가 비용·시간 계산. 실패와 timeout은 숨기지 않는다.
+결과:
+  ΔT_P0=T(S2-01)-T(S2-00), ΔT_P1=T(S2-11)-T(S2-10)
+  ΔC_P0=C(S2-01)-C(S2-00), ΔC_P1=C(S2-11)-C(S2-10)
+  부가: CP stall, Rollback Loss, DDP no-progress, 비생산 GPU VM-seconds, VM 교체·Restore 지연.
+주의: S2 저위험에서는 자원 구성 변화가 거의 없으므로 주로 동일 자원 노출에서 'CP 조율과 복구 통합'의 영향 평가가 된다. S1의 4-Rank VM 교체 효과와 같은 Rank 규모의 인과 비교라고 주장하지 않는다. 긴급 CP 성공으로 rollback=0일 수 있음. P1이 유리하다는 결과를 미리 정하지 않는다.
+
+[5] 두 시나리오의 연결과 한계 — 특히 중요
+S1은 4-Rank, S2는 2-Rank다. '한 개의 통합 시스템 연구 질문에 대한 두 보완 시나리오'라고 설명하되 같은 2×2 factorial 실험이라 말하지 않는다. GPU 비용 절대값, 완료시간, 손익분기 p* 등을 S1/S2 수치로 직접 결합하지 않는다. E.g. S1의 P1-P0 추가 비용과 S2의 P0/P1 장애 비용으로 선점 기대비용을 계산하는 것은 Rank·Spot 노출·CP 데이터 크기·위험 입력 등이 달라 원칙적으로 부적절하다.
+이점의 조건/한계는 시나리오별 실측 결과로 설명한다:
+- S1: 4-Rank에서 초기 구성 및 위험 기반 적응이 실제 VM 교체, 완료시간, GPU 비용, CP stall에 미치는 영향; 전환 비용/노출 변화. '위험이 높아 실제 선점을 회피했다'는 주장 금지.
+- S2: 2-Rank에서 단일 FIS 중단의 실제 복구 성공, 추가 시간·비용, CP 운영 차이; 자연 선점 빈도·최적 복구 우위 일반화 금지.
+- 개별 R2 및 R3 알고리즘의 독립 기여율·최적성은 이 통합 패키지 비교만으로 측정하지 않음. Desai의 비동기 Iteration 경로는 현재 GPU 검증 없음.
+- R1 '학습 완료 감지 시 Controller 단독 자동 반환'은 기존 보고서에서 확인되지 않았으므로 Runner/사용자 요청 후 실제 반환과 구분.
+- 실제 서울 AWS hazard 추정, Cross-cloud migration throughput, large-scale DDP 확장성, 전체 클라우드 비용은 본 실험의 직접 검증 범위 밖.
+통합 연구의 효과를 하나의 숫자로 종합해 주장하려면 같은 Rank·model·조건으로 사전 전환 및 fault 조합을 별도로 통제 측정해야 한다. 이번 S1/S2만으로 그 숫자가 산출된다고 주장하지 않는다.
+
+[6] 기존 검증 증거 재사용 / 추가 gate
+먼저 'IEEE_Access_Evaluation_Review_20261118.txt'의 기존 증거를 버전·환경과 대조하여 재사용. GPT2 과거 FIS/Restore, ResNet 같은 Pod CP/Restore, 11/18 G6 2Rank NCCL/2회 durable CP, Collector TLS, 공개 trace/SARIMA, Policy Go Probe, 데이터 자산/해시 등은 동일 조건일 때 중복 재시험 금지.
+미검증 항목: 4-Rank DDP 배치/학습/CP/full-group 복원/UID 안전한 대체 VM 전환; S2 실제 FIS IAM 태그 수정 후 중단 및 새 VM 복원; GPU 선택·OD/Spot quota·live Spot 확보; S1 합법적 초기 혼합 구간+변화 구간, S2 공통 Spot 노출 구간; 정식 Run별 비용/CP/rank metrics; NFS 저장 공간과 cleanup.
+S1에 4-Rank Full-group 복원이 필요할 때 현재 코드가 실제로 그 group size를 지원하는지 read-only 증거부터 확인하고 수용검사 범위를 최소화. 실패 시 임의로 다른 복원 방식(예: partial)을 섞지 않음. 최소한의 로그 계측·실험 스크립트만 보완하며 core Controller의 신규 알고리즘 개발은 금지.
+
+[7] 평가 조건·반복·일정
+주 모델 GPT-2, 교차 검증 ResNet-50. S1-P0/P1 최소 2 cell (4-Rank, 공통 초기 정책 결정). S2-P0/P1 × 정상/FIS 최소 4 cell (2-Rank). 총 GPT2 최소 6 기본 cell이며 같은 모델·Rank 조건 안에서만 적격 baseline 공유. 기존 2OD 참고선은 '실무적 참고'로만 필요 시 같은 Rank와 설정으로 별도 Run. ResNet은 2-Rank S2 등을 우선 교차 검증하고 4-Rank S1 추가 여부는 quota·복구·시간 확인 후 결정. 비교쌍은 주요 조건부터 가능하면 3회 반복; 반복 실패·공급 실패·미완료를 분리해 기록.
+11/18: 교수님 보고용 PPT·평가 설계 확정. Codex는 명세 반영, 기존 증거 재사용 매핑, S1 4-Rank gate와 quota·risk 검사 준비.
+11/19~20: GPU 유형/가격/f0/goal/hash 동결; S1 4-Rank 및 S2 FIS/2-Rank 새 VM Restore 미검증 부분 수용검사.
+11/23~25: S1 4-Rank P0/P1 정상 운영과 S2 2-Rank 기본 정상/중단 비교를 준비된 순서대로 실행.
+11/26~27: 핵심 결과 보완·반복 및 1차 분석, 보고.
+11/30~12/01: 주요 조건 반복, ResNet 교차 검증.
+12/02: raw hash lock, 결과·실패·한계·그래프·논문 초안 정리.
+GPU 실행·FIS·IAM 변경 등 유료·파괴적 조작은 명시 승인 범위 확인 후 수행. 실험 설계 변경은 Codex가 단독 결정하지 않음.
+
+[8] Codex 산출물 (서버에서 실제 파일 생성)
+A. evaluation_readiness_v2_20261118.txt: S1 4-Rank와 S2 2-Rank 별 기존 검증/미검증, GPU/Quota/비용, 정책 입력 구간, Run 목록, 막힌 조건, 사용자 승인 대기 사항.
+B. frozen_protocol_manifest_v2.json: 시나리오별 model/Rank/global batch/goal/f0/risk hash/replay/initial composition/price/hardware/FIS timestamp definition/Controller image & code hashes.
+C. 각 Run별 immutable raw events, UID/provider, CP/Restore/checkpoint state, GPU VM billing timeline, price receipts, completed/failed status, cleanup.
+D. evaluation_results_interim_20261127.txt 및 evaluation_results_final_20261202.txt: 같은 Rank 내부의 대응 결과, 비용·시간·학습진전, 이점·부담·한계, 결측 및 실패, 해석 불가능한 비교 표시.
+E. 교수님/논문 결과 도표 작성용 실제 원시 데이터와 캡션 후보 TXT. PPT 원본은 Codex가 수정하지 않는다.
+
+[9] 근거 및 출처
+- O. Desai et al., 'Cost-Efficient Training and Checkpointing for Large Models on Preemptible Cloud VMs', EuroMLSys 2026, §4.1/4.2/4.3/5 — 기존 위험·자원·CP 정책.
+- SkyPilot spot-traces GitHub: https://github.com/skypilot-org/spot-traces — 공개 미국 V100 availability proxy, 서울 실제 위험률 아님.
+- AWS EC2 Spot/FIS 공식 문서 — 통제된 Spot interruption 및 통지·종료/가격/Quota 규칙.
+- PyTorch DistributedDataParallel docs — 동기식 Rank 결합과 글로벌 배치.
+- 'IEEE_Access_Evaluation_Review_20261118.txt' — 기존 구현·실증 범위 및 미검증 목록.
+- '정승준_졸업작품최종발표_실제발표.pptx' — 연구 주제 및 원래 요구사항.
+
+끝. 실제 결과 없이 정책의 우수성이나 성공률을 주장하지 않는다.

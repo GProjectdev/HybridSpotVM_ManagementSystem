@@ -1,0 +1,26 @@
+서버 Codex 추가 지시 — 통합 정량 평가 수정 v2 (2026-11-18)
+
+이번 대화에서 확정한 'HybridSpotDDP_통합정량평가_수정실험명세_v2_20261118.txt'를 반드시 먼저 읽고, 기존 계획과 충돌하는 모든 Rank 수/초기 GPU 구성/Run 수/비교·해석 항목을 v2 기준으로 정합성 있게 업데이트하라.
+
+가장 중요한 변경:
+1) S1 정상 위험 변화 평가를 2-Rank 초기 1OD+1Spot 고정에서 '4-Rank, targetWorkers=4, 위험·가격 기반 초기 Spot/OD 구성 선정'으로 변경한다. 최소 OD=1 제약하의 네 가지 가능한 혼합/OD 조합을 검토하지만, 실제 정책이 선택하지 않은 비율을 임의 강제하지 않는다.
+2) S1-P0와 S1-P1은 같은 최초 정책 결정의 실제 초기 VM 비율을 공통으로 사용한다. 이후 P0는 자원 구성·CP 주기 고정, P1은 위험 기반 VM 재구성 및 CP 조율을 실행한다. 이 pair의 효과는 '동일 초기 구성에서 실행 중 적응 여부'이지 '초기 비율 선택의 독립적 최적성'이 아니다.
+3) S2 Spot FIS 중단/복구는 기존대로 2-Rank=1OD+1Spot, P0/P1 × 정상/단일 Spot 중단의 2×2 구성. S2는 실제 공동 Spot 노출이 보장되는 입력을 사용한다.
+4) S1 4-Rank와 S2 2-Rank는 직접 비용/완료시간을 합산하거나 S1 전환비용+S2 복구비용으로 손익분기 확률을 산출하지 않는다. 해당 주장을 보존한 기존 보고서/스크립트/그래프 예시는 수정 또는 무효 표시한다.
+5) S1에서 주 모델 GPT-2의 동일 global batch8을 유지한다면 rank별 batch2(4rank)를 사전 수용 검토하고, ResNet은 global64/rank별16 후보로 본다. batch/target step/optimizer/model-data contract를 고정한다.
+6) S1 4-Rank CP/Full-group Restore, 일시적 VM 중첩·GPU Spot/OD Quota, NFS archive 저장량과 FIS 관련 2-Rank 경로는 각각 독립적으로 확인해야 한다. 4-Rank가 된다는 것을 미리 주장하지 마라.
+
+기존 재검증 방지:
+- GPT2 과거 FIS/restore, ResNet 동일 Pod C/R, G6 2Rank durable CP, Collector TLS, SARIMA trace/forecast, Go policy probe, 학습 데이터·모델 해시는 이미 보유한 원본·버전·UID로 확인하라.
+- 동일 환경/버전에서 검증 완료된 항목은 무의미하게 재실행하지 마라.
+- 그러나 4-Rank group CP/새 VM 복원, FIS 수정 후 실제 권한·중단, Spot capacity, S1 적격 위험률 구간은 기존 자료로 미검증이면 반드시 보고하고 최소 수용검사를 설계하라.
+
+오늘 우선 작업:
+A) 새 명세를 기준으로 Run matrix, 합법적 initial composition·risk/price 조건, P0/P1 설정, 예상 인스턴스 최대 중첩 수, 서비스 Quota(Spot 32의 실제 단위), 4Rank 학습 글로벌 배치/목표 Step/비용을 read-only/offline으로 점검.
+B) 기존 2Rank 실험용 스크립트에서 전제한 replicas=2, Rank0OD/Rank1Spot, f0/Run 수/Step 조건을 S1 4-Rank까지 일관되게 지원하는지 조사하고 필요한 최소 계측/실험 orchestration 수정만 제안하라. RIC/Karmada/Controller의 핵심 정책 알고리즘은 수정하지 않는다.
+C) 전체 평가 수행에 필요한 신규 승인과 막힌 gate를 정리하고 실제 환경의 무료/읽기 전용 점검부터 진행하라.
+D) 'evaluation_readiness_v2_20261118.txt'와 'frozen_protocol_manifest_v2.json'(준비된 필드만 확정, 미확정은 명시)를 서버에 실제 생성하고 경로를 보고하라.
+
+실험은 v2 스케줄대로 11/19~12/02에 준비·실행하며 11/27 우선 결과 확보를 목표로 한다. AWS GPU 생성/삭제, FIS, IAM 변경 전에는 기존 허용 범위를 확인하거나 명시적 승인을 받는다. 실험 소유 리소스만 안전하게 정리한다.
+
+최종 산출물: S1 4-Rank 및 S2 2-Rank 각각의 실제 Run 원시 로그/metrics.csv/비용 장부/실패 및 cleanup receipt, 11/27 1차 보고 TXT, 12/02 최종 보고 TXT. 실제 데이터 없는 성능 향상·복구 성공을 만들어내지 말고, 사용자·ChatGPT가 결정한 실험 설계를 임의 변경하지 마라. 교수님께 보낼 PPT는 연구자·ChatGPT 담당이므로 Codex가 독자적으로 수정하지 않는다.

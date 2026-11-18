@@ -1,0 +1,204 @@
+HybridSpotDDP 통합 정량 평가 수정 v2 — 실행 준비 점검
+기준일: 2026-11-18 (사용자 보고 시간은 KST, 원시 receipt는 UTC)
+새 기준: S1 4-Rank / S2 2-Rank. 본 문서는 실제 정량 결과가 아니라 준비 상태와 실행 gate 보고서다.
+
+1. 오늘 결론
+
+수정 명세/실행 프롬프트를 읽고 활성 계획, Run matrix, manifest를 v2로 반영했다. 오늘 허용된 read-only/offline 준비 검사는 완료했지만 실제 실험 준비가 모두 끝난 상태는 아니다.
+S1은 코드상 그룹 수를 일반화한 경로가 있으나 4-Rank GPU DDP·durable full-group CP·새 VM Restore가 미검증이다. 기존 생성기/관측기/일부 metric 경로에는 2-Rank 고정 조건이 있어 지금 그대로 실행할 수 없다.
+S2는 기존 2-Rank 증거를 재사용하되, FIS 권한 수정 이후 실제 Spot 중단→새 GPU VM full-group Restore→두 rank optimizer update→goal→정상 반환이 여전히 미검증이다.
+현재 AWS Member 관리 노드와 NFS는 stopped다. 오늘 새 조회에서도 확인됐으며 다시 켜지 않았다. GPU/FIS/IAM/인프라 조작은 하지 않았다.
+frozen_protocol_manifest_v2.json은 DRAFT_BLOCKED_NOT_FORMALLY_FROZEN, formal_dispatch_authorized=false다. 확정된 설계와 자산 식별은 기록하고 GPU·goal·f0·replay UTC 등 미확정 실행값은 null/미확정으로 보존했다.
+
+적용한 원본:
+/home/ubuntu/graduate/Evaluation/HybridSpotDDP_통합정량평가_수정실험명세_v2_20261118.txt
+/home/ubuntu/graduate/Evaluation/Codex_통합정량평가_수정실행프롬프트_v2_20261118.txt
+Evaluation의 v2 ZIP에서 TXT를 이름 복원하여 추출했다. 함께 있던 PPT는 열거나 수정하지 않았다. 두 TXT의 SHA256은 manifest.design_sources 참조.
+기존 보고서와 증거는 역사적 snapshot으로 보존한다. 이전 2-Rank S1 구성 파일은 v2 실행에 사용하지 않도록 superseded_artifacts.json 및 이전 generic manifest의 .superseded.json sidecar에 명시했다. 이전 파일을 조용히 덮어쓰거나 과거 hash를 새 결과처럼 바꾸지 않았다.
+
+2. v2 실험 목록과 비교 범위
+
+주 모델 GPT-2 Small/WikiText-103의 기본 6셀:
+S1-P0: world4, rank batch2/global8 후보, 공통 초기 정책 결정의 구성 고정, CP=f0, FIS 없음.
+S1-P1: world4, rank batch2/global8 후보, 같은 초기 구성, 이후 기존 위험·가격·경제성/CP 조율, FIS 없음.
+S2-00: world2, rank batch4/global8,1OD1Spot,P0,무장애.
+S2-01: world2, 같은 조건,P0,Spot1대 FIS1회.
+S2-10: world2, 같은 초기/실제 공동노출,P1,무장애.
+S2-11: world2, 같은 초기/실제 공동노출,P1,Spot1대 FIS1회.
+Run matrix 파일: run_matrix_v2.csv. 모든 goal은 미확정이며 빈값이다. 최종 비교쌍/반복 수 승인 전에는 실제 run 개수를 부풀리지 않는다.
+ResNet50/CIFAR10은 S2 교차검증 우선(world2,batch32/global64). S1 추가는 world4,batch16/global64 후보이며 quota·수용·시간 확인 뒤 결정한다. 우선 paired 조건은 가능하면3회라는 명세 목표를 기록하되3회 완료를 보장하거나 일괄 승인으로 해석하지 않는다.
+참고선은 필요한 경우 동일 Rank/설정으로 별도 실행한다. S1의 4-Rank 비교에 구 2OD/2-Rank 수치를 baseline으로 넣지 않는다.
+
+금지한 계산:
+- S1 4-Rank와 S2 2-Rank의 GPU 비용/시간을 직접 합산·차감해 정책 우위를 만들지 않는다.
+- S1 전환비용+S2 장애부담으로 선점 손익분기 확률 p*를 계산하지 않는다.
+- 두 시나리오를 하나의 동일규모2×2 factorial이라고 표기하지 않는다.
+- 같은 global batch라도 서로 다른 world size의 학습 궤적·수치 연산·dropout RNG 등이 같다고 단정하지 않는다.
+허용 비교는 각 시나리오 내부 같은 모델/Rank/GPU/목표/설정의 pair 및 S2 정상 대비 fault penalty다. 통합 구조라는 사실만 함께 해석한다.
+
+3. 기존 증거 재사용 및 새 검증 구분
+
+기존 상세 출처:
+/home/ubuntu/graduate/Evaluation/IEEE_Access_Evaluation_Review_20261118.txt
+/home/ubuntu/graduate/Evaluation/evaluation_readiness_20261118.txt
+H=/home/ubuntu/HybridSpotVM_ManagementSystem
+H/docs/system-hardening-20261118.md
+H/operations/system-hardening-20261118/
+H/experiments/ieee-access-final-20261117/reports/{data-evidence,evening-evidence,day18-evidence}/
+
+[동일 조건 재사용, 재실행 제외]
+- 공개 SkyPilot 원본 trace/672h train·168h held-out SARIMA forecast와 causal cutoff/hash. 새 위험모델/재학습/장기 AWS 수집은 하지 않는다.
+- Collector HTTPS fresh/stale/가격 freshness/TLS 수용과 기존 policy 함수 테스트. 4-Rank 새 입력 조합만 별도로 조사했다.
+- GPT2/WikiText103 및 ResNet50/CIFAR10 모델·데이터 manifest, preprocessing, deterministic sampler, seed42, 복원 계약. 재다운로드/전처리/이전과 같은 CPU 검사 반복은 하지 않았다.
+- 2-Rank 과거 GPT2 FIS/Restore 증거는 그 하드웨어/버전/UID의 기능 증거로 재사용한다. 새4-Rank 결과로 옮기지 않는다.
+- ResNet50의 G5 동일 Pod process C/R/최종 optimizer·parameter 및 RNG/step audit, G6 두 개의 one-GPU VM에서 두 rank DDP/durable CP는 기존 범위 내 재사용한다.
+
+[부분 검증, 확대해석 금지]
+- G6 최근 run fix-rn-g6-1811은 중단 전 공통 committed step 하한1024와 durable CP, 동일 Pod 감사까지 확인했다. 실제 FIS start 거절로 새 VM 복원을 수행하지 못했다.
+- FIS caller 권한 수정 뒤 wait-only/EC2 target 없음 실험의 create/start/get/stop 성공은 재사용한다. Spot action role의 실제 중단 및 GPU recovery 통과와 다르다.
+- 해당 최근 수용검사 EC2 terminated/exact EBS 부재/임시 리소스 정리 receipt는 그대로 재사용한다. 보존된 PVC/PV/NFS를 삭제하지 않는다.
+- 기존 2-Rank120초 CP와 비용 관측20/10초는 4-Rank 주기/비용의 검증값이 아니다. v2 4-Rank scan에서는 그 비용 가정을 사용하지 않았다.
+
+[새로 필요한 검증]
+S1:4개 VM/4개 GPU/4 Pod·rank0..3, batch2 GPT2(선택 시 ResNet batch16), NCCL/첫 유효 update,동일 durable round의4개 archive/UID/SHA/export,source fencing4개,new provider로의 full-group Restore,4개 optimizer audit/후속공통step 및 순차market교체/정상반환.
+S2:현재 권한·GPU에서 실제 Spot 단일ARN FIS/new-VM2rank 복원과50% fresh common step gate.
+공통:선택GPU공급/quota/clock/goal/f0/NFS저장량·계측 coverage와정리예산. 기존 증거로 모르는 항목을 성공 처리하지 않는다.
+
+4. 실제 정책의4-Rank 선택 범위와 위험 구간
+
+H/internal/policy/contract.go:DecideAt, economicFallback 및 management/paper_residency.go가 실제 선택 경로다. paper-eq6-7,alpha.8,horizon3600초,minOD1의 bootstrap은 per-shard survival exp(-lambda*1h)>=.8이면 targetWorkers-minOD 전체를Spot으로,미만이면0Spot으로 선택한다. Spot>=OD 가격 또는 fresh economics의 기대손실 조건은 all-OD fallback을 줄 수 있다.
+따라서 검토한 전체168개forecast×두GPU가격의4-Rank scan에서 실제 steady target set은 (OD,Spot)={(1,3),(4,0)}였다. 2OD2Spot/3OD1Spot을 초기 정책이 자동 선택한 근거는 없다. 실행 중 순차 교체의 중간 실제 구성 또는 residency 영향과 초기 정책 최적 비율 선택은 구분해야 한다. 네 가지 비율을 보여주려고 legacy-survival 등 다른 알고리즘으로 바꾸지 않는다.
+이것은 명세가 허용한 '실제 정책이 선택하는 구성만 사용' 범위다. 모든 비율 선택이 연구의 필수조건으로 바뀐다면 현재 구현과 충돌하므로 별도 설계 확인이 필요하다.
+
+원본 forecast:
+/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json
+SHA256 8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2
+원본 trace SHA256 568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562
+미국 us-east-2a V100 availability proxy이며 서울 실제 hazard가 아니다. population1은요청slot가정이지실행중VM의위험노출실측이아니다.
+
+S1 첫 인접 mixed→different 후보:
+hour14 lambda=.0009212361959754303/h ->1OD3Spot
+hour15 lambda=.3458397557619131/h ->4OD
+P0의 초기 구성은 이P1 최초결정1OD3Spot을 복제하고 fixedOnDemand=1로유지한다. P1은fixedOnDemand제거후기존정책적용. P0만다른초기상태로출발시키지않는다.
+1:1 clock이므로14에서시작하면전환까지3600초,새VM/전체그룹복원/유효진전까지추가시간이필요하다. 정확히1시간짜리goal로S1관찰이끝난다고가정하지않는다.
+선정해석:최초인접전환경계는14→15이고,전체최초low spell은5~14다. 전체spell시작을요구하는해석이면5→15의10시간이필요하다. 오늘은최소인접구간후보와이해석차이를보존하고replay anchor를최종동결하지않았다. 미래원본/성능결과를보고구간을바꾸지않는다.
+bootstrap미측정loss와현재가격조건의정책검사이므로실제경제성·full-group gate·residency·첫durable CP·실제4Rank배치통과는별도다.
+새증거:evidence/s1-four-rank-policy-scan.json(336행),s1-risk-selection.json.
+
+S2는v1의2-Rank offline 선정근거를재사용한다. hour5가첫공동Spot후보이고5~8은λ0이다. bootstrap상hour15전까지Spot유지하지만실제소유/구성은fault시점에검사한다. 첫저위험구간에서P0/P1모두CP600초일수있으므로CP이점이반드시나온다고주장하지않는다. 이를피하려고임의양수λ/더유리한시간을넣지않는다.
+
+현재replay코드는H/internal/collector/paper_sarima_replay.py:load_locked가start_hour0/first-held-out-hour만허용한다. v2용명시적offset/clockbinding의최소준비는여전히필요하다. 원본forecast를잘라hash를바꾸거나가속하지않는다.
+
+5.4-Rank실제지원여부:Controller/CRD와실행도구의구분
+
+[코드에서확인,실제GPU통과아님]
+- H/config/crd/noderequests.yaml:targetWorkers minimum1이며2한정아님. targetWorkers는immutable이므로기존2Rank NR을4로patch하지않고새namespace/NR UID를쓴다.
+- H/internal/management/group_checkpoint.go:readGroupCheckpoint는len(pods)==TargetWorkers를요구하고rank전체를확인한다.2개archive로4개그룹성공처리불가.
+- H/internal/management/group_producer.go:groupSourcePods는source snapshot수와rank범위를TargetWorkers로검사한다. newGroupRequest는worldSize=TargetWorkers와모든sourcePods/round pods를기록한다.
+- 같은파일groupCheckpointVolume:여러rank가단일shared PVC의/checkpoint를사용해야한다. per-rank독립PVC를shared라고간주하지않는다.기존checkpoint-claim주입과RWX/NFS를유지한다.
+- S=/home/ubuntu/Stateful-Migration-Operator-with-PV. S/config/crd/restorerequests.yaml은groupRestore.worldSize1..64/pods최대64허용. S/internal/management/restore.go:validateRuntimeStatus은expectedWorld=len(plan.Spec.Pods),worldSize/ready/PodUID를대조한다. schema가4를받는것이4GPU동작증명이아님.
+- S/internal/member/group.go:fenceGroup은g.SourcePods전체를순회하여현재PodUID와provider fence를검사한다.단순API삭제/이름일치로fence완료간주불가.
+- F=/home/ubuntu/My_FluidCR. F/fluidcr/group_restore.py와distributed.py는환경RANK/WORLD_SIZE와group identity를사용한다.실제4rankCUDA/NCCL/staging/collective복원은미검증.
+
+[실행/계측도구의실제2-Rank가정]
+- H/evaluation/run.py:render의WORLD_SIZE=2,info.world_size2,start replicas2.
+- H/evaluation/final_protocol.py:prepare의world_size2,기존E1/E2 arm/고정policy분기,rank0/1 CSV만생성.
+- H/evaluation/ieee_v2_observe.py:validate_run world_size!=2거절,log_events는rank(0,1)·raw.world_size2만허용.4Rank에서는rank2/3누락또는실행거절하므로그대로계측불가.
+- H/evaluation/ieee_v2.py:valid event/metric경로가rank0/1·world_size2를요구.
+- H/evaluation/e1_experiment.py:두Pod/checkpoint/worldSize2및두rankloop.이는기존기능증거수집기이며새S1실행기로전용금지.
+- H/evaluation/final_fis.py:world2,old E2-B,live fixedOnDemand1가정.4Rank용으로넓힐이유가없으며S1은FIS금지. S2-P1의고정값없는정책을지원할안전한새protocolbinding만필요.
+- H/evaluation/run.py:render에required hostname anti-affinity와GPUrequest/limit1은이미있다.그러나WORLD_SIZE/replicas만4로바꾸고관측/restore/goal/cleanup을그대로두면불충분하다.
+
+최소수정제안(이번에는핵심Controller/RIC/알고리즘수정안함):
+1)manifest에서scenario world를읽어renderer/NR target/replicas/WORLD_SIZE/rank0..N-1·batch·claim·required anti-affinity를일관되게전달. S1공통초기결정hash를P0에복제하고P1활성시계와연결.
+2)관측기/완료·commonstep·audit/CPcoverage/metric를range(world)로일반화하되새protocol허용목록·UID·namespace·실제노드·imageID검증유지.
+3)S1FIS금지·S2fault허용을분리하고generic world값만바꿔FIS를실행할수없게fail-closed검사.
+4)고정CP f0와가변P1bounds,실제intervalSource·round및rank pause합집합계측연결.2Rank비용을4Rankcost로가짜주입하지않음.
+5)정상goal/failure후명시적runner반환과ownedNP/provider actual termination·EBS확인을모든rank/교체세대에적용.
+오늘은명세지시대로필요수정범위를제안하고새4Rankoffline검사도구/테스트만보완했다. 위orchestrator/observer의실행코드를4Rank지원완료로바꾸거나실행하지않았다.
+
+6. VM중첩/Quota/비용/저장소
+
+full-group경로에서H/internal/management/capacity.go:checkCapacityLifecycle은planned-partial=disabled일때미리모든replacement를만드는partial-capacity준비loop를건너뛰고첫mismatch를선택한다. H/internal/management/group_producer.go:ensureGroupReplacement는그old NP의replacement1개를생성하고다른source node mapping을유지한다. group-operation/quiescence/UID gate와old return을통과해야다음단계로갈수있다.
+따라서직렬동작이정상수렴한다는조건에서S1steady4대/교체중예상최대5대,총20vCPU다.이는계정전체상한이나4Rank실측최대가아니다.다중operation경합·소유밖추가생성등을live검사하고예상상한을초과하면원인을보고한다.
+1OD3Spot→4OD에는최대3개의Spot→OD개별VM전환이필요하다.각전환이4Rank전체복원을요구할수있으므로'한번의Restore로3대동시교체완료'라고가정하지않는다. 중간2OD2Spot/3OD1Spot이보여도정책의최적steady target이라고부르지않는다. 순차operation의fence/UID/CP갱신/residency/정리후다음전환수렴이핵심새gate다.
+S2는steady2/일반단일replacement overlap3대예상. 두시나리오를동시에돌린다고가정하지않는다.
+
+vCPU시장별요구량:
+S1initial OD4/Spot12,final OD16,직렬overlap예상총20.기존Spot을아직반환하기전OD4대+oldSpot1대가될수있음.타사용량/대기Spot요청을합산해야함.
+S2initial OD4/Spot4,ODreplacement overlap OD8/Spot4예상총12.
+직전14:05KST의readonly quota조회에서Spot L-3819A6DF/OD L-DB2E81BA모두AccessDeniedException.같은계정/권한의거절을반복조회하지않고재사용했다.사용자언급32가G/VT Spot vCPU의실제서울계정값인지미확인이다. Spot32가GPU32대이거나OD16을허용한다는뜻아님.계정quota와가용Spot공급은별도다.
+
+GPU/가격:14:05KST evidence/environment-readonly.json를재사용. G5/G6둘다AZ offering,4vCPU/GPU1/x86_64. AMI ami-035e3088f6b7821fb available.이는4GPU동시Spot공급보장아님.
+당시G6 OD .9896/Spot .4712 USD/h. S1 1OD3Spot단순동시단가2.4032/h,4OD3.9584/h.마지막OD4+oldSpot1 overlap단가4.4296/h예시. G5 OD1.237/Spot.6287로S1초기3.1231/h,4OD4.948/h.실제Run기간/overlap에따라적분하며이예시는확정견적/송장/예산승인이아님.
+S2당시G6 1OD1Spot1.4608/h,2OD참고선1.9792/h.규모가달라S1값과정책이득비교에쓰지않는다.
+정식Run가격은새로조회·시점별보존하고EBS/NFS/VPN/network/FIS/관리노드제외분을명시한다.
+
+현재인프라:
+새readonly상태조회에서도AWS관리노드10.50.1.80와NFS10.50.1.98가stopped. StateTransitionReason User initiated(2026-11-18 03:25:49 GMT=12:25:49KST).누가/어느자동화가멈췄는지는미확인.재가동하지않았다.
+따라서현재Karmada aws1접근성/MemberPod·GPU/actualimageID/NFS여유공간·자산실제읽기는통과상태로표시불가.직전aws1ClusterNotReachable/API timeout/NFS SSH timeout과일치한다. MGMT/ONPRE통과기록은기존시점조건만재사용.
+NFS는기존sharedPVC/결과/CP를유지한다. batch가작아져도parameter/optimizer state가줄지않으므로4Rank총archive크기가2Rank와같다고가정불가.현재공간은미확인.재가동후4rank actualround bytes·retention·예상round/3회전환·반복수·여유분으로필요량산정.이전약417GiB free를새실험충분공간으로확정하지않는다.
+
+7. 모델/batch/goal/Checkpoint준비
+
+현재trainer image:
+docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b
+모델·데이터/이미지기존manifest는동일자산으로재사용.원시assethash/경로/revision은manifest.model_assets에기록.
+GPT2/WikiText103처리manifest42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988,seq512,seed42,AdamW lr5e-5/wd.0005.4Rank batch2/global8후보.
+ResNet50/CIFAR10manifest7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1,seed42,SGDlr.1/momentum.9/wd.0005,CIFARstem/weightsNone.4Rank batch16/global64후보.
+새CPU검사: evaluation/test_integrated_v2_contract.py의4tests통과.실제parse_config의world4/rank0..3/batch설정,동일globalbatch로2/4partition의global샘플순서일치/중복없음,epoch경계resume순서와invalid rank거절을확인. Torch/CUDA/NCCL학습이나optimizer복원을실행한검사가아님. rank별batch지원가능성의코드수준근거이지GPU수용완료가아님.
+목표step은각scenario/model별null.기존2rankG5 sizing을4rank/새batch/G6에자동전용안함. 4Rank자체무장애iteration pilot과S1최소1h전환+복원관측여유로정식goal을선정하고P0/P1동일값으로동결. S1/S2간동일학습량을나란히제시할경우명세대로common목표량도검토하되그것으로직접비용비교를허용하지않음.
+f0:선정lowλ에서ready runtimebootstrap은600초후보.기존안전120초는2rank수용값이지4rank안전성/최적성증거아님. S1 f0와S2 f0를각각사전고정하고4rank CP수용결과를확인. P1min=max강제금지,async/Iteration직접식은GPU미검증이라활성화하지않음.목표/f0/GPU를정식결과를본후변경하지않음.
+
+8. 최소추가수용검사와승인경계
+
+무료/읽기전용/오프라인으로완료:
+문서·기존receipt대조,4rank native정책scan336행,새4rankbatch/sampler4tests,2rank가정sourceaudit,중지상태확인,Run matrix/manifest/보고서. 동일C/R/TLS/mock262tests를무의미하게다시돌리지않음.
+
+S1최소GPU수용안(미실행):
+1)기반접속/NFS/선택GPU/OD·Spotquota와실제공급확인후4개의한GPU VM·distincthostname배치.새namespace/UID,전Rank startup/currentimageID/첫update를관측.
+2)검증된동일GPT2자산/batch2로4rank동일durable round CP,4개archive/currentUID/hash/export,첫공통step진전확인.
+3)기존full-group경로로한worker market교체를유발하는검증입력에따른결정→replacementGPU→4source fence→새Pod4개/audit/optimizerupdate→oldNP/EC2반환확인. FIS는S1에서실행하지않음.
+4)정식전환조건을수용하려면1OD3Spot→4OD의순차3replacement까지각operation/새checkpoint·sourceUID/cleanup과최종실제4OD수렴을확인. 1회만통과하면4rank한번복원수용으로분류하고세번전체수렴미검증을남김.
+5)goal·시간제한/상한동결후수용검사를정식S1결과로자동재사용하지않음. 실패시2Rank축소/partial혼합/강제finalizer제거금지,원인보고.
+기존2rank미검증FIS수용과4rank수용은별도run조건으로기록.성공항목을합쳐하나의4rank FIS증거처럼쓰지않음.
+
+S2최소GPU수용안(미실행):
+실제1OD1Spot/currentUID단일Spot ARN/PT2M,신선한양rank공통50%step과기존durableCP gate,실제중단·새provider·sourcefencing·Verified2rankRestore·optimizerstate/update·highwater초과·goal·cleanup을검증. 기존wait-onlypermissionprobe반복은제외.
+S2는CPgate를위해다음정기round까지몰래기다렸다가같은faultphase라주장하지않음.장애시공동Spot노출이사라지면부적격기록하고다른VM중단금지.
+
+승인필요:
+- 중지된Member/NFS/필요VPN인프라재가동과유지비용.
+- 선택GPU/S1steady4·예상overlap5/S2steady2·overlap3의명시적대수·동시성·수용/정식run수·예산·절대deadline/cleanupreserve.이전G6 1시간승인은12:22:59KST에끝났고4Rank유료권한으로확대불가.
+- S2단일currentSpot FIS와필요한경우scope가정확한IAMdiff.오늘IAM변경하지않음.
+- quota32의정확한계정/서울G/VTSpot vCPU증거및OD여유.단순API권한거절을해결하려고광역권한/증액요청을임의만들지않음.
+현재보고서완료를위해승인을요청할필요는없다.남은설정/스크립트범위를구체화한뒤유료작업을리뷰가능한수치로제시한다.
+
+9. v2일정과막힌경우처리
+
+11/18:현재완료.두v2명세반영/기존근거재사용/4rank정책·batch offline/계측제약·quota/중지상태/본TXT·manifest·Run matrix.
+11/19:허용된기반재가동후API/WG/Member/NFS/asset/clock/actualimage확인.최소renderer/observer/metric새 protocol·world지원준비(예상0.5~1일,일정추정).4rank실행도구가미완이면GPU생성하지않음.
+11/19~20:승인된S1 4rank새batch/DDP/CP/교체·fullgrouprestore/순차수렴과S2 실제FIS/2ranknewVM의누락gate수용.수용검사의길이는실제공급/세번전환에따라달라지며1시간완료를보장안함.선택GPU·price·goal/f0/forecast/clock/code/image동결.
+11/23~25:수용된순서대로S1두셀/S2네셀.실패/공급취소포함시도별raw증거·비용·cleanup보존.
+11/26~27:핵심누락/대응pair반복우선,11/27중간보고.새4rank복원/공급이막히면증거를보고하고사용자설계승인없이규모를축소하지않음.
+11/30~12/01:우선paired비교반복과ResNet2rank S2교차검증.4rank ResNet은별도gate·여유범위에서결정.
+12/02:rawhashlock/누락·실패·미완/동일Rank내부표·그림/비용·시간·학습진전·한계보고.반복부족이면CI/유의성·우수성을만들지않음. S1/S2직접합산그림이나p*계산은생성하지않음.
+11/20까지필수수용과동결이안되면이일정은조건미충족이다.실제가능성/축소대안은근거와함께보고하며독자적인실험재설계를하지않는다.
+
+10. 오늘변경파일/검증범위
+
+H/evaluation/integrated_probe/main.go:--workers 2또는4를받아기존DecideAt호출.2rank기존비용20/10가정은4rank출력에서null처리.위험예측/정책알고리즘변경없음.
+H/evaluation/test_integrated_v2_contract.py:새4rank준비용표준라이브러리CPU검사4개.테스트stderr의invalid distributed rank메시지는거절검사이며전체결과OK.
+H/experiments/ACTIVE_PROTOCOL.json:v2 active,S1=4/S2=2,6corecells,formaldispatchfalse,시나리오간비용시간결합금지.
+H/experiments/integrated-evaluation-v2-20261118/:원본TXT사본,본TXT,manifest,Run matrix,sourcehashaudit,4rankscan/선정근거,CPUtest/infrareceipt,이전registry와무효scope표시.
+Controller/CRD/RIC/Karmada/학습이미지변경없음.유료VM/FIS/IAM/배포/기존자원삭제없음.원본PPT수정없음.
+기존코드의설계제약은숨기지않고최소orchestration수정제안으로남겼다.이보고서만으로4Rank실행도구와GPU복원gate가완료됐다고표시하지않는다.
+
+사용자전달파일:
+/home/ubuntu/graduate/Evaluation/evaluation_readiness_v2_20261118.txt
+/home/ubuntu/graduate/Evaluation/frozen_protocol_manifest_v2.json
+버전관리사본:
+/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v2-20261118/evaluation_readiness_v2_20261118.txt
+/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v2-20261118/frozen_protocol_manifest_v2.json
+
+끝.미확인항목/가정/권장검증과실측결과를구분한다.

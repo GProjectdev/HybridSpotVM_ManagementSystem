@@ -1,0 +1,23 @@
+{
+  "returncode": 0,
+  "instances": [
+    {
+      "id": "i-039670f4f1be290f3",
+      "state": "stopped",
+      "reason": "User initiated (2026-11-18 03:25:49 GMT)",
+      "private": "10.50.1.80",
+      "public": "54.116.102.215",
+      "type": "m6i.xlarge",
+      "az": "ap-northeast-2c"
+    },
+    {
+      "id": "i-0c7644cd46940fb2d",
+      "state": "stopped",
+      "reason": "User initiated (2026-11-18 03:25:49 GMT)",
+      "private": "10.50.1.98",
+      "public": "13.125.179.70",
+      "type": "m7i.2xlarge",
+      "az": "ap-northeast-2c"
+    }
+  ]
+}

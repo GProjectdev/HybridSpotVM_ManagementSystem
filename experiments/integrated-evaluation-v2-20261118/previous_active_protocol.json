@@ -1,0 +1,30 @@
+{
+  "protocol": "HybridSpotDDP-integrated-S1-S2-20261118",
+  "directory": "experiments/integrated-evaluation-20261118",
+  "source": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_통합정량평가_확정실험명세_20261118.txt",
+  "execution_prompt": "/home/ubuntu/graduate/Evaluation/Codex_통합정량평가_실행프롬프트_20261118.txt",
+  "status": "DESIGN_RECEIVED_PREPARATION_BLOCKED",
+  "date_kst": "2026-11-18",
+  "formal_dispatch_authorized": false,
+  "replacement_plan_status": "RECEIVED",
+  "models": [
+    "gpt2-small",
+    "resnet50"
+  ],
+  "basic_cells": [
+    "S1-P0",
+    "S1-P1",
+    "S2-00",
+    "S2-01",
+    "S2-10",
+    "S2-11"
+  ],
+  "basic_cell_count": 6,
+  "reference_cells": [
+    "POD-2OD"
+  ],
+  "previous_protocol_preserved": "experiments/integrated-evaluation-20261118/previous_active_protocol.json",
+  "readiness_report": "experiments/integrated-evaluation-20261118/evaluation_readiness_20261118.txt",
+  "frozen_manifest": "experiments/integrated-evaluation-20261118/frozen_protocol_manifest.json",
+  "note": "registry only, not cluster admission control"
+}

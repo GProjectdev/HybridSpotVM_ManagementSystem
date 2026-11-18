@@ -1,0 +1,239 @@
+{
+  "status": "OFFLINE_BOOTSTRAP_CANDIDATE_NOT_LIVE_ACCEPTANCE",
+  "world_size": 4,
+  "method": "unchanged internal/policy/contract.go:DecideAt, paper-eq6-7",
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "forecast_path": "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json",
+  "price_evidence": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-20261118/evidence/environment-readonly.json",
+  "price_evidence_sha256": "39c534f75597322d4b001ff40eee6838702fe51af5fc29b72ac7166bc0eea949",
+  "clock_seconds_per_hour": 3600,
+  "selection_interpretation": "first chronological adjacent mixed-to-different-composition pair; earliest whole low spell starts hour5, transition15; final replay anchor pending",
+  "products": {
+    "g5.xlarge": {
+      "selected_targets": [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          0
+        ]
+      ],
+      "candidate_rows": [
+        {
+          "hour": 14,
+          "instance_type": "g5.xlarge",
+          "lambda_per_hour": 0.0009212361959754303,
+          "p0_f0_candidate_600": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.0009212361959754303,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "fixed_worker_composition",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "StaticCompositionControl",
+            "OnDemandHoldUntil": ""
+          },
+          "p1": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.0009212361959754303,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "paper_effective_spot_throughput",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "ThroughputOnlyBootstrap",
+            "OnDemandHoldUntil": ""
+          },
+          "p1_counterfactual_fresh_historical_cost_20_10": null
+        },
+        {
+          "hour": 15,
+          "instance_type": "g5.xlarge",
+          "lambda_per_hour": 0.3458397557619131,
+          "p0_f0_candidate_600": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.3458397557619131,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "fixed_worker_composition",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "StaticCompositionControl",
+            "OnDemandHoldUntil": ""
+          },
+          "p1": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 4,
+            "SpotWorkers": 0,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.3458397557619131,
+            "CheckpointIntervalSeconds": 60,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "paper_effective_spot_throughput",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "ThroughputOnlyBootstrap",
+            "OnDemandHoldUntil": ""
+          },
+          "p1_counterfactual_fresh_historical_cost_20_10": null
+        }
+      ],
+      "common_initial": {
+        "on_demand": 1,
+        "spot": 3
+      },
+      "P0_fixedOnDemand": 1,
+      "initial_is_clone_of_P1_decision": true,
+      "fresh_measured_four_rank_cost": "unavailable; no 2-rank cost imputed"
+    },
+    "g6.xlarge": {
+      "selected_targets": [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          0
+        ]
+      ],
+      "candidate_rows": [
+        {
+          "hour": 14,
+          "instance_type": "g6.xlarge",
+          "lambda_per_hour": 0.0009212361959754303,
+          "p0_f0_candidate_600": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.0009212361959754303,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "fixed_worker_composition",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "StaticCompositionControl",
+            "OnDemandHoldUntil": ""
+          },
+          "p1": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.0009212361959754303,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "paper_effective_spot_throughput",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "ThroughputOnlyBootstrap",
+            "OnDemandHoldUntil": ""
+          },
+          "p1_counterfactual_fresh_historical_cost_20_10": null
+        },
+        {
+          "hour": 15,
+          "instance_type": "g6.xlarge",
+          "lambda_per_hour": 0.3458397557619131,
+          "p0_f0_candidate_600": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 1,
+            "SpotWorkers": 3,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.3458397557619131,
+            "CheckpointIntervalSeconds": 600,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "fixed_worker_composition",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "StaticCompositionControl",
+            "OnDemandHoldUntil": ""
+          },
+          "p1": {
+            "DecisionStage": "Bootstrap",
+            "IntervalSource": "risk-band-bootstrap",
+            "PriceEvaluated": true,
+            "EconomicsSource": "",
+            "DesiredWorkers": 4,
+            "OnDemandWorkers": 4,
+            "SpotWorkers": 0,
+            "Alpha": 0.8,
+            "ForecastHorizonSeconds": 3600,
+            "LambdaPerHour": 0.3458397557619131,
+            "CheckpointIntervalSeconds": 60,
+            "CostEvaluated": false,
+            "IntervalCostEvaluated": false,
+            "ProvisioningBlocked": false,
+            "Reason": "paper_effective_spot_throughput",
+            "VMPolicySource": "desai-section-4.3-equations-6-7-fixed-world",
+            "VMPolicyStage": "ThroughputOnlyBootstrap",
+            "OnDemandHoldUntil": ""
+          },
+          "p1_counterfactual_fresh_historical_cost_20_10": null
+        }
+      ],
+      "common_initial": {
+        "on_demand": 1,
+        "spot": 3
+      },
+      "P0_fixedOnDemand": 1,
+      "initial_is_clone_of_P1_decision": true,
+      "fresh_measured_four_rank_cost": "unavailable; no 2-rank cost imputed"
+    }
+  }
+}

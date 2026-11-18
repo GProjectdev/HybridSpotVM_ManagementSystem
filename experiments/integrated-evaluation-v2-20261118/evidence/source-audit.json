@@ -1,0 +1,56 @@
+{
+  "observed_at_utc": "2026-11-18T05:19:15.709540+00:00",
+  "files": {
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/run.py": {
+      "sha256": "fdff0ac7070e57199787f5941020179f1491fd1e79b8d985859ab3d13c402b32"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_protocol.py": {
+      "sha256": "37579851b9b0789287c60fce4d7949a1e8e17f467701b2fe356398f67542a035"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/final_fis.py": {
+      "sha256": "64e5522c4c9a1486b42821a25fa0ca1d309b2c332dc9642104c31222190e8641"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/ieee_v2.py": {
+      "sha256": "6250a2e1899c5f0115eaf18c893ad9e0f5c8af3cf67bfd5cfcba62d38c827501"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/ieee_v2_observe.py": {
+      "sha256": "4bc63e2b699f6a178444d4e01cf845de649c5ff21fd07d70d73a1d6abc80de6b"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/e1_experiment.py": {
+      "sha256": "8e670cdca9e682510abb639993e6a9d8f8f5091abfbe6ebe19c1ccaebb060646"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/evaluation/resnet18/train_resnet18.py": {
+      "sha256": "fe19ac8afcd35d44bcf4d8f92abaf34a52b4820568bdd4c0d72c04b4406c8a77"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/management/group_checkpoint.go": {
+      "sha256": "403c0817bce95d0d501eac2771a93c2d1d537148c8e078e11de74f991449ba75"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/management/group_producer.go": {
+      "sha256": "5e9b8ae77babc4d21598b7725a3f9fc304b1f9cf913529c4dc3089def8ee8916"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/management/group_operation_controller.go": {
+      "sha256": "60c18299730ecb4354c21bafe5085412cc5740a24cb522b55ca474abbd9ee02d"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/management/capacity.go": {
+      "sha256": "fea6b89c88d85b3234e83f56d36f1f4c2efae39bfcb562e23b68d4d3a40dad93"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/policy/contract.go": {
+      "sha256": "94dc6a52634ae80947e5944e05a120c57eedad73c06df8e2b510fe1a33bedcad"
+    },
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/config/crd/noderequests.yaml": {
+      "sha256": "bfdc88624421cb0bc1df6ed167889b5f30d792be4b53ad414952d1f618f8d3e7"
+    },
+    "/home/ubuntu/Stateful-Migration-Operator-with-PV/config/crd/restorerequests.yaml": {
+      "sha256": "8723332549241bb9c64bee8b0dc70189c21cc60cc02e339614dbfe5c6754570a"
+    },
+    "/home/ubuntu/Stateful-Migration-Operator-with-PV/internal/management/restore.go": {
+      "sha256": "b171af70148934f0abf57f4efd164d72606c892a9aef529b5d66fd78f9adad72"
+    },
+    "/home/ubuntu/Stateful-Migration-Operator-with-PV/internal/member/group.go": {
+      "sha256": "629b0a2d6a8f9f5ae215ddd8cfb7cb4188cfe4813d131e4381e63e698a81b8c9"
+    },
+    "/home/ubuntu/My_FluidCR/fluidcr/group_restore.py": {
+      "sha256": "0d22ab37c6ed05fcf44d3b5cc5a7b37288de2f57f4ab725bca338dbb3c7917d8"
+    }
+  }
+}

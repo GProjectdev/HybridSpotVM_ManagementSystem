@@ -1,0 +1,14 @@
+...usage: python3 -m unittest [-h] [--model {resnet18,resnet50,gpt2}]
+                           [--model-root MODEL_ROOT]
+                           [--sequence-length SEQUENCE_LENGTH]
+                           [--run-id RUN_ID] [--goal-steps GOAL_STEPS]
+                           [--batch-size BATCH_SIZE] [--seed SEED]
+                           [--data-root DATA_ROOT] [--device {cuda,cpu}]
+                           [--learning-rate LEARNING_RATE]
+                           [--momentum MOMENTUM] [--weight-decay WEIGHT_DECAY]
+python3 -m unittest: error: invalid distributed rank/world size
+.
+----------------------------------------------------------------------
+Ran 4 tests in 2.004s
+
+OK

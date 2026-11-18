@@ -1,0 +1,14 @@
+{
+  "Codex_통합정량평가_수정실행프롬프트_v2_20261118.txt": "37d9932104c4db9c64b4436cc91c59102178f00061752d9e5e2baa991328d6bc",
+  "HybridSpotDDP_통합정량평가_수정실험명세_v2_20261118.txt": "7dc1e357d7001f4751d1a89b3a3a7beacb11a3dc2a8b1a9181cbcdc97fcc2260",
+  "evaluation_readiness_v2_20261118.txt": "8ec01804f0798ad82098d0a628cbe90a3c87aa692e66eaff369f7187aa9edc69",
+  "evidence/four-rank-data-contract-tests.txt": "2665478d13b6663d772758488f62eb804ab3433c3370648932c819b907502620",
+  "evidence/infra-states-readonly.json": "5c1a7951c853c1edda249941ab71b5a5855bd53b5b8f1b828b9f040f14529359",
+  "evidence/s1-four-rank-policy-scan.json": "64506d1d9a6ab710ae783dc09e7f6d604dbfbcb609c8b5c2c6e1dc4ebc10bb22",
+  "evidence/s1-risk-selection.json": "57d9cf2b04befbeae063c2d99b50888b12f7030b7f1f5b163bb2dcef7a1dc618",
+  "evidence/source-audit.json": "bd54354fdfd6f9f53c79b1535874a7114850089b2bde340cb14dc66bd0ff487a",
+  "frozen_protocol_manifest_v2.json": "099667371ad4dd773cd25f084f15c5ea78d5f7ff919a6cb2a8c79294dd412683",
+  "previous_active_protocol.json": "1c4050a5e12218e6e0310aeb7891c0278b46cb1e12b9c074ac0d7a412740971e",
+  "run_matrix_v2.csv": "1bc551162c802729d5c1a5861f201e25b6e6e4ca93731250bfda5a7987ea0dfc",
+  "superseded_artifacts.json": "cb2e0e259c7f58ed7f4cc17914cf6fb3a1dfc260a9ad05f297bdc5775b547356"
+}

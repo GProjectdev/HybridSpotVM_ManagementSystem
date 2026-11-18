@@ -14,7 +14,11 @@ import (
 func main() {
 	forecast := flag.String("forecasts", "", "existing frozen forecast JSON")
 	prices := flag.String("environment", "", "read-only environment receipt with execution prices")
+	workers := flag.Int64("workers", 2, "scenario world size: S1 v2=4, S2=2")
 	flag.Parse()
+	if *workers != 2 && *workers != 4 {
+		panic("reviewed scenario world must be 2 or 4")
+	}
 	var data struct {
 		Forecasts []struct {
 			Hour   int     `json:"evaluation_hour"`
@@ -38,6 +42,7 @@ func main() {
 	}
 	now := time.Date(2026, 11, 18, 0, 0, 0, 0, time.UTC)
 	out := map[string]interface{}{"kind": "OFFLINE_EXISTING_DECIDEAT_NOT_LIVE_REPLACEMENT", "economics": "enabled; no fabricated loss observation; throughput bootstrap only", "checkpoint_bounds_proposal_seconds": []int{60, 600}, "rows": []interface{}{}}
+	out["world_size"] = *workers
 	rows := []interface{}{}
 	for _, typ := range []string{"g5.xlarge", "g6.xlarge"} {
 		var price struct {
@@ -51,15 +56,18 @@ func main() {
 			if f.Hour != i {
 				panic("ordered contiguous hours required")
 			}
-			in := p.PolicyInput{VMPolicyMethod: "paper-eq6-7", TargetWorkers: 2, MinOnDemand: 1, Alpha: .8, ForecastSeconds: 3600, Economics: p.EconomicsPolicy{Enabled: true, LossCostPerEviction: -1, OnDemandDurationSeconds: 3600}, Checkpoint: p.CheckpointPolicy{MinIntervalSeconds: 60, MaxIntervalSeconds: 600, Resume: true}}
+			in := p.PolicyInput{VMPolicyMethod: "paper-eq6-7", TargetWorkers: *workers, MinOnDemand: 1, Alpha: .8, ForecastSeconds: 3600, Economics: p.EconomicsPolicy{Enabled: true, LossCostPerEviction: -1, OnDemandDurationSeconds: 3600}, Checkpoint: p.CheckpointPolicy{MinIntervalSeconds: 60, MaxIntervalSeconds: 600, Resume: true}}
 			risk := p.RiskSnapshot{Ready: true, LambdaPerHour: f.Lambda, SpotPricePerHour: price.Spot, OnDemandPricePerHour: price.OD}
-			runtime := p.RuntimeSnapshot{WorldSize: 2, ReadyRanks: 2}
+			runtime := p.RuntimeSnapshot{WorldSize: *workers, ReadyRanks: *workers}
 			adaptive := p.DecideAt(in, runtime, risk, now)
 			// Historical 20s/10s acceptance costs, assumed fresh for a counterfactual.
 			// This is not a new measurement or the current runtime's cost profile.
 			measuredInput := in
 			measuredInput.Checkpoint.MeasuredCosts = p.MeasuredCosts{CheckpointSeconds: 20, CopySeconds: 10, ObservedAt: now.Format(time.RFC3339)}
-			measured := p.DecideAt(measuredInput, runtime, risk, now)
+			var measured interface{}
+			if *workers == 2 {
+				measured = p.DecideAt(measuredInput, runtime, risk, now)
+			}
 			one := int64(1)
 			in.FixedOnDemand = &one
 			// P0 must also fix checkpoint bounds; fixedOnDemand alone does not.

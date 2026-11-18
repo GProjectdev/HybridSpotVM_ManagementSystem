@@ -1,0 +1,10 @@
+{
+  "status": "SUPERSEDED_AS_ACTIVE_CONFIGURATION",
+  "replacement": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v2-20261118/frozen_protocol_manifest_v2.json",
+  "reason": "S1 now4rank, initial mix decided by existing policy; S2 stays2rank; do not directly combine costs/time",
+  "historical_artifacts_unchanged": [
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-20261118/frozen_protocol_manifest.json",
+    "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-20261118/evaluation_readiness_20261118.txt"
+  ],
+  "legacy_scripts": "historical two-rank tools, no v2 four-rank acceptance; not approved dispatch paths"
+}
