@@ -105,10 +105,12 @@ class FinalFISTests(unittest.TestCase):
         self.assertEqual(self.live.cloud.command.call_count,1)
 
     def test_denied_template_creation_retains_actionable_sanitized_code_and_intent(self):
-        self.plan();self.live.cloud.command.side_effect=f.AWSLookupError('AccessDeniedException')
+        self.plan();self.live.cloud.command.side_effect=f.AWSLookupError('AccessDeniedException','fis:CreateExperimentTemplate','arn:aws:fis:ap-northeast-2:935317843233:experiment-template/*')
         with self.assertRaisesRegex(RuntimeError,'AccessDeniedException'):self.start()
         intent=json.loads((self.d/'fis-start-intent.json').read_text())
         self.assertEqual(intent['error_code'],'AccessDeniedException');self.assertEqual(intent['state'],'template_create_failed_or_unknown')
+        self.assertEqual(intent['denied_action'],'fis:CreateExperimentTemplate')
+        self.assertTrue(intent['denied_resource'].endswith(':experiment-template/*'))
         with self.assertRaisesRegex(ValueError,'existing intent'):self.start()
         self.assertEqual(self.live.cloud.command.call_count,1)
     def test_authorization_tag_is_explicit_and_never_an_implicit_account_default(self):

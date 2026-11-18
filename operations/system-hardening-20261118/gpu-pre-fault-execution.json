@@ -1,0 +1,163 @@
+{
+  "run_id": "fix-rn-g6-1811",
+  "scope": "pre-fault GPU execution only; no new-VM restoration",
+  "instance_type": "g6.xlarge",
+  "gpus_per_instance": 1,
+  "world_size": 2,
+  "pods": [
+    {
+      "pod_name": "eval-fix-rn-g6-1811-0",
+      "pod_uid": "af8a06e1-b164-4a3f-8b0a-e022160c052c",
+      "node_name": "eval-fix-rn-g6-1811-worker-00",
+      "gpu_request": "1",
+      "gpu_limit": "1"
+    },
+    {
+      "pod_name": "eval-fix-rn-g6-1811-1",
+      "pod_uid": "ae799227-e682-4875-aaff-0a341d1c8f08",
+      "node_name": "eval-fix-rn-g6-1811-worker-01",
+      "gpu_request": "1",
+      "gpu_limit": "1"
+    }
+  ],
+  "pre_fault_committed_step_lower_bound": 1024,
+  "checkpoint_object_uid": "6874a208-9bb7-4775-b60d-3e467f9f3406",
+  "checkpoint_object_generation": 1,
+  "rank_audits": [
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.194Z",
+      "rank": 0,
+      "global_step": 1,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.546Z",
+      "rank": 0,
+      "global_step": 2,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.922Z",
+      "rank": 0,
+      "global_step": 3,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.200Z",
+      "rank": 1,
+      "global_step": 1,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.550Z",
+      "rank": 1,
+      "global_step": 2,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:35:58.924Z",
+      "rank": 1,
+      "global_step": 3,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "restore_audit",
+      "timestamp": "2026-11-18T02:36:53.144Z",
+      "rank": 0,
+      "global_step": 243,
+      "passed": true,
+      "checks": {
+        "model": true,
+        "optimizer": true,
+        "rng": true,
+        "step": true
+      }
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.148Z",
+      "rank": 0,
+      "global_step": 244,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.474Z",
+      "rank": 0,
+      "global_step": 245,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.798Z",
+      "rank": 0,
+      "global_step": 246,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "restore_audit",
+      "timestamp": "2026-11-18T02:36:53.186Z",
+      "rank": 1,
+      "global_step": 243,
+      "passed": true,
+      "checks": {
+        "model": true,
+        "optimizer": true,
+        "rng": true,
+        "step": true
+      }
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.152Z",
+      "rank": 1,
+      "global_step": 244,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.476Z",
+      "rank": 1,
+      "global_step": 245,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    },
+    {
+      "event": "update_audit",
+      "timestamp": "2026-11-18T02:36:54.800Z",
+      "rank": 1,
+      "global_step": 246,
+      "passed": true,
+      "gradients_finite": true,
+      "parameters_changed": true
+    }
+  ],
+  "new_vm_restore_verified": false
+}

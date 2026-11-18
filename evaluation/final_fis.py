@@ -142,7 +142,8 @@ def start(directory,run,live,confirm,now):
     try:
         created=live.cloud.command('fis','create-experiment-template','--cli-input-json',json.dumps(expected))
     except AWSLookupError as error:
-        intent.update(state='template_create_failed_or_unknown',error_code=error.code);save(directory/'fis-start-intent.json',intent)
+        intent.update(state='template_create_failed_or_unknown',error_code=error.code,
+                      denied_action=error.denied_action,denied_resource=error.denied_resource);save(directory/'fis-start-intent.json',intent)
         raise RuntimeError('FIS template creation failed: '+error.code+'; reconcile existing intent before any new Run') from None
     save(directory/'fis-created.json',created,exclusive=True)
     # Template creation can be slow: repeat current UID/provider/progress/deadline
@@ -157,7 +158,8 @@ def start(directory,run,live,confirm,now):
     try:
         result=live.cloud.command('fis','start-experiment','--experiment-template-id',intent['template_id'],'--client-token',token,'--tags',json.dumps(expected['tags']))
     except AWSLookupError as error:
-        intent.update(state='start_response_failed_or_unknown',error_code=error.code);save(directory/'fis-start-intent.json',intent)
+        intent.update(state='start_response_failed_or_unknown',error_code=error.code,
+                      denied_action=error.denied_action,denied_resource=error.denied_resource);save(directory/'fis-start-intent.json',intent)
         raise RuntimeError('FIS start response failed: '+error.code+'; do not retry') from None
     save(directory/'fis-started.json',result,exclusive=True)
     return result

@@ -1,0 +1,99 @@
+{
+  "observed_at": "2026-11-18T02:20:02.833412+00:00",
+  "simulations": [
+    {
+      "resource": "*",
+      "actions": [
+        "fis:CreateExperimentTemplate",
+        "fis:TagResource"
+      ],
+      "decisions": [
+        {
+          "action": "fis:CreateExperimentTemplate",
+          "decision": "allowed",
+          "missing_context": []
+        },
+        {
+          "action": "fis:TagResource",
+          "decision": "allowed",
+          "missing_context": []
+        }
+      ],
+      "unverified": false,
+      "error_code": null
+    },
+    {
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment-template/*",
+      "actions": [
+        "fis:GetExperimentTemplate",
+        "fis:DeleteExperimentTemplate",
+        "fis:StartExperiment"
+      ],
+      "decisions": [
+        {
+          "action": "fis:GetExperimentTemplate",
+          "decision": "allowed",
+          "missing_context": []
+        },
+        {
+          "action": "fis:DeleteExperimentTemplate",
+          "decision": "allowed",
+          "missing_context": []
+        },
+        {
+          "action": "fis:StartExperiment",
+          "decision": "allowed",
+          "missing_context": []
+        }
+      ],
+      "unverified": false,
+      "error_code": null
+    },
+    {
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment/*",
+      "actions": [
+        "fis:GetExperiment",
+        "fis:StopExperiment"
+      ],
+      "decisions": [
+        {
+          "action": "fis:GetExperiment",
+          "decision": "implicitDeny",
+          "missing_context": [
+            "ec2:ResourceTag/eks:eni:owner",
+            "aws:MultiFactorAuthPresent",
+            "iam:AWSServiceName",
+            "aws:RequestTag/Name"
+          ]
+        },
+        {
+          "action": "fis:StopExperiment",
+          "decision": "implicitDeny",
+          "missing_context": [
+            "ec2:ResourceTag/eks:eni:owner",
+            "aws:MultiFactorAuthPresent",
+            "iam:AWSServiceName",
+            "aws:RequestTag/Name"
+          ]
+        }
+      ],
+      "unverified": false,
+      "error_code": null
+    },
+    {
+      "resource": "arn:aws:iam::935317843233:role/HybridSpotFIS-20261117",
+      "actions": [
+        "iam:PassRole"
+      ],
+      "decisions": [
+        {
+          "action": "iam:PassRole",
+          "decision": "allowed",
+          "missing_context": []
+        }
+      ],
+      "unverified": false,
+      "error_code": null
+    }
+  ]
+}

@@ -31,9 +31,11 @@ def ownership(nodeprovisions, policy_uid, previous=None):
 
 
 class AWSLookupError(RuntimeError):
-    def __init__(self,code):
-        super().__init__('read-only AWS lookup failed')
+    def __init__(self,code,denied_action=None,denied_resource=None):
+        super().__init__('AWS API operation failed')
         self.code=code
+        self.denied_action=denied_action
+        self.denied_resource=denied_resource
 
 
 class AWSReader:
@@ -47,7 +49,10 @@ class AWSReader:
         p=self.runner(self.base+list(args)+['--output','json'],text=True,capture_output=True,timeout=30)
         if p.returncode:
             match=re.search(r'An error occurred \(([A-Za-z0-9_.-]{1,80})\)',p.stderr or '')
-            raise AWSLookupError(match.group(1) if match else 'unknown')
+            action=re.search(r'not authorized to perform:?\s+([A-Za-z0-9-]+:[A-Za-z0-9*]+)',p.stderr or '')
+            resource=re.search(r'on resource:?\s+(arn:aws(?:-cn|-us-gov)?:[A-Za-z0-9:/+_.=@*\-]{1,600})',p.stderr or '')
+            raise AWSLookupError(match.group(1) if match else 'unknown',
+                                 action.group(1) if action else None,resource.group(1) if resource else None)
         return json.loads(p.stdout)
 
     def observe(self, owned, observed_at):

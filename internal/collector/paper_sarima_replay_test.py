@@ -43,3 +43,15 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(replay.attach_prices({'source':{}},prices,now)['onDemandPricePerHour'],1.237)
         for change in [{'observedAt':(now-timedelta(seconds=601)).isoformat()},{'spotPricePerHour':float('nan')},{'availabilityZone':'us-east-2a'}]:
             with self.assertRaises(ValueError):replay.attach_prices({'source':{}},dict(prices,**change),now)
+
+    def test_g6_price_requires_explicit_execution_product_and_preserves_proxy(self):
+        now=datetime(2026,11,18,tzinfo=timezone.utc)
+        prices={'observedAt':now.isoformat(),'currency':'USD','availabilityZone':'ap-northeast-2c','instanceType':'g6.xlarge','spotPricePerHour':.47,'onDemandPricePerHour':.9896,'ondemandReceiptSHA256':'a'*64}
+        with self.assertRaises(ValueError):replay.attach_prices({'source':{}},prices,now)
+        source={'notMeasuredSeoulRisk':True,'traceSHA256':'b'*64,'inputKind':'historical-external-proxy-replay'}
+        result=replay.attach_prices({'source':dict(source)},prices,now,instance_type='g6.xlarge')
+        self.assertEqual(result['source']['priceInstanceType'],'g6.xlarge')
+        self.assertEqual(result['source']['priceAvailabilityZone'],'ap-northeast-2c')
+        for key,value in source.items():self.assertEqual(result['source'][key],value)
+        with self.assertRaises(ValueError):replay.attach_prices({'source':{}},prices,now,instance_type='g6.xlarge',availability_zone='us-east-2a')
+        with self.assertRaises(ValueError):replay.attach_prices({'source':{}},prices,now,instance_type=None)

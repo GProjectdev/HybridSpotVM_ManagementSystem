@@ -1,0 +1,31 @@
+{
+  "recorded_at": "2026-11-18T03:12:33.536109+00:00",
+  "next_evaluation_plan": "PENDING_USER_INPUT",
+  "status": "known_execution_permission_and_product_binding_issues_fixed; new-VM ResNet GPU restore remains unverified",
+  "live_prerequisite_checks": 26,
+  "no_fault_fis_api_probe": "start/get/stop succeeded; stopped; temporary template deleted; zero EC2 targets/actions",
+  "gpu_acceptance": "two one-GPU G6 workers, two ranks, durable checkpoint; FIS start denied before interruption; normal cleanup verified",
+  "gpu_compute_upper_estimate_usd": 0.6757988856773334,
+  "estimate_scope": "OD-rate launch to termination polling bound, excludes EBS/network/FIS/infrastructure; not invoice",
+  "no_forced_finalizers": true,
+  "data_pvc_pv_nfs_preserved": true,
+  "core_controller_or_crd_changes": false,
+  "new_image_publication_or_rollout": false,
+  "paid_window_not_extended": true,
+  "tests": {
+    "evaluation": {
+      "run": 262,
+      "passed": 260,
+      "skipped": 2
+    },
+    "preflight": {
+      "passed": 5
+    },
+    "risk_replay": {
+      "passed": 4
+    }
+  },
+  "actual_pod_gpu_requests_and_limits_verified": true,
+  "pre_fault_committed_step_lower_bound": 1024,
+  "final_resource_receipt": "final-resource-verification.json"
+}

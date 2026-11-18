@@ -1,0 +1,17 @@
+{
+  "kind": "NO_FAULT_FIS_WAIT_PERMISSION_CHECK",
+  "targets": [],
+  "no_ec2_actions": true,
+  "created_at": "2026-11-18T03:09:53.070559+00:00",
+  "template_id": "EXT3nyGLZXs944J4",
+  "experiment_id": "EXPaFj681ri3KCyW26",
+  "started": true,
+  "get_succeeded": true,
+  "first_state": "initiating",
+  "stop_succeeded": true,
+  "stop_response_state": "stopping",
+  "final_state": "stopped",
+  "permission_probe_passed": true,
+  "template_deleted": true,
+  "finished_at": "2026-11-18T03:10:12.891350+00:00"
+}

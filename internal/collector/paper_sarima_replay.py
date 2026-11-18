@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
 from pathlib import Path
+import re
 import ssl
 
 
@@ -72,17 +73,22 @@ def payload(data, manifest, start, now):
                        'notMeasuredSeoulRisk':True}}
 
 
-def attach_prices(result, prices, now):
+def attach_prices(result, prices, now, *, instance_type="g5.xlarge", availability_zone="ap-northeast-2c"):
+    if (not isinstance(instance_type,str) or not re.fullmatch(r'[a-z][a-z0-9]*\.[a-z0-9]+',instance_type)
+        or not isinstance(availability_zone,str) or not re.fullmatch(r'[a-z]{2}(?:-[a-z0-9]+)+-\d[a-z]',availability_zone)):
+        raise ValueError('explicit execution product required')
     at = instant(prices['observedAt'])
     if prices.get('currency') != 'USD' or not 0 <= (now-at).total_seconds() <= 600:
         raise ValueError('price observation stale/future or currency mismatch')
-    if prices.get('availabilityZone') != 'ap-northeast-2c' or prices.get('instanceType') != 'g5.xlarge':
+    if prices.get('availabilityZone') != availability_zone or prices.get('instanceType') != instance_type:
         raise ValueError('price execution product mismatch')
     for field in ('spotPricePerHour','onDemandPricePerHour'):
         v=prices[field]
         if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('invalid price')
         result[field]=v
     result['source']['priceObservedAt']=prices['observedAt']
+    result['source']['priceInstanceType']=instance_type
+    result['source']['priceAvailabilityZone']=availability_zone
     result['source']['ondemandReceiptSHA256']=prices['ondemandReceiptSHA256']
     return result
 
@@ -92,6 +98,8 @@ def main():
     p.add_argument('--forecasts',type=Path,required=True);p.add_argument('--manifest',type=Path,required=True)
     p.add_argument('--start-utc',required=True);p.add_argument('--bind',default='127.0.0.1');p.add_argument('--port',type=int,default=8443)
     p.add_argument('--prices',type=Path,help='optional current-price file; refresh every <=5min; absent means throughput-only bootstrap')
+    p.add_argument('--execution-instance-type',default='g5.xlarge',help='must match the execution profile and price receipt; does not change historical trace provenance')
+    p.add_argument('--execution-availability-zone',default='ap-northeast-2c',help='must match the execution profile and price receipt')
     p.add_argument('--cert',required=True);p.add_argument('--key',required=True)
     a=p.parse_args();manifest=json.loads(a.manifest.read_text());data=load_locked(a.forecasts,manifest);start=instant(a.start_utc)
     class Handler(BaseHTTPRequestHandler):
@@ -100,7 +108,7 @@ def main():
             try:
                 now=datetime.now(timezone.utc)
                 result=payload(data,manifest,start,now)
-                if a.prices:result=attach_prices(result,json.loads(a.prices.read_text()),now)
+                if a.prices:result=attach_prices(result,json.loads(a.prices.read_text()),now,instance_type=a.execution_instance_type,availability_zone=a.execution_availability_zone)
                 body=json.dumps(result,allow_nan=False).encode()
             except (ValueError, KeyError, OSError):self.send_error(503,'risk or price evidence unavailable');return
             self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)

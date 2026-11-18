@@ -4,7 +4,7 @@
   "source": "/home/ubuntu/graduate/Evaluation/Hybrid_DDP_Evaluation_Plan_E1_E2_E3_20261117.md",
   "date_kst": "2026-11-18",
   "previous_protocol": "ieee-access-v2",
-  "status": "final review complete; core six first; formal evaluation NOT_RUN; ResNet new-VM/FIS acceptance pending",
+  "status": "superseded by user 2026-11-18; replacement evaluation plan pending; system hardening only",
   "supplement": "experiments/ieee-access-final-20261117/DATA_PREPARATION.md",
   "models": [
     "gpt2",
@@ -14,5 +14,9 @@
   "final_review": "experiments/ieee-access-final-20261117/IEEE_Access_Evaluation_Review_20261118.txt",
   "core_runs": 6,
   "stretch_runs": 18,
-  "risk_input": "static .05/h for controlled core E1/E2; frozen external SARIMA proxy only for conditional dynamic R2 supplement"
+  "risk_input": "static .05/h for controlled core E1/E2; frozen external SARIMA proxy only for conditional dynamic R2 supplement",
+  "formal_dispatch_authorized": false,
+  "replacement_plan_status": "PENDING_USER_INPUT",
+  "previous_plan_preserved_for_reference": true,
+  "system_hardening": "docs/system-hardening-20261118.md"
 }

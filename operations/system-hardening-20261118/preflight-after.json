@@ -1,0 +1,129 @@
+{
+  "observed_at": "2026-11-18T03:16:32.705195+00:00",
+  "read_only": true,
+  "passed": true,
+  "checks": [
+    {
+      "check": "mgmt/api",
+      "passed": true
+    },
+    {
+      "check": "mgmt/nodes",
+      "passed": true
+    },
+    {
+      "check": "mgmt/hybridspot-system/public-cloud-vm-collector",
+      "passed": true
+    },
+    {
+      "check": "mgmt/hybridspot-system/spot-vm-management-controller",
+      "passed": true
+    },
+    {
+      "check": "mgmt/hybridspot-system/checkpoint-recovery-coordinator",
+      "passed": true
+    },
+    {
+      "check": "mgmt/hybridspot-system/training-lifecycle-controller",
+      "passed": true
+    },
+    {
+      "check": "mgmt/hybridspot-system/placement-webhook",
+      "passed": true
+    },
+    {
+      "check": "karmada/api",
+      "passed": true
+    },
+    {
+      "check": "karmada/clusters",
+      "passed": true
+    },
+    {
+      "check": "aws/api",
+      "passed": true
+    },
+    {
+      "check": "aws/nodes",
+      "passed": true
+    },
+    {
+      "check": "aws/remote-cluster-provisioner-system/remote-cluster-provisioner",
+      "passed": true
+    },
+    {
+      "check": "aws/stateful-migration-system/stateful-checkpoint",
+      "passed": true
+    },
+    {
+      "check": "aws/stateful-migration-system/stateful-member",
+      "passed": true
+    },
+    {
+      "check": "aws/nfs-provisioner/nfs-client-provisioner",
+      "passed": true
+    },
+    {
+      "check": "aws/hybridspot-system/spot-watcher",
+      "passed": true,
+      "desired_node_pods": 0
+    },
+    {
+      "check": "onpre1/api",
+      "passed": true
+    },
+    {
+      "check": "onpre1/nodes",
+      "passed": true
+    },
+    {
+      "check": "fis:CreateExperimentTemplate",
+      "passed": true,
+      "resource": "*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:TagResource",
+      "passed": true,
+      "resource": "*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:GetExperimentTemplate",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment-template/*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:StartExperiment",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment-template/*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:DeleteExperimentTemplate",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment-template/*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:StartExperiment",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment/*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:GetExperiment",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment/*",
+      "simulation_decision": "allowed"
+    },
+    {
+      "check": "fis:StopExperiment",
+      "passed": true,
+      "resource": "arn:aws:fis:ap-northeast-2:935317843233:experiment/*",
+      "simulation_decision": "allowed"
+    }
+  ],
+  "limits": "Prerequisites only; no live GPU, C/R, role PassRole/trust/resource-policy, FIS start or billing proof."
+}

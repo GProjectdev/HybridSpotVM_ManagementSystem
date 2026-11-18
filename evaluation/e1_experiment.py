@@ -25,7 +25,7 @@ KINDS = ("statefulsets", "pods", "persistentvolumeclaims", "events", "nodeprovis
 EVIDENCE_FIELDS = SAFE_FIELDS | set("""
 metadata items annotations labels deletionTimestamp resourceVersion ownerReferences
 claimRef nfs server path readOnly volumeName storageClassName accessModes capacity allocatable
-resources requests storage persistentVolumeReclaimPolicy mountOptions volumes pvcSpec pvSpec
+resources requests limits storage persistentVolumeReclaimPolicy mountOptions volumes pvcSpec pvSpec
 pvcName pvcUID pvName standalone collectedAt workloadUID memberWorkloadUID podUID podName
 durableRef filePath sourcePath targetPath containerName conditions type reason lastTransitionTime
 containers initContainers containerStatuses initContainerStatuses image imageID restartCount
@@ -47,6 +47,7 @@ replayStartUTC replayHour wallSecondsPerTraceHour notMeasuredSeoulRisk
 rollingMeanHours retrainWindowWeeks seasonalPeriodHours riskPopulation maxLambdaPerHour
 aggregateForecastPreemptionsPerHour perInstanceLambdaApproximation samplingGapSeconds hourlyBinning
 partialEdgeHours lastObservedHourStart forecastTargetHour host priceObservedAt ondemandReceiptSHA256
+priceInstanceType priceAvailabilityZone
 """.split())
 
 
@@ -60,7 +61,7 @@ def evidence_resource(value):
         if k in ("labels", "annotations"):
             allowed = SAFE_LABELS if k == "labels" else SAFE_ANNOTATIONS
             result[k] = {a: b for a, b in v.items() if a in allowed}
-        elif k in ("capacity", "allocatable", "requests"):
+        elif k in ("capacity", "allocatable", "requests", "limits"):
             result[k] = {a: b for a, b in v.items() if a in ("cpu", "memory", "storage", "nvidia.com/gpu")}
         elif k in EVIDENCE_FIELDS:
             result[k] = evidence_resource(v)

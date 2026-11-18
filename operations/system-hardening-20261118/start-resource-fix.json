@@ -1,0 +1,13 @@
+{
+  "observed_at": "2026-11-18T03:05:16.466533+00:00",
+  "policy_name": "HybridSpotFIS-StartTaggedExperimentResources",
+  "actions": [
+    "fis:StartExperiment"
+  ],
+  "region": "ap-northeast-2",
+  "tag_scope": "HybridSpotValidationRun=v6-readiness-20261117",
+  "created": true,
+  "document_sha256": "90108810b3b49edf9ef566de5d35e78e57a68cc5f37273bb13e426410ef43d99",
+  "live_fis_not_started": true,
+  "original_backup_preserved_privately": true
+}

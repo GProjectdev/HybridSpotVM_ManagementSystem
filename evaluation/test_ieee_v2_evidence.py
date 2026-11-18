@@ -1,13 +1,29 @@
 import json,unittest
 from subprocess import CompletedProcess
 from e1_experiment import evidence_resource
-from ieee_v2_ledger import AWSReader,ownership
+from ieee_v2_ledger import AWSReader,AWSLookupError,ownership
 from ieee_v2_lifecycle import analyze
 
 class EvidenceTests(unittest.TestCase):
+    def test_actual_gpu_request_and_limit_survive_projection_without_unknown_resources(self):
+        projected=evidence_resource({'spec':{'containers':[{'name':'trainer','resources':{
+            'requests':{'nvidia.com/gpu':'1','cpu':'1'},'limits':{'nvidia.com/gpu':'1','memory':'8Gi','private-field':'secret'}}}]}})
+        resources=projected['spec']['containers'][0]['resources']
+        self.assertEqual(resources['requests']['nvidia.com/gpu'],'1')
+        self.assertEqual(resources['limits'],{'nvidia.com/gpu':'1','memory':'8Gi'})
+
+    def test_denied_action_resource_preserved_without_arbitrary_stderr(self):
+        msg='An error occurred (AccessDeniedException) when calling StartExperiment: User is not authorized to perform: fis:StartExperiment on resource: arn:aws:fis:ap-northeast-2:222222222222:experiment/* because no policy. PRIVATE_TRAILING_DETAIL'
+        def runner(args,**kwargs):return CompletedProcess(args,1,'',msg)
+        with self.assertRaises(AWSLookupError) as ctx:
+            AWSReader('explicit','222222222222','ap-northeast-2',runner).command('fis','start-experiment')
+        self.assertEqual(ctx.exception.denied_action,'fis:StartExperiment')
+        self.assertEqual(ctx.exception.denied_resource,'arn:aws:fis:ap-northeast-2:222222222222:experiment/*')
+        self.assertNotIn('PRIVATE_TRAILING_DETAIL',str(ctx.exception))
+
     def test_projection_preserves_decision_and_verified_receipt_but_no_credentials(self):
-        x=evidence_resource({'status':{'policy':{'vmPolicyStage':'ThroughputOnlyBootstrap','onDemandHoldUntil':'2026-11-18T01:00:00Z'},'source':{'forecastSHA256':'a'*64,'replayHour':0,'token':'secret'},'verification':{'requestUID':'rr','operation':'op','verifiedAt':'now','sourceFenced':True}},'data':{'password':'secret'},'spec':{'credentialsRef':{'name':'private'}}})
-        self.assertEqual(x['status']['source'],{'forecastSHA256':'a'*64,'replayHour':0})
+        x=evidence_resource({'status':{'policy':{'vmPolicyStage':'ThroughputOnlyBootstrap','onDemandHoldUntil':'2026-11-18T01:00:00Z'},'source':{'forecastSHA256':'a'*64,'replayHour':0,'priceInstanceType':'g6.xlarge','priceAvailabilityZone':'ap-northeast-2c','token':'secret'},'verification':{'requestUID':'rr','operation':'op','verifiedAt':'now','sourceFenced':True}},'data':{'password':'secret'},'spec':{'credentialsRef':{'name':'private'}}})
+        self.assertEqual(x['status']['source'],{'forecastSHA256':'a'*64,'replayHour':0,'priceInstanceType':'g6.xlarge','priceAvailabilityZone':'ap-northeast-2c'})
         self.assertEqual(x['status']['verification']['requestUID'],'rr')
         self.assertEqual(x['status']['policy']['vmPolicyStage'],'ThroughputOnlyBootstrap')
         self.assertNotIn('secret',json.dumps(x));self.assertNotIn('credentialsRef',x['spec'])
