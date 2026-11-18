@@ -1,0 +1,38 @@
+{
+  "kind": "OFFLINE_NATIVE_ALLOCATION_NOT_GPU_OR_SCHEDULE_MEASUREMENT",
+  "world_size": 4,
+  "A_control": "all rows fixedOnDemand4 =>4OD0Spot; diagnostic interval field does not enable checkpoints",
+  "B_C_target_set": [
+    [
+      1,
+      3
+    ],
+    [
+      4,
+      0
+    ]
+  ],
+  "candidate_window": {
+    "start_hour": 14,
+    "change_hour": 15,
+    "change_elapsed_seconds": 3600,
+    "initial_lambda_per_hour": 0.0009212361959754303,
+    "changed_lambda_per_hour": 0.3458397557619131,
+    "initial_composition": {
+      "on_demand": 1,
+      "spot": 3
+    },
+    "next_composition": {
+      "on_demand": 4,
+      "spot": 0
+    }
+  },
+  "first_low_spell": {
+    "start_hour": 5,
+    "change_hour": 15,
+    "elapsed_seconds_to_change": 36000
+  },
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "price_receipt_sha256": "d6f2ab2f85e355041c168fec597206e8409756eda09948004206a4c66d591a68",
+  "fresh_economics_and_residency": "not simulated; current UID-bound live evaluation required"
+}

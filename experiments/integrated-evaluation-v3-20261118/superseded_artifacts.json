@@ -1,0 +1,9 @@
+{
+  "status": "SUPERSEDED_AS_ACTIVE_DESIGN",
+  "new_protocol": "HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118",
+  "source": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt",
+  "new_manifest_draft": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
+  "reason": "v3 A/B/C all4rank replaces v2 mixed-world S1/S2 and fixedP0 comparator",
+  "historical_evidence_remains_valid_within_original_scope": true,
+  "no_historical_report_or_raw_evidence_rewritten": true
+}

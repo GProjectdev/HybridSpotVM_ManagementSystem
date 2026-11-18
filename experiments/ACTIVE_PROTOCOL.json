@@ -1,26 +1,37 @@
 {
-  "protocol": "HybridSpotDDP-integrated-S1-4rank-S2-2rank-v2-20261118",
-  "directory": "experiments/integrated-evaluation-v2-20261118",
-  "source": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_통합정량평가_수정실험명세_v2_20261118.txt",
-  "execution_prompt": "/home/ubuntu/graduate/Evaluation/Codex_통합정량평가_수정실행프롬프트_v2_20261118.txt",
-  "status": "V2_DESIGN_RECEIVED_PREPARATION_BLOCKED",
+  "protocol": "HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118",
+  "directory": "experiments/integrated-evaluation-v3-20261118",
+  "source": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt",
+  "status": "V3_ABC_ALL4RANK_PREPARATION_BLOCKED",
   "formal_dispatch_authorized": false,
-  "scenario_world_sizes": {
-    "S1": 4,
-    "S2": 2
+  "world_size_by_condition": {
+    "A": 4,
+    "B": 4,
+    "C": 4
   },
-  "basic_cells": [
-    "S1-P0",
-    "S1-P1",
-    "S2-00",
-    "S2-01",
-    "S2-10",
-    "S2-11"
+  "unique_conditions": [
+    "A",
+    "B",
+    "C"
   ],
-  "basic_cell_count": 6,
-  "readiness_report": "experiments/integrated-evaluation-v2-20261118/evaluation_readiness_v2_20261118.txt",
-  "frozen_manifest": "experiments/integrated-evaluation-v2-20261118/frozen_protocol_manifest_v2.json",
-  "previous_protocol_preserved": "experiments/integrated-evaluation-v2-20261118/previous_active_protocol.json",
-  "cross_scenario_cost_time_combination": "FORBIDDEN",
-  "note": "registry metadata, not cluster admission control"
+  "experiment_mapping": {
+    "E1": [
+      "A",
+      "B"
+    ],
+    "E2": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "models": [
+    "gpt2-small",
+    "resnet50"
+  ],
+  "minimum_unique_runs_if_eligible": 6,
+  "readiness_report": "experiments/integrated-evaluation-v3-20261118/evaluation_readiness_v3_20261118.txt",
+  "manifest_draft": "experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
+  "previous_protocol_preserved": "experiments/integrated-evaluation-v3-20261118/previous_active_protocol.json",
+  "note": "registry metadata only; frozen execution is not authorized"
 }

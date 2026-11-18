@@ -15,9 +15,13 @@ func main() {
 	forecast := flag.String("forecasts", "", "existing frozen forecast JSON")
 	prices := flag.String("environment", "", "read-only environment receipt with execution prices")
 	workers := flag.Int64("workers", 2, "scenario world size: S1 v2=4, S2=2")
+	controlOD := flag.Int64("control-od", 1, "fixed-control On-Demand count; v3 A=world size")
 	flag.Parse()
 	if *workers != 2 && *workers != 4 {
 		panic("reviewed scenario world must be 2 or 4")
+	}
+	if *controlOD < 1 || *controlOD > *workers {
+		panic("fixed-control count must be between minOD=1 and world size")
 	}
 	var data struct {
 		Forecasts []struct {
@@ -43,6 +47,8 @@ func main() {
 	now := time.Date(2026, 11, 18, 0, 0, 0, 0, time.UTC)
 	out := map[string]interface{}{"kind": "OFFLINE_EXISTING_DECIDEAT_NOT_LIVE_REPLACEMENT", "economics": "enabled; no fabricated loss observation; throughput bootstrap only", "checkpoint_bounds_proposal_seconds": []int{60, 600}, "rows": []interface{}{}}
 	out["world_size"] = *workers
+	out["fixed_control_on_demand"] = *controlOD
+	out["checkpoint_execution_not_probed"] = true
 	rows := []interface{}{}
 	for _, typ := range []string{"g5.xlarge", "g6.xlarge"} {
 		var price struct {
@@ -68,8 +74,7 @@ func main() {
 			if *workers == 2 {
 				measured = p.DecideAt(measuredInput, runtime, risk, now)
 			}
-			one := int64(1)
-			in.FixedOnDemand = &one
+			in.FixedOnDemand = controlOD
 			// P0 must also fix checkpoint bounds; fixedOnDemand alone does not.
 			in.Checkpoint.MinIntervalSeconds = 600
 			in.Checkpoint.MaxIntervalSeconds = 600

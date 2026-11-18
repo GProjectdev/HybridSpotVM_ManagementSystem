@@ -1,0 +1,6 @@
+{
+  "returncode": 1,
+  "result": null,
+  "error_kind": "SSH_OR_REMOTE_READ_FAILED",
+  "superseded_by_success": "nfs-current-sudo.json"
+}

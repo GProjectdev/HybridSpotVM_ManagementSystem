@@ -1,0 +1,36 @@
+{
+  "status": "CONDITIONAL_FEASIBILITY_NOT_FROZEN",
+  "fault_trigger": {
+    "type": "all-four-rank fresh common committed step",
+    "fraction": 0.5,
+    "expression": "ceil(goal_steps/2)",
+    "source": "user confirmed 2026-11-18; literature reviewed without finding reason to replace for this single-event comparison"
+  },
+  "required_conditions": [
+    "first durable full-group CP ready before declared 50% trigger",
+    "active exact-owned Spot exists at dispatch",
+    "avoid dispatch/actual Spot interruption colliding with planned all-OD transition",
+    "normal B continues through change and actual reconstruction to valid updates"
+  ],
+  "candidate_transition_seconds": 3600,
+  "notice_seconds": 120,
+  "actual_goal_steps": null,
+  "actual_time_at_half_goal_seconds": null,
+  "actual_first_durable_cp_seconds": null,
+  "margin_seconds": null,
+  "screening": {
+    "status": "UNRESOLVED",
+    "reasons": [],
+    "missing_inputs": [
+      "fault_elapsed_seconds",
+      "normal_goal_elapsed_seconds",
+      "durable_checkpoint_elapsed_seconds",
+      "margin_seconds"
+    ],
+    "live_execution_authorized": false,
+    "scope": "timing envelope only; no policy economics/residency or live ownership proof"
+  },
+  "inequalities": "t_cp <= t_50; t_50 + 120 + margin < 3600 (conservative planning); t_goal_B > 3600 + measured reconstruction/progress allowance",
+  "linear_illustration_only": "If step rate were constant and replay began at first update: 3600 < training_goal_seconds < 6960 - 2*margin. Not a measured runtime, sizing rule or fixed goal. Use actual four-rank progress curve instead.",
+  "if_conflict": "report and request research approval before separate risk blocks, shifting trigger or changing forecast; never retarget another VM"
+}

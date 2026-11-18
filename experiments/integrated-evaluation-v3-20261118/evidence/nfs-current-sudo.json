@@ -1,0 +1,20 @@
+{
+  "returncode": 0,
+  "result": {
+    "manifests": [
+      {
+        "path": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1/manifest.json",
+        "exists": true,
+        "sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988"
+      },
+      {
+        "path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1/manifest.json",
+        "exists": true,
+        "sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1"
+      }
+    ],
+    "df": "   1B-blocks        Used        Avail Mounted on\n527295578112 82148220928 445130579968 /mnt/nfs\n"
+  },
+  "error_kind": null,
+  "error_class": null
+}

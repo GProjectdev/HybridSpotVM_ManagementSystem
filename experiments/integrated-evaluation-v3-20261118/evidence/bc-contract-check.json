@@ -1,0 +1,31 @@
+{
+  "scope": "draft configuration identity only, no current run baseline reuse acceptance",
+  "checks": {
+    "gpt2-small": {
+      "identical_draft_settings": true,
+      "ready_to_freeze": false,
+      "different_fields": [],
+      "unfrozen_fields": [
+        "goal_steps",
+        "gpu_instance_type",
+        "price_input_mode",
+        "risk_clock_anchor"
+      ],
+      "b_sha256": "8a1123345b7e425db5bdb24c4fb51ccf74eb138fbf9b1068df05bbd7b7d0cab8",
+      "c_sha256": "8a1123345b7e425db5bdb24c4fb51ccf74eb138fbf9b1068df05bbd7b7d0cab8"
+    },
+    "resnet50": {
+      "identical_draft_settings": true,
+      "ready_to_freeze": false,
+      "different_fields": [],
+      "unfrozen_fields": [
+        "goal_steps",
+        "gpu_instance_type",
+        "price_input_mode",
+        "risk_clock_anchor"
+      ],
+      "b_sha256": "ee6876ba0c56e6f5796b59085c0d34b0cc104815f40ebf124a0d28df5577b2bf",
+      "c_sha256": "ee6876ba0c56e6f5796b59085c0d34b0cc104815f40ebf124a0d28df5577b2bf"
+    }
+  }
+}

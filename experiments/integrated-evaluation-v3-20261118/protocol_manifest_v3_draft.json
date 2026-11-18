@@ -1,0 +1,525 @@
+{
+  "schema_version": 3,
+  "protocol": "HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118",
+  "status": "DRAFT_BLOCKED_NOT_FORMALLY_FROZEN",
+  "formal_dispatch_authorized": false,
+  "researcher_source": {
+    "path": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt",
+    "sha256": "1f61c649b7af0e7b7e5b706fd138412a69769deccfa5bc8f78a2ee1ecfc7faea"
+  },
+  "researcher_clarification": "50percent default retained; literature-backed alternative considered but not adopted on reviewed evidence",
+  "rank_policy": {
+    "A": 4,
+    "B": 4,
+    "C": 4,
+    "ranks_per_vm": 1,
+    "gpus_per_vm": 1,
+    "required_anti_affinity": "required hostname; actual distinct VM/provider/Pod/GPU identities required"
+  },
+  "unique_conditions": [
+    "A",
+    "B",
+    "C"
+  ],
+  "experiment_mapping": {
+    "E1": [
+      "A",
+      "B"
+    ],
+    "E2": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "baseline_reuse": "same actual A/B run may be referenced by E1/E2 only when full frozen contract and success/cleanup/price/progress evidence match; never counted as independent repeat",
+  "minimum_unique_runs_if_both_models_eligible": 6,
+  "repeats": null,
+  "models": {
+    "gpt2-small": {
+      "asset": {
+        "dataset": "WikiText-103 raw-v1",
+        "model_revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+        "dataset_revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+        "model_path": "/mnt/nfs/validation-assets-v6-20261116/models/gpt2-small",
+        "dataset_path": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1",
+        "processed_manifest_sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988",
+        "sequence_length": 512,
+        "seed": 42,
+        "optimizer": "AdamW",
+        "learning_rate": 5e-05,
+        "weight_decay": 0.0005
+      },
+      "seed": 42,
+      "world_size": 4,
+      "per_rank_batch_candidate": 2,
+      "global_batch": 8,
+      "goal_steps": null,
+      "fault_step": null,
+      "gpu_batch_accepted": false
+    },
+    "resnet50": {
+      "asset": {
+        "dataset": "CIFAR-10",
+        "dataset_path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1",
+        "dataset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+        "archive_md5": "c58f30108f718f92721af3b95e74349a",
+        "preprocessing": "CIFAR stem/10classes; step-shuffle-crop-flip-v1; pad4 crop32 hflip normalization",
+        "seed": 42,
+        "optimizer": "SGD",
+        "learning_rate": 0.1,
+        "momentum": 0.9,
+        "weight_decay": 0.0005,
+        "weights": "None"
+      },
+      "seed": 42,
+      "world_size": 4,
+      "per_rank_batch_candidate": 16,
+      "global_batch": 64,
+      "goal_steps": null,
+      "fault_step": null,
+      "gpu_batch_accepted": false
+    }
+  },
+  "hardware": {
+    "instance_type": null,
+    "candidates": [
+      "g5.xlarge",
+      "g6.xlarge"
+    ],
+    "availability_zone": "ap-northeast-2c",
+    "ami_candidate": "ami-035e3088f6b7821fb",
+    "same_type_across_model_A_B_C": true
+  },
+  "source_heads": {
+    "HybridSpotVM_ManagementSystem": "e84e3ad4b76f6228c15cb3f2779588a41dbd13a1",
+    "PublicCloud-VM-Provisioner_test": "1235f288be6c6eb4aa14b238659c7f80d5fd74be",
+    "My_FluidCR": "4749e60a13beb859937f5bdfec4cba7cd4d06185",
+    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
+    "Stateful-Migration-Operator-with-PV": "eb41a1ee0bf4f549a33f918ebcfc0b39eedd9e5d"
+  },
+  "deployed_image_baseline": {
+    "status": "historical image identities; current prerequisites pass26, exact live imageIDs still required before freeze",
+    "references": {
+      "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:c779629ce8f2fdf99b1963a5abfd82c5791d0a3f9464ea46bef80bf97d8d7b69",
+      "MGMT/deployments/hybridspot-system/placement-webhook/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+      "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+      "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:d57532aa4702eed2b905ac5b86a73337f6203a52408a9bc036786a64235031b1",
+      "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+      "MGMT/deployments/stateful-migration-system/stateful-management/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "AWS/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "AWS/deployments/nfs-provisioner/nfs-client-provisioner/nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "AWS/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:893407968c2e34977913100fd9e2c52731ddfb8994d6defdf40aab34ddbcb382",
+      "AWS/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:65371cdbe157d0152357d47230a28ed799330eb9a4ad44bfd008046e696d4ea3",
+      "AWS/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "AWS/daemonsets/hybridspot-system/spot-watcher/watcher": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+      "AWS/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "ONPRE1/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "ONPRE1/deployments/nfs-provisioner/e1-aws-nfs-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/nfs-provisioner/legacy-nfs-nfs-subdir-external-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:893407968c2e34977913100fd9e2c52731ddfb8994d6defdf40aab34ddbcb382",
+      "ONPRE1/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:65371cdbe157d0152357d47230a28ed799330eb9a4ad44bfd008046e696d4ea3",
+      "ONPRE1/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "ONPRE1/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "AWS/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef",
+      "ONPRE1/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:7b4c55ad4b77961b8f9cd3f79b89c5ae444fe9dc6100539417d4ef1c929ef6ef"
+    }
+  },
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "risk_provenance": {
+    "provenance": "external-US-V100-availability-proxy; not measured Seoul hazard",
+    "forecast_path": "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json",
+    "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "training_hours": 672,
+    "held_out_hours": 168,
+    "wall_seconds_per_trace_hour": 3600,
+    "source_trace": "availability/1-node/aws-02-15-2023/us-east-2a_v100_1.json",
+    "population_assumption": "one requested availability slot, not observed at-risk running population"
+  },
+  "risk_candidate": {
+    "start_hour": 14,
+    "change_hour": 15,
+    "change_elapsed_seconds": 3600,
+    "initial_lambda_per_hour": 0.0009212361959754303,
+    "changed_lambda_per_hour": 0.3458397557619131,
+    "initial_composition": {
+      "on_demand": 1,
+      "spot": 3
+    },
+    "next_composition": {
+      "on_demand": 4,
+      "spot": 0
+    }
+  },
+  "risk_fault_compatibility": "evidence/risk-fault-compatibility.json",
+  "conditions": {
+    "A": {
+      "fixedOnDemand": 4,
+      "targetWorkers": 4,
+      "periodic_checkpoint_annotation": "training.dcnlab.com/periodic-checkpoint=disabled",
+      "periodic_schedule_must_be_absent_or_quiesced": true,
+      "planned_faults": 0,
+      "first_durable_cp_required_for_start": false
+    },
+    "B": {
+      "fixedOnDemand": "absent",
+      "targetWorkers": 4,
+      "checkpoint_mode": "existing adaptive, async-paper-disabled",
+      "planned_faults": 0
+    },
+    "C": {
+      "same_common_contract_as": "B",
+      "fixedOnDemand": "absent",
+      "targetWorkers": 4,
+      "checkpoint_mode": "same policy code/config asB; measured costs/actual decisions are outcomes, not forcibly equal",
+      "planned_faults": 1
+    }
+  },
+  "bc_common_contracts": {
+    "gpt2-small": {
+      "B": {
+        "world_size": 4,
+        "model": "gpt2-small",
+        "asset_contract_sha256": "688a77ed059e4352a9b12f9ca3799d0184e683bd56cbf37f45c12c6344360b3c",
+        "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+        "per_rank_batch": 2,
+        "global_batch": 8,
+        "seed": 42,
+        "goal_steps": null,
+        "gpu_instance_type": null,
+        "availability_zone": "ap-northeast-2c",
+        "ami": "ami-035e3088f6b7821fb",
+        "risk_forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+        "risk_start_hour": 14,
+        "risk_clock_seconds_per_hour": 3600,
+        "risk_clock_anchor": null,
+        "initial_composition": {
+          "on_demand": 1,
+          "spot": 3
+        },
+        "policy": {
+          "method": "paper-eq6-7",
+          "alpha": 0.8,
+          "forecast_horizon_seconds": 3600,
+          "min_on_demand": 1,
+          "economics_enabled": true,
+          "on_demand_residency_seconds": 3600,
+          "full_group_route": "planned-partial=disabled",
+          "paper_async_enabled": false,
+          "checkpoint_variable_bounds_candidate_seconds": [
+            60,
+            600
+          ],
+          "f0_final_by_scenario": {
+            "S1": null,
+            "S2": null
+          },
+          "f0_bootstrap_candidate_seconds": 600,
+          "f0_verified_2rank_fallback_seconds": 120,
+          "four_rank_f0_safety_verified": false,
+          "no_assumed_four_rank_measured_cost": true
+        },
+        "checkpoint_mode": "adaptive",
+        "restore_route": "planned-partial=disabled/full-group",
+        "price_input_mode": null,
+        "system_image_baseline_sha256": "6d725aa1d2bc2a2ece4c2687d7fd17f9f8245211fbc6e9a3650d2e8ad8729073"
+      },
+      "C": {
+        "world_size": 4,
+        "model": "gpt2-small",
+        "asset_contract_sha256": "688a77ed059e4352a9b12f9ca3799d0184e683bd56cbf37f45c12c6344360b3c",
+        "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+        "per_rank_batch": 2,
+        "global_batch": 8,
+        "seed": 42,
+        "goal_steps": null,
+        "gpu_instance_type": null,
+        "availability_zone": "ap-northeast-2c",
+        "ami": "ami-035e3088f6b7821fb",
+        "risk_forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+        "risk_start_hour": 14,
+        "risk_clock_seconds_per_hour": 3600,
+        "risk_clock_anchor": null,
+        "initial_composition": {
+          "on_demand": 1,
+          "spot": 3
+        },
+        "policy": {
+          "method": "paper-eq6-7",
+          "alpha": 0.8,
+          "forecast_horizon_seconds": 3600,
+          "min_on_demand": 1,
+          "economics_enabled": true,
+          "on_demand_residency_seconds": 3600,
+          "full_group_route": "planned-partial=disabled",
+          "paper_async_enabled": false,
+          "checkpoint_variable_bounds_candidate_seconds": [
+            60,
+            600
+          ],
+          "f0_final_by_scenario": {
+            "S1": null,
+            "S2": null
+          },
+          "f0_bootstrap_candidate_seconds": 600,
+          "f0_verified_2rank_fallback_seconds": 120,
+          "four_rank_f0_safety_verified": false,
+          "no_assumed_four_rank_measured_cost": true
+        },
+        "checkpoint_mode": "adaptive",
+        "restore_route": "planned-partial=disabled/full-group",
+        "price_input_mode": null,
+        "system_image_baseline_sha256": "6d725aa1d2bc2a2ece4c2687d7fd17f9f8245211fbc6e9a3650d2e8ad8729073"
+      }
+    },
+    "resnet50": {
+      "B": {
+        "world_size": 4,
+        "model": "resnet50",
+        "asset_contract_sha256": "4e4c63358522208bf26073cd4e3584da6b8938fd477dcff15ffd5a3bc2cbcefe",
+        "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+        "per_rank_batch": 16,
+        "global_batch": 64,
+        "seed": 42,
+        "goal_steps": null,
+        "gpu_instance_type": null,
+        "availability_zone": "ap-northeast-2c",
+        "ami": "ami-035e3088f6b7821fb",
+        "risk_forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+        "risk_start_hour": 14,
+        "risk_clock_seconds_per_hour": 3600,
+        "risk_clock_anchor": null,
+        "initial_composition": {
+          "on_demand": 1,
+          "spot": 3
+        },
+        "policy": {
+          "method": "paper-eq6-7",
+          "alpha": 0.8,
+          "forecast_horizon_seconds": 3600,
+          "min_on_demand": 1,
+          "economics_enabled": true,
+          "on_demand_residency_seconds": 3600,
+          "full_group_route": "planned-partial=disabled",
+          "paper_async_enabled": false,
+          "checkpoint_variable_bounds_candidate_seconds": [
+            60,
+            600
+          ],
+          "f0_final_by_scenario": {
+            "S1": null,
+            "S2": null
+          },
+          "f0_bootstrap_candidate_seconds": 600,
+          "f0_verified_2rank_fallback_seconds": 120,
+          "four_rank_f0_safety_verified": false,
+          "no_assumed_four_rank_measured_cost": true
+        },
+        "checkpoint_mode": "adaptive",
+        "restore_route": "planned-partial=disabled/full-group",
+        "price_input_mode": null,
+        "system_image_baseline_sha256": "6d725aa1d2bc2a2ece4c2687d7fd17f9f8245211fbc6e9a3650d2e8ad8729073"
+      },
+      "C": {
+        "world_size": 4,
+        "model": "resnet50",
+        "asset_contract_sha256": "4e4c63358522208bf26073cd4e3584da6b8938fd477dcff15ffd5a3bc2cbcefe",
+        "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+        "per_rank_batch": 16,
+        "global_batch": 64,
+        "seed": 42,
+        "goal_steps": null,
+        "gpu_instance_type": null,
+        "availability_zone": "ap-northeast-2c",
+        "ami": "ami-035e3088f6b7821fb",
+        "risk_forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+        "risk_start_hour": 14,
+        "risk_clock_seconds_per_hour": 3600,
+        "risk_clock_anchor": null,
+        "initial_composition": {
+          "on_demand": 1,
+          "spot": 3
+        },
+        "policy": {
+          "method": "paper-eq6-7",
+          "alpha": 0.8,
+          "forecast_horizon_seconds": 3600,
+          "min_on_demand": 1,
+          "economics_enabled": true,
+          "on_demand_residency_seconds": 3600,
+          "full_group_route": "planned-partial=disabled",
+          "paper_async_enabled": false,
+          "checkpoint_variable_bounds_candidate_seconds": [
+            60,
+            600
+          ],
+          "f0_final_by_scenario": {
+            "S1": null,
+            "S2": null
+          },
+          "f0_bootstrap_candidate_seconds": 600,
+          "f0_verified_2rank_fallback_seconds": 120,
+          "four_rank_f0_safety_verified": false,
+          "no_assumed_four_rank_measured_cost": true
+        },
+        "checkpoint_mode": "adaptive",
+        "restore_route": "planned-partial=disabled/full-group",
+        "price_input_mode": null,
+        "system_image_baseline_sha256": "6d725aa1d2bc2a2ece4c2687d7fd17f9f8245211fbc6e9a3650d2e8ad8729073"
+      }
+    }
+  },
+  "bc_contract_readiness": {
+    "gpt2-small": {
+      "identical_draft_settings": true,
+      "ready_to_freeze": false,
+      "different_fields": [],
+      "unfrozen_fields": [
+        "goal_steps",
+        "gpu_instance_type",
+        "price_input_mode",
+        "risk_clock_anchor"
+      ],
+      "b_sha256": "8a1123345b7e425db5bdb24c4fb51ccf74eb138fbf9b1068df05bbd7b7d0cab8",
+      "c_sha256": "8a1123345b7e425db5bdb24c4fb51ccf74eb138fbf9b1068df05bbd7b7d0cab8"
+    },
+    "resnet50": {
+      "identical_draft_settings": true,
+      "ready_to_freeze": false,
+      "different_fields": [],
+      "unfrozen_fields": [
+        "goal_steps",
+        "gpu_instance_type",
+        "price_input_mode",
+        "risk_clock_anchor"
+      ],
+      "b_sha256": "ee6876ba0c56e6f5796b59085c0d34b0cc104815f40ebf124a0d28df5577b2bf",
+      "c_sha256": "ee6876ba0c56e6f5796b59085c0d34b0cc104815f40ebf124a0d28df5577b2bf"
+    }
+  },
+  "checkpoint": {
+    "fixed_f0_comparator": "removed in v3; A periodic CP off",
+    "B_C_variable_bounds_candidate_seconds": [
+      60,
+      600
+    ],
+    "final_bounds": null,
+    "paper_async_gpu_verified": false,
+    "interval_sources_allowed": [
+      "risk-band-bootstrap",
+      "checkpoint-cost-analytic"
+    ],
+    "all_rank_checkpoint_generation_and_sha_required": true
+  },
+  "fault": {
+    "fraction": 0.5,
+    "step": null,
+    "common_world_size": 4,
+    "notice": "PT2M",
+    "target_count": 1,
+    "initial_spot_count_candidate": 3,
+    "target_selection_rule": null,
+    "policy_uid": null,
+    "nodeprovision_uid": null,
+    "instance_arn": null,
+    "dispatch_requires": [
+      "all4 current UID fresh progress",
+      "exact running owned Spot selected and pinned to1ARN",
+      "first durable4rankCP",
+      "fresh prices/risk/clock",
+      "stop alarm and bounded recovery/cleanup reserve"
+    ],
+    "no_retarget_or_blind_retry": true,
+    "timing_sources": "fault_timing_sources.json",
+    "authorization_family": "v6-readiness-20261117",
+    "actual_4rank_spot_action_and_new_vm_restore_accepted": false
+  },
+  "expected_capacity": {
+    "steady_vms": 4,
+    "serial_replacement_peak_vms": 5,
+    "peak_not_gpu_verified": true,
+    "initial_B_C_od_vcpu": 4,
+    "initial_B_C_spot_vcpu": 12,
+    "A_and_final_B_od_vcpu": 16,
+    "expected_overlap_total_vcpu": 20,
+    "quota_actual_values": "unverified; prior get-service-quota AccessDenied; user value32 unit/account not independently confirmed"
+  },
+  "metrics": {
+    "T_E2E": "all4goal update - source NodeRequest creation",
+    "useful_progress": "unique committed tokens/sample presentations, exclude replayed rollback work",
+    "GPU_compute_cost": "all owned original/replacement/overlap/idle running intervals and contemporaneous price; include audit/return tail; not invoice",
+    "CP_stall": "union of all4rank pause/resume intervals; export time separate",
+    "fault_overhead": [
+      "T_C-T_B",
+      "Cost_C-Cost_B"
+    ],
+    "package_comparisons": [
+      "A vsB",
+      "A vsC"
+    ],
+    "independent_policy_effect_claim": false,
+    "excluded_costs": [
+      "EBS",
+      "NFS",
+      "VPN",
+      "network",
+      "FIS",
+      "management"
+    ],
+    "old_v2_cross_rank_prohibition": "historical; v3 all4rank allows declared A/B/C comparisons, not automatic hazard/break-even claims"
+  },
+  "current_prerequisites": {
+    "preflight": "evidence/preflight-current.json",
+    "nfs": "evidence/nfs-current-sudo.json",
+    "infra_and_prices": "evidence/environment-readonly.json"
+  },
+  "approval": {
+    "previous_gpu_acceptance_deadline_utc": "2026-11-18T03:22:59.864849+00:00",
+    "previous_window_closed": true,
+    "new_formal_or_acceptance_run_authorized": false,
+    "new_budget_usd": null,
+    "new_hard_deadline_utc": null,
+    "requires_before_paid_run": [
+      "bounded4GPU/expected5peak acceptance and formal budget/deadline",
+      "exact-owned singleSpot FIS after4rank gate readiness",
+      "scoped IAM diff only if action-role gap discovered"
+    ],
+    "no_aws_mutation_this_task": true,
+    "infrastructure_start_required_now": false
+  },
+  "remaining_gates": [
+    "4rank GPU DDP/CP/newVMrestore/audits/goal/normalcleanup",
+    "observer/metrics/renderer currently2rank and old protocol",
+    "4rank FIS gate and select one of multipleSpot byexactUID",
+    "B/C actual50percent timing vs1h allOD transition with frozen goal/clock",
+    "risk nonzero-offset replay extension",
+    "final GPU/goal/checkpointbounds/price-mode/systemlock",
+    "Spot/OD quota/actual supply and measured archive storage budget",
+    "new bounded GPU/FIS approval"
+  ],
+  "schedule": {
+    "readiness": "2026-11-18",
+    "acceptance": "2026-11-19/20",
+    "core_runs": "2026-11-23/27",
+    "repeats": "2026-11-30/12-01",
+    "final": "2026-12-02"
+  },
+  "formal_manifest_freeze": "only after all required gates; this file is a draft, not a paid execution request",
+  "source_file_sha256": {
+    "evaluation/integrated_probe/main.go": "30daa4b3f841c7ec7884000532b6f959b4c52d24a82cd283078c50141516c3f8",
+    "evaluation/integrated_v3_readiness.py": "78f26385494d5c4ad6d9c58d42df10bc49d2ad29731610b8478411e1d806856e",
+    "evaluation/test_integrated_v3_readiness.py": "89410e30e4c7284af0a1d7df8a62628c8efa2c91605dd5d3c1e25a2fa35b55f2",
+    "internal/policy/contract.go": "94dc6a52634ae80947e5944e05a120c57eedad73c06df8e2b510fe1a33bedcad",
+    "internal/policy/economics.go": "e19351dc9777f77543e37ea4115b7bb0d2cf0217afe6255dbe2d1749822b09c8",
+    "internal/management/checkpoint_controller.go": "95b985d0366eb975e8b33b97f7fd4fb41641e711ab674f24dc05845389fe6f15",
+    "internal/management/checkpoint_schedule.go": "7a3b78ac4c5848d67b8e8a0d5933da6f07d14456cfdc78884973427a04a4c973",
+    "internal/management/group_producer.go": "5e9b8ae77babc4d21598b7725a3f9fc304b1f9cf913529c4dc3089def8ee8916",
+    "internal/management/capacity.go": "fea6b89c88d85b3234e83f56d36f1f4c2efae39bfcb562e23b68d4d3a40dad93",
+    "internal/collector/paper_sarima_replay.py": "ea37c994a68ce7a3194b7124ae5febedc6942d5331bec10311ede97d3094e0b0",
+    "evaluation/final_fault_gate.py": "0b7f1dfef43b219e7334ff1380b5b93cfe675f20e37d3f9a98d4465557790551",
+    "evaluation/final_fis.py": "64e5522c4c9a1486b42821a25fa0ca1d309b2c332dc9642104c31222190e8641",
+    "evaluation/ieee_v2_observe.py": "4bc63e2b699f6a178444d4e01cf845de649c5ff21fd07d70d73a1d6abc80de6b"
+  },
+  "source_heads_scope": "baseline before this preparation commit; exact inspected working-tree files hashed separately, no core rollout"
+}

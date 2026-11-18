@@ -1,0 +1,41 @@
+{
+  "observed_at_utc": "2026-11-18T06:27:54.338145+00:00",
+  "read_only": true,
+  "account_verified": true,
+  "infrastructure": [
+    {
+      "id": "i-039670f4f1be290f3",
+      "state": "running",
+      "private": "10.50.1.80",
+      "type": "m6i.xlarge",
+      "reason": ""
+    },
+    {
+      "id": "i-0c7644cd46940fb2d",
+      "state": "running",
+      "private": "10.50.1.98",
+      "type": "m7i.2xlarge",
+      "reason": ""
+    }
+  ],
+  "g5.xlarge_price": {
+    "observedAt": "2026-11-18T06:27:56.319497+00:00",
+    "currency": "USD",
+    "spotPricePerHour": 0.6287,
+    "onDemandPricePerHour": 1.237,
+    "spotPriceEffectiveAt": "2026-11-18T05:00:00+00:00",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g5.xlarge",
+    "ondemandReceiptSHA256": "fa365e513087f0a8e9b4f7510409bc36fe0c3be1bc587d4064dceb3401f6959b"
+  },
+  "g6.xlarge_price": {
+    "observedAt": "2026-11-18T06:27:59.732827+00:00",
+    "currency": "USD",
+    "spotPricePerHour": 0.4712,
+    "onDemandPricePerHour": 0.9896,
+    "spotPriceEffectiveAt": "2026-11-18T05:00:00+00:00",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g6.xlarge",
+    "ondemandReceiptSHA256": "3dc3bea9c8e44ced59081ef9ada90f7411bc386fc39edbc38b4d3903dceee793"
+  }
+}

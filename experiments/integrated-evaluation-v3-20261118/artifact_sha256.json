@@ -1,0 +1,18 @@
+{
+  "evaluation_readiness_v3_20261118.txt": "4096bed7e353f60fdee6a929774edccd8a0c8301ccb1c5804214d00a713d9936",
+  "evidence/abc-policy-scan.json": "c8dd13b4ae2489f624f7fc3c94ed68ea42d3a764eef9663f785c96ec986f80f9",
+  "evidence/abc-policy-summary.json": "74edd9ebcd9b7579825317d6585940283b0fe0bf66ab5506c0117e7fc56b27de",
+  "evidence/bc-contract-check.json": "5aca3e51e1b9397033a204bf2ef324ca7bd33da94ae65af84bc78ffddaf742dc",
+  "evidence/bc-contract-tests.txt": "c6b9b1f09add0403cc07e90bfdf272129b1ddfa2f8f7675ea8218862f2516371",
+  "evidence/environment-readonly.json": "d6f2ab2f85e355041c168fec597206e8409756eda09948004206a4c66d591a68",
+  "evidence/nfs-current-sudo.json": "c361f14e5094061ad493107095b3ddb8832c6bd9c0d9a950f09075f7f524fdff",
+  "evidence/nfs-current.json": "2ab5023159859358830dcaeea92db5c6265d9c51507bc04fda8ff98f5fb05916",
+  "evidence/preflight-current.json": "1e22aac19ba4876ff55971d631ccce3b9f0a4d9bc70351268e998e0d7ee1599b",
+  "evidence/risk-fault-compatibility.json": "169c342bdb68c9235137d5175b70aff43e919379630143a8bdc6d38825657dbc",
+  "fault_timing_sources.json": "90e23c88040612a1810f3db74768070b7c0e297a37019d6a229a44ca770d6a48",
+  "previous_active_protocol.json": "0ce9f8343b680cb97508ce41c9978bfd014deb160b450157f62b8c821f5776d9",
+  "protocol_manifest_v3_draft.json": "c036442e65a97c608a73d5b54c894b761b2549e92f324f3122bdb15e6395e8fc",
+  "researcher_instructions_v3_20261118.txt": "1f61c649b7af0e7b7e5b706fd138412a69769deccfa5bc8f78a2ee1ecfc7faea",
+  "run_matrix_v3.csv": "3547814200fb20226a856d43b0cc80e203e660664af95302f8fcb27daefa0975",
+  "superseded_artifacts.json": "d81dc3bcc058d411e7350e5c82d59acf127415c659ab230bc24cbd5ed29daca9"
+}

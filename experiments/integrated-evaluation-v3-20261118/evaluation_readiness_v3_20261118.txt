@@ -1,0 +1,203 @@
+HybridSpotDDP IEEE Access 최종 E1·E2 평가 — v3 준비 상태
+작성일: 2026-11-18, 사용자 시간 KST(UTC+9). 원시 evidence 시간은 UTC.
+현재 계획: 모든 A·B·C는 4-Rank DDP / GPU VM당1GPU·1Rank.
+이 문서는 실행 준비 보고서다. 정식 성능 결과나 실제4Rank 복구 성공을 보고하는 문서가 아니다.
+
+0. 오늘 수행 결과와 핵심 판단
+
+사용자가 제공한 최종 지시를 반영했다. v2의 S1=4/S2=2 및 고정P0/통합P1의6개 GPT2셀을 폐기하고, E1=A/B, E2=A/B/C, 모두4Rank인 현재 설계로 활성 계획/Run matrix/manifest 초안을 갱신했다. 과거 검증 receipt와 보고서는 변경하지 않고 역사적 근거로 보존했다.
+현재 판단:
+A: 4OD·주기CP 비활성이라는 설정은 기존 코드로 표현 가능. 4Rank 학습/완료/반환 실환경 수용은 미완료.
+B: 기존 위험정책과 CP/실행 중 재구성 코드가 있고4Rank cardinality를 처리할 구조가 있다. 실제4GPU DDP/CP·새 VM full-group Restore/연속교체 수렴은 미검증.
+C: B와 같은 설정을 준비할 수 있으나50%시점의 Spot 존재, 단일target FIS와4Rank 복원은 아직 미검증이며 기존2Rank FIS 도구를 그대로 실행할 수 없다.
+따라서 정식 실행은 아직 차단한다. 동일 위험시계열에서 B의 동적 전환과 C의50% Spot중단은 조건부로 양립 가능하지만, GPU별 진행률 pilot/goal/clock이 없어서 최종 적격성은 미확정이다. 현재 자료만으로 실험 설계 변경이 반드시 필요하다고 단정하지 않는다.
+이번 작업에서 GPU VM 생성/종료, 인프라 재가동, FIS 생성/실행, IAM변경, Controller/CRD/RIC 배포를 하지 않았다. 읽기전용조회와 호스트의 최소 offline 도구/문서만 보완했다.
+
+기준 문서:
+/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt
+원본 사본: experiments/integrated-evaluation-v3-20261118/researcher_instructions_v3_20261118.txt
+추가 사용자 답변: 장애 위치는50%를 기본 유지하되 관련 논문/자료에 더 적합한 근거가 있으면 검토. 문헌 검토 후 이번 단일 사건·동일 진행량 비교에는50%를 유지했다. 아래8절 참조.
+
+1. 최종 Run 목록 및 baseline 재사용
+
+E1-A / E2-A: 동일4OD 정상 실행. 주기적Checkpoint 비활성, 인위적Spot 중단 없음.
+E1-B / E2-B: 동일4Worker 요청, 기존 위험·가격·경제성 정책으로 초기구성 선택 및 이후 적응/CP 활성, 인위적중단 없음.
+E2-C: B와 동일한 model/data/seed/batch/goal/GPU/위험시계열·재생기준/CP정책/복원엔진. 현재 소유Spot1대에 FIS1회, 전체그룹 복원 후 목표 완료.
+주요 비교: A vs B=정상 운영 패키지, B vs C=장애 추가 운영부담, A vs C=복구까지 포함한 패키지 비용·성능. 자원정책/Spot 할인/CP의 독립기여나 새C/R알고리즘 우수성을 분리했다고 주장하지 않는다.
+E1의 실제 A/B 결과가 전체 frozen contract와 성공·정리·가격·goal 증거를 충족하면 E2에서 같은 run을 참조할 수 있다. 두개의 독립 반복으로 세지 않는다. 단순 config 초안 동일성만으로 실제 baseline 재사용 적격을 확정하지 않는다.
+GPT2-Small/WikiText103 및 ResNet50/CIFAR10 각각A/B/C의 기본3run, 두모델 모두 준비되면 고유기본run6개다. 이전 v2의 GPT2기본6셀을 더해 중복실행하지 않는다. 반복횟수/실행예산은 아직 미확정이며 기본비교 확보 후 중요한 대응반복 우선이라는 지시를 유지한다.
+Run matrix: run_matrix_v3.csv. 모든row는DRAFT_BLOCKED이며 실제run/성능값이 아니다.
+
+2. 기존 검증 결과 재사용 범위
+
+H=/home/ubuntu/HybridSpotVM_ManagementSystem
+S=/home/ubuntu/Stateful-Migration-Operator-with-PV
+F=/home/ubuntu/My_FluidCR
+기존 근거:
+/home/ubuntu/graduate/Evaluation/IEEE_Access_Evaluation_Review_20261118.txt
+/home/ubuntu/graduate/Evaluation/evaluation_readiness_v2_20261118.txt
+H/docs/system-hardening-20261118.md
+H/operations/system-hardening-20261118/
+H/experiments/ieee-access-final-20261117/reports/{data-evidence,evening-evidence,day18-evidence}/
+
+재실행 제외:
+- SkyPilot 원본/held-out SARIMA forecast/causal cutoff/hash와 기존Collector HTTPS fresh/stale/TLS/가격freshness 수용.
+- GPT2 모델/WikiText103 512token 전처리, ResNet50/CIFAR10 데이터/recipe·hash 및 기존2Rank DDP 데이터순서/optimizer/RNG 복원계약.
+- 과거GPT2 2Rank FIS/Verified 복원, ResNet50 동일Pod process C/R·실제후속update/최종감사, 최근G6 2Rank durable CP/서로다른oneGPU VM 배치.
+- FIS caller tag/template/experiment ARN권한 보완과 wait-only/no-EC2 target create/start/get/stop의 실제API 수용.
+- 기존정책/Coordinator 코드조사와 기존262개 평가도구 테스트, v2의4Rank batch/parser/sampler CPU4tests 및 policy scan. 동일조건 검사를 다시돌리지 않았다.
+
+범위 제한:
+최근fix-rn-g6-1811은 실제FIS start 거절 전 공통step하한1024/durableCP/동일Pod audit까지다. API권한 수정후 실제Spot중단·새GPU복원이 성공한 것이 아니다. 기존GPU검사 자원은정상정리 receipt를재사용한다.2Rank 성공을4Rank 성공으로바꾸지않는다.
+4Rank에서는 새로운batch/GPU/NCCL/4개UID·archive와fence/새VM restore/4rankoptimizerupdate/goal/cleanup만 추가수용한다. 이미지/GPU/복원route가 달라지면 해당변경부분의검증이필요하다.
+
+3. 4Rank 실제 지원 상태와 실행도구 제약
+
+코드에서 확인:
+- H/config/crd/noderequests.yaml:targetWorkers minimum1,2한정아님. immutable이므로 이전NR의2→4patch가아니라 새namespace/NR UID로생성한다.
+- H/internal/management/group_checkpoint.go:readGroupCheckpoint는현재policy/workloadUID와같은completed generation,전체TargetWorkers수의rank/PodUID/archiveSHA/export를요구한다.2개receipt로4개전체성공을만들수없다.
+- H/internal/management/group_producer.go:groupSourcePods/newGroupRequest는TargetWorkers를rank범위/worldSize로사용. groupCheckpointVolume은공유RWX PVC의/checkpoint를요구하며per-rank독립PVC를공유라고간주하지않는다.
+- S/config/crd/restorerequests.yaml:groupRestore.worldSize1..64 허용. S/internal/management/restore.go:validateRuntimeStatus는len(plan.Spec.Pods)와실제Runtime worldSize/진전·identity를대조한다.
+- S/internal/member/group.go:fenceGroup은모든현재sourcePodUID/노드provider fence를확인. API삭제만으로복원안전성을가정하지않는다.
+- F/fluidcr/group_restore.py/distributed.py는RANK/WORLD_SIZE/operationidentity를사용한다. 이것은실제4GPU복원통과증거가아니다.
+
+현재 막히는실험도구:
+H/evaluation/run.py의WORLD_SIZE=2/start replicas2,
+final_protocol.py의world2/구E1E2arm,
+ieee_v2_observe.py의world2/rank0,1필터,
+ieee_v2.py/e1_experiment.py의2rank metric/Pod/CP가정,
+final_fault_gate.py의current_pods={0,1}/events.world2,
+final_fis.py의world2·oldE2-B·nodes2·exact1OD1Spot·fixedOnDemand1조건.
+따라서단순replicas4변경이나새arm이름치환으로실행하면안된다. 특히v3초기1OD3Spot에서기존FIS도구는구성검사를거절한다. 네rankprogress를확인하면서3개Spot중정확히한개의ARN을소유검증/사전고정하는새v3경로가필요하다. 광역tag selection/다른VM으로retry/가드삭제금지.
+
+최소추가연결(아직실행지원완료아님):
+manifest기반world4·batch·NRtarget·replicas/전체rank목록,required hostname anti-affinity,네provider/Pod/GPU request·limit1검증,네rank commonstep/goal/audit/CPcoverage/cleanup.
+관측/metric은4rank전체와현재PodUID/attempt를포함하고rollback직전highstep을현재step으로사용하지않는다.
+B/C같은config는같은policy/code/bounds와입력경로를뜻한다. 장애후의실측cost/actualinterval/시장구성이달라지는것은측정할시스템반응이다. 실제간격을강제로같게만들지않는다.
+Controller/CRD/RIC/Karmada나기존위험알고리즘은이번작업에서수정하지않았다.
+
+4. A·B·C 자원/Checkpoint 표현과 native정책검사
+
+A:fixedOnDemand=4,target4. H/internal/policy/contract.go:DecideAt의명시구성override로risk변화와관계없이4OD를선택한다. H/internal/management/checkpoint_schedule.go:periodicDisabled가training.dcnlab.com/periodic-checkpoint=disabled를읽으며,checkpoint_controller.go의해당분기는interval0/periodic_disabled를기록하고schedule생성을건너뛴다. 새namespace에활성round가없다는실제검사를해야한다. A를시작하기위해B/C용durableCP gate를억지로기다리지않는다. 완료/학습감사는A에도유지한다.
+B/C:fixedOnDemand미설정,target4,minOD1,paper-eq6-7,alpha.8,horizon3600초,기존economics/residency/full-group(planned-partial=disabled). 기존bootstrap설정으로는주목표가1OD3Spot또는4OD다.중간2OD2Spot/3OD1Spot을최적비율로강제하지않는다.
+B/C는기존adaptiveCP 활성. 범위60..600초는준비후보이며정식값은미동결이다. v2의고정P0/f0비교군은없어졌다. A에는고정f0를넣지않는다.
+GPU에서미검증인paper-equations-1-5-analytic/async GPU→DRAM·Iteration직접식은활성화하지않는다. 실제risk-band-bootstrap 또는checkpoint-cost-analytic 경로와분기전환을기록한다.2rank20/10초비용을4rank실측값으로주입하지않았다.
+
+새offline검사:
+evaluation/integrated_probe/main.go에--control-od4를추가해고정A구성만새조건으로검사했다. 동일forecast168h×G5/G6의336행에서A4OD0Spot과B/C기존policy출력을대조했다. scan내p0_f0_candidate_600라는필드명은과거diagnostic명칭이며A에서CP600초를실행했다는뜻이아니다. A의실제CP비활성은위Controller annotation경로로별도검사한다.
+evidence/abc-policy-scan.json,abc-policy-summary.json에저장했다. 위험예측이나정책수식을새로만들지않았다.
+
+5. B/C 위험입력 동일성과 Spot 유지의 양립성 — 실행 전 핵심 gate
+
+원본:/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json
+forecast SHA256:8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2
+trace SHA256:568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562
+672h training/168h held-out의기존causalSARIMA결과재사용. 미국V100availability요청slot proxy이며서울자연Spot hazard/예측정확도자료가아니다.새위험모델/장기수집/새데이터다운로드없음.
+
+기존최초인접mixed→OD전환후보:
+held-out14 lambda=.0009212361959754303/h ->1OD3Spot
+held-out15 lambda=.3458397557619131/h ->4OD
+1tracehour=실제3600초.14에서재생하면T_change=3600초다.실제교체/종료는정책결정직후완료되지않지만,그시간차를FIS실행을성립시키는가정으로이용하면안된다.
+전체첫low spell은5~14이고5에서시작하면변화까지10시간이다.인접구간후보/시작anchor는아직최종동결하지않았으며새더유리한구간을성능결과로고르지않는다.
+
+사용자확인한C기본fault:모든4rank의fresh current common committed step>=ceil(goal/2)직후. 적어도한개의현재ownedSpot과최초durable4rankCP가있어야한다. notice는PT2M이다.
+같은시계열에서두요구가양립하려면:
+(1) t_first_durable_CP <= t_50,
+(2) t_50에현재ownedSpot이존재,
+(3) 보수적사전검토로 t_50 +120초+API/관측/clock여유 <3600초,
+(4) 정상B는3600초이후실제전환/복원/유효진전을관찰하고goal에도달해야한다.
+(3)은명목시각의기획검사이며실제FIS시작/통지/EC2종료를따로계측해야한다. 여유값은pilot없이임의확정하지않았다.50%step이walltime의정확한절반이라는가정도사용하지않는다.
+참고수학예시:일정처리율/첫update가replay0이라는가정에서만3600<T_training<6960-2*여유이면전환전50%+PT2M과전환후학습이동시에가능한시간창이생긴다.이는실측/pilot/선정goal이아니다.실제CP·교체stall과성능변화때문에모델별4rank진행곡선으로검사해야한다.
+현재goal/t_50/clock/여유가없어결론은UNRESOLVED다. B의전환요구와C의Spot노출이논리적으로항상충돌하는것은아니지만실제로통과했다고말할수없다.
+
+충돌판정시처리:
+50%이전에모든Spot이반환됐거나durableCP가없으면그C시도는부적격/중단으로보존한다.위험값/50%시점/target을임의변경하지않는다.필요하다면변화입력블록과저위험fault블록을분리하고각블록에별도정상baseline B를두는대안을보고할수있다.그러나그것은새run수/비교조건을만드는설계변경이므로연구자승인전적용하지않는다.이번에는분리하지않았다.
+
+B/C초안의model·world4·asset/image·batch·seed·risk hash/offset/clock계약·initialcomposition·policy/CP/restore동일성검사를준비했다.목표/GPU/clock/가격입력모드가null이므로동일초안이라고해도freeze를허용하지않는다.
+evidence/bc-contract-check.json,risk-fault-compatibility.json.
+새evaluation/integrated_v3_readiness.py는이검사만수행하는offline도구로,AWS/Kubernetes호출/실행권한이없다.6개테스트통과.테스트의합성시간예시는시스템측정값이아니다.
+
+6. 현재환경/Quota/GPU/가격/저장소
+
+이번새readonly조회06:27UTC=15:27KST에서AWSMember관리노드10.50.1.80와NFS10.50.1.98는running.앞선v2보고서의stopped는그당시사실이고지금은변경됐다.이작업에서재가동하지않았으며누가재가동했는지는확인하지않았다.
+새system_preflight26개전부통과:MGMT/Karmada/AWS/ONPRE API,Ready/Member등록,필수Deployment/SpotWatcher,지정tag범위caller FIS권한simulation. 실제4GPU/새VM복원/actionrole/passrole/trust/가격청구통과를뜻하지않는다.
+NFS읽기검사:일반사용자읽기실패뒤권한이있는sudo read-only검사로현재파일존재와manifest해시일치확인.자산raw전체의과거검증을다시돌린것은아니다.
+WikiText103 manifest42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988
+CIFAR10 manifest7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1
+/mnt/nfs:total527295578112/used82148220928/available445130579968 bytes(약414.6GiBfree).
+4rank모델/optimizer/RNG/archive는batch절반으로줄여도전체저장량이같아진다고가정할수없다.첫수용round의실제bytes/CP횟수/보존/중복·순차복원/6run+반복으로저장예산계산이필요하다.기존CP/학습결과/PVC/PV는삭제하지않았다.
+
+GPU후보:G5.xlarge(A10G1,4vCPU) 또는G6.xlarge(L4 1,4vCPU),AZ ap-northeast-2c.기존offering/AMI가용성·2Rank부팅GPU증거재사용.4대동시공급/4RankC/R수용은미검증. paired/model A/B/C에서묵시적G5/G6교체금지.
+Quota:SpotG/VT코드L-3819A6DF,OD코드L-DB2E81BA.직전동일계정/권한의get-service-quota AccessDenied증거를재사용하여거절조회반복안함.32가서울계정G/VTSpot vCPU의실제값인지미확인.32GPU나OD허용량으로쓰지않는다.콘솔등적법한읽기증거가필요하다.
+A는OD16vCPU필요. B/C초기후보는OD4+Spot12vCPU.직렬worker교체가정의steady4/예상overlap5=20vCPU,최종OD16+oldSpot4vCPU가될수있다.다른계정사용/Spot대기요청까지합산해야함.예상5는4Rank실측상한이아니다.
+B의1OD3Spot→4OD에는한번의동시3대교체가아니라최대3개개별worker전환과그때마다4Rankfull-group복원이필요할수있다. C의fault-replacement후residency와이후risk전환이추가overlap/복원에미치는영향도측정한다.3회수렴/정리까지기존코드로되는지새gate이며대규모재설계로우회하지않는다.
+
+새가격관측15:27KST:
+G6 OD .9896/Spot .4712 USD/h ->A4OD3.9584/h, B/C초기1OD3Spot2.4032/h, 마지막4OD+oldSpot1개overlap단가4.4296/h예시.
+G5 OD1.237/Spot .6287 ->A4OD4.948/h, B/C초기3.1231/h.
+이는단순시점단가이며실제run비용/예산승인/AWSinvoice가아니다.OD는오늘공식Linux/Shared/RunInstances서울receipt를24h조건으로재사용,Spot은새API조회.정식Run직전/실행중다시조회·보존한다.
+정확한총실험견적은GPU/goal/세번전환/수용·반복시간이없어미확정. GPU Compute Cost에는최초·대체·유휴·overlap·감사·반환대기VM의실제running시간을모두포함한다. EBS/NFS/VPN/network/FIS/관리노드비용을제외한다면그사실을별도표시한다.
+근거:evidence/{environment-readonly,preflight-current,nfs-current-sudo}.json. Quota·단위기준은AWS공식EC2quota문서(이계정값과구분).
+
+7. Checkpoint/FIS/계측 준비
+
+A의주기CP비활성과B/C의adaptiveCP활성은설정으로분리한다. B/C의실제intervalSource/risk/cost/runtime/선택interval과schedule/child UID/generation/actualrank pause/resume/export를각각수집한다.실제Coordinator분기/간격이장애후달라지는것은정책설정변경과구분한다.
+필요한원시시간:
+t_request=sourceNR.creationTimestamp;
+t_ready=각EC2/Node/GPU/Podready;
+t_first=현재네rank의첫유효optimizerupdate;
+t_goal=현재네rank목표update완료;
+t_release=마지막ownedGPUprovider실제종료.
+T_E2E=t_goal-t_request. 반환지연은별도,그동안GPU실행비용은포함.처리율은rollback중복을제외한committedtokens 또는samplepresentations/T_E2E. CPstall은네rank pause/resume구간합집합,archive/export시간과별도다.
+C에서는FISdispatch/accepted/start,rebalance/notice,실제EC2종료,마지막공통highwater,restore된durableStep,복원후첫update,기존highwater초과,goal을분리한다. rawsourceUTC/폴링시각/전환불확실성/clock offset을기록한다.
+모든ownerUID/NP/provider/Node/Pod/rank/CPgeneration·sha/RestoreRequest·fence/실제종료를연결.같은이름/과거UID/torch.load성공만으로복원성공처리불가.
+실패·공급취소·50%부적격·자연선점·timeout·계측누락을보존.성공run만고르거나missing을0으로대체하지않는다.
+기존caller권한수정과wait-onlyAPI수용은재사용하고,실제4rankC의role/action/exacttarget/restore만수용한다.기존final_fis.py의2Rank guard를삭제하는것이아니라v3전용strictcontract를추가해야한다.
+R1은현재user/runner의명시적종료요청후반환이다.학습완료를Controller혼자자동감지해pool반환했다고주장하지않는다. NR삭제만으로VM정리를가정하지않는다. Provisioner/finalizer가정상반환을마치고EC2/EBS/임시key 등정리receipt가필요하다.
+
+8. 장애시점 문헌 검토와50% 유지 근거
+
+사용자는50%를기본으로하되관련근거가있으면검토하도록명시했다.검토한1차자료:
+- GEMINI: Fast Failure Recovery in Distributed Training with In-Memory Checkpoints, SOSP2023, §7.3 Overheads incurred by failures. 특정Iteration4에인스턴스장애를유발해복구타임라인을측정하고,다른실험에서failure-rate simulation을구분한다.보편적인50%표준을제시하는근거가아니다.
+  https://www.cs.rice.edu/~eugeneng/papers/SOSP23.pdf
+- Oobleck: Resilient Distributed Training of Large Models Using Pipeline Templates, SOSP2023, §7.2 Controlled Failures 및§7.3 Spot Instance Traces.제어한장애빈도실험과12시간availability-trace재생을구분한다.단일장애를목표학습량50%에넣는현재비교와연구범위가다르다.
+  https://symbioticlab.org/publications/files/oobleck:sosp23/oobleck-sosp23.pdf
+- AWSFIS Spot interruption tutorial의actions/verify결과:단일Spot대상과PT2M,실제EC2상태확인.학습진행률50%를규정하지않는다.
+  https://docs.aws.amazon.com/fis/latest/userguide/fis-tutorial-spot-interruptions.html
+판단:통제한진행위치/실제장애·복구타임라인측정이라는방식을참고한다.특정논문의Iteration4나빈도를현재모델에그대로옮길근거는없어기본50%를유지한다.50%가문헌이증명한최적위치/자연선점대표분포라는주장은하지않는다.현재단일사건효과와한계를보고한다.추가분포/여러위치실험은새로운설계로자동추가하지않았다.
+출처와적용범위는fault_timing_sources.json에별도기록했다.
+
+9. 필수추가작업·예상소요·승인경계
+
+오늘완료:지시반영/기존증거재사용,all4Rank A/B/C matrix,새native고정A검사와B/C입력적격성검토,50%문헌검토·유지,상태변화에따른현재26preflight/NFS·해시/가격읽기확인,offline동일성·시간창검사6tests,본TXT/manifest초안.
+
+다음최소작업(추정,아직완료아님):
+1)새v3 renderer/observer/metric/commonstep·FIS단일대상/정리범위의4rank·arm계약연결,nonzeroforecastoffset/TLS/replay초기부팅과clock연결:약0.5~1개발일.새알고리즘개발제외.
+2)선택GPU/계정시장별quota/supply/실제imageID·driver/CUDA/NCCL,기존설정일치확인:약0.5~1h의운영준비,접근권한/공급지연은별도.
+3)4Rank GPT2 batch2(ResNet batch16)의학습/CPbytes/공통step sizing,새VMfull-group Restore·sourcefence/네optimizerupdate·순차전환/goal/반환수용:별도boundedGPU실행안필요.공급·3회교체·복원시간이없어1시간내완료보장불가.2rank테스트대체불가.
+4)실제pilot진행곡선으로B의변화후학습과C의50%Spot유지동시gate확인,checkpointbounds/goal/clock/GPU/예산/targetselectionrule/code/image/risk/가격조회계약freeze:자료확보후약0.5일.막히면근거와설계충돌보고.
+5)단일FIS4rank실제action/새VM복원수용은이미미확인인항목만수행하고4Rank복원통과증거와연결.비용·절대deadline/cleanupreserve를포함한새승인이필요.
+이추정들은클라우드공급/권한/복원실패로늘어날수있다.
+
+기존유료G6수용1시간창은오늘12:22:59KST에끝났다.그승인을4Rank5대overlap/새FIS/정식run/반복의무기한권한으로확대하지않는다.현재기반서버가running이라재가동승인은지금필요없지만새GPU/FIS에는구체적대수·최대overlap·예산·시작/절대종료시각을명시한승인이필요하다. IAM추가변경이실제로필요하면exactaction/role/targetdiff를먼저제시한다.
+현재준비보고서작성완료를위해새승인을요청할필요는없다.실행안과동결값이갖춰진후승인을최종단계로진행한다.
+
+10. 일정/남은문제/설계변경필요성
+
+11/18:본준비조사·TXT·matrix·draftmanifest완료.유료VM/FIS없음.
+11/19~20:4rank실행·계측도구의최소연결,선택GPU수용/새VM·FIS누락gate/goal·위험시계·Spot노출freeze.통과못하면정식실험차단.
+11/23~27:모델별A/B/C기본비교부터수행.같은실제A/B의E1/E2재사용은명시적동일성/성공검토후참조.11/27우선결과·실패/coverage보고.
+11/30~12/01:핵심대응비교반복,두모델미완료/부족데이터보완.
+12/02:rawhashlock/개별run표·비용/학습진전/실패·미완/한계·동일조건비교검증및최종분석.반복부족이면통계적유의성/CI/우수성을만들지않음.
+
+남은핵심기술문제:
+4rankGPU/새VMfull-group복원미검증;실험도구의2rank·oldprotocol가정;3Spot중단일FIS exacttarget가드;offsetfeed와replayanchor;실측경제성/residency·순차교체수렴;실제quota/supply;4rankcheckpoint저장예산;goal/50%시점/CP정책미동결.
+설계변경필요여부:지금은조건부판단이며확정변경없음.동일시계열의전환전50%Spot노출과전환후B진전이pilot로성립하면현재A/B/C설계를그대로수행할수있다.성립하지않으면위험block분리와별도정상baseline등을근거와함께보고하고연구자승인전실행하지않는다.코드에없는부분을기존완료라고말하거나무리하게2rank/다른target으로바꾸지않는다.
+
+산출물:
+/home/ubuntu/graduate/Evaluation/evaluation_readiness_v3_20261118.txt
+/home/ubuntu/graduate/Evaluation/protocol_manifest_v3_draft.json
+버전관리사본:
+/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v3-20261118/
+
+Manifest는DRAFT_BLOCKED_NOT_FORMALLY_FROZEN이다.정식준비미완료이므로frozen실행manifest를발행하지않았다.고정되지않은값을측정값이나승인으로대체하지않는다.
