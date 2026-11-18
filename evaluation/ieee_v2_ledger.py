@@ -115,6 +115,7 @@ def historical_termination_receipts(directory, run, expected):
         t=datetime.fromisoformat(value.replace('Z','+00:00'))
         if t.tzinfo is None:raise ValueError('timezone required')
         return t.astimezone(timezone.utc)
+    if not expected:return {}
     start=at(run['started_at']);now=datetime.now(timezone.utc);found={}
     for file in sorted((Path(directory)/'snapshots').glob('*/aws-instance-ledger.json')):
         body=file.read_bytes()

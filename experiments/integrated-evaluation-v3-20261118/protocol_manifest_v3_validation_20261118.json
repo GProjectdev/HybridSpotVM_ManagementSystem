@@ -86,16 +86,17 @@
     "candidates": [
       "g5.xlarge",
       "g6.xlarge",
-      "g5.2xlarge"
+      "g5.2xlarge",
+      "g6.2xlarge"
     ],
     "availability_zone": "ap-northeast-2c",
     "ami_candidate": "ami-035e3088f6b7821fb",
     "same_type_across_model_A_B_C": true,
-    "validation_candidate_instance_type": "g5.2xlarge",
+    "validation_candidate_instance_type": "g6.2xlarge pending actual capacity; g5.2xlarge C09 functional proof completed but latest new Spot request failed",
     "candidate_authorization": "user permits alternate oneGPU instance after actual xlarge supply recheck; uniform type per world; formal GPU not yet frozen"
   },
   "source_heads": {
-    "HybridSpotVM_ManagementSystem": "3551b7708e0c0f76c2a6042d23820a72da15b92a",
+    "HybridSpotVM_ManagementSystem": "beb8ce63ff2a83b736855af6a2a38ac2af8d6aec",
     "PublicCloud-VM-Provisioner_test": "ee87c2d8e428350e59cc487fba70264222cfda9f",
     "My_FluidCR": "da39d1f0b50c95cee50b30e073d7d78bc080f928",
     "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
@@ -525,7 +526,7 @@
     "evaluation/ieee_v2_observe.py": "4bc63e2b699f6a178444d4e01cf845de649c5ff21fd07d70d73a1d6abc80de6b"
   },
   "source_heads_scope": "baseline before this preparation commit; exact inspected working-tree files hashed separately, no core rollout",
-  "snapshot_at_utc": "2026-11-18T11:28:51.980188+00:00",
+  "snapshot_at_utc": "2026-11-18T12:28:48.754969+00:00",
   "source_draft_sha256": "c036442e65a97c608a73d5b54c894b761b2549e92f324f3122bdb15e6395e8fc",
   "source_draft_preserved": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
   "source_provenance_note": "P prior1235 was old local branch, not operationalmain abea04d; corrected to main plus minimal cooldown. Originalbranch retained; withdrawn build/attempt preserved.",
@@ -535,9 +536,12 @@
     "risk_offset_native_clock_live": "/home/ubuntu/v3-validation-20261118/risk-window-14-15/selected-window-result.json",
     "failed_periodic_attempt_preserved": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-g52-main-fis-06/acceptance-stop-decision.json",
     "current_C_component": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-payloadfix-fis-09",
-    "actual_risk_worker_transition": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-07/policy-transition-acceptance.json",
-    "resnet_newVM_component": "/home/ubuntu/v3-validation-20261118/resnet-four-rank-new-vm-08",
-    "formal_results": false
+    "actual_risk_worker_transition": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/policy-transition-acceptance.json",
+    "resnet_newVM_component": "/home/ubuntu/v3-validation-20261118/resnet-four-rank-od-new-vm-11",
+    "formal_results": false,
+    "previous_g62_checkpoint_failure": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-12-g62-fast/bounded-failure-stop.json",
+    "native_clock_with_live_workers": "NOT_PERFORMED; CPU live1h feed reused, discrete GPU fixture has a separate nonformal scope",
+    "fast_input_fixture": "unchanged verified forecast14/15 values, current prices; generic HTTPS Collector endpoint; high after actual durable4rank CP and commonstep100; NOT compressed formal replay"
   },
   "policy_or_risk_algorithm_redeveloped": false,
   "validation_runtime_images": {
@@ -547,6 +551,61 @@
     "vm_management_role_deployed_to_both_members": false,
     "future_payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5",
     "future_payload_deployed_to_both_members": true
+  },
+  "storage_followup": {
+    "volume_id": "vol-01377e5f3154a6011",
+    "size_gib": 500,
+    "previous_type": "standard",
+    "requested_type": "gp3",
+    "iops": 3000,
+    "throughput_mib_s": 125,
+    "authorization": "user explicitly approved persistent online change after exact cost/data proposal",
+    "receipt_directory": "/home/ubuntu/v3-validation-20261118/nfs-gp3-change",
+    "probe_scope": "4x256MiB local concurrent fsync only, not actual checkpoint performance",
+    "preserve_data": true,
+    "formal_baseline_requires_same_storage_for_all_arms": true,
+    "observed_modification": {
+      "VolumesModifications": [
+        {
+          "VolumeId": "vol-01377e5f3154a6011",
+          "ModificationState": "optimizing",
+          "TargetSize": 500,
+          "TargetIops": 3000,
+          "TargetVolumeType": "gp3",
+          "TargetThroughput": 125,
+          "TargetMultiAttachEnabled": false,
+          "OriginalSize": 500,
+          "OriginalVolumeType": "standard",
+          "OriginalMultiAttachEnabled": false,
+          "Progress": 0,
+          "StartTime": "2026-11-18T12:25:40+00:00"
+        }
+      ]
+    }
+  },
+  "current_deployed_image_references": {
+    "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:c779629ce8f2fdf99b1963a5abfd82c5791d0a3f9464ea46bef80bf97d8d7b69",
+    "MGMT/deployments/hybridspot-system/placement-webhook/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+    "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+    "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:1d51026c6d5dbf4fbb0813e5a3143f1ea8743be47e80beb023e3da83cbe2db71",
+    "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+    "MGMT/deployments/stateful-migration-system/stateful-management/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+    "AWS/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+    "AWS/deployments/nfs-provisioner/nfs-client-provisioner/nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+    "AWS/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+    "AWS/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+    "AWS/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+    "AWS/daemonsets/hybridspot-system/spot-watcher/watcher": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+    "AWS/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+    "ONPRE1/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+    "ONPRE1/deployments/nfs-provisioner/e1-aws-nfs-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+    "ONPRE1/deployments/nfs-provisioner/legacy-nfs-nfs-subdir-external-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+    "ONPRE1/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+    "ONPRE1/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+    "ONPRE1/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+    "ONPRE1/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+    "AWS/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5",
+    "ONPRE1/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5"
   },
   "formal_dispatch_allowed": false,
   "unusable_checkpoint_note": "C09 first postrestore step17 has only producer ranks0/1 markers after watchdog on2/3; do not use as fullgroup checkpoint despite container archive Completed. Require subsequent all4 producer+durable+updates proof."

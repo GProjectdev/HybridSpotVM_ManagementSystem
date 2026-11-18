@@ -538,7 +538,132 @@
     "no_forced_finalizers": true,
     "checkpoint_pvc_pv_nfs_preserved": true
   },
-  "snapshot_utc": "2026-11-18T11:28:52.044217+00:00",
+  "resnet-four-rank-od-new-vm-11": {
+    "new-vm-restore-acceptance.json": {
+      "passed": true,
+      "formal_result": false,
+      "at": "2026-11-18T11:42:09.338234+00:00",
+      "request_uid": "0a9c2ef4-0774-4865-898b-cfcce96fc590",
+      "source_path": "/home/ubuntu/v3-validation-20261118/resnet-four-rank-od-new-vm-11/new-vm-restore-acceptance.json",
+      "source_sha256": "d0d5ec9099b64bdd96d8e59ba5c19fb58e9c4b92c934b0de0488867b232fd80a",
+      "ranks": [
+        {
+          "rank": 0,
+          "pod_uid": "eb2cc773-a60a-428e-98c3-b6f5ad54b59b",
+          "current_step": null
+        },
+        {
+          "rank": 1,
+          "pod_uid": "362536fc-abf4-4a64-9c86-1345c92f8acd",
+          "current_step": null
+        },
+        {
+          "rank": 2,
+          "pod_uid": "3db6bb0b-8869-469d-be99-195b277d97ac",
+          "current_step": null
+        },
+        {
+          "rank": 3,
+          "pod_uid": "21830c59-f3ec-4158-910a-e90c725c76d3",
+          "current_step": null
+        }
+      ]
+    },
+    "goal-acceptance.json": {
+      "passed": true,
+      "formal_result": false,
+      "at": "2026-11-18T11:45:07.286874+00:00",
+      "goal_steps": 1024,
+      "source_path": "/home/ubuntu/v3-validation-20261118/resnet-four-rank-od-new-vm-11/goal-acceptance.json",
+      "source_sha256": "7c60d20c7c926cc0be69ef0f256afeb096dc7d937167265a6f82da1fb677cac5"
+    },
+    "cleanup-complete.json": {
+      "completed_at": "2026-11-18T11:52:38.395754+00:00",
+      "ec2_terminated": [
+        "i-049159a5139466a10",
+        "i-050b6a9d8d2066df9",
+        "i-069ba6fc5b6f7fd76",
+        "i-081d2702a2ec5402a",
+        "i-08fcfd531e5102cbd"
+      ],
+      "gpu_compute_conservative_upper_estimate_usd": 1.919543238659778,
+      "cost_scope": "launch through terminated observation at OD price 0.9896/h; not invoice; EBS/network/FIS excluded",
+      "no_forced_finalizers": true,
+      "checkpoint_pvc_pv_nfs_preserved": true,
+      "source_path": "/home/ubuntu/v3-validation-20261118/resnet-four-rank-od-new-vm-11/cleanup-complete.json",
+      "source_sha256": "3720d1fada335ecb42cd814836e3e6dec68d1a08cd4293f4e5a1cebd4a0d216d"
+    }
+  },
+  "gpt2-four-rank-risk-transition-12-g62-fast": {
+    "cleanup-complete.json": {
+      "completed_at": "2026-11-18T12:15:39.139146+00:00",
+      "ec2_terminated": [
+        "i-08212b5dc5037d88a",
+        "i-0c52b17c7536e1218",
+        "i-0c87180c0ed9cad77",
+        "i-0dacdc369b38f9ab6"
+      ],
+      "gpu_compute_conservative_upper_estimate_usd": 1.5522046489483112,
+      "cost_scope": "launch through terminated observation at OD price 1.20208/h; not invoice; EBS/network/FIS excluded",
+      "no_forced_finalizers": true,
+      "checkpoint_pvc_pv_nfs_preserved": true,
+      "source_path": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-12-g62-fast/cleanup-complete.json",
+      "source_sha256": "8d04e7eace96b07636b18160df90f30226823a2ee589ee49dc7243d33cbf3058"
+    },
+    "feed-cleanup.json": {
+      "at": "2026-11-18T12:15:41.550453+00:00",
+      "collector_trust_restored": true,
+      "source_path": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-12-g62-fast/feed-cleanup.json",
+      "source_sha256": "ef3d0d3426e5e78b628cf3f23ca84eca280eaedef1c0ca462ce4c7fa4430a740"
+    },
+    "bounded_failure": {
+      "path": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-12-g62-fast/bounded-failure-stop.json",
+      "sha256": "1c56a092a226805a5e0eb4fb5bc438acf1e273ac02a2c6dc27d660728e7df6e7",
+      "failed_checkpoints": true,
+      "not_accepted_as_checkpoint": true
+    }
+  },
+  "gpt2-four-rank-risk-transition-13-gp3": {},
+  "NFS_gp3": {
+    "authorization-and-scope.json": {
+      "recorded_at": "2026-11-18T12:27:30.828425+00:00",
+      "user_authorization": "이렇게 해야 실험이 되면 해; exact prior proposal standard to gp3,500GiB,3000IOPS,125MiB/s",
+      "same_volume": "vol-01377e5f3154a6011",
+      "size_gib": 500,
+      "before_receipt": "/home/ubuntu/v3-validation-20261118/nfs-io-hardware-followup.json",
+      "price_receipt": "/home/ubuntu/v3-validation-20261118/nfs-volume-price-change-proposal.json",
+      "modify_volume_invoked_successfully_once": true,
+      "format_or_size_change": false,
+      "data_retained": true,
+      "probe_receipt": "/home/ubuntu/v3-validation-20261118/nfs-gp3-bounded-local-write-probe.json",
+      "full_performance_not_assumed_during_optimization": true
+    },
+    "modification-state.json": {
+      "VolumesModifications": [
+        {
+          "VolumeId": "vol-01377e5f3154a6011",
+          "ModificationState": "optimizing",
+          "TargetSize": 500,
+          "TargetIops": 3000,
+          "TargetVolumeType": "gp3",
+          "TargetThroughput": 125,
+          "TargetMultiAttachEnabled": false,
+          "OriginalSize": 500,
+          "OriginalVolumeType": "standard",
+          "OriginalMultiAttachEnabled": false,
+          "Progress": 0,
+          "StartTime": "2026-11-18T12:25:40+00:00"
+        }
+      ]
+    },
+    "local_probe": {
+      "observed_at": "2026-11-18T12:26:40.950467+00:00",
+      "returncode": 0,
+      "stdout": "{\"probe\": \"own temporary files, 4 concurrent 256MiB writes and fsync; local NFS backend only, not GPU checkpoint benchmark\", \"rows\": [{\"stream\": 0, \"bytes\": 268435456, \"seconds\": 3.141727963997255}, {\"stream\": 1, \"bytes\": 268435456, \"seconds\": 5.228793604001112}, {\"stream\": 2, \"bytes\": 268435456, \"seconds\": 7.188088070000958}, {\"stream\": 3, \"bytes\": 268435456, \"seconds\": 7.254250838999724}], \"elapsed_seconds\": 7.270634765998693, \"aggregate_MiB_s\": 140.84052258941156, \"filesystem\": 285541961728}\n",
+      "stderr": ""
+    }
+  },
+  "snapshot_utc": "2026-11-18T12:31:10.671011+00:00",
   "formal_result": false,
   "C09_recovery_timing_eligible": false,
   "known_incomplete_round": "postrestore step17 producer ranks0/1 only; excluded as future fullgroup checkpoint"

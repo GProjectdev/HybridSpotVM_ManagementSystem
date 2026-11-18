@@ -161,7 +161,9 @@ class Control:
         r=self.run
         if self.owned('karmada') or self.owned('aws'):raise ValueError('normal provider finalizers still pending')
         known=json.loads((self.d/'cleanup-owned-instance-identities.json').read_text());rows=self.cloud.observe(known,datetime.now(timezone.utc).isoformat())
-        prior=historical_termination_receipts(self.d,r,known)
+        if len(rows)!=len(known) or {x.get('instance_id') for x in rows}!=set(known):raise ValueError('positive exact EC2 termination not yet verified')
+        absent={x['instance_id']:known[x['instance_id']] for x in rows if x['state']=='NOT_OBSERVED'}
+        prior=historical_termination_receipts(self.d,r,absent)
         if len(rows)!=len(known) or any(not ((x['state']=='terminated' and x.get('provider_ownership_verified')) or (x['state']=='NOT_OBSERVED' and x['instance_id'] in prior)) for x in rows):raise ValueError('positive exact EC2 termination not yet verified')
         save(self.d/'exact-ec2-cleanup-verification.json',{'at':datetime.now(timezone.utc).isoformat(),'instances':rows,'historical_positive_termination_receipts':prior,'EBS_keypair_IAM_webhook_cleanup':'must separately verify recorded temporary resources; not implied by EC2 state'})
 
