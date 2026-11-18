@@ -1,7 +1,8 @@
 HybridSpotDDP E1·E2 4-Rank 실행도구 보완 및 실환경 수용검사 — 2026-11-18
-생성 UTC: 2026-11-18T12:54:50.494509+00:00
+생성 UTC: 2026-11-18T13:17:38.002654+00:00
 사용자 시간 KST=UTC+9. 본 문서는 진단·수용검사 보고서이며 정식 성능 결과가 아니다.
-진행 중인 항목은 아래에 미완료로 표시한다. 파일 생성 자체가 실험 검증 완료를 뜻하지 않는다. 오늘 새로 확인한 NFS 성능 문제와 온라인 gp3 변경은 별도 항목에 기록한다.
+완료한 기능 증거와 미검증 항목을 구분한다. 파일 작성 완료가 정식 평가 실행 완료를 뜻하지 않는다. 오늘 새로 확인한 NFS 성능 문제와 온라인 gp3 변경은 별도 항목에 기록한다.
+최종 범위: GPT2/ResNet의4rank 전체복원 및 학습재개, GPT2 단일Spot FIS, 실제위험입력에 따른첫Spot→OD 교체를 기능증거로 확보했다. 위험교체13은첫교체성공후다음VM이생성된시점에검증도구의CR개수guard가중단했고,사용자의성공확인/최적화지시에따라추가유료검증을중지했다. 3대연속교체·최종4OD32vCPU는미검증이다. 현재평가GPU는전부종료했고최소교체순서보완을무료검사/idle배포했다. 정식ABC 결과는없다.
 
 1. 유지한 실험 설계와 승인 범위
 기준: evaluation_readiness_v3_20261118.txt 및 researcher_instructions_v3_20261118.txt.
@@ -15,7 +16,7 @@ GPT2 데이터: /mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-toke
 ResNet50: /mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1, manifest7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1. CIFARstem/10classes/weightsNone,4rank batch16/global64,SGD lr.1,momentum.9,wd.0005,seed42. StepBatchSampler가 optimizerstep으로 데이터 순서를 복구한다. BN buffer는rank-local이며 최종 파라미터 일치와 별도 기록한다.
 
 3. 코드 보완과 실제 배포
-HybridSpotVM_ManagementSystem local HEAD=6c1d2a5f64052dd5d2d408c261062217b37922c4
+HybridSpotVM_ManagementSystem local HEAD=87acefbfc3b888130b035818db274f233c5c976d
 Stateful-Migration-Operator-with-PV local HEAD=dae0124e9a6b3d9b38ededae97962e5b91f30083
 PublicCloud-VM-Provisioner_test local HEAD=ee87c2d8e428350e59cc487fba70264222cfda9f
 My_FluidCR local HEAD=da39d1f0b50c95cee50b30e073d7d78bc080f928
@@ -23,6 +24,8 @@ H/evaluation/integrated_protocol.py: 명시적 v3 world4 ABC renderer, suspensio
 H/evaluation/integrated_control.py: exact NR UID provision,4Ready provider/actualEC2type·AZ·market·UID/start/rank0OD배치, 원본Karmada에서 UID-precondition 정상정리, 과거전체 provider의 실제EC2종료 확인. formal은 실제 deployed image/payload/rollout와system_lock을 대조한다. eligible node0인 DS는0/0을 기록하며 실행 성공으로 표현하지 않는다.
 H/evaluation/{final_fault_gate,final_fis,ieee_v2_observe,export_v2,ieee_v2,price_watch,e1_experiment}.py 및 run.py: 기존2rank 경로를 유지하고 명시적v3만4rank,현재4PodUID·rank·attempt/commonstep,1GPU/distinctVM,exactSpot ARN/market/owner,현재4rank durableCP,단일atomic FIS intent,30분 복구여유,4rank 완료·상태감사,전체GPU 시간·가격 계측을 연결했다. 원래 모델·CRD·Karmada는 재설계하지 않았다.
 단독 감사 CLI도 보완했다: evaluation/audit_restore.py --world-size 4 --events /PRIVATE/run/training-events.jsonl. 기존 기본2rank/monitor-events.jsonl은 유지한다. 명시적4rank 전체·각attempt의복원상태/후속3update·제시된world_size일치를검사하며2rank증거만으로4rank통과하지않는다. rank-local 검사이므로전체DDP수치동등성/소유UID/source fence/Verified/목표완료를대체하지않는다. test_audit_restore.py 11개(실제CLI observer JSONL 수용 및 누락rank거절 포함) 통과; /tmp/v3-audit-world-unit-tests.log. 추가컨트롤러이미지변경은필요없다.
+추가 직렬 교체 보완: internal/management/group_retirement_capacity.go pendingVerifiedGroupRetirement, capacity.go 및 policy_controller.go. Verified 이후에도 정확한old provider UID가남아있으면 reason=verified_source_retirement_pending으로다음replacement할당을대기하고5초마다재확인한다. fresh APIReader·policy/world UID·현재Verified/fence·new provider UID/Ready를검증한다. 기존group intent해제/Checkpoint재개는유지해종료대기중학습과CP를막지않는다. 위험률알고리즘/CRD/목표market결정은그대로다. 기존full-group 직렬방식의자원겹침을제한하는수정이며복원3회를1회로줄인것은아니다. 전체Go통과/Buildah publish/registry/idle rollout/push근거=management-serial-retirement-fix. 이새gate의실GPU3연속검증은미실시다.
+현재 MGMT spot-vm-management-controller image: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:2b85db01cd4345a564a2c42f6c2dcac6efd8b8448805ec25c1ce2bc2d72015a9
 H/internal/collector/paper_sarima_replay.py: 비영점 offset은 원본forecast/선정근거hash 및 원래 인접전환을 확인한 경우만 허용. 1tracehour=3600real seconds 유지. evaluation/integrated_probe/main.go --instance-types는 새GPU의 기존policy 출력을 검사하며 새 위험 알고리즘이 아니다.
 S/internal/member/{group,reconciler}.go: group resume의 PodReady 순환대기를 수정했다. restored launcher가 operation lock 해제 전 control포트를 열지 않는데 PodReady가 그포트에 의존했다. 모든 mapped container가 실제 Running+CRI ID를 가져야 기존operation resumeJob을 시작할 수 있게 했고, 최종 Ready/새 TrainingRuntime 진전/fence 검증은 유지했다. resumeJob만으로 Verified가 되지 않는다.
 S member pinned image: docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a. AWS/ONPRE1 stateful-member에만 적용했다.
@@ -73,10 +76,12 @@ ResNet전용 단축11계획: resnet-four-rank-od-new-vm-11, 동일g6.xlarge oneL
 단계 gpt2-four-rank-risk-transition-13-gp3
   gp3-first-checkpoint-acceptance.json: {"passed": true, "formal_result": false, "at": "2026-11-18T12:45:51.454638+00:00", "checkpoint_uid": "ee718800-4031-43d2-8b16-0ef4d41feb6c", "checkpoint_id": "eval-gpt4-gp3-1824-periodic-caf97807-g1-t1795005461379891084", "post_resume_steps": {"0": 307, "1": 307, "2": 307, "3": 307}}
   user-step40-steering.json: {"requested_common_step": 40, "trigger_already_executed": true, "actual_trigger_at": "2026-11-18T12:43:06.052879+00:00", "actual_trigger_rank_steps": {"0": 101, "1": 101, "2": 101, "3": 101}}
+  first-policy-replacement-acceptance.json: {"passed": true, "formal_result": false, "at": "2026-11-18T13:09:21.469777+00:00", "restore_request_uid": "b5d911ad-c680-454c-8327-6516f9040fc2", "verified_replacements": 1, "three_replacements_verified": false, "post_restore_max_steps": {"0": 200, "1": 200, "2": 201, "3": 202}, "restored_steps": {"0": 34, "1": 34, "2": 34, "3": 34}, "all_ranks_at_least_100_updates_after_restore": true, "matched_cross_rank_parameter_audit_steps": [35, 36, 37, 46, 47, 48], "old_spot_terminated": "i-00bb716dd91b5a726", "run_stopped_before_all4OD": true}
+  tool-capacity-stop-and-cleanup-repair.json: {"at": "2026-11-18T13:11:14.058217+00:00", "original_error": "owned VM capacity exceeds max5; same guard blocked cleanup", "observed_provider_crs": 6, "repair": "cleanup enumerates all exact policy UID owned providers independently of paid-stage count guard; all ownership and namespace checks retained"}
   policy-transition-acceptance.json: 미완료·미확인(receipt 없음)
   bounded-failure-stop.json: 미완료·미확인(receipt 없음)
-  cleanup-complete.json: 미완료·미확인(receipt 없음)
-  feed-cleanup.json: 미완료·미확인(receipt 없음)
+  cleanup-complete.json: {"completed_at": "2026-11-18T13:06:17.398743+00:00", "ec2_terminated": ["i-00bb716dd91b5a726", "i-056e653a986cad52c", "i-08b35d352207b39ce", "i-09801cf02e2b88f54", "i-0b5e32056da896aa6", "i-0fa4102748f0bb8ae"], "gpu_compute_conservative_upper_estimate_usd": 3.443088459995556, "no_forced_finalizers": true, "checkpoint_pvc_pv_nfs_preserved": true}
+  feed-cleanup.json: {"at": "2026-11-18T12:57:08.288984+00:00", "collector_trust_restored": true}
 단계 resnet-four-rank-od-new-vm-11
   new-vm-restore-acceptance.json: {"passed": true, "formal_result": false, "at": "2026-11-18T11:42:09.338234+00:00", "request_uid": "0a9c2ef4-0774-4865-898b-cfcce96fc590", "old_provider_id": "i-08fcfd531e5102cbd", "new_provider_id": "i-069ba6fc5b6f7fd76", "verified_ranks": [0, 1, 2, 3]}
   goal-acceptance.json: {"passed": true, "formal_result": false, "at": "2026-11-18T11:45:07.286874+00:00", "goal_steps": 1024}
@@ -99,16 +104,19 @@ ap-northeast-2c,동일계정. Quota GetServiceQuota와 별도ListServiceQuotas�
 현재 정식dispatch는 불가. component receipt 완료와 별개로 동일hardware/model/data/batch/goal/system image/risk sequence/relative clock/price mode/CP bounds를 동결해야 한다.
 B/C는 같은native14→15(3600sec) 입력을 사용한다. 모델별 실제 진행으로 t_first_durable_CP<=t50, t50+PT2M+관측여유<3600sec, B목표가 실제재구성 및 이후학습을 포함하는지 확인해야 한다.50%를walltime 절반으로 가정하지 않는다. 양립하지 않으면 원인과 필요한 변경을 연구자에게 먼저 보고하며 입력/장애시점/목표를 편의상 바꾸지 않는다.
 CP60..600 후보는 아직 정식값이 아니다. GPU비동기paper profile은 새로 활성화하지 않는다. 실제risk-band/bootstrap 또는checkpoint-cost 분기·intervalSource·실제CP/export/정지시간을 기록한다. 빈번한CP의 저장부담이 이점보다 큰 불리한 결과도 제외하지 않는다.
-Quota 읽기 불가,공급변동,32ODvCPU 실제수렴,3회연속group restore,4rank ResNet새VM/goal은 위receipt 상태로 판단한다. NFS의 데이터/CP를 삭제하지 않고 실제bytes와 잔량/필요run수로 용량을 산정한다.
+ResNet4rank 새VM복원/goal1024는 실제통과했다. 남은검증은32ODvCPU 실제수렴과새gate의3회연속group restore이며Quota읽기권한과공급변동제약은별도다. NFS의 데이터/CP를 삭제하지 않고 실제bytes와 잔량/필요run수로 용량을 산정한다.
 C09는FIS후컨트롤러를업데이트한진단run이므로복구시간의정식비교결과로사용불가. 기능증거는재사용하되경과시간을정식C로제시하지않는다. 후속B유료시작은새payload배포/테스트및C후속유효checkpoint gate를모두요구한다. gate미충족시추가VM을생성하지않는다.
 정식실험 반복수·총예산/다음실행시간은 미동결. 이번유료허용을 기한후 무제한실험 허용으로 쓰지 않는다. A/B 재사용은full comparison contract와 실제완료/정상정리receipt를 확인한다.
+13단계의첫교체는실제로Verified/현재4PodUID변경/각rank34→200이상/복원후새전체Checkpoint/기록된6개audit step에서4rank parameter hash동일/oldSpot EC2종료를확인했다. 3연속/4OD수렴과는구분한다. Step40으로앞당기라는사용자지시는원래자동high전달이공통101에서실행된뒤도착해소급변경하지않았고원시receipt에그대로기록했다.
+실행도구가len(NodeProvision)>5를실제activeVM초과로간주한것은오류였다. 첫source는실제shutting-down이었고그CR까지포함해6이됐다. 정리경로는용량guard와분리해정확한policyUID소유전체provider를열거하도록수정했고6EC2모두정상종료했다. 기존finalizer는유지했다. originalrunner/수정cleanup각각의source와SHA를보존했다. 후속최적화검토는risk_reconfiguration_optimization_review_20261118.txt에기록한다.
+최종유료자원상태: {"at": "2026-11-18T13:13:56.040902+00:00", "known_validation_namespaces": ["eval-v3-gpt4-fis-1816", "eval-v3-gpt4-g5-1816", "eval-v3-gpt4-g52-1817", "eval-v3-gpt4-g52m-1817", "eval-v3-gpt4-g52p-1820", "eval-v3-gpt4-g5r-1816", "eval-v3-gpt4-gp3-1824", "eval-v3-gpt4-od-1816", "eval-v3-gpt4-risk62-1823", "eval-v3-gpt4-riskq-1821", "eval-v3-rn4-odfast-1822"], "active_or_stopped_owned_namespace_instances": [], "all_NodeRequest_NodeProvision_counts": {"KARMADA": 0, "AWS": 0, "ONPRE1": 0}, "scope": "known validation namespaces only; infrastructure and unrelated instances retained", "no_instance_mutation": true, "NFS_modification": [{"VolumeId": "vol-01377e5f3154a6011", "ModificationState": "optimizing", "TargetSize": 500, "TargetIops": 3000, "TargetVolumeType": "gp3", "TargetThroughput": 125, "TargetMultiAttachEnabled": false, "OriginalSize": 500, "OriginalVolumeType": "standard", "OriginalMultiAttachEnabled": false, "Progress": 23, "StartTime": "2026-11-18T12:25:40+00:00"}]}
 
 7. NFS 저장 병목 조사 및 승인된 온라인 변경
 12단계 g6.2xlarge는 실제1OD3Spot 생성/4rank학습까지 성공했지만 최초full checkpoint step2에서rank2/3가240초watchdog와실패exit70으로종료했다. rank0/1만저장·재개했고 전체child는CheckpointFailed로중단했다. 고위험입력은전달하지않았고 위험교체/FIS를수행하지않았다. 실패를성공checkpoint로인정하지않는수정은실제로작동했다. 해당run의4GPU는정상종료/정리receipt를확인한다.
 NFS EBS vol-01377e5f3154a6011은500GiB Magnetic standard였다. CloudWatch 실제12:02~12:09UTC VolumeRead/WriteBytes·Ops·QueueLength를 nfs-checkpoint-io-cloudwatch.json에저장했다. 대용량opaque GPT2state를rank별저장/불변copy/재개write하는부하와병목이일치하지만,이관측만으로유일원인이라고확정하지않는다. 실행중조건을늘리거나watchdog를무작정연장하지않았다.
 사용자의별도승인 “이렇게 해야 실험이 되면 해”를받아같은볼륨을온라인gp3(3000IOPS,125MiB/s)로변경했다. 크기500GiB·volumeID·데이터·mount를유지했고재포맷/교체/OSdisk변경/새snapshot은하지않았다. 당시Seoul공식표준storage단가standard0.080→gp3 0.0912USD/GB-month,500GiB기준40→45.60USD/month(+5.60),MagneticIO요금별도. 이는GPU종료후에도유지되는설정/요금이다.
   authorization-and-scope.json: {"recorded_at": "2026-11-18T12:27:30.828425+00:00", "user_authorization": "이렇게 해야 실험이 되면 해; exact prior proposal standard to gp3,500GiB,3000IOPS,125MiB/s", "same_volume": "vol-01377e5f3154a6011", "size_gib": 500, "before_receipt": "/home/ubuntu/v3-validation-20261118/nfs-io-hardware-followup.json", "price_receipt": "/home/ubuntu/v3-validation-20261118/nfs-volume-price-change-proposal.json", "modify_volume_invoked_successfully_once": true, "format_or_size_change": false, "data_retained": true, "probe_receipt": "/home/ubuntu/v3-validation-20261118/nfs-gp3-bounded-local-write-probe.json", "full_performance_not_assumed_during_optimization": true}
-  modification-state.json: {"VolumesModifications": [{"VolumeId": "vol-01377e5f3154a6011", "ModificationState": "optimizing", "TargetSize": 500, "TargetIops": 3000, "TargetVolumeType": "gp3", "TargetThroughput": 125, "TargetMultiAttachEnabled": false, "OriginalSize": 500, "OriginalVolumeType": "standard", "OriginalMultiAttachEnabled": false, "Progress": 0, "StartTime": "2026-11-18T12:25:40+00:00"}]}
+  modification-state.json: {"VolumesModifications": [{"VolumeId": "vol-01377e5f3154a6011", "ModificationState": "optimizing", "TargetSize": 500, "TargetIops": 3000, "TargetVolumeType": "gp3", "TargetThroughput": 125, "TargetMultiAttachEnabled": false, "OriginalSize": 500, "OriginalVolumeType": "standard", "OriginalMultiAttachEnabled": false, "Progress": 23, "StartTime": "2026-11-18T12:25:40+00:00"}]}
   NFS서버local 임시4x256MiB동시write+fsync probe: {"observed_at": "2026-11-18T12:26:40.950467+00:00", "returncode": 0, "stdout": "{\"probe\": \"own temporary files, 4 concurrent 256MiB writes and fsync; local NFS backend only, not GPU checkpoint benchmark\", \"rows\": [{\"stream\": 0, \"bytes\": 268435456, \"seconds\": 3.141727963997255}, {\"stream\": 1, \"bytes\": 268435456, \"seconds\": 5.228793604001112}, {\"stream\": 2, \"bytes\": 268435456, \"seconds\": 7.188088070000958}, {\"stream\": 3, \"bytes\": 268435456, \"seconds\": 7.254250838999724}], \"elapsed_seconds\": 7.270634765998693, \"aggregate_MiB_s\": 140.84052258941156, \"filesystem\": 285541961728}\n", "stderr": ""}
 probe는서버local 저장의한시적sanity check이며NFSnetwork/실제GPUcheckpoint지연benchmark가아니다. optimizing중에는fulltarget성능을확정하지않는다.13단계는같은g6.2xlarge/동일forecast14·15/같은adaptiveCP60..600을새namespace와UID로선언한별도component검증이다. 전체CP후common100에서만고위험을전달하며실제3Spot교체/Verified복원/후속100step/종료를확인한다. 이결과를native1시간formalB로승격하지않는다.
 정식 A/B/C는 EBS modification completed 확인 후 시작해야 한다. 서로 다른 optimization 단계의 저장 성능을 같은 조건으로 간주하지 않는다. 동일 저장소 설정·동일 이미지·백그라운드 I/O 통제를 동결하고, 오늘의 conversion 중 검증은 기능 증거로만 재사용한다. AWS 최적화는 수시간 이상 걸릴 수 있어 자정까지 completed를 보장하지 않는다.

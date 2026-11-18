@@ -1,5 +1,75 @@
-............................
+........................{"timestamp": "2026-11-18T08:59:24.284836+00:00", "event": "source_start_requested"}
+{"timestamp": "2026-11-18T08:59:24.291517+00:00", "event": "move_requested"}
+{"timestamp": "2026-11-18T08:59:24.291739+00:00", "event": "policy_resumed_for_move"}
+{"timestamp": "2026-11-18T08:59:24.291877+00:00", "event": "execution_finished", "result": "candidate_requires_evidence_review", "note": "Verify same checkpoint, volume bindings, source fencing and restore receipts offline; resources retained"}
+{"timestamp": "2026-11-18T08:59:24.325021+00:00", "event": "source_start_requested"}
+{"timestamp": "2026-11-18T08:59:24.331809+00:00", "event": "move_requested"}
+.{"timestamp": "2026-11-18T08:59:24.370038+00:00", "event": "source_start_requested"}
+.DOWNLOAD: /tmp/tmpwucdkeqk/run-1794992364393649538.tar.gz
+.....................................................Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+DOWNLOAD: /tmp/tmpg06siw9v/e2-test-e2-presentation.tar.gz
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only: /tmp/tmpgcbwkjyd/A arm= A
+Rendered only: /tmp/tmpvakiquf2/B arm= B
+Rendered only: /tmp/tmp5v5x8luz/B arm= B
+Rendered only: /tmp/tmpa2yydmir/C arm= C
+Rendered only: /tmp/tmpwbzxvnkm/A arm= A
+Rendered only: /tmp/tmpwbzxvnkm/B arm= B
+Rendered only: /tmp/tmpwbzxvnkm/C arm= C
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+..Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.............................................................................................usage: python3 -m unittest [-h] [--model {resnet18,resnet50,gpt2}]
+                           [--model-root MODEL_ROOT]
+                           [--sequence-length SEQUENCE_LENGTH]
+                           [--run-id RUN_ID] [--goal-steps GOAL_STEPS]
+                           [--batch-size BATCH_SIZE] [--seed SEED]
+                           [--data-root DATA_ROOT] [--device {cuda,cpu}]
+                           [--learning-rate LEARNING_RATE]
+                           [--momentum MOMENTUM] [--weight-decay WEIGHT_DECAY]
+python3 -m unittest: error: invalid distributed rank/world size
+...............................................s.........s.Plan only; no interruption sent. Inspect /tmp/tmpt0xzfyn5/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpwcw4zl83/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpwcw4zl83/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2ans07w1/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2ans07w1/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpnctxp_h0/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpnctxp_h0/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpwwe_qfk0/fis-template.json
+REAL Spot interruption started: experiment
+Track FIS/EC2 completion; stop-experiment does not undo an interruption already sent.
+Plan only; no interruption sent. Inspect /tmp/tmpi8uyxtfm/fis-template.json
+REAL Spot interruption started: experiment
+Track FIS/EC2 completion; stop-experiment does not undo an interruption already sent.
+Plan only; no interruption sent. Inspect /tmp/tmp444c4cbp/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp444c4cbp/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp8e5pdmav/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpl464sk8k/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpl464sk8k/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpl464sk8k/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpl464sk8k/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp0nrswcip/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp9w3naykd/fis-template.json
+{"observedAt": "2026-11-17T11:00:00Z", "receipt": "/tmp/tmpozddf7x2/price-history/20261118T085930.415847Z-8625d0e5.json", "published": false}
+.....................................................
 ----------------------------------------------------------------------
-Ran 28 tests in 0.086s
+Ran 292 tests in 9.345s
 
-OK
+OK (skipped=2)
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.

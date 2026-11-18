@@ -1,0 +1,38 @@
+위험률 변경 시 Worker 재구성 최적화 검토 — 2026-11-18
+작성 UTC: 2026-11-18T13:17:37.922454+00:00
+
+1. 실제 관측
+모든 Rank는 GPU1개를 가진 별도 g6.2xlarge(L4) 인스턴스에 배치했다. 동일한 검증된 forecast14/15 출력과 당시 가격을 기존 Collector HTTPS 경로에 입력했고 기존 정책이1OD3Spot→4OD를 결정했다. 정식 native1h 시계열 결과가 아닌 component acceptance다.
+첫 replacement RestoreRequest UID=b5d911ad-c680-454c-8327-6516f9040fc2는 Verified/sourceFenced를 통과했다. 네 Pod UID가 모두 바뀌었고, model/optimizer/RNG/step restore audit 및 후속3개 update audit가 각각 통과했다. 각 rank 최대 관측 Step={'0': 200, '1': 200, '2': 201, '3': 202}. 복원 Step={'0': 34, '1': 34, '2': 34, '3': 34}. 각 Rank는 복원 뒤100 update 이상을 실제 수행했다.
+파라미터 해시가 네 rank에서 같았던 감사 Step=[35, 36, 37, 46, 47, 48]. 이는 해당 감사 지점의 일치이며 uninterrupted 학습 전체의 수치동등성이나 수렴/정확도 증거는 아니다.
+원본 world의 마지막 관측 Step={0: 549, 1: 549, 2: 549, 3: 549}, 공통 Step=549. 복원은 마지막 durable checkpoint Step34에서 시작했다. 따라서 관측 가능한 rollback은 적어도 515개의 공통 Step이다. 로그가 마지막 fence 직전 모든 Step을 포착했다는 보장은 없어 하한으로 기록한다. 체크포인트 손상으로 해석하지 않는다.
+근거: /home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/first-policy-replacement-acceptance.json 및 training-events.jsonl.
+
+2. 현재 비용/지연 구조
+새 목적지 VM을 먼저 확보하고 기존 full-group checkpoint로 전체4rank를 복원한 뒤 old provider를 종료한다. 현재4rank fallback은 한 source/한 replacement operation 계약이다. 세 Spot을 전환하면 전체 world 복원이 반복된다. 복원 완료 뒤 old EC2가 shutting-down인 동안 다음 목적지 VM이 만들어져 총6개 provider CR이 잠시 존재했다. '6개 CR'이 '6개의 running GPU'와 같다는 근거는 없다.
+host guard는 CR개수>5로 중단했고 cleanup도 같은 guard에 걸렸다. 소유 UID 확인은 유지하면서 cleanup의 count guard를 분리했고, 평가VM6개 모두 실제 terminated를 확인했다. 초기 source Spot 종료도 별도 EC2관측으로 확인했다. 새 VM 두 번째 것은 생성됐으나 두 번째 복원은 실행하지 않았다.
+정식 비용/복구시간 결과로 사용하지 않는다. 이 실행의 보수적 GPU compute 추정=3.443088USD; OD 단가를 종료관측까지 적용한 근사이며 청구서/FIS/EBS/NFS/network/관리비는 제외다.
+
+3. 이번에 적용한 최소 보완
+Verified 뒤에도 이전 source NodeProvision이 남아 있으면 다음 replacement 생성을 대기한다. 실제 APIReader의 old/new UID·policy/world·현재 Verified/fence/Ready를 확인한다. old의 deletionTimestamp만 보고 종료로 취급하지 않는다. 정상 finalizer가 끝나 old가 사라진 뒤 최신 위험/가격을 다시 계산해 다음 생성 여부를 결정한다.
+기존 GroupRecovery의 intent 해제/학습 재개/Checkpoint 재개를 늦추지는 않는다. source 종료 대기와 학습/CP gate는 분리한다. full-group 직렬 전환의 동시 자원 겹침을 제한하지만 전체복원 횟수는 바꾸지 않는다. 종료 대기 때문에 총 소요시간이 길어질 가능성도 있다. 비용 감소를 실측했다고 주장하지 않는다.
+코드: /home/ubuntu/HybridSpotVM_ManagementSystem/internal/management/group_retirement_capacity.go (pendingVerifiedGroupRetirement), capacity.go, policy_controller.go.
+회귀검사: source present/deleting/gone, recreated UID 거절, stale/다른 policy/world, fresh Reader와 cache 불일치 시 다음 할당 차단. 전체 Go 검사 통과.
+이미지: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:2b85db01cd4345a564a2c42f6c2dcac6efd8b8448805ec25c1ce2bc2d72015a9
+소스 commit: 87acefbfc3b888130b035818db274f233c5c976d (remote main 확인).
+배포: MGMT spot-vm-management-controller만 idle 상태에서 rollout 완료. CRD·기존 위험 모델·Karmada·Checkpoint 시스템을 재설계하지 않았다.
+중요한 한계: 이 수정 후 실제 GPU3대 연속 교체는 미검증. 기존 첫 교체 성공을 새 gate의3회 연속 성공으로 소급하지 않는다.
+
+4. 추가 최적화 선택지 — 아직 구현하지 않음
+가. 일괄 full-group 전환: 최종 목표를 한 번 고정하고 필요한3OD를 준비한 뒤 하나의 checkpoint round/source fence/restore operation으로4rank를 한 번에 전환한다. 초기4+추가3=최대7VM이 겹칠 수 있다. 최종4OD32vCPU 및 기존Spot24vCPU 수용, 준비 도중 실패·위험 목표 재변경·취소 시 처리와3old provider 종료를 검증해야 한다. 동일 목표 유지 중 이론상 전체 복원을3회→1회로 줄일 수 있으나 실제 비용/시간 개선은 미확인이다.
+나. 제한된 batch: 한 번에2개 목적지만 준비하고 두 단계로 전환한다. 최대6VM, 전체 복원2회가 될 수 있지만 역시 기존1source operation 계약을 확장해야 한다. 실제 구현/수치 결과 없음.
+다. capacity 확보 전 source를 먼저 종료하는 방식은 피크 VM 수를 줄일 수 있지만 GPU VM 부팅/공급 실패 동안 학습 중단이 길어질 수 있다. 현재 방식으로 바꾸지 않았다.
+위험률 smoothing/새 알고리즘은 개발하지 않는다. 기존 hold 설정을 쓰거나 위험 입력을 바꾸는 일도 연구자의 확정 조건과 B/C 공통 동결을 먼저 확인해야 한다.
+
+5. 정량 평가에 대한 처리
+A/B/C의 연구 질문·Rank 수·비교군·위험 입력·장애 시점은 임의 변경하지 않았다. 이번 최소 보완의 새 이미지로 조건을 다시 동일하게 동결해야 한다. 일괄/제한 batch는 실험 시스템의 실행 동작을 바꾸므로 근거를 먼저 제시한 설계 제안이며 무단 적용하지 않았다. 기존 source1개/new1개 소유계약과 DDP 전체 source fence/Verified를 보존하는 확장안이 필요하다.
+남은 사항: 실제3연속 교체/4OD32vCPU, 정식 동일 hardware/model별 목표Step/가격/CP bounds 및 native risk clock freeze, NFS conversion completed 확인, 반복실험 저장용량 계획. Quota API는 AccessDenied여서 상한 미확인이다.
+
+6. 종료 상태
+마지막 audit UTC=2026-11-18T13:13:56.040902+00:00. 알려진 평가 namespace의 실행/중지 EC2=0개, NodeRequest/NodeProvision={'KARMADA': 0, 'AWS': 0, 'ONPRE1': 0}. 기반 인프라·NFS/데이터는 유지했다. EBS gp3 변경은 optimizing 23% 관측이다. 정식 timing 비교는 completed 뒤 동일 저장 조건에서 진행해야 한다.
+종료/원본 근거: /home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/cleanup-complete.json, /home/ubuntu/v3-validation-20261118/final-idle-audit.json. 13단계 정리와 교체순서 코드 보완을 시작한 이후 새 GPU VM/FIS는 실행하지 않았다.
