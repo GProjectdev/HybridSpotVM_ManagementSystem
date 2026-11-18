@@ -4,10 +4,13 @@ import json
 from pathlib import Path
 
 
-def summarize(events):
+def summarize(events, world_size=2):
+    if type(world_size) is not int or world_size not in {2, 4}:
+        raise ValueError('explicit supported world size must be 2 or 4')
     rows = list(events)
     def valid(e):
-        if e.get('passed') is not True or not e.get('attempt_id'):
+        if (e.get('passed') is not True or not e.get('attempt_id')
+                or e.get('world_size', world_size) != world_size):
             return False
         if e.get('event') == 'restore_audit':
             return e.get('checks') == dict(model=True, optimizer=True, rng=True, step=True)
@@ -26,17 +29,21 @@ def summarize(events):
         results.append({'rank': rank, 'attempt_id': attempt, 'restored_step': restore['global_step'],
                         'state_passed': valid(restore),
                         'three_updates_passed': expected.issubset(updates)})
-    passed = (not failures and {r['rank'] for r in results} == {0, 1}
+    passed = (not failures and {r['rank'] for r in results} == set(range(world_size))
               and all(r['state_passed'] and r['three_updates_passed'] for r in results))
-    return {'rank_local_audit_passed': passed, 'failures': failures, 'restores': results,
+    return {'rank_local_audit_passed': passed, 'expected_world_size': world_size,
+            'failures': failures, 'restores': results,
             'scope': 'checkpoint equality and three local updates, NOT full DDP numerical equivalence'}
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('evidence', type=Path)
+    parser.add_argument('--world-size', type=int, choices=(2, 4), default=2)
+    parser.add_argument('--events', type=Path, help='Explicit event JSONL, e.g. integrated observer training-events.jsonl')
     args = parser.parse_args()
-    path = args.evidence / 'monitor-events.jsonl'
-    result = summarize(json.loads(line) for line in path.read_text().splitlines() if line.strip())
+    path = args.events or args.evidence / 'monitor-events.jsonl'
+    result = summarize((json.loads(line) for line in path.read_text().splitlines() if line.strip()),
+                       world_size=args.world_size)
     print(json.dumps(result, indent=2))
     raise SystemExit(0 if result['rank_local_audit_passed'] else 2)

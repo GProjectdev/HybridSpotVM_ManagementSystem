@@ -623,7 +623,37 @@
       "not_accepted_as_checkpoint": true
     }
   },
-  "gpt2-four-rank-risk-transition-13-gp3": {},
+  "gpt2-four-rank-risk-transition-13-gp3": {
+    "gp3-first-checkpoint-acceptance.json": {
+      "passed": true,
+      "formal_result": false,
+      "at": "2026-11-18T12:45:51.454638+00:00",
+      "checkpoint_uid": "ee718800-4031-43d2-8b16-0ef4d41feb6c",
+      "checkpoint_id": "eval-gpt4-gp3-1824-periodic-caf97807-g1-t1795005461379891084",
+      "post_resume_steps": {
+        "0": 307,
+        "1": 307,
+        "2": 307,
+        "3": 307
+      },
+      "source_path": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/gp3-first-checkpoint-acceptance.json",
+      "source_sha256": "46ca8a39c3a05908c049d01f65607e99241ce3c0090e5ff1291b8c4bd6c2346c"
+    },
+    "user-step40-steering.json": {
+      "requested_common_step": 40,
+      "trigger_already_executed": true,
+      "actual_trigger_at": "2026-11-18T12:43:06.052879+00:00",
+      "actual_trigger_rank_steps": {
+        "0": 101,
+        "1": 101,
+        "2": 101,
+        "3": 101
+      },
+      "no_retroactive_measurement_change": true,
+      "source_path": "/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/user-step40-steering.json",
+      "source_sha256": "d4e5cf1af11159588817145710ce80b124af6c3a207090e3dc7424b55ed74bba"
+    }
+  },
   "NFS_gp3": {
     "authorization-and-scope.json": {
       "recorded_at": "2026-11-18T12:27:30.828425+00:00",
@@ -663,7 +693,7 @@
       "stderr": ""
     }
   },
-  "snapshot_utc": "2026-11-18T12:31:10.671011+00:00",
+  "snapshot_utc": "2026-11-18T12:54:50.653963+00:00",
   "formal_result": false,
   "C09_recovery_timing_eligible": false,
   "known_incomplete_round": "postrestore step17 producer ranks0/1 only; excluded as future fullgroup checkpoint"

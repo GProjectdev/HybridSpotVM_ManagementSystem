@@ -96,7 +96,7 @@
     "candidate_authorization": "user permits alternate oneGPU instance after actual xlarge supply recheck; uniform type per world; formal GPU not yet frozen"
   },
   "source_heads": {
-    "HybridSpotVM_ManagementSystem": "beb8ce63ff2a83b736855af6a2a38ac2af8d6aec",
+    "HybridSpotVM_ManagementSystem": "6c1d2a5f64052dd5d2d408c261062217b37922c4",
     "PublicCloud-VM-Provisioner_test": "ee87c2d8e428350e59cc487fba70264222cfda9f",
     "My_FluidCR": "da39d1f0b50c95cee50b30e073d7d78bc080f928",
     "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
@@ -526,7 +526,7 @@
     "evaluation/ieee_v2_observe.py": "4bc63e2b699f6a178444d4e01cf845de649c5ff21fd07d70d73a1d6abc80de6b"
   },
   "source_heads_scope": "baseline before this preparation commit; exact inspected working-tree files hashed separately, no core rollout",
-  "snapshot_at_utc": "2026-11-18T12:28:48.754969+00:00",
+  "snapshot_at_utc": "2026-11-18T12:54:50.573502+00:00",
   "source_draft_sha256": "c036442e65a97c608a73d5b54c894b761b2549e92f324f3122bdb15e6395e8fc",
   "source_draft_preserved": "/home/ubuntu/HybridSpotVM_ManagementSystem/experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
   "source_provenance_note": "P prior1235 was old local branch, not operationalmain abea04d; corrected to main plus minimal cooldown. Originalbranch retained; withdrawn build/attempt preserved.",
@@ -581,7 +581,8 @@
           "StartTime": "2026-11-18T12:25:40+00:00"
         }
       ]
-    }
+    },
+    "formal_execution_gate": "EBS modification completed before formal A/B/C; same storage settings and no background storage conversion across arms; current optimization-phase diagnostics are functional evidence only"
   },
   "current_deployed_image_references": {
     "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:c779629ce8f2fdf99b1963a5abfd82c5791d0a3f9464ea46bef80bf97d8d7b69",

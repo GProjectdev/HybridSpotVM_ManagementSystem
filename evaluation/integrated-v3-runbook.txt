@@ -117,6 +117,12 @@ checkpoint at the predeclared fault makes that attempt ineligible; do not shift
 the trigger to a later convenient checkpoint.
 
 Offline output (preserve all attempts and raw sanitized observations)
+ python3 evaluation/audit_restore.py /PRIVATE/run19c --world-size 4 \
+   --events /PRIVATE/run19c/training-events.jsonl
+ This checks all4 rank-local restore state and three subsequent updates per
+ attempt. It does not prove cross-rank numerical equivalence or replace the
+ current-PodUID/source-fence/Verified/full-goal gates. The CLI defaults to2
+ for existing callers; v3 must select4 explicitly.
  python3 -m evaluation.export_v2 --run /PRIVATE/run19c/run.json \
    --events /PRIVATE/run19c/training-events.jsonl --run-id run19c \
    --output /PRIVATE/run19c/export
