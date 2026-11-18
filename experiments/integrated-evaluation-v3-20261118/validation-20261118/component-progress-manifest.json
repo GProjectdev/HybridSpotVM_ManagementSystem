@@ -1,9 +1,9 @@
 {
-  "at": "2026-11-18T08:36:39.356594+00:00",
+  "at": "2026-11-18T11:09:31.538676+00:00",
   "status": "COMPONENT_VALIDATION_IN_PROGRESS_NOT_FORMAL_RESULTS",
   "formal_dispatch_ready": false,
   "user_paid_deadline_utc": "2026-11-18T15:00:00Z",
-  "current_four_rank_FIS_stage": "gpt2-four-rank-g52-main-fis-06, initial1OD3Spot running; no actualFIS receipt yet",
+  "current_four_rank_FIS_stage": "C09 real FIS -> all4 newPod restore Verified -> valid subsequent fullCP243 -> all4 goal512/completion state audits PASSED; normal cleanup in progress",
   "next_stage": "actual uncompressed risk policy transition; queued after exact prior cleanup and success",
   "reused_prior_2rank_and_assets": true,
   "source_file_sha256": {
@@ -41,6 +41,14 @@
     "README.txt": "748853cb104b89c2740de282eeff552d3a243c9b3f094b97be1a7891facf3911",
     "member-push.json": "f65dbeed8924c6ca0b020344baafc60cbf76792fd8334f0fb920b53e7bc81621",
     "evaluation-unit-tests.log": "da5756938308fc6305a88000c01a198a2442cd74baa9d9d28f4bdb983ee184e5",
-    "withdrawn-attempt-cleanup.json": "8967f93837b91af70843c45866d4f2863c4ae557e2b717bf0feeaa4f92278a11"
-  }
+    "withdrawn-attempt-cleanup.json": "8967f93837b91af70843c45866d4f2863c4ae557e2b717bf0feeaa4f92278a11",
+    "evaluation-unit-tests-followup.log": "fc3cd5af1b2b83d21fc1f218bbca6fdf745f9be7a1de96441251d5da317838ff",
+    "controller-followup-receipts.json": "0cffe6d268f671b1f80b64accbe9aea96a13ccbfc10121e3aa825dd0c60a1cd7"
+  },
+  "next_validation_note": "C09 controllers fixed after fault, so timing is not formal C data. step17 incomplete producer round excluded; next realfull round243 passed. Future stages require fail-closed payload rollout and tests.",
+  "code_followup_commit": "82128e51ffbb9a6ed4c967207e556ae62715ce03",
+  "payload_source_commit": "da39d1f0b50c95cee50b30e073d7d78bc080f928",
+  "payload_pinned_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:559078d10e5314af57e1c49d0bf1471b7d4355ee5b6a2f47b3e0361fd4f0e613",
+  "future_payload_pinned_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5",
+  "checkpoint_source_commit": "dae0124e9a6b3d9b38ededae97962e5b91f30083"
 }

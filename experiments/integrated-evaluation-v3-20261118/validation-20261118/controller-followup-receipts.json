@@ -1,0 +1,545 @@
+{
+  "schedule-failure-handoff-fix": {
+    "image.json": {
+      "pinned": "docker.io/jeongseungjun/stateful-migration-system@sha256:bdbee5a79ddd9074ee14fdd30dc4e8ebbacbbbdc0c16c51260912e54f5b5b31e",
+      "source_sha256": "3bc0227fa9e9d77535210d03b8cb919d5b7cda9d2ea89939ec9ebd2069ebb842",
+      "registry_verified": true,
+      "tag": "docker.io/jeongseungjun/stateful-migration-system:v6.0-failed-round-handoff-3bc0227fa9e9",
+      "at": "2026-11-18T10:23:05.835323+00:00"
+    },
+    "push.json": {
+      "repository": "Stateful-Migration-Operator-with-PV",
+      "commit": "682f10e770e00036597af795d1182d6a6b212ad9",
+      "remote_main_verified": true
+    },
+    "member_rollout_confirmed": {
+      "AWS": true,
+      "ONPRE1": true
+    },
+    "go_tests": {
+      "path": "/home/ubuntu/v3-validation-20261118/schedule-failure-handoff-fix/tests.log",
+      "sha256": "e99238cbc483dad785aaed2f6103aeb1d7670aab4079c0e08d7946d0340bcbd6",
+      "passed": true
+    }
+  },
+  "management-schedule-handoff-fix": {
+    "image.json": {
+      "pinned": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:1d51026c6d5dbf4fbb0813e5a3143f1ea8743be47e80beb023e3da83cbe2db71",
+      "component": "spot-vm-management-controller",
+      "source_sha256": "683fc07afb969050fc5bfc08a3c2ac89310dc3a657d0e20596e705e1b59eab6c",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-verified-failed-round-retirement-683fc07afb96",
+      "registry_verified": true,
+      "at": "2026-11-18T10:25:14.380735+00:00"
+    },
+    "push.json": {
+      "repository": "HybridSpotVM_ManagementSystem",
+      "commit": "3551b7708e0c0f76c2a6042d23820a72da15b92a",
+      "remote_main_verified": true
+    },
+    "member_rollout_confirmed": {
+      "AWS": false,
+      "ONPRE1": false
+    },
+    "go_tests": {
+      "path": "/home/ubuntu/v3-validation-20261118/management-schedule-handoff-fix/tests.log",
+      "sha256": "286f903b010b7b6712617e6bd4ccc8f6cff8ca5db2775dec87efdc65dcd88036",
+      "passed": true
+    }
+  },
+  "checkpoint-exec-env-fix": {
+    "image.json": {
+      "pinned": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "source_sha256": "7c9c1eda2fbb1e11b88c219ea801af17060fc8170b42a1224647fdfc3e90d67f",
+      "registry_verified": true,
+      "tag": "docker.io/jeongseungjun/stateful-migration-system:v6.0-restored-exec-env-7c9c1eda2fbb",
+      "at": "2026-11-18T10:51:47.242846+00:00"
+    },
+    "push.json": {
+      "repository": "Stateful-Migration-Operator-with-PV",
+      "commit": "dae0124e9a6b3d9b38ededae97962e5b91f30083",
+      "remote_main_verified": true
+    },
+    "member_rollout_confirmed": {
+      "AWS": true,
+      "ONPRE1": true
+    },
+    "go_tests": {
+      "path": "/home/ubuntu/v3-validation-20261118/checkpoint-exec-env-fix/tests.log",
+      "sha256": "7d01b234b0417f6a7ef76c8ab415cdedb0c56b7dcb68d6e0877c3a88ae617f91",
+      "passed": true
+    }
+  },
+  "payload-checkpoint-failure-fix": {
+    "image.json": {
+      "pinned": "docker.io/jeongseungjun/fluidcr-payload@sha256:4816c9b552eacf57dd126389aae4d00017a17c80e8b6aa2c436bc9dd5f737ee5",
+      "source_sha256": "de70b2d55ece3cb5a6a350308ca7cb5a682b97ce87c90327170f39727276280c",
+      "registry_verified": true,
+      "tag": "docker.io/jeongseungjun/fluidcr-payload:v6.0-checkpoint-failure-de70b2d55ece",
+      "at": "2026-11-18T10:58:00.528207+00:00",
+      "scope": "opaque-byte publication only; no risk algorithm, CRD, source-fence or restore API redesign"
+    },
+    "push.json": {
+      "repository": "My_FluidCR",
+      "commit": "da39d1f0b50c95cee50b30e073d7d78bc080f928",
+      "remote_main_verified": true
+    },
+    "torch-tests-confirmed/result.json": {
+      "returncode": 0,
+      "at": "2026-11-18T11:01:39.691902+00:00",
+      "modules": 12,
+      "files": [
+        {
+          "file": "test_checkpoint_load.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_coordinated_checkpoint.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_evaluation_events.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_group_control.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_group_restore.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_iteration_window.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_lifecycle_diagnostics.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_manifest_agreement.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_partial_migration.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_pytorch_tracking.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_runtime_contract.py",
+          "returncode": 0
+        },
+        {
+          "file": "test_migration_generation.py",
+          "returncode": 0
+        }
+      ],
+      "initial_receipt": "/home/ubuntu/v3-validation-20261118/payload-checkpoint-failure-fix/torch-tests/result.json",
+      "initial_failure": "fixed localhost port45874 EADDRINUSE; preserved original failure",
+      "failed_module_recheck_log": "/home/ubuntu/v3-validation-20261118/payload-checkpoint-failure-fix/torch-tests-port-recheck/test_migration_generation.log",
+      "recheck_result_note": "recheck harness aggregate inherited old baseline module results; only the actually rerun migration module entry/log is reused; remaining eleven entries come from current full run",
+      "all_modules_passed_with_no_test_exclusions": true
+    },
+    "member_rollout_confirmed": {
+      "AWS": true,
+      "ONPRE1": true
+    }
+  },
+  "C09/new-vm-restore-acceptance.json": {
+    "passed": true,
+    "formal_result": false,
+    "at": "2026-11-18T10:32:32.979543+00:00",
+    "old_spot": "i-07f580908449ed466",
+    "replacement_instance_id": "i-0bb091d8225c85f0b",
+    "replacement_np_uid": "6fc210c5-ce55-461e-a90f-33ff9995f096",
+    "restore_request_uid": "dbd6bff2-bc9e-4bc8-bfd6-9ac04ed8bdb8",
+    "rank_audits": [
+      {
+        "rank": 0,
+        "pod_uid": "d980d688-1776-4ae0-bce9-247a0dd8d335",
+        "restore_audit": {
+          "timestamp": "2026-11-18T10:32:14.653Z",
+          "global_step": 2,
+          "rank": 0,
+          "run_id": "gpt4-g52p-1820",
+          "event": "restore_audit",
+          "attempt_id": "ea494428f5094960abd6d9848f964e31",
+          "passed": true,
+          "checks": {
+            "model": true,
+            "optimizer": true,
+            "rng": true,
+            "step": true
+          },
+          "world_size": 4,
+          "pod_uid": "d980d688-1776-4ae0-bce9-247a0dd8d335",
+          "pod_name": "eval-gpt4-g52p-1820-0",
+          "node": "eval-gpt4-g52p-1820-worker-00"
+        },
+        "update_audit": {
+          "timestamp": "2026-11-18T10:32:17.180Z",
+          "global_step": 3,
+          "rank": 0,
+          "run_id": "gpt4-g52p-1820",
+          "event": "update_audit",
+          "attempt_id": "ea494428f5094960abd6d9848f964e31",
+          "passed": true,
+          "gradients_finite": true,
+          "gradients_nonzero": true,
+          "parameters_changed": true,
+          "input_sha256": "50e8b7919fd5e0874202d2b01eb9c4793ac93a9842ff85715a9ec1884080d29b",
+          "parameter_sha256": "a4e426be662e9116d83b47bfd3df930f901f2beb69b07da90a2a99f44be430bb",
+          "world_size": 4,
+          "pod_uid": "d980d688-1776-4ae0-bce9-247a0dd8d335",
+          "pod_name": "eval-gpt4-g52p-1820-0",
+          "node": "eval-gpt4-g52p-1820-worker-00"
+        }
+      },
+      {
+        "rank": 1,
+        "pod_uid": "efb797bb-1a6e-4f48-b475-80f4a894a836",
+        "restore_audit": {
+          "timestamp": "2026-11-18T10:32:14.548Z",
+          "global_step": 2,
+          "rank": 1,
+          "run_id": "gpt4-g52p-1820",
+          "event": "restore_audit",
+          "attempt_id": "f70b246d5a784358bf87ef11a7285574",
+          "passed": true,
+          "checks": {
+            "model": true,
+            "optimizer": true,
+            "rng": true,
+            "step": true
+          },
+          "world_size": 4,
+          "pod_uid": "efb797bb-1a6e-4f48-b475-80f4a894a836",
+          "pod_name": "eval-gpt4-g52p-1820-1",
+          "node": "eval-gpt4-g52p-1820-worker-02"
+        },
+        "update_audit": {
+          "timestamp": "2026-11-18T10:32:17.173Z",
+          "global_step": 3,
+          "rank": 1,
+          "run_id": "gpt4-g52p-1820",
+          "event": "update_audit",
+          "attempt_id": "f70b246d5a784358bf87ef11a7285574",
+          "passed": true,
+          "gradients_finite": true,
+          "gradients_nonzero": true,
+          "parameters_changed": true,
+          "input_sha256": "0dea0c146a316c27ae1ade5a0b3f40f2f1c3bd3f7fb37b92ae12671156491766",
+          "parameter_sha256": "a4e426be662e9116d83b47bfd3df930f901f2beb69b07da90a2a99f44be430bb",
+          "world_size": 4,
+          "pod_uid": "efb797bb-1a6e-4f48-b475-80f4a894a836",
+          "pod_name": "eval-gpt4-g52p-1820-1",
+          "node": "eval-gpt4-g52p-1820-worker-02"
+        }
+      },
+      {
+        "rank": 2,
+        "pod_uid": "808d1d33-26ce-430f-9743-c88e9fb47ec0",
+        "restore_audit": {
+          "timestamp": "2026-11-18T10:32:08.045Z",
+          "global_step": 2,
+          "rank": 2,
+          "run_id": "gpt4-g52p-1820",
+          "event": "restore_audit",
+          "attempt_id": "11bc1a5282534dd6869aa73eccd7ff31",
+          "passed": true,
+          "checks": {
+            "model": true,
+            "optimizer": true,
+            "rng": true,
+            "step": true
+          },
+          "world_size": 4,
+          "pod_uid": "808d1d33-26ce-430f-9743-c88e9fb47ec0",
+          "pod_name": "eval-gpt4-g52p-1820-2",
+          "node": "eval-gpt4-g52p-1820-worker-03"
+        },
+        "update_audit": {
+          "timestamp": "2026-11-18T10:32:17.172Z",
+          "global_step": 3,
+          "rank": 2,
+          "run_id": "gpt4-g52p-1820",
+          "event": "update_audit",
+          "attempt_id": "11bc1a5282534dd6869aa73eccd7ff31",
+          "passed": true,
+          "gradients_finite": true,
+          "gradients_nonzero": true,
+          "parameters_changed": true,
+          "input_sha256": "6c78f229f1132cd94a5031182cc2b4890e3c4e71cbfdaa7294366b1b0f89c581",
+          "parameter_sha256": "a4e426be662e9116d83b47bfd3df930f901f2beb69b07da90a2a99f44be430bb",
+          "world_size": 4,
+          "pod_uid": "808d1d33-26ce-430f-9743-c88e9fb47ec0",
+          "pod_name": "eval-gpt4-g52p-1820-2",
+          "node": "eval-gpt4-g52p-1820-worker-03"
+        }
+      },
+      {
+        "rank": 3,
+        "pod_uid": "62971ef6-13cf-4093-9526-8ccf413c38b5",
+        "restore_audit": {
+          "timestamp": "2026-11-18T10:31:55.982Z",
+          "global_step": 2,
+          "rank": 3,
+          "run_id": "gpt4-g52p-1820",
+          "event": "restore_audit",
+          "attempt_id": "35cfb87c58334c2da53819d7dd37786a",
+          "passed": true,
+          "checks": {
+            "model": true,
+            "optimizer": true,
+            "rng": true,
+            "step": true
+          },
+          "world_size": 4,
+          "pod_uid": "62971ef6-13cf-4093-9526-8ccf413c38b5",
+          "pod_name": "eval-gpt4-g52p-1820-3",
+          "node": "eval-gpt4-g52p-1820-worker-01-25f2b814-ef7-replacement"
+        },
+        "update_audit": {
+          "timestamp": "2026-11-18T10:32:17.171Z",
+          "global_step": 3,
+          "rank": 3,
+          "run_id": "gpt4-g52p-1820",
+          "event": "update_audit",
+          "attempt_id": "35cfb87c58334c2da53819d7dd37786a",
+          "passed": true,
+          "gradients_finite": true,
+          "gradients_nonzero": true,
+          "parameters_changed": true,
+          "input_sha256": "8c61bf2520beed17506826555883a8c8659a6ecfec11e73b35cb4c7f8bc8493b",
+          "parameter_sha256": "a4e426be662e9116d83b47bfd3df930f901f2beb69b07da90a2a99f44be430bb",
+          "world_size": 4,
+          "pod_uid": "62971ef6-13cf-4093-9526-8ccf413c38b5",
+          "pod_name": "eval-gpt4-g52p-1820-3",
+          "node": "eval-gpt4-g52p-1820-worker-01-25f2b814-ef7-replacement"
+        }
+      }
+    ],
+    "source_fence": {
+      "evidenceID": "25f2b814-ef78-438a-9675-1d9f734dd5b4",
+      "fenced": true,
+      "observedAt": "2026-11-18T10:32:27Z",
+      "operation": "25f2b814-ef78-438a-9675-1d9f734dd5b4"
+    }
+  },
+  "C09/goal-acceptance.json": {
+    "passed": true,
+    "formal_result": false,
+    "at": "2026-11-18T11:08:37.034232+00:00",
+    "goal_steps": 512,
+    "all_four_rank_audits": [
+      {
+        "timestamp": "2026-11-18T11:08:34.018Z",
+        "global_step": 512,
+        "rank": 0,
+        "run_id": "gpt4-g52p-1820",
+        "event": "completion_audit",
+        "attempt_id": "848ea72e761e4b3690c5c518524bd94f",
+        "passed": true,
+        "model_sha256": "4a1fb1aee91b4bf46a417917e0bc58bd3551c0f2c4f33a0781aef92524296630",
+        "optimizer_sha256": "f542e9284ab520b34425b61842447c19b5f7ffd8c125ac66ffa139e75e08dca9",
+        "data_contract_sha256": "41613f1f29eed9b5dcfed5e3c68b9a2cb1fb17946cbbacb2d8f93baa8d64f873",
+        "model_digest_scope": "state_dict",
+        "rank_local_buffers_sha256": "a16a7785db1e26f0b08b1d81100c4863fe7a6e8708dcee26680fefb134cfdd59",
+        "world_size": 4,
+        "pod_uid": "d980d688-1776-4ae0-bce9-247a0dd8d335",
+        "pod_name": "eval-gpt4-g52p-1820-0",
+        "node": "eval-gpt4-g52p-1820-worker-00"
+      },
+      {
+        "timestamp": "2026-11-18T11:08:34.026Z",
+        "global_step": 512,
+        "rank": 1,
+        "run_id": "gpt4-g52p-1820",
+        "event": "completion_audit",
+        "attempt_id": "98446f5b48cf467d8e5399cb239908a0",
+        "passed": true,
+        "model_sha256": "4a1fb1aee91b4bf46a417917e0bc58bd3551c0f2c4f33a0781aef92524296630",
+        "optimizer_sha256": "f542e9284ab520b34425b61842447c19b5f7ffd8c125ac66ffa139e75e08dca9",
+        "data_contract_sha256": "41613f1f29eed9b5dcfed5e3c68b9a2cb1fb17946cbbacb2d8f93baa8d64f873",
+        "model_digest_scope": "state_dict",
+        "rank_local_buffers_sha256": "a16a7785db1e26f0b08b1d81100c4863fe7a6e8708dcee26680fefb134cfdd59",
+        "world_size": 4,
+        "pod_uid": "efb797bb-1a6e-4f48-b475-80f4a894a836",
+        "pod_name": "eval-gpt4-g52p-1820-1",
+        "node": "eval-gpt4-g52p-1820-worker-02"
+      },
+      {
+        "timestamp": "2026-11-18T11:08:34.035Z",
+        "global_step": 512,
+        "rank": 2,
+        "run_id": "gpt4-g52p-1820",
+        "event": "completion_audit",
+        "attempt_id": "faf94acc268446869a5bdb350d45ce11",
+        "passed": true,
+        "model_sha256": "4a1fb1aee91b4bf46a417917e0bc58bd3551c0f2c4f33a0781aef92524296630",
+        "optimizer_sha256": "f542e9284ab520b34425b61842447c19b5f7ffd8c125ac66ffa139e75e08dca9",
+        "data_contract_sha256": "41613f1f29eed9b5dcfed5e3c68b9a2cb1fb17946cbbacb2d8f93baa8d64f873",
+        "model_digest_scope": "state_dict",
+        "rank_local_buffers_sha256": "a16a7785db1e26f0b08b1d81100c4863fe7a6e8708dcee26680fefb134cfdd59",
+        "world_size": 4,
+        "pod_uid": "808d1d33-26ce-430f-9743-c88e9fb47ec0",
+        "pod_name": "eval-gpt4-g52p-1820-2",
+        "node": "eval-gpt4-g52p-1820-worker-03"
+      },
+      {
+        "timestamp": "2026-11-18T11:08:34.025Z",
+        "global_step": 512,
+        "rank": 3,
+        "run_id": "gpt4-g52p-1820",
+        "event": "completion_audit",
+        "attempt_id": "ac358bd56eaa438da900c565dae9de78",
+        "passed": true,
+        "model_sha256": "4a1fb1aee91b4bf46a417917e0bc58bd3551c0f2c4f33a0781aef92524296630",
+        "optimizer_sha256": "f542e9284ab520b34425b61842447c19b5f7ffd8c125ac66ffa139e75e08dca9",
+        "data_contract_sha256": "41613f1f29eed9b5dcfed5e3c68b9a2cb1fb17946cbbacb2d8f93baa8d64f873",
+        "model_digest_scope": "state_dict",
+        "rank_local_buffers_sha256": "a16a7785db1e26f0b08b1d81100c4863fe7a6e8708dcee26680fefb134cfdd59",
+        "world_size": 4,
+        "pod_uid": "62971ef6-13cf-4093-9526-8ccf413c38b5",
+        "pod_name": "eval-gpt4-g52p-1820-3",
+        "node": "eval-gpt4-g52p-1820-worker-01-25f2b814-ef7-replacement"
+      }
+    ]
+  },
+  "C09/post-restore-next-full-checkpoint-acceptance.json": {
+    "passed": true,
+    "formal_result": false,
+    "at": "2026-11-18T11:05:29.613045+00:00",
+    "checkpoint_uid": "bd8108e5-5c47-4a1b-8bfb-362a1ff2e7f8",
+    "checkpoint_id": "eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144",
+    "saved_step": 243,
+    "rank_markers": [
+      {
+        "artifactPath": "eval-gpt4-g52p-1820-0/rounds/eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144/latest.pt",
+        "checkpointID": "eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144",
+        "checkpointPath": "eval-gpt4-g52p-1820-0/latest.pt",
+        "generation": 1794999535,
+        "rank": 0,
+        "schemaVersion": 1,
+        "sha256": "7c17343a1cafdec1e102d9ee852214a338a9c7353a93cb849e5e58dfb8fd55b7",
+        "sizeBytes": 1493474618,
+        "sourceWorldUID": "c7dfee89-5de4-4775-b8f9-e004cd8ef4b6",
+        "targets": "all",
+        "worldSize": 4
+      },
+      {
+        "artifactPath": "eval-gpt4-g52p-1820-2/rounds/eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144/latest.pt",
+        "checkpointID": "eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144",
+        "checkpointPath": "eval-gpt4-g52p-1820-2/latest.pt",
+        "generation": 1794999535,
+        "rank": 2,
+        "schemaVersion": 1,
+        "sha256": "7c17343a1cafdec1e102d9ee852214a338a9c7353a93cb849e5e58dfb8fd55b7",
+        "sizeBytes": 1493474618,
+        "sourceWorldUID": "c7dfee89-5de4-4775-b8f9-e004cd8ef4b6",
+        "targets": "all",
+        "worldSize": 4
+      },
+      {
+        "artifactPath": "eval-gpt4-g52p-1820-3/rounds/eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144/latest.pt",
+        "checkpointID": "eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144",
+        "checkpointPath": "eval-gpt4-g52p-1820-3/latest.pt",
+        "generation": 1794999535,
+        "rank": 3,
+        "schemaVersion": 1,
+        "sha256": "7c17343a1cafdec1e102d9ee852214a338a9c7353a93cb849e5e58dfb8fd55b7",
+        "sizeBytes": 1493474618,
+        "sourceWorldUID": "c7dfee89-5de4-4775-b8f9-e004cd8ef4b6",
+        "targets": "all",
+        "worldSize": 4
+      },
+      {
+        "artifactPath": "eval-gpt4-g52p-1820-1/rounds/eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144/latest.pt",
+        "checkpointID": "eval-gpt4-g52p-1820-periodic-f7d852eb-g3-t1794999535003923144",
+        "checkpointPath": "eval-gpt4-g52p-1820-1/latest.pt",
+        "generation": 1794999535,
+        "rank": 1,
+        "schemaVersion": 1,
+        "sha256": "7c17343a1cafdec1e102d9ee852214a338a9c7353a93cb849e5e58dfb8fd55b7",
+        "sizeBytes": 1493474618,
+        "sourceWorldUID": "c7dfee89-5de4-4775-b8f9-e004cd8ef4b6",
+        "targets": "all",
+        "worldSize": 4
+      }
+    ],
+    "current_pod_uids": {
+      "0": "d980d688-1776-4ae0-bce9-247a0dd8d335",
+      "1": "efb797bb-1a6e-4f48-b475-80f4a894a836",
+      "2": "808d1d33-26ce-430f-9743-c88e9fb47ec0",
+      "3": "62971ef6-13cf-4093-9526-8ccf413c38b5"
+    },
+    "all_four_rank_saved_events_and_later_updates": true,
+    "known_incomplete_prior_checkpoint_uid": "846e1ec4-38ba-4275-92b2-7136e4721bdd",
+    "prior_incomplete_round_is_not_reusable": true
+  },
+  "C09/cleanup-complete.json": {
+    "historical_positive_termination_receipts": [
+      "i-07f580908449ed466"
+    ],
+    "completed_at": "2026-11-18T11:19:35.069755+00:00",
+    "provider_crs_removed": true,
+    "ec2_terminated": [
+      "i-0343edb0b50120753",
+      "i-04c7442f932433c5f",
+      "i-04dd2d4ce4080ecca",
+      "i-07f580908449ed466",
+      "i-0bb091d8225c85f0b"
+    ],
+    "keypairs": [
+      {
+        "name": "nodeprovision-eval-gpt4-g52p-1820-worker-00",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-gpt4-g52p-1820-worker-01-25f2b814-ef7-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-gpt4-g52p-1820-worker-03",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-gpt4-g52p-1820-worker-02",
+        "deleted": true
+      }
+    ],
+    "volume_receipts": [
+      {
+        "volume_id": "vol-00b6c4b7b90ef102a",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-03d02e22d8d1b6fc0",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-042f1bc72a629d740",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-059fcad9953ca23ed",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-09debe8b0cfc4dbff",
+        "confirmed_absent": true
+      }
+    ],
+    "gpu_compute_conservative_upper_estimate_usd": 9.005799214687332,
+    "cost_scope": "launch through terminated observation at OD price 1.4903/h; not invoice; EBS/network/FIS excluded",
+    "no_forced_finalizers": true,
+    "checkpoint_pvc_pv_nfs_preserved": true
+  },
+  "snapshot_utc": "2026-11-18T11:28:52.044217+00:00",
+  "formal_result": false,
+  "C09_recovery_timing_eligible": false,
+  "known_incomplete_round": "postrestore step17 producer ranks0/1 only; excluded as future fullgroup checkpoint"
+}

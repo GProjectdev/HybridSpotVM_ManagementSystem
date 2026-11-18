@@ -1,7 +1,7 @@
 {
   "protocol": "HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118",
   "directory": "experiments/integrated-evaluation-v3-20261118",
-  "source": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/\ubd99\uc5ec\ub123\uc740 \ud14d\uc2a4\ud2b8.txt",
+  "source": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt",
   "status": "V3_ABC_ALL4RANK_VALIDATION_IN_PROGRESS",
   "formal_dispatch_authorized": false,
   "world_size_by_condition": {
@@ -39,5 +39,7 @@
     "source": "user2026-11-18 explicit paid continuation and alternate one-GPU instance permission",
     "deadline_utc": "2026-11-18T15:00:00Z",
     "formal_experiment_settings_not_frozen": true
-  }
+  },
+  "latest_validation_report": "experiments/integrated-evaluation-v3-20261118/evaluation_validation_update_20261118.txt",
+  "latest_validation_manifest": "experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_validation_20261118.json"
 }

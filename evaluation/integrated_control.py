@@ -10,13 +10,13 @@ from pathlib import Path
 try:
     from .integrated_protocol import PROTOCOL
     from .ieee_v2 import canonical_hash
-    from .ieee_v2_ledger import AWSReader,ownership
+    from .ieee_v2_ledger import AWSReader,ownership,historical_termination_receipts
     from .collect import timestamp
     from .run import save
 except ImportError:
     from integrated_protocol import PROTOCOL
     from ieee_v2 import canonical_hash
-    from ieee_v2_ledger import AWSReader,ownership
+    from ieee_v2_ledger import AWSReader,ownership,historical_termination_receipts
     from collect import timestamp
     from run import save
 
@@ -161,8 +161,9 @@ class Control:
         r=self.run
         if self.owned('karmada') or self.owned('aws'):raise ValueError('normal provider finalizers still pending')
         known=json.loads((self.d/'cleanup-owned-instance-identities.json').read_text());rows=self.cloud.observe(known,datetime.now(timezone.utc).isoformat())
-        if len(rows)!=len(known) or any(x['state']!='terminated' or not x.get('provider_ownership_verified') for x in rows):raise ValueError('positive exact EC2 termination not yet verified')
-        save(self.d/'exact-ec2-cleanup-verification.json',{'at':datetime.now(timezone.utc).isoformat(),'instances':rows,'EBS_keypair_IAM_webhook_cleanup':'must separately verify recorded temporary resources; not implied by EC2 state'})
+        prior=historical_termination_receipts(self.d,r,known)
+        if len(rows)!=len(known) or any(not ((x['state']=='terminated' and x.get('provider_ownership_verified')) or (x['state']=='NOT_OBSERVED' and x['instance_id'] in prior)) for x in rows):raise ValueError('positive exact EC2 termination not yet verified')
+        save(self.d/'exact-ec2-cleanup-verification.json',{'at':datetime.now(timezone.utc).isoformat(),'instances':rows,'historical_positive_termination_receipts':prior,'EBS_keypair_IAM_webhook_cleanup':'must separately verify recorded temporary resources; not implied by EC2 state'})
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('command',choices=['provision','start','quiesce','verify-cleanup']);p.add_argument('--directory',type=Path,required=True);p.add_argument('--profile',required=True);p.add_argument('--karmada-kubeconfig',required=True);p.add_argument('--member-kubeconfig',required=True)

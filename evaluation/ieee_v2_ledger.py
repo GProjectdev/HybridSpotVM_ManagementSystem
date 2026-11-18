@@ -100,3 +100,39 @@ class AWSReader:
         # Missing records are not positive termination evidence.
         rows.extend(dict(owned[i],instance_id=i,observed_at=observed_at,state='NOT_OBSERVED') for i in sorted(set(owned)-seen))
         return rows
+
+
+def historical_termination_receipts(directory, run, expected):
+    """Reuse positive UID-bound AWS observations after terminal IDs age out.
+
+    Absence is never evidence. Callers still query exact IDs and reject any
+    currently observed nonterminal or foreign state.
+    """
+    from pathlib import Path
+    from datetime import datetime, timezone
+    import hashlib
+    def at(value):
+        t=datetime.fromisoformat(value.replace('Z','+00:00'))
+        if t.tzinfo is None:raise ValueError('timezone required')
+        return t.astimezone(timezone.utc)
+    start=at(run['started_at']);now=datetime.now(timezone.utc);found={}
+    for file in sorted((Path(directory)/'snapshots').glob('*/aws-instance-ledger.json')):
+        body=file.read_bytes()
+        for row in json.loads(body):
+            identity=row.get('instance_id')
+            if identity not in expected or identity in found:continue
+            owner=expected[identity]
+            if (not ID.fullmatch(identity) or row.get('state')!='terminated'
+                or row.get('provider_ownership_verified') is not True
+                or row.get('policy_uid')!=run['policy_uid']
+                or row.get('nodeprovision_namespace')!=run['namespace']
+                or not row.get('nodeprovision_uid')
+                or row.get('nodeprovision_uid')!=owner.get('nodeprovision_uid')
+                or row.get('nodeprovision_name')!=owner.get('nodeprovision_name')):continue
+            try:observed,launched=at(row['observed_at']),at(row['launch_time'])
+            except (ValueError,KeyError,TypeError):continue
+            if not start<=launched<=observed<=now:continue
+            found[identity]={'evidence_source':'prior-positive-AWS-terminated-observation',
+                             'ledger_path':str(file),'ledger_sha256':hashlib.sha256(body).hexdigest(),
+                             'ledger_row':row,'not_inferred_from_disappearance':True}
+    return found
