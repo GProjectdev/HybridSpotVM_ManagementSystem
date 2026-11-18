@@ -28,6 +28,18 @@ class IntegratedProtocolTests(unittest.TestCase):
     def test_static_or_unfrozen_formal_config_rejected(self):
         self.c['purpose']='formal'
         with self.assertRaises(ValueError):v3.render(self.c,self.source,'bad','C')
+    def test_changed_replacement_or_storage_cannot_reuse_bc_baseline(self):
+        b=v3.render(self.c,self.source,'base','B')[0]['comparison_lock_sha256']
+        for change in ({'existing_replacement':{'enabled':False}},{'checkpoint_size':'20Gi'},{'storage_class':'other-nfs'}):
+            changed=copy.deepcopy(self.c);changed.update(change)
+            self.assertNotEqual(b,v3.render(changed,self.source,'changed','C')[0]['comparison_lock_sha256'])
+    def test_manual_model_acceptance_never_disables_formal_bc_checkpointing(self):
+        self.c['acceptance_manual_checkpoint']=True
+        info,_,_,p=v3.render(self.c,self.source,'manual','B')
+        self.assertTrue(info['manual_checkpoint_diagnostic']);self.assertFalse(info['formal_E1_E2_result'])
+        self.assertEqual(p['metadata']['annotations']['training.dcnlab.com/periodic-checkpoint'],'disabled')
+        self.c['purpose']='formal'
+        with self.assertRaisesRegex(ValueError,'manual checkpoint'):v3.render(self.c,self.source,'manual','B')
     def test_wrong_batch_or_world_rejected(self):
         for change in ({'batch_size':4},{'world_size':2}):
             with self.assertRaises(ValueError):v3.render(dict(self.c,**change),self.source,'bad','B')

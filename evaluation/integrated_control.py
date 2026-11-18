@@ -54,7 +54,39 @@ class Control:
         if now<start or not 0<(hard-start).total_seconds()<=min(r['max_seconds'],18000) or (hard-cleanup).total_seconds()<1200:
             raise ValueError('bounded active window with20minute cleanup reserve required')
         if r.get('purpose')=='formal' and r.get('protocol_lock_status')!='FROZEN':raise ValueError('formal settings not frozen')
+        if r.get('purpose')=='formal':self.verify_system_lock()
         self.cloud.observe({},now.isoformat())
+    def verify_system_lock(self):
+        """Read actual deployed specs, not the current local Git branch name."""
+        refs=self.run.get('system_lock',{}).get('image_references',{})
+        if not refs:raise ValueError('explicit deployed system image lock required')
+        clusters={'MGMT':'mgmt','AWS':'aws','ONPRE1':'onpre1'};receipts=[]
+        for key,expected in refs.items():
+            parts=key.split('/');cluster=clusters.get(parts[0])
+            if cluster not in self.k or not self.k[cluster]:raise ValueError('all locked cluster kubeconfigs required')
+            if len(parts)==5 and parts[1] in {'deployments','daemonsets'}:
+                _,kind,namespace,name,container=parts
+                o=json.loads(self.kub(cluster,'-n',namespace,'get',kind,name,'-o','json'))
+                cs=[c for c in o['spec']['template']['spec']['containers'] if c['name']==container]
+                if len(cs)!=1 or cs[0]['image']!=expected or o['metadata'].get('deletionTimestamp'):
+                    raise ValueError('deployed controller image differs from lock: '+key)
+                status=o.get('status',{});desired=o['spec'].get('replicas',1) if kind=='deployments' else status.get('desiredNumberScheduled',0)
+                updated=status.get('updatedReplicas',0) if kind=='deployments' else status.get('updatedNumberScheduled',0)
+                ready=status.get('availableReplicas',0) if kind=='deployments' else status.get('numberReady',0)
+                if desired<0 or (kind=='deployments' and desired<1) or updated!=desired or ready<desired or status.get('observedGeneration')!=o['metadata']['generation']:
+                    raise ValueError('locked controller rollout not Ready: '+key)
+            elif len(parts)==2 and parts[1]=='fluidcr-payload':
+                o=json.loads(self.kub(cluster,'-n','fluidcr-system','get','deployment','fluidcr-webhook','-o','json'))
+                args=[a for c in o['spec']['template']['spec']['containers'] for a in c.get('args',[])];values=[]
+                for i,a in enumerate(args):
+                    if a=='--payload-image' and i+1<len(args):values.append(args[i+1])
+                    elif a.startswith('--payload-image='):values.append(a.split('=',1)[1])
+                if values!=[expected]:raise ValueError('deployed payload differs from lock: '+key)
+            else:raise ValueError('unrecognized system image lock entry: '+key)
+            receipt={'component':key,'uid':o['metadata']['uid'],'generation':o['metadata']['generation'],'image':expected}
+            if len(parts)==5 and parts[1]=='daemonsets':receipt.update(eligible_nodes=desired,ready_nodes=ready)
+            receipts.append(receipt)
+        save(self.d/'live-system-lock-verification.json',{'at':datetime.now(timezone.utc).isoformat(),'comparison_lock_sha256':self.run['comparison_lock_sha256'],'components':receipts})
     def owned(self,cluster):
         xs=self.get(cluster,'nodeprovisions')['items'];uid=self.run['policy_uid']
         if any(x['metadata'].get('labels',{}).get('training.dcnlab.com/policy-uid')!=uid for x in xs):raise ValueError('foreign provider in dedicated namespace')
@@ -134,5 +166,6 @@ class Control:
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('command',choices=['provision','start','quiesce','verify-cleanup']);p.add_argument('--directory',type=Path,required=True);p.add_argument('--profile',required=True);p.add_argument('--karmada-kubeconfig',required=True);p.add_argument('--member-kubeconfig',required=True)
-    a=p.parse_args();c=Control(a.directory,{'karmada':a.karmada_kubeconfig,'aws':a.member_kubeconfig},a.profile);getattr(c,a.command.replace('-','_'))();print(a.command+' completed; inspect receipts')
+    p.add_argument('--mgmt-kubeconfig');p.add_argument('--onprem-kubeconfig')
+    a=p.parse_args();c=Control(a.directory,{'karmada':a.karmada_kubeconfig,'aws':a.member_kubeconfig,'mgmt':a.mgmt_kubeconfig,'onpre1':a.onprem_kubeconfig},a.profile);getattr(c,a.command.replace('-','_'))();print(a.command+' completed; inspect receipts')
 if __name__=='__main__':main()

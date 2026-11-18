@@ -26,6 +26,27 @@ class ControlBoundaryTests(unittest.TestCase):
         x.get.return_value={'metadata':{'uid':'recreated'}};x.run['policy']='name'
         with self.assertRaisesRegex(ValueError,'recreated'):x.policy()
         x.kub.assert_not_called()
+    def test_old_working_branch_image_cannot_satisfy_deployed_system_lock(self):
+        x=self.controller();x.k={'aws':'/a'};key='AWS/deployments/ns/provider/manager'
+        x.run.update(system_lock={'image_references':{key:'repo@sha256:'+'a'*64}},comparison_lock_sha256='c'*64)
+        obj={'metadata':{'uid':'live','generation':2},'spec':{'replicas':1,'template':{'spec':{'containers':[{'name':'manager','image':'repo@sha256:'+'b'*64}]}}},'status':{'observedGeneration':2,'updatedReplicas':1,'availableReplicas':1}}
+        x.kub.return_value=json.dumps(obj)
+        with self.assertRaisesRegex(ValueError,'differs from lock'):x.verify_system_lock()
+        obj['spec']['template']['spec']['containers'][0]['image']='repo@sha256:'+'a'*64;obj['status']['updatedReplicas']=0;x.kub.return_value=json.dumps(obj)
+        with self.assertRaisesRegex(ValueError,'rollout not Ready'):x.verify_system_lock()
+        obj['status']['updatedReplicas']=1;x.kub.return_value=json.dumps(obj)
+        with tempfile.TemporaryDirectory() as d:
+            x.d=Path(d);x.verify_system_lock()
+            receipt=json.loads((x.d/'live-system-lock-verification.json').read_text())
+            self.assertEqual(receipt['components'],[{'component':key,'uid':'live','generation':2,'image':'repo@sha256:'+'a'*64}])
+    def test_daemonset_without_eligible_nodes_records_zero_instead_of_claiming_running(self):
+        x=self.controller();x.k={'onpre1':'/o'};key='ONPRE1/daemonsets/ns/artifact/verifier'
+        x.run.update(system_lock={'image_references':{key:'repo@sha256:'+'a'*64}},comparison_lock_sha256='c'*64)
+        x.kub.return_value=json.dumps({'metadata':{'uid':'ds','generation':3},'spec':{'template':{'spec':{'containers':[{'name':'verifier','image':'repo@sha256:'+'a'*64}]}}},'status':{'observedGeneration':3,'desiredNumberScheduled':0,'updatedNumberScheduled':0,'numberReady':0}})
+        with tempfile.TemporaryDirectory() as d:
+            x.d=Path(d);x.verify_system_lock()
+            receipt=json.loads((x.d/'live-system-lock-verification.json').read_text())['components'][0]
+            self.assertEqual((receipt['eligible_nodes'],receipt['ready_nodes']),(0,0))
     def test_disappeared_cr_without_positive_terminated_ec2_is_not_cleanup(self):
         x=self.controller();x.owned=Mock(return_value=[])
         with tempfile.TemporaryDirectory() as d:
