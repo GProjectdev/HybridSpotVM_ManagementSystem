@@ -147,6 +147,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusPolicyPath, status); err != nil {
 			return ctrl.Result{}, err
 		}
+		if capacity.Reason == "verified_source_retirement_pending" {
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 	if err := r.ensureNodeProvisions(ctx, input, decision); err != nil {

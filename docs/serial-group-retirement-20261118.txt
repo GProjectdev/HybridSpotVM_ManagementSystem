@@ -1,0 +1,24 @@
+위험률 변경 시 교체 자원 겹침 제한 — 2026-11-18
+
+실제 관측
+4-Rank g6.2xlarge 수용검사13에서 위험 입력14→15가 반영돼 목표가1OD3Spot→4OD로 바뀌었다. 첫 replacement의 전체 그룹 복원이 Verified가 된 뒤 기존 source NodeProvision은 Deleting/실제 EC2 shutting-down 상태였으나 다음 replacement VM이 생성됐다. 총6개 provider CR이 존재하게 됐다. host 검증 도구는 이를 max5 위반으로 판단했고, 동일 guard를 공유하던 cleanup도 중단됐다. 이 상태를 정상 완료로 처리하지 않았다.
+
+이번 최소 수정
+internal/management/group_retirement_capacity.go:
+PolicyReconciler.pendingVerifiedGroupRetirement는 현재 policy UID·world UID에 속하고 현재 generation의 Verified/fence/runtime 검증을 통과한 RestoreRequest만 확인한다. 정확한 old/new provider UID와 소유 policy, target Ready를 대조한다. old provider가 아직 존재하면 다음 replacement 할당을 대기한다. 삭제 시각만으로 종료 완료를 가정하지 않는다. fresh APIReader를 사용한다.
+internal/management/capacity.go:
+추가 market mismatch를 처리하기 전 위 대기를 적용한다. 다음 replacement를 생성하지 않으며 reason=verified_source_retirement_pending을 기록한다.
+internal/management/policy_controller.go:
+대기 중5초 간격으로 다시 확인한다. 다음 reconcile은 최신 위험 입력과 목표 구성을 다시 계산한다.
+
+기존 GroupRecoveryReconciler의 Verified 후 group intent 해제와 Checkpoint 재개는 유지한다. 따라서 기존 VM 종료 대기 중 학습과 후속 Checkpoint를 불필요하게 막지 않는다. 원본 삭제는 기존 Provisioner의 정상 finalizer 처리에 맡긴다. finalizer·status·source fence를 강제로 수정하지 않는다. full-group fallback의 기존 직렬 구조와 Desai 기반 위험/가격 정책, CRD, rank 수, Checkpoint 정책은 유지한다. partial 방식의 기존 capacity 사전 준비 정책을 재설계하지 않았다.
+
+검증 범위
+Go 회귀검사: old present/deleting 대기, old gone 해제, 재생성된 old/new UID 거절, 다른 policy/world 및 stale verification을 정상 종료 증거로 사용하지 않음, cache에는 old가 없지만 fresh Reader에 남아 있을 때 추가 provider를 만들지 않음.
+전체 Go 결과와 registry/rollout 근거: /home/ubuntu/v3-validation-20261118/management-serial-retirement-fix/.
+이 새 gate를 적용한 실 GPU 3대 연속 교체는 아직 검증하지 않았다. 현재 실 GPU 기능 증거는 수정 전 첫 교체1회다. 과거 결과를 새 gate의 실제3연속 성공으로 바꾸지 않는다.
+
+한계와 다음 최적화 제안
+이 수정은 동시 자원 겹침을 제한한다. 전체 그룹 복원을3번→1번으로 줄이거나 비용·완료 시간을 개선했다고 주장하지 않는다. 완전한 종료를 기다리므로 다음 교체의 시작이 늦어질 수 있다.
+3개 목적지 OD를 확보하고 한 번의 UID-bound full-group 복원으로 전환하는 방식은 설계 제안이다. 초기4+대체3=최대7개의 VM이 겹칠 수 있다. 목적지 map, 단일 checkpoint round, 전체 source fence, 실패/취소/위험 재변경 시 보상 처리 및 모든 old provider 정리가 필요하다. 현1대 replacement owner 계약을 확장하므로 이번 최소 수정에는 포함하지 않았다. 효율 우위는 측정 전 미확인이다.
+새 구현을 정식 A/B/C에 사용할 때에는 모든 조건의 system image를 다시 동일하게 동결해야 한다. 검증용 discrete 위험 입력을 정식 native1h 시계열로 바꾸어 보고하지 않는다.

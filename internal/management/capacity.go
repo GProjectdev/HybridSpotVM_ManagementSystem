@@ -121,6 +121,16 @@ func (r *PolicyReconciler) checkCapacityLifecycle(ctx context.Context, policyObj
 		return result, nil
 	}
 	if len(mismatches) > 0 {
+		pending, err := r.pendingVerifiedGroupRetirement(ctx, input)
+		if err != nil {
+			return result, err
+		}
+		if pending != "" {
+			result.Blocked = true
+			result.Reason = "verified_source_retirement_pending"
+			result.Message = fmt.Sprintf("verified prior replacement source NodeProvision %s still exists; wait for normal provider termination before allocating the next replacement", pending)
+			return result, nil
+		}
 		result.Blocked = true
 		result.Reason = "replacement_required"
 		result.ReplacementRequired = true
