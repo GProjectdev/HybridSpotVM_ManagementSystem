@@ -1,0 +1,42 @@
+Verified recovery retires a failed scheduler blocker — 2026-11-18
+
+The four-rank FIS acceptance exposed a scheduler/recovery deadlock: a terminal
+Failed periodic checkpoint blocked Paused forever after the interrupted worker
+disappeared. The member checkpoint controller now distinguishes stopped failed
+actuation from a usable durable checkpoint. It preserves failure and waits for
+management certification before an enabled schedule can issue a fresh round.
+
+GroupRecoveryReconciler calls retireFailedScheduledChildren only after the
+existing validateGroupVerified gate. The source policy/world UID, current
+schedule generation and failed snapshot must match. Every rank/Pod UID must
+exactly equal the source world fenced by that Verified RestoreRequest. The
+annotation receipt binds the failed member child UID/generation/checkpointID,
+policy/world, RestoreRequest UID/operation, source fence evidence and verified
+at time. Optimistic patching preserves concurrent edits and existing receipts.
+No unverified/stale/unfenced, partial, foreign-world or incomplete-rank result
+can retire a blocker. No child status is rewritten and no archive is deleted.
+
+The member accepts this authenticated metadata command under existing controller
+RBAC, checks it against its own immutable failed child, then permits a new round.
+This is lifecycle bookkeeping after verified recovery, not a new risk model,
+checkpoint algorithm or CRD. LastSuccessfulFullCheckpoint remains restricted to
+complete actual archive exports. The prior valid round is used for recovery.
+
+Tests cover a complete four-rank mapping, stale verification/generation,
+missing source fence, wrong world, altered/duplicate/missing rank, partial child,
+invalid prior receipt and idempotent retry. Full Go suites passed. Existing
+RBAC already permits the owned FluidCRMigration metadata patch; no role grant.
+
+Buildah/registry-verified management-role image:
+docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:1d51026c6d5dbf4fbb0813e5a3143f1ea8743be47e80beb023e3da83cbe2db71
+Applied to MGMT spot-vm-management-controller. Checkpoint counterpart:
+Stateful-Migration-Operator-with-PV/docs/failed-schedule-handoff-20261118.txt.
+
+The real single FIS event EXPWQFopkFDK9WFLuG was reused after repair. Four-rank
+RestoreRequest dbd6bff2-bc9e-4bc8-bfd6-9ac04ed8bdb8 became Verified10:32:27UTC;
+all four fresh Pod UID restore/update audits passed. A failed child was retained
+and its exact verified retirement reached the member before the next round.
+Private receipts: /home/ubuntu/v3-validation-20261118/gpt2-four-rank-payloadfix-fis-09.
+Final goal/next durable checkpoint/cleanup results belong in the later validation
+TXT. Mid-run controller changes make this diagnostic ineligible as a formal
+recovery-latency result. Research design and FIS target/settings were unchanged.

@@ -46,6 +46,9 @@ func (r *GroupRecoveryReconciler) Reconcile(ctx context.Context, key ctrl.Reques
 	if err := validateGroupVerified(req); err != nil {
 		return again, err
 	}
+	if err := r.retireFailedScheduledChildren(ctx, policy, req); err != nil {
+		return again, err
+	}
 	if policy.GetAnnotations()[groupIntentAnnotation] == stringField(req.Object, "spec", "groupRestore", "operationUID") {
 		before := policy.DeepCopy()
 		annotations := policy.GetAnnotations()
