@@ -1,0 +1,80 @@
+{
+  "at": "2026-11-19T06:57:59.528200+00:00",
+  "kind": "EXISTING_ACCEPTANCE_LOG_COVERAGE_NOT_FORMAL_RESULT",
+  "runs": [
+    {
+      "run": "gpt2-g5-calibration-03",
+      "source_files": 201,
+      "rows_including_repeated_observations": 174708,
+      "non_null_field_counts": {
+        "lambdaPerHour": 174708,
+        "alpha": 174708,
+        "spotPricePerHour": 174708,
+        "onDemandPricePerHour": 174708,
+        "checkpointSeconds": 174708,
+        "copySeconds": 174708,
+        "checkpointCostsObservedAt": 174708,
+        "intervalSource": 174708,
+        "costEvaluated": 174708,
+        "decisionObservedAt": 174708,
+        "policyUID": 174708,
+        "reason": 174708,
+        "iterationTimeSeconds": 174708
+      },
+      "interval_sources": [
+        "checkpoint-cost-analytic",
+        "risk-band-bootstrap"
+      ],
+      "unique_policy_UIDs": [
+        "c72940e3-8a2b-4d2e-90df-400ffd6b9be6"
+      ],
+      "unique_decision_identity_keys": 3190,
+      "unique_decision_rows": 3190,
+      "identity_keys_with_multiple_contents": 0,
+      "measured_CP_rows": 1853,
+      "economics_evaluated_rows": 0,
+      "actors": [
+        "checkpoint-coordinator",
+        "vm-management"
+      ]
+    },
+    {
+      "run": "resnet-g5-batch3-02",
+      "source_files": 168,
+      "rows_including_repeated_observations": 107816,
+      "non_null_field_counts": {
+        "lambdaPerHour": 107816,
+        "alpha": 107816,
+        "spotPricePerHour": 107816,
+        "onDemandPricePerHour": 107816,
+        "checkpointSeconds": 107816,
+        "copySeconds": 107816,
+        "checkpointCostsObservedAt": 107816,
+        "intervalSource": 107816,
+        "costEvaluated": 107816,
+        "decisionObservedAt": 107816,
+        "policyUID": 107816,
+        "reason": 107816,
+        "iterationTimeSeconds": 107816
+      },
+      "interval_sources": [
+        "checkpoint-cost-analytic",
+        "hourly-risk-refresh-fallback",
+        "risk-band-bootstrap"
+      ],
+      "unique_policy_UIDs": [
+        "db4eb721-8431-402f-b6ae-8999d603128e"
+      ],
+      "unique_decision_identity_keys": 2361,
+      "unique_decision_rows": 2361,
+      "identity_keys_with_multiple_contents": 0,
+      "measured_CP_rows": 48,
+      "economics_evaluated_rows": 385,
+      "actors": [
+        "checkpoint-coordinator",
+        "vm-management"
+      ]
+    }
+  ],
+  "deduplication_semantics": "policyUID + decisionActor + decisionObservedAt; distinct conflicting payload retained and reported; not independent GPU repetitions"
+}

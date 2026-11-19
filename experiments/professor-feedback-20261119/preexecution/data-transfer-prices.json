@@ -1,0 +1,2977 @@
+{
+  "at": "2026-11-19T07:02:41.910382+00:00",
+  "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSDataTransfer/current/ap-northeast-2/index.json",
+  "verified_fetch": true,
+  "rows": [
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "India (Delhi)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-DEL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-south-1-del-1"
+      },
+      "rate": {
+        "rateCode": "ZEZAK67G59JMHA89.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to India (Delhi)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Vodafone) - Manchester",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUW2WL1MAN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-2-wl1-man1"
+      },
+      "rate": {
+        "rateCode": "ZRD44EAA5KCNDZN6.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Vodafone) - London",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Atlanta",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1ATL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-atl1"
+      },
+      "rate": {
+        "rateCode": "4GM9H4FGVRUFNHUZ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Atlanta",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Las Vegas)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-LAS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-las-1"
+      },
+      "rate": {
+        "rateCode": "4NNTNXSCFK2G8TGV.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Las Vegas)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Ohio)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-USE2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-2"
+      },
+      "rate": {
+        "rateCode": "J87P7V8UXARRSFNS.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Ohio)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "AWS European Sovereign Cloud (Germany)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-ESC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eusc-de-east-1"
+      },
+      "rate": {
+        "rateCode": "7T6KRF72HF2M2MZD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to AWS European Sovereign Cloud (Germany)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Tokyo)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-1"
+      },
+      "rate": {
+        "rateCode": "B3VACMZKHVCS9UJG.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Tokyo)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Mexico (Queretaro)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-QRO1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-qro-1"
+      },
+      "rate": {
+        "rateCode": "QQP3PCM8UQYDBY8G.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Mexico (Queretaro)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Taiwan (Taipei)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-TPE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-1-tpe-1"
+      },
+      "rate": {
+        "rateCode": "5AMUMMPP3GSTKAPZ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Taiwan (Taipei)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Seattle)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-SEA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-sea-1"
+      },
+      "rate": {
+        "rateCode": "G4AN9C32FFC7XR2X.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) Data Transfer from US West (Seattle)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "AWS Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "APN2-DataTransfer-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "9AS8NERTGECRPGT7.JRTCKXETXF.Q3Z75P77EN",
+        "description": "$0.126 per GB - first 10 TB / month data transfer out beyond the global free tier",
+        "beginRange": "0",
+        "endRange": "10240",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1260000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "AWS Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "APN2-DataTransfer-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "9AS8NERTGECRPGT7.JRTCKXETXF.VF6T3GAUKQ",
+        "description": "$0.122 per GB - next 40 TB / month data transfer out",
+        "beginRange": "10240",
+        "endRange": "51200",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1220000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "AWS Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "APN2-DataTransfer-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "9AS8NERTGECRPGT7.JRTCKXETXF.N9EW5UVVPA",
+        "description": "$0.117 per GB - next 100 TB / month data transfer out",
+        "beginRange": "51200",
+        "endRange": "153600",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1170000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "AWS Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "APN2-DataTransfer-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "9AS8NERTGECRPGT7.JRTCKXETXF.GPHXDESFBB",
+        "description": "$0.108 per GB - greater than 150 TB / month data transfer out",
+        "beginRange": "153600",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1080000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Nashville",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1BNA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-bna1"
+      },
+      "rate": {
+        "rateCode": "7SSPA69SFDPP4YD4.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Nashville",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (SKT) - Seoul",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-APNE2WL1SEL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-2-wl1-sel1"
+      },
+      "rate": {
+        "rateCode": "FPQYKHJ9GVUWJDPZ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.00 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (SKT) - Seoul",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0000000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Minneapolis",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1MSP1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-msp1"
+      },
+      "rate": {
+        "rateCode": "MXYPBXU5K4VARXWD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - data transfer Asia Pacific (Seoul) to US East (Verizon) - Minneapolis",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Amazon CloudFront",
+        "toLocationType": "AWS Edge Location",
+        "usagetype": "APN2-CloudFront-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "8F8EWNWJAXG3A339.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.00 per GB data transfer out of Asia Pacific (Seoul) to CloudFront",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0000000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Atlanta)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-ATL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-atl-1"
+      },
+      "rate": {
+        "rateCode": "257A8DBB3SAGK8C5.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) Data Transfer from US East (Atlanta)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Oman (Muscat)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-MCT1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "me-south-1-mct-1"
+      },
+      "rate": {
+        "rateCode": "9CVWMPQWJB4PX4ND.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) datatransfer to Oman (Muscat)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Denver)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-DEN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-den-1"
+      },
+      "rate": {
+        "rateCode": "MMPUZ4QTB5RE8S5J.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Denver)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Minneapolis)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-MSP1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-msp-1"
+      },
+      "rate": {
+        "rateCode": "MZZHTZ5344XKAAKW.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Amazon CloudFront",
+        "toLocationType": "CloudFront China POPs",
+        "usagetype": "APN2-CloudFrontChina-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "3BMUYAB32NGVKBD8.JRTCKXETXF.6YS6EN2CT7",
+        "description": "International Origin Fetch from Asia Pacific (Seoul) to CloudFront China POPs",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1260000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Spain)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUS2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-south-2"
+      },
+      "rate": {
+        "rateCode": "9ZE68Q9Y6JQYJ3MD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Spain)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - Las Vegas",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1LAS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1-las1"
+      },
+      "rate": {
+        "rateCode": "NQKD2YUE5JKZZNUS.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Verizon) - Las Vegas",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "New Zealand (Auckland)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-AKL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-2-akl-1"
+      },
+      "rate": {
+        "rateCode": "JRNUAGGUK68HQ9S7.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to New Zealand (Auckland)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Miami",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1MIA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-mia1"
+      },
+      "rate": {
+        "rateCode": "JSFG2WSDDAVFJ35M.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Miami",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "India (Kolkata)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-CCU1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-south-1-ccu-1"
+      },
+      "rate": {
+        "rateCode": "BMT77SCGZBJ9YZAN.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) datatransfer to India (Kolkata)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "Inter Region Peering Data Transfer Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "APN2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": ""
+      },
+      "rate": {
+        "rateCode": "JSGCS5TNC3DHUGCJ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Data transfer from Asia Pacific (Seoul)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - Phoenix",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1PHX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1-phx1"
+      },
+      "rate": {
+        "rateCode": "VY436VJ7824S2FXD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to  US West (Verizon) - Phoenix",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Philadelphia)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-PHL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-phl-1"
+      },
+      "rate": {
+        "rateCode": "BM6BF22C4KS46YRX.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Philadelphia)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Mumbai)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS3-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-south-1"
+      },
+      "rate": {
+        "rateCode": "4EHM9RD77TX36TQ2.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Mumbai)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Peru (Lima)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-LIM1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-lim-1"
+      },
+      "rate": {
+        "rateCode": "TK382W2HFFBUNC7J.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Peru (Lima)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Vodafone) - London",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUW2WL1LON1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-2-wl1-lon1"
+      },
+      "rate": {
+        "rateCode": "Z3AUMZ7KFPTSQMAP.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Vodafone) - London",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Hong Kong)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-east-1"
+      },
+      "rate": {
+        "rateCode": "5J2S3S4H3XCK795P.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD0.08 per GB for  in Asia Pacific (Hong Kong)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Middle East (Bahrain)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-MES1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "me-south-1"
+      },
+      "rate": {
+        "rateCode": "H2GS8WUSB8R2KEP8.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD0.08 per GB for  in Middle East (Bahrain)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Chile (Santiago)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-SCL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-scl-1"
+      },
+      "rate": {
+        "rateCode": "6BSBB6NAGEC8QPRQ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Chile (Santiago)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Israel (Tel Aviv)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-ILC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "il-central-1"
+      },
+      "rate": {
+        "rateCode": "6ZN8CB63J4AUWTDA.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Israel (Tel Aviv)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Canada (BELL) - Toronto",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-CAC1WL1YTO1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ca-central-1-wl1-yto1"
+      },
+      "rate": {
+        "rateCode": "B278F9CU937S9JP3.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - data transfer Asia Pacific (Seoul) to Canada (BELL) - Toronto",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "AWS GovCloud (US-West)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-UGW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-gov-west-1"
+      },
+      "rate": {
+        "rateCode": "WYX4ZJMEGDVXA74Y.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to AWS GovCloud (US)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Morocco (Casablanca)",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUW3WL1CMN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-3-wl1-cmn1"
+      },
+      "rate": {
+        "rateCode": "DMG8TQRRM9HM8AVW.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.14 per GB - Asia Pacific (Seoul) data transfer to Morocco (Casablanca)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1400000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (New York City)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-NYC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-nyc-1"
+      },
+      "rate": {
+        "rateCode": "47NZRDX8F2PNG7F4.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Vodafone) - Dortmund",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUC1WL1DTM1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1-wl1-dtm1"
+      },
+      "rate": {
+        "rateCode": "B6T539T47C74AUNQ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Vodafone) - Dortmund",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Melbourne)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS6-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-4"
+      },
+      "rate": {
+        "rateCode": "KYYDSMFS7KQHX6FS.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Melbourne)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Africa (Cape Town)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-AFS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "af-south-1"
+      },
+      "rate": {
+        "rateCode": "W7CKDE9CY4FXSEEA.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD 0.08 per GB for EUN1-AWS-Out-Bytes in Africa (Cape Town)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Middle East (UAE)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-MEC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "me-central-1"
+      },
+      "rate": {
+        "rateCode": "5CREBXAKF8QMX228.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD0.08 per GB for  in Middle East (UAE)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Argentina (Buenos Aires)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-BUE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-bue-1"
+      },
+      "rate": {
+        "rateCode": "86YT8VA98496E99Q.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) datatransfer to Argentina (Buenos Aires)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - San Francisco Bay Area",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1"
+      },
+      "rate": {
+        "rateCode": "7BXA7GWNTD28VG8M.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Verizon)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Charlotte",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1CLT1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-clt1"
+      },
+      "rate": {
+        "rateCode": "338RXAVS4VZ9BVF7.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - datatransfer Asia Pacific (Seoul) to US East (Verizon) - Charlotte",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Dallas",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1DFW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-dfw1"
+      },
+      "rate": {
+        "rateCode": "4K7BUXV39PEUG58P.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Dallas",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Tampa",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1TPA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-tpa1"
+      },
+      "rate": {
+        "rateCode": "CACJGFBKX8XHWN7Z.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Tampa",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Malaysia)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS7-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-5"
+      },
+      "rate": {
+        "rateCode": "K6FXM536B5D3T3VA.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Malaysia)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Finland (Helsinki)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-HEL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-north-1-hel-1"
+      },
+      "rate": {
+        "rateCode": "5VACHAZ2VUEX426A.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) datatransfer to Finland (Helsinki)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Portland)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-PDX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-pdx-1"
+      },
+      "rate": {
+        "rateCode": "PX2CNG7RHGBM26WM.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Portland)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Senegal (Dakar)",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUW3WL1DSS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-3-wl1-dss1"
+      },
+      "rate": {
+        "rateCode": "XAUUC8VTB3U887P2.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.14 per GB - Asia Pacific (Seoul) data transfer to Senegal (Dakar)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.1400000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Houston)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-IAH1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-iah-1"
+      },
+      "rate": {
+        "rateCode": "NWVURGN6BGCEJE2Z.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Houston)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Miami)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-MIA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-mia-1"
+      },
+      "rate": {
+        "rateCode": "FDPK3CRGFFH2VWBA.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East(Miami)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Chicago",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1CHI1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-chi1"
+      },
+      "rate": {
+        "rateCode": "BVS4XRU48UJSET8Q.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Chicago",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Philippines (Manila)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-MNL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-1-mnl-1"
+      },
+      "rate": {
+        "rateCode": "QDNZWCGZPP5QGZ7D.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Philippines (Manila)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (KDDI) - Tokyo",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-APNE1WL1NRT1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-1-wl1-nrt1"
+      },
+      "rate": {
+        "rateCode": "TJSGTRZ2VNEGABSU.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (KDDI) - Tokyo",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (British Telecom) - Manchester",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUW2WL2MAN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-2-wl2-man1"
+      },
+      "rate": {
+        "rateCode": "AZZGTGMYBN5XXBYH.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (BT) - London",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Singapore)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-1"
+      },
+      "rate": {
+        "rateCode": "C2M8SN8R6HDWFCJB.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Singapore)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Mexico (Central)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-MXC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "mx-central-1"
+      },
+      "rate": {
+        "rateCode": "63KMETQXPWPRSPW5.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Mexico (Central)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Boston",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1"
+      },
+      "rate": {
+        "rateCode": "STG9MPTU6XV7DZX8.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "IntraRegion-xAZ-Out",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Seoul)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-DataTransfer-xAZ-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-2"
+      },
+      "rate": {
+        "rateCode": "KH6D6E3T5TYRWBT6.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.00 per GB - regional data transfer - in/out/between EC2 Azs or using elastic IPs or ELB",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0000000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Nigeria (Lagos)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-LOS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "af-south-1-los-1"
+      },
+      "rate": {
+        "rateCode": "F83UNXR93STKUXC8.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Nigeria (Lagos)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "AWS GovCloud (US-East)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-UGE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-gov-east-1"
+      },
+      "rate": {
+        "rateCode": "UT6J35FXEK3DDRKU.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to AWS GovCloud (US)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Detroit",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1DTW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-dtw1"
+      },
+      "rate": {
+        "rateCode": "RPQND5X4ZCSQ855S.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - data transfer Asia Pacific (Seoul) to US East (Verizon) - Detroit",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Vodafone) - Munich",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUC1WL1MUC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1-wl1-muc1"
+      },
+      "rate": {
+        "rateCode": "EQTVD7YPEFHPCTFH.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Vodafone) - Munich",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Jakarta)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS4-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-3"
+      },
+      "rate": {
+        "rateCode": "Z6QSS4ZQ39Y9Y8DT.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Jakarta)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Hyderabad)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS5-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-south-2"
+      },
+      "rate": {
+        "rateCode": "55SYMJBDMAVA2K7D.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Hyderabad)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Boston)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-BOS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-bos-1"
+      },
+      "rate": {
+        "rateCode": "UQ6JA25F92WSH9BZ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Boston)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (Ireland)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EU-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-1"
+      },
+      "rate": {
+        "rateCode": "UX24EDG6U6PT532A.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to EU (Ireland)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - Denver",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1DEN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1-den1"
+      },
+      "rate": {
+        "rateCode": "AUBUWDCYGJNKVY2M.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to  US West (Verizon) - Denver",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "South America (Sao Paulo)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-SAE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "sa-east-1"
+      },
+      "rate": {
+        "rateCode": "XFG7SVB5N236REBK.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to South America (Sao Paulo)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Kansas City 2)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-MCI2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-mci-1"
+      },
+      "rate": {
+        "rateCode": "DUY8K4UN8U2PPMCD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - Seattle",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1SEA1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1-sea1"
+      },
+      "rate": {
+        "rateCode": "HD47W5GC2Y6JCEFD.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Verizon) - Seattle",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Osaka)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APN3-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-3"
+      },
+      "rate": {
+        "rateCode": "7288J3WSVAX5VZSM.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Osaka)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Houston",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1IAH1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-iah1"
+      },
+      "rate": {
+        "rateCode": "VEC5E8Y9F8TP9A7A.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Houston",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Poland (Warsaw)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-WAW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1-waw-1"
+      },
+      "rate": {
+        "rateCode": "3DCZGT2TSANFFNFZ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Poland (Warsaw)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Dallas)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-DFW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-dfw-1"
+      },
+      "rate": {
+        "rateCode": "XHZEKXT72Q7R9W4R.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Dallas)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (Frankfurt)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1"
+      },
+      "rate": {
+        "rateCode": "DRJB4AG9FXUPGYP6.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to EU (Germany)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Chicago)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-CHI1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-chi-1"
+      },
+      "rate": {
+        "rateCode": "F7HU4G5KKNTX6QPT.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Canada West (Calgary)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-CAN2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ca-west-1"
+      },
+      "rate": {
+        "rateCode": "33E2YRV9HJE6GMS3.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Canada West (Calgary)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (KDDI) - Osaka",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-APNE1WL1KIX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-northeast-1-wl1-kix1"
+      },
+      "rate": {
+        "rateCode": "MVQGER9XJGFUZKK7.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (KDDI) - Osaka",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Verizon) - Los Angeles",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USW2WL1LAX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-wl1-lax1"
+      },
+      "rate": {
+        "rateCode": "AH59CYTWXYTPFA5Q.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Verizon) - Los Angeles",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Canada (Central)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-CAN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ca-central-1"
+      },
+      "rate": {
+        "rateCode": "JKKNWTJV84WYK6NY.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Canada (Central)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Vodafone) - Berlin",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-EUC1WL1BER1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1-wl1-ber1"
+      },
+      "rate": {
+        "rateCode": "UJBE7CMKX583DUQ4.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Vodafone) - Berlin",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (Milan)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-south-1"
+      },
+      "rate": {
+        "rateCode": "T6DTSUNXT2KDQ87M.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD 0.08 per GB for APN2-EUS1-AWS-Out-Bytes in EU (Milan)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (London)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUW2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-2"
+      },
+      "rate": {
+        "rateCode": "2B2EQSB8V27KVXW5.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to EU (London)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Taipei)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APE2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-east-2"
+      },
+      "rate": {
+        "rateCode": "WNWXM2JZPYUMP5S2.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Taipei)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Sydney)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-2"
+      },
+      "rate": {
+        "rateCode": "UUH7WE6SK7KTKBXM.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Sydney)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (Paris)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUW3-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-west-3"
+      },
+      "rate": {
+        "rateCode": "75RMZVVKVTGH58JH.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to EU (Paris)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (N. California)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-USW1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-1"
+      },
+      "rate": {
+        "rateCode": "Q8PU9RHU34UXVCZC.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Northern California)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Honolulu)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-HNL1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-hnl-1"
+      },
+      "rate": {
+        "rateCode": "X49UCXHAMHHNUGBK.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Honolulu)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Oregon)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-USW2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2"
+      },
+      "rate": {
+        "rateCode": "B66ZEPTUUSHNP7D3.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Oregon)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Phoenix)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-PHX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-phx-1"
+      },
+      "rate": {
+        "rateCode": "ZYPZGP3GCHBSX95M.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) Data Transfer from US West (Phoenix)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US West (Los Angeles)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-LAX1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-west-2-lax-1"
+      },
+      "rate": {
+        "rateCode": "SZ6HJNBUY6YJE2PQ.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US West (Los Angeles)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - Washington DC",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1BWAS1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-was1"
+      },
+      "rate": {
+        "rateCode": "3X6WVG58WQKMBZMM.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - Washington DC",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Denmark (Copenhagen)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-CPH1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-north-1-cph-1"
+      },
+      "rate": {
+        "rateCode": "BZVMWQQF2MATE4CT.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) datatransfer to Denmark (Copenhagen)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Australia (Perth)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-PER1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-2-per-1"
+      },
+      "rate": {
+        "rateCode": "VDS6ZNK2TY4J8FTM.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Australia (Perth)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Verizon) - New York",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1NYC1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-nyc1"
+      },
+      "rate": {
+        "rateCode": "CQQBRKNZSUNQ6EGS.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Verizon) - New York",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "EU (Stockholm)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUN1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-north-1"
+      },
+      "rate": {
+        "rateCode": "9TSUQESZ2PX7S9UC.JRTCKXETXF.6YS6EN2CT7",
+        "description": "USD 0.08 per GB for EUN1-AWS-Out-Bytes in EU (Stockholm)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Thailand (Bangkok)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-BKK1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-1-bkk-1"
+      },
+      "rate": {
+        "rateCode": "JSZY7437VJ4XJU7W.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Thailand (Bangkok)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Europe (Zurich)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-EUC2-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-2"
+      },
+      "rate": {
+        "rateCode": "M9Y97PMPXM2464HW.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Europe (Zurich)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (Thailand)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS9-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-7"
+      },
+      "rate": {
+        "rateCode": "PK5MU7GSMYRBPWKX.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (Thailand)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Germany (Hamburg)",
+        "toLocationType": "AWS Local Zone",
+        "usagetype": "APN2-HAM1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "eu-central-1-ham-1"
+      },
+      "rate": {
+        "rateCode": "2Z2QUD87TMXX5P5W.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to Germany (Hamburg)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (Lenexa)",
+        "toLocationType": "AWS Wavelength Zone",
+        "usagetype": "APN2-USE1WL1FOE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1-wl1-foe1"
+      },
+      "rate": {
+        "rateCode": "WUMSAWX5MQR7CXQY.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to US East (Lenexa)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Asia Pacific (New Zealand)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-APS8-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "ap-southeast-6"
+      },
+      "rate": {
+        "rateCode": "58F5Y3H5Z8V6HWB5.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.08 per GB - Asia Pacific (Seoul) data transfer to Asia Pacific (New Zealand)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    },
+    {
+      "attributes": {
+        "servicecode": "AWSDataTransfer",
+        "transferType": "InterRegion Outbound",
+        "fromLocation": "Asia Pacific (Seoul)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "US East (N. Virginia)",
+        "toLocationType": "AWS Region",
+        "usagetype": "APN2-USE1-AWS-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "ap-northeast-2",
+        "servicename": "AWS Data Transfer",
+        "toRegionCode": "us-east-1"
+      },
+      "rate": {
+        "rateCode": "39FN83U7M4TB4352.JRTCKXETXF.6YS6EN2CT7",
+        "description": "$0.080 per GB - Asia Pacific (Seoul) data transfer to US East (Northern Virginia)",
+        "beginRange": "0",
+        "endRange": "Inf",
+        "unit": "GB",
+        "pricePerUnit": {
+          "USD": "0.0800000000"
+        },
+        "appliesTo": []
+      },
+      "effectiveDate": "2026-11-01T00:00:00Z"
+    }
+  ]
+}

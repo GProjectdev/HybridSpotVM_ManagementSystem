@@ -1,11 +1,11 @@
 {
-  "at": "2026-11-19T06:47:38.259526+00:00",
-  "status": "FINAL_EXPERIMENTAL_REVIEW_NOT_FROZEN",
+  "at": "2026-11-19T07:14:12.371373+00:00",
+  "status": "READY_FOR_FREEZE_NOT_FROZEN",
   "files": [
     {
       "path": "STATUS.txt",
-      "sha256": "240a473c5f41b58e54da0b2777ecf5745f548be053b823e2ee10f78ebb6b26bf",
-      "bytes": 465
+      "sha256": "618b7670393cacbe78992d9d295b8a5745b6cf061c95f379f8ef6372aa730b1c",
+      "bytes": 615
     },
     {
       "path": "artifact_hashes.json",
@@ -84,8 +84,8 @@
     },
     {
       "path": "evaluation_readiness_20261119.txt",
-      "sha256": "a7d8d04b2a858a519453735c525b53f6b161541508f64dd43429cbd2653534e2",
-      "bytes": 5836
+      "sha256": "cf818bb99f74ee934ea386c12f5d1f2788cfa9d464359906551e549561af79ad",
+      "bytes": 6443
     },
     {
       "path": "evidence/checkpoint-selected-interval/idle-before-upgrade.json",
@@ -323,6 +323,11 @@
       "bytes": 588
     },
     {
+      "path": "final-review/push.json",
+      "sha256": "55fd25cb767b167d9d1f58ca310902646e0caad54e63496f81dfba5aae83fb24",
+      "bytes": 375
+    },
+    {
       "path": "final-review/report-sha256.json",
       "sha256": "e99b934f32fa9d2bac6f32acc5eb33aac1f83d229b017ec6fabb61aa7573a27b",
       "bytes": 192
@@ -364,8 +369,8 @@
     },
     {
       "path": "freeze-inputs/gpt2-formal-draft.json",
-      "sha256": "cd47ec3a928245a2b697d3042ed64ae9e891ae0729d2128070f6d649785f0a0a",
-      "bytes": 8202
+      "sha256": "88553de137ffe2c7f15b43fbc401eda7c3c9a688a7b87668d9433699b9fd0083",
+      "bytes": 8541
     },
     {
       "path": "freeze-inputs/gpt2-verified-config.json",
@@ -384,8 +389,8 @@
     },
     {
       "path": "freeze-inputs/resnet50-formal-draft.json",
-      "sha256": "0bd85bff6c941ccee1c873447157423ba7c70fae7baaaa598581cbaa14ae09b9",
-      "bytes": 8387
+      "sha256": "aefd1f3b1c6566544248d87ef839c7e2c0adf54bb73a71db881a87d738f36911",
+      "bytes": 8726
     },
     {
       "path": "freeze-inputs/resnet50-verified-config.json",
@@ -404,8 +409,8 @@
     },
     {
       "path": "frozen_protocol_candidate_20261119.json",
-      "sha256": "60144905ec500889f89c610b2c63ef5a26ef7b19fcac4a992305c805f7dde1eb",
-      "bytes": 12484
+      "sha256": "445749ddb072c84360eae71789b4c65c17619cf4f3c38e6dc3f35fdfe1c1fbf2",
+      "bytes": 12739
     },
     {
       "path": "goal-evidence/gpt2-goal-evidence.csv",
@@ -439,8 +444,8 @@
     },
     {
       "path": "goal_step_and_common_settings_recommendation_20261119.txt",
-      "sha256": "76d6164f1189781b07a0b521e9e764633eeac17c5c60977b1bb4a7673517ba1b",
-      "bytes": 14557
+      "sha256": "cfb9926b6591669df0ac023cec5c6fba29a3c463fc9b97942c0a3b3f6f286f12",
+      "bytes": 15164
     },
     {
       "path": "goal_step_screening_20261119.csv",
@@ -666,6 +671,86 @@
       "path": "policy-analysis/policy_sensitivity_summary.json",
       "sha256": "9c11af6f6bdeafd83a7206ce3ee93edce5233ac79a02f413be52e655f4360a0f",
       "bytes": 978
+    },
+    {
+      "path": "preexecution/E1_E2_PreExecution_Final_Check_20261119.txt",
+      "sha256": "105f2c3563423d5ac2eccfb09143a888e57112a726928b5d08f779f6ca0c9b0c",
+      "bytes": 30287
+    },
+    {
+      "path": "preexecution/archive_destination_check.json",
+      "sha256": "90906ecf5376cfb5eddab82e4b7e83d4c723c6fa7520dc5764b9db76eb76fcc8",
+      "bytes": 222
+    },
+    {
+      "path": "preexecution/cost_and_execution_envelope.csv",
+      "sha256": "fcb9a020faa6e2da9f247318b9f7602f7ece88b5a5bfe5b01e48fe886fc1a720",
+      "bytes": 981
+    },
+    {
+      "path": "preexecution/cost_and_execution_envelope.json",
+      "sha256": "864e1092f92f4f2bd9ea0fee994aefccc7a9d48db962ddadc2c28e8925648298",
+      "bytes": 6065
+    },
+    {
+      "path": "preexecution/data-transfer-prices.json",
+      "sha256": "7aa3642cd2a1ae38bc00c6dbf25b5db8fdf0fed1dc54ab761bc07fa43936870b",
+      "bytes": 101427
+    },
+    {
+      "path": "preexecution/ebs-gp3-price.json",
+      "sha256": "b2b6c25ba465645b9c13ad46889d3125c82c9d8dd3132f7383491c051af7f4d5",
+      "bytes": 3399
+    },
+    {
+      "path": "preexecution/existing-policy-telemetry-coverage.json",
+      "sha256": "5b905ecba20721da2800dff759a69e443c22c2f9660fc6d57f3e24f23e76a519",
+      "bytes": 2514
+    },
+    {
+      "path": "preexecution/final-config-runtime-check.json",
+      "sha256": "9414b7dc52a83ba025760003d00333231df2aafe2069291c7893479ffecd8dc4",
+      "bytes": 13281
+    },
+    {
+      "path": "preexecution/live-storage-clusters-price.json",
+      "sha256": "64e0fedeb1f5d237f6764f917320bcd70d97ad0de50c268924141d3c1299385f",
+      "bytes": 13776
+    },
+    {
+      "path": "preexecution/manifest_ready_for_freeze.json",
+      "sha256": "660f949177c549042e5b1211f7e17305c2ef110ac7ddaac63d34bc754a03a8f2",
+      "bytes": 2788
+    },
+    {
+      "path": "preexecution/nfs_retention_and_stop_plan.json",
+      "sha256": "7266f057b57ae666cae807b4437e7dc6a70111fc680cf561709cd11e17156fba",
+      "bytes": 5342
+    },
+    {
+      "path": "preexecution/preexecution-consistency-check.json",
+      "sha256": "66da35a95f078b22b93f55e3c9862f1fd3526f106187d5969d839b283882a2da",
+      "bytes": 522
+    },
+    {
+      "path": "preexecution/report-sha256.json",
+      "sha256": "3034d8ec0bce44e499f01365a8020a3557a0e55c7313b0e8e99e55e2bbe4213c",
+      "bytes": 191
+    },
+    {
+      "path": "preexecution/researcher_conditional_approval.json",
+      "sha256": "573f41ba86185e1a7ee281cf0071e78c5efd395048aeba3ced5fda9ecd02fc12",
+      "bytes": 679
+    },
+    {
+      "path": "preexecution/risk_FIS_collision_rules.json",
+      "sha256": "c8ef2150f9b0cef91298a7f48ee0d3dbdaaabeb31bbd9a20ca1336939f938629",
+      "bytes": 1582
+    },
+    {
+      "path": "preexecution/runtime-inventory.json",
+      "sha256": "2dc4d26efca5cfbf08252bec1093c5db3f38c29175202addfce34b887e057389",
+      "bytes": 29077
     },
     {
       "path": "previous_active_protocol.json",

@@ -1,0 +1,969 @@
+{
+  "at": "2026-11-19T06:57:59.528200+00:00",
+  "components": [
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "checkpoint-recovery-coordinator",
+      "uid": "e616b5bc-73a6-4e8f-b62c-2a4f497d26ea",
+      "generation": 26,
+      "observed_generation": 26,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "placement-webhook",
+      "uid": "18dbca6a-c340-44c2-a7d2-a3bdef53ecdf",
+      "generation": 19,
+      "observed_generation": 19,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "public-cloud-vm-collector",
+      "uid": "48b78b35-19e2-473e-8b78-5ef43c0571fa",
+      "generation": 37,
+      "observed_generation": 37,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "spot-vm-management-controller",
+      "uid": "f8fce6c3-97e9-4737-a847-a0b5cdec017c",
+      "generation": 31,
+      "observed_generation": 31,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "training-lifecycle-controller",
+      "uid": "bb9c87d4-cafd-499b-b9de-b46fafbc42ba",
+      "generation": 19,
+      "observed_generation": 19,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "karmada-aggregated-apiserver",
+      "uid": "82869b7d-6ddd-42bf-9eb7-1a385d044f05",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "karmada-aggregated-apiserver": "docker.io/karmada/karmada-aggregated-apiserver:v1.19.0"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "karmada-apiserver",
+      "uid": "31855192-506b-40b9-800b-3bf3ed760ec5",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "karmada-apiserver": "registry.k8s.io/kube-apiserver:v1.36.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "karmada-controller-manager",
+      "uid": "a14cd867-7a72-4203-b236-d26f61e6f368",
+      "generation": 6,
+      "observed_generation": 6,
+      "images": {
+        "karmada-controller-manager": "docker.io/karmada/karmada-controller-manager:v1.19.0"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "karmada-scheduler",
+      "uid": "db1fe1c5-975d-47a9-a72b-931b81863206",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "karmada-scheduler": "docker.io/karmada/karmada-scheduler:v1.19.0"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "karmada-webhook",
+      "uid": "85580039-a894-4cf2-bbe4-6c6b79c2e806",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "karmada-webhook": "docker.io/karmada/karmada-webhook:v1.19.0"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "karmada-system",
+      "name": "kube-controller-manager",
+      "uid": "23b857cf-6136-4daf-9b44-43fbc8e096f3",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "kube-controller-manager": "registry.k8s.io/kube-controller-manager:v1.36.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "cilium-operator",
+      "uid": "4edf6864-0c37-47c0-ab68-1e61ce20f92b",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-operator": "quay.io/cilium/operator-generic:v1.20.2@sha256:64d8798350e8569b8e7622563fed6e44dce2625f311e4651b774816516c744fc"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "coredns",
+      "uid": "0529c9fa-a9e7-41bb-aaa5-fec470589f0a",
+      "generation": 3,
+      "observed_generation": 3,
+      "images": {
+        "coredns": "registry.k8s.io/coredns/coredns:v1.13.1"
+      },
+      "payload_args": [],
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "pv-migration-system",
+      "name": "pv-migration-management",
+      "uid": "b777fe29-2a53-4117-ab4c-9e3ca33ea40e",
+      "generation": 19,
+      "observed_generation": 19,
+      "images": {
+        "manager": "docker.io/jeongseungjun/multicluster-pvmigration-system@sha256:73f834529cbc5f98977426ed76ac430f027c866bad6df54992586396423bf4d4"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "Deployment",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-management",
+      "uid": "78f0e728-5dc5-4ba1-951a-97b7b7a0fce8",
+      "generation": 19,
+      "observed_generation": 19,
+      "images": {
+        "manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium",
+      "uid": "14a3a57c-bfbd-4297-8994-fbb645521acd",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-agent": "quay.io/cilium/cilium:v1.20.2@sha256:2939231d0d3e3ebddcd80fffa168b7ddcc78fdf0dc864d1c8c126ff523c54f01"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium-envoy",
+      "uid": "ec4cc3da-f67e-446d-8bf2-30c836c62c7c",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-envoy": "quay.io/cilium/cilium-envoy:v1.37.6-1789133542-cbec91f666af0bf742da986d43832932dbb26b82@sha256:af7382699576b9e65e9184efa52eeca0b58aea70ad6e511bf260c91d9f740463"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "kube-proxy",
+      "uid": "aaece268-1700-4e27-a899-475f00d0475e",
+      "generation": 3,
+      "observed_generation": 3,
+      "images": {
+        "kube-proxy": "registry.k8s.io/kube-proxy:v1.35.8"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "MGMT",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "nvidia-device-plugin-daemonset",
+      "uid": "a2229b67-8197-42d4-b6ad-39d0509e71bc",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-device-plugin-ctr": "nvcr.io/nvidia/k8s-device-plugin:v0.17.1"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "fluidcr-system",
+      "name": "fluidcr-webhook",
+      "uid": "dc55b01a-137d-42b3-89b8-4664715c86cb",
+      "generation": 5,
+      "observed_generation": 5,
+      "images": {
+        "webhook": "docker.io/jeongseungjun/myfluidcr-operator@sha256:66b3999f62af2039e6366b67338e6ccca060f64e4312b2298e6e22ef79194224"
+      },
+      "payload_args": [
+        "--payload-image=docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65"
+      ],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "training-runtime-controller",
+      "uid": "5767afc2-b75c-4ab9-84d4-2d850b81cea6",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "cilium-operator",
+      "uid": "1fc49bd8-0ea5-4bd7-afb5-ba6a1e0e4289",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-operator": "quay.io/cilium/operator-generic:v1.21.0-pre.2@sha256:57e9d7c80d17e675f2c685925f876d6358cea19ac0bfa4bb64b19aa702a766dd"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "coredns",
+      "uid": "d1b4de10-1df5-4830-bce2-d1b76447ef5a",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "coredns": "registry.k8s.io/coredns/coredns:v1.14.6"
+      },
+      "payload_args": [],
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "nfs-provisioner",
+      "name": "nfs-client-provisioner",
+      "uid": "f9238ec3-6933-4573-8b7f-c77621500f50",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "pv-migration-system",
+      "name": "pv-migration-member",
+      "uid": "396c6bdb-209b-4673-8587-89e50eaadac8",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "manager": "docker.io/jeongseungjun/multicluster-pvmigration-system@sha256:73f834529cbc5f98977426ed76ac430f027c866bad6df54992586396423bf4d4"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "remote-cluster-provisioner-system",
+      "name": "remote-cluster-provisioner",
+      "uid": "124c78fa-6c4f-48da-986e-2c0aff48b944",
+      "generation": 13,
+      "observed_generation": 13,
+      "images": {
+        "manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-checkpoint",
+      "uid": "79e95838-924c-4a74-b430-dbbb69bd416a",
+      "generation": 6,
+      "observed_generation": 6,
+      "images": {
+        "manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "Deployment",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-member",
+      "uid": "17d50eac-c970-427b-9bf5-66b8e75069d5",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "hybridspot-system",
+      "name": "spot-watcher",
+      "uid": "6b7d118d-f760-4509-a2aa-c17e9fb574d6",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "watcher": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium",
+      "uid": "c09b98dc-0cd7-4def-b0be-169c9a41805f",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-agent": "quay.io/cilium/cilium:v1.21.0-pre.2@sha256:5ccc6012a4fce1724f6d16571d20a18263511f27ab6df1e1807c397ac2408ff6"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium-envoy",
+      "uid": "658fb75e-6ac1-4173-accf-f53ca9063d03",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-envoy": "quay.io/cilium/cilium-envoy:v1.38.4-1788418248-230e609978a4f7e614671e0e7e00a1911b93406c@sha256:1b958363b16328905d93371dd974cc57e8ff277f8e589b31de9ff8e805013b9f"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "hybridspot-nvidia-device-plugin",
+      "uid": "4cd31d33-3905-4c63-9519-ff1c0e672665",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-device-plugin-ctr": "nvcr.io/nvidia/k8s-device-plugin:v0.17.1"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "kube-proxy",
+      "uid": "fe584916-c468-4154-80d2-df6eedb92eb4",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "kube-proxy": "registry.k8s.io/kube-proxy:v1.37.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "AWS",
+      "kind": "DaemonSet",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-artifact",
+      "uid": "db92475a-8eed-474e-9399-27347db9e8b5",
+      "generation": 3,
+      "observed_generation": 3,
+      "images": {
+        "verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "cert-manager",
+      "name": "cert-manager",
+      "uid": "12de5fb3-662e-49b8-b279-6f991e9eca00",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "cert-manager-controller": "quay.io/jetstack/cert-manager-controller:v1.21.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "cert-manager",
+      "name": "cert-manager-cainjector",
+      "uid": "8b48cc8e-234c-4d2b-bbce-2ceaba2e0ce5",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "cert-manager-cainjector": "quay.io/jetstack/cert-manager-cainjector:v1.21.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "cert-manager",
+      "name": "cert-manager-webhook",
+      "uid": "11112f08-a546-492d-b4e1-4caca851581b",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "cert-manager-webhook": "quay.io/jetstack/cert-manager-webhook:v1.21.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "fluidcr-system",
+      "name": "fluidcr-webhook",
+      "uid": "8773a587-3be0-454a-aa8b-01cfea4169a0",
+      "generation": 5,
+      "observed_generation": 5,
+      "images": {
+        "webhook": "docker.io/jeongseungjun/myfluidcr-operator@sha256:66b3999f62af2039e6366b67338e6ccca060f64e4312b2298e6e22ef79194224"
+      },
+      "payload_args": [
+        "--payload-image=docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65"
+      ],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "gpu-operator",
+      "name": "gpu-operator",
+      "uid": "41a8bee8-abf7-4f5b-bd80-f3d34119c119",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "gpu-operator": "nvcr.io/nvidia/gpu-operator:v26.3.3"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "gpu-operator",
+      "name": "gpu-operator-node-feature-discovery-gc",
+      "uid": "2dfdf2f9-bec9-44c6-b050-73ae7cd1855b",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "gc": "registry.k8s.io/nfd/node-feature-discovery:v0.18.3"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "gpu-operator",
+      "name": "gpu-operator-node-feature-discovery-master",
+      "uid": "b0f33510-01b6-43ea-904d-ffdb7de41ed2",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "master": "registry.k8s.io/nfd/node-feature-discovery:v0.18.3"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "hybridspot-system",
+      "name": "training-runtime-controller",
+      "uid": "6b58f28e-0709-453d-859e-f5825a23301e",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "cilium-operator",
+      "uid": "d2a8f520-8758-441f-81da-97216899ea22",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-operator": "quay.io/cilium/operator-generic:v1.21.0-pre.2@sha256:57e9d7c80d17e675f2c685925f876d6358cea19ac0bfa4bb64b19aa702a766dd"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "coredns",
+      "uid": "ba5157c2-757c-4421-be9d-0b16468d5a48",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "coredns": "registry.k8s.io/coredns/coredns:v1.14.6"
+      },
+      "payload_args": [],
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "nfs-provisioner",
+      "name": "e1-aws-nfs-provisioner",
+      "uid": "e5c019e6-7421-4c29-b5b5-6f02e1b77128",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "nfs-provisioner",
+      "name": "legacy-nfs-nfs-subdir-external-provisioner",
+      "uid": "99470b48-8d06-4301-8222-bcc219c5427e",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "pv-migration-system",
+      "name": "pv-migration-member",
+      "uid": "394aebc1-4023-4424-8efa-c125bfb3ae20",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "manager": "docker.io/jeongseungjun/multicluster-pvmigration-system@sha256:73f834529cbc5f98977426ed76ac430f027c866bad6df54992586396423bf4d4"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "remote-cluster-provisioner-system",
+      "name": "remote-cluster-provisioner",
+      "uid": "33382a1a-6f31-4c80-bd2b-59929e576bc5",
+      "generation": 7,
+      "observed_generation": 7,
+      "images": {
+        "manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "shared-nfs-provisioner",
+      "name": "shared-nfs-client-provisioner",
+      "uid": "d9434166-216c-437b-a354-658f6bb0d4ec",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "shared-nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-checkpoint",
+      "uid": "b4bcb374-c940-4a34-890b-d5d9cf650a00",
+      "generation": 6,
+      "observed_generation": 6,
+      "images": {
+        "manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "Deployment",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-member",
+      "uid": "3e7694da-67a3-4aaf-874b-69a2085e487d",
+      "generation": 2,
+      "observed_generation": 2,
+      "images": {
+        "manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "gpu-feature-discovery",
+      "uid": "e93a7d6f-a2fd-44ec-9ac9-896f52debf67",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "gpu-feature-discovery": "nvcr.io/nvidia/k8s-device-plugin:v0.19.3"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "gpu-operator-node-feature-discovery-worker",
+      "uid": "00eeda45-a462-4f49-8892-6f6b9cc5298f",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "worker": "registry.k8s.io/nfd/node-feature-discovery:v0.18.3"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-container-toolkit-daemonset",
+      "uid": "d4330c8a-f1ba-400a-8f25-0e35c518657f",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-container-toolkit-ctr": "nvcr.io/nvidia/k8s/container-toolkit:v1.19.1"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-dcgm-exporter",
+      "uid": "625785e2-1f60-4031-aa24-42f126a2021e",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-dcgm-exporter": "nvcr.io/nvidia/k8s/dcgm-exporter:4.5.3-4.8.2-distroless"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-device-plugin-daemonset",
+      "uid": "ead9fed2-bdd2-46fd-990d-5f79cd3cf236",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-device-plugin": "nvcr.io/nvidia/k8s-device-plugin:v0.19.3"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-device-plugin-mps-control-daemon",
+      "uid": "e1219d3c-8b89-4941-b391-56b6f9cc58e4",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "mps-control-daemon-ctr": "nvcr.io/nvidia/k8s-device-plugin:v0.19.3"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-driver-daemonset",
+      "uid": "ec83ffa3-c057-4e5c-8d11-a5964f3d0198",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-driver-ctr": "nvcr.io/nvidia/driver:580.126.20-ubuntu22.04"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-mig-manager",
+      "uid": "a5d4058f-f4ac-44ec-be30-1f2f3aaec4ef",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-mig-manager": "nvcr.io/nvidia/cloud-native/k8s-mig-manager:v0.14.2"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "gpu-operator",
+      "name": "nvidia-operator-validator",
+      "uid": "df5c0261-333e-45a0-8e2d-5d1df094dfb7",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "nvidia-operator-validator": "nvcr.io/nvidia/gpu-operator:v26.3.3"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium",
+      "uid": "50cc497b-9b6a-471e-8e78-74c8a7310d00",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-agent": "quay.io/cilium/cilium:v1.21.0-pre.2@sha256:5ccc6012a4fce1724f6d16571d20a18263511f27ab6df1e1807c397ac2408ff6"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "cilium-envoy",
+      "uid": "a0693abb-90ab-4739-8fbb-75cb5c8fadab",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "cilium-envoy": "quay.io/cilium/cilium-envoy:v1.38.4-1788418248-230e609978a4f7e614671e0e7e00a1911b93406c@sha256:1b958363b16328905d93371dd974cc57e8ff277f8e589b31de9ff8e805013b9f"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "kube-proxy",
+      "uid": "b5257091-cc5f-4588-a3b2-7096fe6dcc3a",
+      "generation": 1,
+      "observed_generation": 1,
+      "images": {
+        "kube-proxy": "registry.k8s.io/kube-proxy:v1.37.1"
+      },
+      "payload_args": [],
+      "desired": 1,
+      "ready": 1
+    },
+    {
+      "api": "ONPRE1",
+      "kind": "DaemonSet",
+      "namespace": "stateful-migration-system",
+      "name": "stateful-artifact",
+      "uid": "bcb3d230-ad5e-4f3d-ae73-0770dcc4b736",
+      "generation": 3,
+      "observed_generation": 3,
+      "images": {
+        "verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a"
+      },
+      "payload_args": [],
+      "desired": 0,
+      "ready": 0
+    }
+  ]
+}

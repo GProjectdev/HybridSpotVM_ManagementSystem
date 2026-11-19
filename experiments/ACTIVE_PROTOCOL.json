@@ -3,18 +3,18 @@
   "directory": "experiments/professor-feedback-20261119",
   "source": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md",
   "source_sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
-  "status": "PREPARATION_CONDITIONAL_AWAITING_RESEARCHER_CONFIRMATION",
+  "status": "READY_FOR_FREEZE_NOT_FROZEN",
   "formal_dispatch_authorized": false,
-  "paid_dispatch_authorized": true,
+  "paid_dispatch_authorized": false,
   "readiness_report": "experiments/professor-feedback-20261119/evaluation_readiness_20261119.txt",
   "manifest_candidate": "experiments/professor-feedback-20261119/frozen_protocol_candidate_20261119.json",
   "previous_protocol_preserved": "experiments/professor-feedback-20261119/previous_active_protocol.json",
   "underlying_runner": "evaluation/integrated_protocol.py; v3 four-rank contracts retained",
   "rank_policy": "4preferred;2requires reported separate matched block",
   "previous_paid_deadline_utc": "2026-11-18T15:00:00Z",
-  "note": "Final experimental review completed; goals4800/26700 and6exploratoryruns remain proposed; native FIS/recovery interaction and NFS archive budget disclosed; researcher confirmation required",
-  "paid_dispatch_scope": "today paid acceptance completed/cleaned;18KST target22KST limit; not future formal authorization",
-  "researcher_confirmation_required": true,
+  "note": "Conditional researcher approval recorded; static preexecution checks complete; finalfreeze not performed; separate scope/cost approval required before formalA/B/C",
+  "paid_dispatch_scope": "no formal paid execution approval; prior acceptance authorization not reused",
+  "researcher_confirmation_required": false,
   "researcher_confirmed": false,
   "goals_proposed": {
     "gpt2": 4800,
@@ -24,5 +24,13 @@
   "total_unique_formal_runs": 6,
   "inference_scope": "EXPLORATORY_ONLY",
   "nfs_cleanup_report": "experiments/professor-feedback-20261119/nfs-cleanup/nfs_cleanup_20261119.txt",
-  "final_experimental_review": "experiments/professor-feedback-20261119/final-review/E1_E2_Final_Experimental_Review_20261119.txt"
+  "final_experimental_review": "experiments/professor-feedback-20261119/final-review/E1_E2_Final_Experimental_Review_20261119.txt",
+  "researcher_conditionally_approved": true,
+  "researcher_final_freeze_pending": true,
+  "goals_conditionally_approved": {
+    "gpt2": 4800,
+    "resnet50": 26700
+  },
+  "preexecution_report": "experiments/professor-feedback-20261119/preexecution/E1_E2_PreExecution_Final_Check_20261119.txt",
+  "manifest_ready_for_freeze": "experiments/professor-feedback-20261119/preexecution/manifest_ready_for_freeze.json"
 }

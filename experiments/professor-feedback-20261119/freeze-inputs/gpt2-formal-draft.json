@@ -69,7 +69,7 @@
     "learning_rate": 5e-05,
     "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
     "asset_manifest_sha256": "cac21bb171fea20c0dcfbdb5b662d6c04c211c342b3595b59c4f90ec39c8b9f3",
-    "status": "PROPOSED_AWAITING_RESEARCHER_CONFIRMATION",
+    "status": "CONDITIONALLY_APPROVED_NOT_FROZEN",
     "model": "gpt2",
     "world_size": 4
   },
@@ -108,21 +108,25 @@
   "risk_clock_anchor_rule": "source NodeRequest creationTimestamp,3600seconds per trace hour",
   "checkpoint_validation": "same final CP policy B/C: min60, no operational maximum, zeroSpot/zeroRisk fallback3600",
   "target_provenance": {
-    "status": "PROPOSED_NOT_FROZEN",
+    "status": "CONDITIONALLY_APPROVED_NOT_FROZEN",
     "reason": "measured phase-specific step rate, actual startup/CP pause and observed replacement preparation; joint E1 hourly transition and E2 50percent native window",
     "evidence": "goal_step_screening_20261119.json",
-    "researcher_confirmed": false
+    "researcher_confirmed": false,
+    "researcher_conditionally_approved": true
   },
   "protocol_lock_status": "DRAFT",
   "risk_lock_sha256": "c84c851809af4a2e1fcc9d74cabf6ab373d0d3ed8a21c0ac2ea002ff54e42c76",
   "repeats_per_cell": 1,
   "inference_scope": "EXPLORATORY_ONLY",
-  "researcher_confirmation_required": true,
+  "researcher_confirmation_required": false,
   "researcher_confirmed": false,
   "fault_window": {
     "anchor": "source NodeRequest creationTimestamp",
     "transition_after_seconds": 3600,
     "notice_seconds": 120,
     "margin_seconds": 120
-  }
+  },
+  "researcher_conditionally_approved": true,
+  "researcher_confirmation_semantics": "goals and common values conditionally approved; final freeze not performed, paid formal execution requires separate approval",
+  "preexecution_plan": "../preexecution/manifest_ready_for_freeze.json"
 }

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "READY_FOR_FREEZE_NOT_FROZEN",
+  "at": "2026-11-19T16:05:50.288109+09:00",
+  "protocol": "HybridSpotDDP-ProfessorFeedback-20261119",
+  "researcher_conditionally_approved": true,
+  "researcher_final_freeze_confirmed": false,
+  "formal_dispatch_authorized": false,
+  "paid_execution_authorized": false,
+  "approval_receipt": "researcher_conditional_approval.json",
+  "configs": {
+    "gpt2": {
+      "path": "../freeze-inputs/gpt2-formal-draft.json",
+      "sha256": "88553de137ffe2c7f15b43fbc401eda7c3c9a688a7b87668d9433699b9fd0083"
+    },
+    "resnet50": {
+      "path": "../freeze-inputs/resnet50-formal-draft.json",
+      "sha256": "aefd1f3b1c6566544248d87ef839c7e2c0adf54bb73a71db881a87d738f36911"
+    }
+  },
+  "risk_manifest_sha256": "df6b0174492db65104c090485a629fd42f4aabdbc43142d08aeef01c221f1ee0",
+  "risk_lock_canonical_sha256": "c84c851809af4a2e1fcc9d74cabf6ab373d0d3ed8a21c0ac2ea002ff54e42c76",
+  "risk_clock": "sourceNodeRequest creation;3600real seconds/hour;hour14->15 native replay",
+  "comparison_checks": [
+    {
+      "model": "gpt2",
+      "goal_steps": 4800,
+      "world_size": 4,
+      "per_rank_batch": 2,
+      "global_batch": 8,
+      "sequence_length": 512,
+      "seed": 42,
+      "B_C_comparison_hash": "a61b9016996632dfe36639b9c5d06e0238bfe9a4b55447af297776deaa0a20af",
+      "A_B_C_workload_hash": "0fba776fd3d291823da9cc940fe75758c6a70889ed2089aea72557d373ae658b",
+      "comparison_contract_unchanged_from_approved_candidate": true,
+      "offline_render_only": true,
+      "formal_FROZEN": false
+    },
+    {
+      "model": "resnet50",
+      "goal_steps": 26700,
+      "world_size": 4,
+      "per_rank_batch": 16,
+      "global_batch": 64,
+      "sequence_length": null,
+      "seed": 42,
+      "B_C_comparison_hash": "26c0ef3bf7d19207f6c935a9ac0a396020b2bae92c3adca1348727ea9cb16a73",
+      "A_B_C_workload_hash": "f58210321bd39fde17bc6ffc3f44fcaae5fa58cc7fc12d0f1a7c05b49c60804d",
+      "comparison_contract_unchanged_from_approved_candidate": true,
+      "offline_render_only": true,
+      "formal_FROZEN": false
+    }
+  ],
+  "repeats_per_condition": 1,
+  "total_unique_formal_runs": 6,
+  "static_preexecution_items_complete": [
+    "storage retention/transfer/stops",
+    "risk/FIS collision rules",
+    "same configuration and live runtime lock",
+    "cost/time/peak/cleanup scope",
+    "existing policy telemetry"
+  ],
+  "runtime_binding_is_not_an_authorization": [
+    "fresh UTC/absolute paid window/watchdog process",
+    "run namespace/NR/PV/PVC/NP/Pod/EC2 identities",
+    "live prices/risk feed TLS/clock",
+    "owned FISrole/stopalarm/target forC",
+    "monitor exact paths and attach space thresholds"
+  ],
+  "does_not_guarantee_future_GPU_supply_or_run_success": true,
+  "config_value_changes": false
+}

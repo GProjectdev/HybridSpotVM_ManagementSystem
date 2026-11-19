@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "protocol": "HybridSpotDDP-ProfessorFeedback-20261119",
-  "status": "AWAITING_RESEARCHER_CONFIRMATION",
+  "status": "PREEXEC_CHECK_COMPLETE_READY_FOR_FREEZE_NOT_FROZEN",
   "created_at_utc": "2026-11-19T02:23:42.798407+00:00",
   "formal_dispatch_authorized": false,
-  "paid_dispatch_authorized": true,
+  "paid_dispatch_authorized": false,
   "researcher_source": {
     "path": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md",
     "sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
@@ -183,11 +183,10 @@
     "all_replacement_overlap_and_cleanup_intervals_must_be_counted": true
   },
   "remaining_gates": [
-    "researcher confirmation of proposed goals/settings including120second reserve",
-    "per-run supply/current prices/exact hashes/native risk feed runtime TLS and source timestamp",
-    "C current durable four-rank checkpoint and exact owned Spot/OD FIS scope",
-    "formal native timing eligibility; abort and record deviations rather than change goal or risk",
-    "per-run checkpoint/archive space monitoring with64GiB reserve; retired old payloads cannot be replayed"
+    "freeze protocol with this final preexecution review and conditional approval receipt",
+    "separate paid formal execution approval with cost/scope/deadline",
+    "per-run binding of existing observer, raw-price/risk feed, early space monitor and normal cleanup watchdog; live resource/FIS scope gates",
+    "empirical native-window eligibility checked per C; no retiming or design substitution"
   ],
   "not_a_formal_run_manifest": true,
   "unique_formal_runs": 6,
@@ -195,7 +194,7 @@
   "repetition_authority": "researcher reply2026-11-19: each model A/B/C once, total6",
   "paid_dispatch_scope": "today acceptance and preparation; aim18KST hard22KST; explicit user paid continuation",
   "update_state": "All changed-path validations cleaned; retired NFS payloads cleaned; proposed goals/settings still await researcher confirmation",
-  "researcher_confirmation_required": true,
+  "researcher_confirmation_required": false,
   "researcher_confirmed": false,
   "updated_at_utc": "2026-11-19T05:50:58.657494+00:00",
   "goal_settings_proposal": {
@@ -277,5 +276,12 @@
     "blocks_per_model": 3,
     "total_unique_runs": 18,
     "purpose": "descriptive run-to-run variability, not guaranteed statistical power"
+  },
+  "researcher_conditionally_approved": true,
+  "conditional_approval_receipt": "preexecution/researcher_conditional_approval.json",
+  "preexecution_check": "preexecution/E1_E2_PreExecution_Final_Check_20261119.txt",
+  "models_goal_steps_conditionally_approved": {
+    "gpt2": 4800,
+    "resnet50": 26700
   }
 }

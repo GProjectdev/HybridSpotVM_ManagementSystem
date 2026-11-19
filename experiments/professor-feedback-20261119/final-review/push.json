@@ -1,0 +1,8 @@
+{
+  "at": "2026-11-19T06:47:40.788593+00:00",
+  "repository": "HybridSpotVM_ManagementSystem",
+  "commit": "f174ceb6ee3451435eea7b2ba9afe88441ccc851",
+  "remote_main_verified": true,
+  "scope": "offline all-attempt comparison tool, fair experimental review and live read-only receipts; no controller/image/protocol value changes",
+  "tests": "322 tests,2 skipped,0 failed"
+}

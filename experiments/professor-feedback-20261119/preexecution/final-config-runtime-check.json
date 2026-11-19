@@ -1,0 +1,251 @@
+{
+  "at": "2026-11-19T16:05:50.288109+09:00",
+  "models": [
+    {
+      "model": "gpt2",
+      "goal_steps": 4800,
+      "world_size": 4,
+      "per_rank_batch": 2,
+      "global_batch": 8,
+      "sequence_length": 512,
+      "seed": 42,
+      "B_C_comparison_hash": "a61b9016996632dfe36639b9c5d06e0238bfe9a4b55447af297776deaa0a20af",
+      "A_B_C_workload_hash": "0fba776fd3d291823da9cc940fe75758c6a70889ed2089aea72557d373ae658b",
+      "comparison_contract_unchanged_from_approved_candidate": true,
+      "offline_render_only": true,
+      "formal_FROZEN": false
+    },
+    {
+      "model": "resnet50",
+      "goal_steps": 26700,
+      "world_size": 4,
+      "per_rank_batch": 16,
+      "global_batch": 64,
+      "sequence_length": null,
+      "seed": 42,
+      "B_C_comparison_hash": "26c0ef3bf7d19207f6c935a9ac0a396020b2bae92c3adca1348727ea9cb16a73",
+      "A_B_C_workload_hash": "f58210321bd39fde17bc6ffc3f44fcaae5fa58cc7fc12d0f1a7c05b49c60804d",
+      "comparison_contract_unchanged_from_approved_candidate": true,
+      "offline_render_only": true,
+      "formal_FROZEN": false
+    }
+  ],
+  "components": [
+    {
+      "component": "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1",
+      "ready": true,
+      "uid": "e616b5bc-73a6-4e8f-b62c-2a4f497d26ea",
+      "generation": 26
+    },
+    {
+      "component": "MGMT/deployments/hybridspot-system/placement-webhook/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+      "ready": true,
+      "uid": "18dbca6a-c340-44c2-a7d2-a3bdef53ecdf",
+      "generation": 19
+    },
+    {
+      "component": "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+      "ready": true,
+      "uid": "48b78b35-19e2-473e-8b78-5ef43c0571fa",
+      "generation": 37
+    },
+    {
+      "component": "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09",
+      "ready": true,
+      "uid": "f8fce6c3-97e9-4737-a847-a0b5cdec017c",
+      "generation": 31
+    },
+    {
+      "component": "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+      "ready": true,
+      "uid": "bb9c87d4-cafd-499b-b9de-b46fafbc42ba",
+      "generation": 19
+    },
+    {
+      "component": "MGMT/deployments/stateful-migration-system/stateful-management/manager",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "ready": true,
+      "uid": "78f0e728-5dc5-4ba1-951a-97b7b7a0fce8",
+      "generation": 19
+    },
+    {
+      "component": "AWS/deployments/hybridspot-system/training-runtime-controller/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "ready": true,
+      "uid": "5767afc2-b75c-4ab9-84d4-2d850b81cea6",
+      "generation": 2
+    },
+    {
+      "component": "AWS/deployments/nfs-provisioner/nfs-client-provisioner/nfs-client-provisioner",
+      "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "actual_image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ready": true,
+      "uid": "f9238ec3-6933-4573-8b7f-c77621500f50",
+      "generation": 1
+    },
+    {
+      "component": "AWS/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager",
+      "image": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "actual_image": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "ready": true,
+      "uid": "124c78fa-6c4f-48da-986e-2c0aff48b944",
+      "generation": 13
+    },
+    {
+      "component": "AWS/deployments/stateful-migration-system/stateful-checkpoint/manager",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "ready": true,
+      "uid": "79e95838-924c-4a74-b430-dbbb69bd416a",
+      "generation": 6
+    },
+    {
+      "component": "AWS/deployments/stateful-migration-system/stateful-member/manager",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "ready": true,
+      "uid": "17d50eac-c970-427b-9bf5-66b8e75069d5",
+      "generation": 2
+    },
+    {
+      "component": "AWS/daemonsets/hybridspot-system/spot-watcher/watcher",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+      "ready": true,
+      "uid": "6b7d118d-f760-4509-a2aa-c17e9fb574d6",
+      "generation": 1
+    },
+    {
+      "component": "AWS/daemonsets/stateful-migration-system/stateful-artifact/verifier",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "ready": true,
+      "uid": "db92475a-8eed-474e-9399-27347db9e8b5",
+      "generation": 3
+    },
+    {
+      "component": "ONPRE1/deployments/hybridspot-system/training-runtime-controller/manager",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "actual_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "ready": true,
+      "uid": "6b58f28e-0709-453d-859e-f5825a23301e",
+      "generation": 2
+    },
+    {
+      "component": "ONPRE1/deployments/nfs-provisioner/e1-aws-nfs-provisioner/nfs-subdir-external-provisioner",
+      "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "actual_image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ready": true,
+      "uid": "e5c019e6-7421-4c29-b5b5-6f02e1b77128",
+      "generation": 2
+    },
+    {
+      "component": "ONPRE1/deployments/nfs-provisioner/legacy-nfs-nfs-subdir-external-provisioner/nfs-subdir-external-provisioner",
+      "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "actual_image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ready": true,
+      "uid": "99470b48-8d06-4301-8222-bcc219c5427e",
+      "generation": 1
+    },
+    {
+      "component": "ONPRE1/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager",
+      "image": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "actual_image": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "ready": true,
+      "uid": "33382a1a-6f31-4c80-bd2b-59929e576bc5",
+      "generation": 7
+    },
+    {
+      "component": "ONPRE1/deployments/stateful-migration-system/stateful-checkpoint/manager",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "ready": true,
+      "uid": "b4bcb374-c940-4a34-890b-d5d9cf650a00",
+      "generation": 6
+    },
+    {
+      "component": "ONPRE1/deployments/stateful-migration-system/stateful-member/manager",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "ready": true,
+      "uid": "3e7694da-67a3-4aaf-874b-69a2085e487d",
+      "generation": 2
+    },
+    {
+      "component": "ONPRE1/daemonsets/stateful-migration-system/stateful-artifact/verifier",
+      "image": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "actual_image": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "ready": true,
+      "uid": "bcb3d230-ad5e-4f3d-ae73-0770dcc4b736",
+      "generation": 3
+    },
+    {
+      "component": "AWS/fluidcr-payload",
+      "image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+      "actual_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+      "ready": true,
+      "uid": "dc55b01a-137d-42b3-89b8-4664715c86cb",
+      "generation": 5
+    },
+    {
+      "component": "ONPRE1/fluidcr-payload",
+      "image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+      "actual_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+      "ready": true,
+      "uid": "8773a587-3be0-454a-aa8b-01cfea4169a0",
+      "generation": 5
+    }
+  ],
+  "addon_imageIDs": {
+    "MGMT": [],
+    "AWS": [
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "feab1296-829d-48a4-ae65-b39dbe1384c3",
+        "container": "nfs-client-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      }
+    ],
+    "ONPRE1": [
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "37ac9a7b-2703-4726-b3be-d2a9844952f1",
+        "container": "nfs-subdir-external-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      },
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "34dab805-7cff-4de7-aa08-fdb4b4070000",
+        "container": "nfs-subdir-external-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      },
+      {
+        "namespace": "shared-nfs-provisioner",
+        "pod_uid": "b1512449-5fc8-45b7-9cb1-97a11ca14b7e",
+        "container": "shared-nfs-client-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      }
+    ]
+  },
+  "new_cloud_resources": false
+}

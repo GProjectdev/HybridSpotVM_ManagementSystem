@@ -1,0 +1,406 @@
+E1·E2 정식 실행 직전 최종 점검 — 2026-11-19
+적용 시간대: Asia/Seoul / 정식 A·B·C 미실행 / 새 GPU 생성·FIS 없음
+
+판정: 조건부 승인된 설정을 유지한 채 동결 가능한 준비본을 작성했다.
+실제 Manifest는 아직 FROZEN으로 변경하지 않았다. 유료 실행 승인도 없다.
+이 보고서는 보관·시간창 실패 처리·버전·비용·계측의 운영 규칙을 확정한 준비 기록이다.
+미래 GPU 공급이나 모든 정식 Run의 성공까지 보장하는 완료 판정은 아니다.
+
+기준
+- 연구자 최종 방법론: HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md
+  SHA256 5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77
+- 연구자가 검토한 E1_E2_Final_Experimental_Review_20261119.txt 및 그 이후의
+  “GPT-2 4800/ResNet 26700와 공통 설정 조건부 승인, 정식 실행 별도 승인” 지시.
+- 기존 목표를 재계산하지 않았으며, 과거 수용검사용512/1024로 대체하지 않았다.
+- 저장소 H=/home/ubuntu/HybridSpotVM_ManagementSystem
+  E=/home/ubuntu/graduate/Evaluation
+  증거 D19=E/day19_20261119, 이번 기록 P=D19/preexecution
+
+1. 확인 결과와 승인 상태
+
+1) NFS/PVC/별도 CRIU 경로를 합친 실사용량을 다시 조사했고 보관·이관·중지 예산을 작성했다.
+2) 좁은 GPT 시간창은 목표/입력 변경 대신 사전 지정된 미적격·중지 규칙으로 처리한다.
+3) 실제22개 Controller/DaemonSet/payload 참조와 rollout이 공통 후보와 일치했다.
+   A/B/C workload hash와 B/C comparison hash도 기존 승인 후보와 동일했다.
+4) 6Run, 각 총5시간 이내, A최대4대/B·C최대7대라는 실행 범위와 비용표를 작성했다.
+5) 기존 실제 로그의 λ·α·가격·D/copy·분기·관측시각을 확인하고 중복 제거 결과를 보관했다.
+
+조건부 승인 receipt: P/researcher_conditional_approval.json.
+동결 준비 Manifest: P/manifest_ready_for_freeze.json.
+상태 READY_FOR_FREEZE_NOT_FROZEN; formal_dispatch_authorized=false,
+paid_execution_authorized=false. 현재 “researcher_confirmed=false”는 최종 동결 미수행을
+나타내며, 승인 부재로 되돌린 것이 아니다. researcher_conditionally_approved=true를
+함께 기록해 이번 조건부 승인을 명시했다. 목표·훈련·정책 값은 변경하지 않았다.
+
+남겨둔 실행 직전 조건은 실제 Run을 승인한 뒤에만 생성/결정할 수 있는 값이다.
+당일 UTC 시작/정리/종료시각, namespace와 NR/PVC/NP/Pod/EC2 UID, 실제 가격,
+TLS risk feed의 시계 바인딩, watchdog 프로세스, C의 정확한 IAM/alarm/Spot 대상.
+현재 이런 자원을 미리 생성하거나 과거 수용검사의 UID를 재사용하지 않았다.
+
+2. NFS 현재 공간과 Checkpoint 실사용량
+
+2026-11-19 15:57:59 KST 읽기 전용 조회:
+NFS /mnt/nfs: 445638832128 bytes =415.0335GiB 여유.
+Management /home/ubuntu: 195479687168 bytes =182.0546GiB 여유.
+NFS500GiB gp3/3000IOPS/125MiBps, 온라인 변경 completed/100% 재확인.
+같은 NFS 서버·저장 사양·기존 데이터 경로를 유지한다. 추가 삭제·포맷·확장 없음.
+
+모델별 최신 실제 사용량(단일 round/짧은 수용검사 자료, 장기 Run의 상한 아님):
+- GPT-2: Checkpoint PVC약11.127GiB + 별도CRIU archive약5.803GiB =약16.930GiB.
+- ResNet-50: PVC약1.405GiB + 별도CRIU archive약0.973GiB =약2.378GiB.
+출처 P/live-storage-clusters-price.json. 파일별 allocated/apparent 크기와 두 경로를 기록했다.
+이전 PVC 크기만의 계산은 별도 CRIU 경로를 빠뜨릴 수 있으므로 이번 계획은 둘을 합친다.
+NFS subdir의10Gi PVC 요청은 물리 quota가 아니다. 정식 Run의 실제 크기를 계속 측정한다.
+
+2.1 NFS 보관 예산
+기존 자산·이전 최신 복원본·원시 로그는 보존한다. 정식6Run은 직렬 실행하며
+해당 Run의 정확한 PVC/PV UID 경로 + namespace별 CRIU 경로 + 임시 staging을 합산한다.
+
+                    A             B             C
+GPT-2               8GiB          112GiB        112GiB
+ResNet-50           8GiB           32GiB         32GiB
+새 Run 전체 보관 envelope=304GiB. 현재 여유에서 전부 쓰면 약111.0335GiB가 남는다.
+운영 reserve64GiB를 제외하고도 약47.0335GiB 여유다. 다른 작업의 증가량은 별도다.
+
+B/C 예산의 산출:
+G=ceil(실측 PVC+별도archive GiB), S=ceil(실측별도archive GiB).
+budget=16GiB 단위 올림{1.25×(4×G+2×S)}.
+GPT G17/S6 →100GiB를 올림해112GiB; ResNet G3/S1 →17.5GiB를 올림해32GiB.
+4는 보관량 산정을 위한 group-equivalent 수,2는 임시복사/staging 여유,
+25%는 용량 변동의 운영 margin이다. 논문 유도값·실제 발생 횟수·통계적 상한이 아니다.
+A는 주기CP가 꺼져 있어 로그/metadata/예외 결과용8GiB를 예약한다.
+
+이는 Checkpoint 횟수 제한이나 자동 삭제 정책이 아니다. 기존 Checkpoint 스케줄을
+바꾸거나5번째 round를 금지하지 않는다. 용량 중지 기준에 도달하면 Run 전체를
+실패/중지로 남긴다. 중간 CP를 지워 성공시키거나 데이터 손실을 숨기지 않는다.
+따라서304GiB는 정상 보관 예산이지 모든 가능한5시간 실행이 반드시 완료된다는 보장은 아니다.
+
+2.2 사전 시작/중지 기준
+시작 전: 다른 평가 Run이 없고, NFSfree >=64GiB+이번 Run의 예약 예산이며,
+나머지 선언된 보관 예산과 실제 누적 사용량을 함께 점검한다. 정확한 모든 경로의
+접근·free inode·크기 조회가 성공해야 한다. AWS/onpre default provisioner의 기존
+동적PVC 수용 증거를 재사용하며 이번에 새 probe PVC를 반복 생성하지 않았다.
+
+15초 간격 관측 및 조기 중지 기준(allocated bytes 기준):
+- GPT B/C: 이번 Run의 경로 합계>=78GiB 또는 NFSfree<=98GiB.
+  112GiB 예산에 대해34GiB(2×ceil17GiB)의 drain 여유를 남긴다.
+- ResNet B/C: 경로 합계>=16GiB 또는 NFSfree<=80GiB.
+  32GiB 예산에16GiB drain 여유를 남긴다.
+- A: 경로 합계>=6GiB 또는 NFSfree<=80GiB.
+- 활성 Run 중 localfree<=80GiB 또는 공간/경로 관측2회 연속 실패 시 신규 작업을 멈춘다.
+- 다른 작업으로 reserve를 위협하거나 예상 밖 경로에 쓰기가 나타나면 중지한다.
+64GiB는 최종 보호 reserve이며, 쓰기가 계속되는 동안64GiB까지 기다렸다가 중지하는
+운영은 하지 않는다. 이 값들은 실험 안전 기준이고 Checkpoint 주기의 상한이 아니다.
+
+중지 순서: 사유·free/경로·진전·UID·진행 중 CP/RR를 저장 → 정확한 source NR를
+suspend해 새 의도를 막음 → 공간이 허용하면 최대120초 in-flight CP/복원의 종료를
+관찰 → 기존 UID-scoped 정상 source/provider 정리 요청. 완료되지 않은 CP는 durable로
+표시하지 않고 마지막 유효 복원본과 partial 파일을 모두 보존한다.
+H/internal/management/suspend.go는 새 intent를 막으면서 기존 paused 작업을
+좌초시키지 않도록 처리한다. “suspend하면 기존 모든 작업이 즉시 정지”라고 가정하지 않는다.
+정상 삭제가 막히면 finalizer 강제 제거·강제namespace삭제·기존파일삭제 없이 원인을 보고한다.
+실제 종료 지연은 비용에 남기며 정리 성공으로 표시하지 않는다.
+
+2.3 이관 계획
+원본 전체는 우선 NFS에 유지한다. /home/ubuntu 용량으로 NFS 전체나304GiB를
+통째로 복제할 수 없다. 복사 자체가 NFS 공간을 확보한다고 계산하지 않는다.
+별도 목적지: /home/ubuntu/graduate/Evaluation/archives/20261119 (0700).
+이 디스크는 NFS와 분리되어 있지만 Management OS와 같은 디스크이므로 완전한
+독립 재해 백업은 아니다. 추가 S3/유료보관소는 만들지 않았다.
+
+로컬 보관 envelope:
+- GPT B/C 최종 유효4Rank application+CRIU 선택bundle 각각24GiB, 총48GiB.
+- ResNet B/C 선택bundle 각각4GiB, 총8GiB.
+- 각6Run의 원시/정제 로그·가격장부·실패·UID·manifest·hash 각각4GiB, 총24GiB.
+  합계80GiB. 단일 복사 temporary24GiB, local reserve64GiB를 합해168GiB 필요.
+  현재182.05GiB이므로 약14.05GiB가 추가로 남는다. 실측이 예산을 넘으면 이관을 중지한다.
+NFS에는 이전 round/partial/pre-FIS 원본도 남긴다. 로컬 선택bundle만으로 전체
+Checkpoint 이력을 복제했다고 주장하지 않는다.
+
+복사는 해당 Run 정상 정리 후 다음 Run 전에 직렬 수행한다. PV↔PVC UID와
+namespace archive 경로를 대조한 파일 목록만 복사하며 /mnt/nfs 전체 rsync는 금지한다.
+확정 파일에 대해 source inode/size/mtime/ctime과 SHA256, destination SHA256을
+비교하고 .partial→atomic rename/fsync/완료manifest를 남긴다. live latest.pt 같은
+변경 중 파일을 백업 완료로 표시하지 않는다. localfree<=72GiB, 파일변경·hash 불일치·
+선택bundle 초과 시 복사 중지/원본 보존. source 삭제 옵션을 쓰지 않는다.
+복사 검증 후에도 NFS 원본 삭제는 이번 계획의 승인 범위가 아니다.
+목적지 쓰기와 작은 metadata SHA256 복사 검사는 완료. 큰 바이너리의 재전송 속도
+측정이나 중복 GPU 검증은 하지 않았다. 실제 Run 결과가 생긴 뒤 이관한다.
+
+3. 위험 기반 교체와50% FIS의 충돌 처리 규칙
+
+공통 불변조건: source NodeRequest 생성이 위험 clock 원점,1forecast hour=3600실초,
+held-out14→15, GPT goal4800/trigger2400, ResNet26700/trigger13350,
+최초 ownedSpot1개에PT2M. 위험률·목표·FIS 위치/대상을 사후 조정하지 않는다.
+
+기존 계산을 그대로 재사용한다. GPT 통지+margin 후112.490초, ResNet255.668초의
+경험적 여유이며 미래 기동/처리율 상한은 아니다. 과거 느린 GPT 짧은 표본의 충돌도
+기존 보고서/원시 근거에 남아 있다. 이번에 더 유리한 목표나 입력으로 재계산하지 않았다.
+
+규칙 A: B가 실제 실행 중 교체+전체rank 재개를 관측하기 전에 목표를 끝낸 경우.
+완료시간·비용은 보존하고 E1의 재구성 관측 요건 미충족을 표시한다. 목표 연장,
+위험시계 당기기, 단지 해당 결과가 불리하다는 이유의 삭제는 하지 않는다.
+
+규칙 B: C의50%에서 현재4Rank durable CP가 없거나, 초기Spot이 사라졌거나,
+provider pool이 바뀌었거나, active replacement로 기존 gate가 실패한 경우.
+FIS를 주입하지 않는다. 해당 시도는 계획된 C를 수행하지 못한 미적격으로 기록하고
+부분진전/비용/원인을 보존한다. 새Spot을 수동 생성하거나 나중 checkpoint까지 기다려
+늦은 주입으로 바꾸지 않는다. 별도 재시도는 별도 승인·ID이고 원래 slot을 대체하지 않는다.
+
+규칙 C: 실제 dispatch deadline은 source NR 생성+3360초(3600-PT2M120-margin120)다.
+그 이전에 fresh4Rank/currentPodUID CP/고정Spot/건강한OD alarm/계약/정리 여유가
+모두 맞아야 한다. 마지막 alarm조회 뒤에도 deadline을 점검한다. elapsed>=3360이면
+주입을 거부한다. 실제 commonStep의 임계값 초과량과 대기 시간을 기록한다.
+
+규칙 D: 제시간에 FIS를 주입했지만 복구 완료가 hour15의 위험 전환과 겹친 경우.
+시계·위험 갱신·기존 pinned operation/직렬화 규칙을 그대로 유지한다. 위험 갱신을
+정지하거나 정책 교체를 임의 취소해 더 깔끔한 결과를 만들지 않는다. 실제 RR 순서,
+대체VM·중첩·오래된CP rollback·재학습·다음 정책 반영을 모두 C에 포함한다.
+따라서 C-B는 같은 시계열에서 단일 FIS를 추가했을 때의 순운영 차이다. 순수
+Restore 엔진의 독립적 지연이라고 부르지 않는다. 비용/시간 차이의 음수도 보존한다.
+
+규칙 E: 가격 또는 실측 손실비용 때문에 기존 정책이 예상보다 빨리 초기Spot을
+없앤 경우에도 알고리즘을 우회하지 않는다. C 미적격과 실제 결정 입력/이유를 기록한다.
+같은 조건의 시간창 실패가 반복되어 의도한 비교가 실행 불가능해지면 동결/신규
+formal dispatch를 보류하고 연구자에게 보고한다. E1/E2블록 분리+각자B 기준선은
+보고할 대안일 뿐 이번에 시행하지 않았다.
+
+설계 판단: 기존 E2 질문을 “실제 중단을 추가했을 때 통합 시스템 전체의 운영 부담과
+All-OD 대비 경제성”으로 유지하면 위 상호작용은 측정 대상이며 정적 논리모순은 아니다.
+“위험 기반 교체와 완전히 분리한 FIS 복구 엔진 효과”를 요구한다면 현 시계열/조건은
+그 질문을 충족하지 않는다. 그런 주장이나 설계 변경은 승인 없이 하지 않는다.
+현재는 불확실성을 숨기지 않는 조건부 동결 준비 상태이며 무조건 성공 보장은 없다.
+
+4. 최종 공통 설정·이미지 일치
+
+4-Rank, distinct4VM,1GPU/1Rank perVM, g5.2xlarge/A10G, 서울2c/apne2-az3.
+batch 교체3, full-group Restore. 최대 정상 교체 중첩은7대; A는4대.
+같은 AMI ami-035e3088f6b7821fb, root100GiB gp3/DeleteOnTermination=true,
+기존Ubuntu/Driver/CRI-O/쿠버네티스 조합의 수용 영수증을 재사용한다.
+AMI/Driver는 아직 만들지 않은 정식 Worker에서 재측정했다고 주장하지 않는다.
+실제 Worker 시작 gate에서4개 GPU/정확한 타입·AMI·시장·UID를 재확인한다.
+
+GPT:4800Step,per-rank2/global8,seq512,Seed42,AdamW lr5e-5/decay.0005.
+WikiText-103 raw-v1 기존 tokenized512/GPT-2 Small 고정 revision/manifest.
+ResNet:26700Step,per-rank16/global64,Seed42,SGD lr.1/momentum.9/decay.0005,
+weightsNone/CIFAR stem/10classes,기존CIFAR10/step-shuffle-crop-flip-v1.
+두 모델의 데이터 순서/RNG/optimizer/global step 복원과 deterministic flags 유지.
+정확한 자산 revision/hash/path는 freeze-inputs/*-formal-draft.json과 기존 최종검토에 있다.
+NFS 정리 때 자산·metadata SHA가 보존된 증거를 재사용하며 이번에 학습데이터를 바꾸지 않았다.
+
+위험: 원래 SARIMA/672train/168held-out,USV100availabilityproxy,
+hour14 λ=.0009212361959754303/h →hour15 .3458397557619131/h.
+forecast SHA256 8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2.
+risk canonical lock c84c851809af4a2e1fcc9d74cabf6ab373d0d3ed8a21c0ac2ea002ff54e42c76.
+원래 risk replay manifest 자체를 고치지 않았다. 서울 G5 자연선점률 정확도 주장은 불가하다.
+policy paper-eq6-7/α.8/PT3600/minOD1/기존경제성·OD최소유지3600.
+같은 실시간 가격 조회 방식이며 B와C의 실제 가격값까지 동일하다는 의미는 아니다.
+
+A:CP비활성. B/C:min60/max미설정/resume,실측CRIU비용 analytic,
+zero risk/정책Spot0이면3600초 운영fallback. Desai비동기Eq1–5 미사용.
+현재 이 analytic 분기에는 IterationTime이 직접 입력되지 않는다. 비용 D와 실제
+DDP pause를 혼동하지 않는다. 설정 주기/실제 수행 간격/관측 누락을 각각 기록한다.
+
+실제 최종 digest:
+trainer docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b
+payload docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65
+MGMT docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09
+Coordinator docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1
+나머지22개 lock 항목: P/final-config-runtime-check.json.
+태그였던 NFS addon의 실제 pod imageID도 이번 조회로 기록:
+registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626
+모든 관측 AWS/Onpre NFS provisioner가 같은 imageID였다. 배포 참조를 변경하지 않았다.
+
+CPU 오프라인 렌더 검사는 cloud API apply 없이 수행했다. B/C 공통 comparison hash:
+GPT a61b9016996632dfe36639b9c5d06e0238bfe9a4b55447af297776deaa0a20af
+ResNet 26c0ef3bf7d19207f6c935a9ac0a396020b2bae92c3adca1348727ea9cb16a73
+A/B/C workload hash:
+GPT 0fba776fd3d291823da9cc940fe75758c6a70889ed2089aea72557d373ae658b
+ResNet f58210321bd39fde17bc6ffc3f44fcaae5fa58cc7fc12d0f1a7c05b49c60804d
+기존 후보와 모두 같다. approval 상태 같은 metadata만 보완했고 훈련/정책 값은 불변이다.
+현재 실제 API 클러스터 접근과 MGMT실행환경/Karmada API 구분도 확인했다.
+Management에는 해당 실험CR API가 없으며 Karmada/AWS/Onpre의 NR/NP는0개였다.
+
+재사용하는 검증: GPT 배치양방향 RR각226초,ResNet배치156초/전체rank 감사,
+GPT최신초기1000Step/D154-copy83,ResNet D47-copy9,기존4Rank FIS/새VM복원.
+이 값들은 정식 성능값/전체 downtime이 아니다. GPT 배치 파일럿의 CP60..600과
+후속 무상한 초기 측정의 범위를 구분한다. 최종 selected-interval 상태보존 수정
+7cb8e8f는 CPU/idle배포 검증 범위다. trainer/payload/Restore protocol을 바꾸지 않는
+좁은 상태 보존 변경이므로 전체 GPU/FIS 수용검사를 반복하지 않는다. 실제 정식 Run에서
+정상 선택주기/상태·감사를 확인한다. 그 최종 digest의 FIS를 이미 실측했다고 쓰지 않는다.
+
+5. 실행시간·최대 VM·AWS 비용과 별도 승인 범위
+
+기존 합의: 모델별 A/B/C각1회,총6고유Run. E1=A/B,E2=A/B/C 자료를 동일계약일 때
+재사용하며 독립 반복으로 중복 계산하지 않는다. 서로 다른 모델의 token/image
+처리율이나 Rank 수를 합산·직접 대비하지 않는다. 이번에18Run으로 늘리지 않았다.
+
+Run당 기존 max_seconds=18000(총5시간), 정상정리 최소1200초 확보,
+신규 유료 동작 시작은 cleanup_start 전까지만. 유효 학습·복구 시간은 최대4시간40분.
+C dispatch에는 별도로30분 recovery/cleanup 여유가 필요하다.
+A동시4VM/32vCPU, B/C동시최대7VM/56vCPU, 동시Run=1.
+소유 nonterminal provider가 이 수를 넘으면 정상 중지하고 중복/누출을 조사한다.
+pending/stopping/이전소유VM을 장부에서 빼 비용을 축소하지 않는다.
+이는 실험 운영 한도이며 기존 시스템의 임의 Checkpoint 상한이 아니다.
+
+가격 근거:
+2026-11-19 15:57:59 KST Spot조회 g5.2xlarge/2c/Linux $.6814/h,
+앞서15:28 공식 서울 Linux Shared OD receipt $1.4903/h 재사용.
+현재 공식 서울 gp3 Price List $.0912/GB-month 재확인,11월30일/720h 기준으로 환산.
+정식 Run마다 fresh 가격을 다시 조회하고 전 구간 기록한다. 미래 Spot가격 고정 아님.
+GPU1시간:4OD $5.9612,1OD3Spot $3.5345,보수적7OD $10.4321.
+
+계산표(청구서·평균 예측·실험 결과 아님):
+각모델 A:4대가5시간 모두OD면GPU $29.8060 +100GiB gp3 root 합계약$.2533.
+각모델 B/C:7대가5시간 모두OD면GPU $52.1605 +root합계약$.4433.
+총6Run GPU보수 envelope $268.2540 +rootEBS $2.2800.
+2회의 C FIS는 단일계정/1action/약2분이면 합계약$.40의 참고값.
+10분 이상 active면 정확한 owned experiment를 중지/실패로 기록하는 운영 여유를
+두어 계획상 FIS예산은 C당$1,두C합계$2로 잡는다. API장애시 절대 과금 보장은 아니다.
+
+A의 처리율 기반 참고치(목표 Step을 재산정한 것이 아님):
+기존 startup와 observed빠른/느린 iteration을 승인된 G에 단순 적용하면
+GPT 약1.12~1.48시간 학습완료,20분 반환비 포함GPU 약$8.66~10.80;
+ResNet 약1.21~1.54시간,동일 반환 가정GPU 약$9.21~11.18.
+이 샘플은 새 formal A 실측/신뢰구간이 아니며 OD-only의 실제 속도·공급은 미확인이다.
+B/C는 rollback/긴급CP/정책상호작용·VM확보에 따라 달라 평균 소요시간은 미확인이다.
+226/156초를 전체 복구 부담으로 넣어 낙관적 비용을 만들어내지 않는다. B/C 승인 검토에는
+위5시간·7VM envelope를 제시하고 실제 가격적분으로 사후 계산한다.
+
+공유/이관 비용:
+기존500GiB NFS gp3는 월$45.60,6Run×5시간=30그룹시간에 배분하면$1.90.
+이미 존재하는 지속비이며 이번에 새로500GiB를 산 비용이 아니다.
+공식 서울 internet-out 첫 유료tier $.126/GB. free-tier·credit을 미리 차감하지 않는다.
+선택bundle/로그 최대80GiB(약85.90decimalGB)와 protocol 여유를90GB로 보면
+이관 자체의 계획 allowance약$11.34. 전체 원본304GiB 이관을 가정하지 않았다.
+observer API/log streaming의 추가 egress, NFS/VPN/management 인스턴스 지속비,
+네트워크·CloudWatch·세금은 별도로 실제 기록/배분한다. 이 항목을0으로 숨기지 않는다.
+따라서 GPU envelope를 총AWS청구 상한이라고 부르지 않는다.
+
+다음 별도 승인 때 제시할 구체적 범위안:
+“6Run/각최대5시간/직렬/최대7대/g5.2xlarge/단일Spot FIS각C1회/총$400 운영예산안”.
+$400은 위GPU268.254+EBS2.28+FIS2+선택이관11.34+NFS시간배분1.90 외에
+약$114의 network/공유부대비용 여유를 둔 승인 검토용 제안이다. 승인된 금액이 아니다.
+시작 전에 실제 실행 날짜·절대종료·정리예약·비용감시/중지 기준과 함께 별도 승인받는다.
+과금집계 지연·AWSAPI장애·정리 지연·추가시도·persistent기반비용 때문에 이 계획이
+실제 계정청구를 기술적으로$400에 강제 제한한다는 뜻은 아니다. 재시도는 자동 승인되지 않는다.
+
+실제 GPU 공급/Quota: 오늘4OD32vCPU+3Spot24vCPU admission의 기존 근거 재사용.
+기존 읽기 전용 Spot3대 배치점수9/10은 공급 보장이 아니다. Quota API 권한거부로
+숫자는 여전히 미확인이다. 숫자 확인을 위해 새GPU를 만들거나 권한을 변경하지 않았다.
+다음 실제 provision 때의 admission/정확한 시장·AZ 확인이 실행 gate다.
+
+6. 정상 정리 및 보존 절차
+
+승인 후에만 bootstrap에 runUID·절대시각을 바인딩하고 기존 관측/가격watch/공간감시/
+별도deadline watchdog을 실제 기동한다. 프로세스 시작과 수집 heartbeat receipt 없이는
+provision/start하지 않는다. 지금은 실행 Run이 없어 watchdog도 켜지 않았다.
+기존 H/evaluation/integrated_control.py, final_fis.py, ieee_v2_ledger.py와
+host별 기존 정상 정리 절차를 사용한다. 오래된 진단runner를 그대로 formal용으로
+실행하지 않고 현재 run.json의 UID/namespace/deadline에 바인딩해야 한다.
+
+완료/중지 시 sourceNR suspend, source workload 정상 제거, 소유 sourceNR/NP
+정상 삭제로 member 재생성을 막고 provider finalizer 정상 처리를 기다린다.
+모든 historical provider ID를 보존하고 실제 terminated 응답 또는 같은ID의 과거
+positive terminated 영수증을 요구한다. CR없음/NotFound만으로 종료 완료라 하지 않는다.
+정확한 rootEBS 삭제, 임시keypair·복제Secret·새로 만든FIS template/alarm/rolepolicy,
+해당Run admission예외·관측process를 별도 확인한다. 기존 AWS인증Secret·클러스터/
+Member등록·NFS·PVC/PV·원시 결과·관리 기반infra는 유지한다.
+FIS가 아직 active면 먼저 해당owned experiment만 stop하고 실제 중단 여부도 남긴다.
+FIS stop은 이미 발생한 EC2 중단을 되돌리지 않는다. 강제finalizer/namespace삭제 없음.
+정리 지연·미확인 EC2/EBS·남은과금 가능성은 즉시 보고하고 완료표시를 보류한다.
+정리 후 immutable 로그/가격/UID ledger/성공·미적격·실패와 선택bundle을 이관 검증한다.
+
+7. λ_t·α·Checkpoint 비용 계측 상태
+
+확인 코드: H/internal/management/evaluation_telemetry.go EvaluationPolicyDecision,
+H/evaluation/ieee_v2_observe.py POLICY_FIELDS/policy_events/Observer.capture,
+H/evaluation/management_evidence.py,policy_sensitivity.py,
+H/internal/policy/contract.go DecideAt/CheckpointIntervalDecision.
+허용목록 scalar만 수집하며 credential/spec전체를 정책 로그에 출력하지 않는다.
+
+실제 남은 기존 로그를 읽어 확인한 결과:
+- GPT최신초기: 원수집174708행(반복 포함)→고유결정3190행,
+  유효측정D/analytic조건1853행, 경제성costEvaluated=true는0행.
+- ResNet배치: 원수집107816행→고유결정2361행,
+  실측D/analytic48행, 경제성평가385행.
+고유키=policyUID+decisionActor+decisionObservedAt. 같은키 다른내용 충돌0개.
+두 actor(vm-management/checkpoint-coordinator)와 bootstrap/analytic,
+ResNet의hourly fallback을 확인했다. 고유행도 독립GPU반복수는 아니다.
+값이 존재한다는 것과 양의 실측비용·fresh timestamp가 있다는 것을 별도로 판정했다.
+GPT의경제성0행을 비용식 전체실행으로 보고하지 않는다.
+영수증 P/existing-policy-telemetry-coverage.json.
+
+로그 항목: λ/risk source·관측/유효시각,α/PT,Spot/OD 가격,정책선택/사유,
+목표Spot/OD와실제NP/EC2, checkpointSeconds/copySeconds/원관측시각,
+interval/source/costEvaluated,iteration·step·runtime readiness,policy/workloadUID,
+실제childCP/RR/currentPodUID·진전·복원상태·VM종료.
+계산시각과 실제 동작시각을 분리하고 가격·loss·D가 없는 초기에는 기존 bootstrap으로
+기록한다. 결측을0실측이나 선점위험0으로 바꾸지 않는다. 선택주기와 실제CP간격은 다르다.
+
+실행 수집: observer MGMT_KUBECONFIG를 반드시 포함해 두 controller 로그를 수집,
+Karmada/AWSCR snapshot 및 모든4rank app events·finite update/final audit 보존.
+가격watch240초와 실제가격연속 구간, 원위험clock/feed TLS manifest와 heartbeat 보존.
+정식50% gate는 freshprogress를 직접 재확인하며 느린observer snapshot만으로 주입하지 않는다.
+observer/price/공간/freshprogress 오류2회 연속 또는 필수 필드 유실 시 실행 담당자가
+수집 불완전을 선언하고 새유료변경/FIS를 중지한다. 성공값으로 자동 보간하지 않는다.
+정식 시작 후 이미지/계측을 고치면 영향Run을 버전이탈로 보존하고 새블록 여부를 보고한다.
+
+기존 오프라인 α.7/.8/.9×held-out λ의 정책 민감도와 실측D쌍별분석을 재사용한다.
+예전가격 snapshot의 계산행은 그시각의 오프라인분석이고 현재GPU실측성과가 아니다.
+각formal Run에서는 같은코드에 실제로그입력을 연결해 비교한다. 새로운 위험모델 개발 없음.
+IterationTime은 로그/성능과 연결하지만 현재CRIU interval식의 직접입력처럼 주장하지 않는다.
+CP 독립최적성·α의GPU인과성·서울선점예측정확도는 이 설계로 검증되지 않는다.
+
+8. 최종 동결 준비와 남은 항목
+
+준비 완료: 이번5개요구의 정적자료/보관중지규칙/충돌처리/동일성/비용·정리범위/
+실제계측coverage. manifest_ready_for_freeze.json이 정확한 config 파일SHA를 참조한다.
+정식 학습/정책/위험/이미지 값 변경 없이 승인metadata와 실행계획만 보완했다.
+실험 연구질문, A/B/C,1회반복,50%,native1h는 유지했다.
+
+실제 동결은 이번에 하지 않았다. 조건부 승인과 이 점검을 연구자가 확인한 뒤
+한번에FROZEN receipt/SHA를 남길 수 있다. 이후 formal 실험설정은 임의 변경하지 않는다.
+이미지22개가 같은현재참조라는 점과 아직생성되지않은Worker의실제환경확인은 다르다.
+미래공급,정식B/C평균시간,장기보관량·API장애시비용,FIS청구예외는 미확인이다.
+이들은성공보장으로채우지않고 선언된runtime gate/실패규칙/실제장부로 처리한다.
+
+정식 실행 전 반드시 별도 승인:6Run중어떤Run을언제실행할지, 총비용·최대5시간·
+최대7대·FIS범위·정리예약. 오늘의옛유료수용검사승인을재사용하지 않는다.
+승인전GPU/Spot대상/FIS/새IAM/새AWS보관소를만들지 않는다.
+
+이미 검증한 기능을 반복하는 대신 이번에는 오프라인6arm계약/22개
+live참조/실제보관·기존로그만 점검했다. 직전 평가도구322tests(2skip/실패0)와
+관련Go/race/기능수용 증거는 재사용했다. 이번에 새로운전체GPU/유료검증은0회다.
+
+9. 파일과 비용 근거
+
+보고서 전체경로:
+/home/ubuntu/graduate/Evaluation/E1_E2_PreExecution_Final_Check_20261119.txt
+지원 파일:
+P/manifest_ready_for_freeze.json
+P/researcher_conditional_approval.json
+P/nfs_retention_and_stop_plan.json
+P/archive_destination_check.json
+P/risk_FIS_collision_rules.json
+P/final-config-runtime-check.json
+P/cost_and_execution_envelope.json 및 .csv
+P/live-storage-clusters-price.json
+P/ebs-gp3-price.json, data-transfer-prices.json
+P/existing-policy-telemetry-coverage.json
+원본/후보: D19/freeze-inputs/*-formal-draft.json, D19/frozen_protocol_candidate_20261119.json.
+
+공식가격/과금 근거(2026-11-19조회):
+AWS EC2 서울 공식 Price List: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/ap-northeast-2/index.csv
+AWS Data Transfer 서울 공식 Price List: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSDataTransfer/current/ap-northeast-2/index.json
+AWS FIS pricing의 Pricing Overview: https://aws.amazon.com/fis/pricing/
+단일계정$.10/action-minute, action지속시간기준. 추가유료report를요청하지 않는다.
+AWS EBS pricing의 gp3 billing: https://aws.amazon.com/ebs/pricing/
+생성한용량/존재구간과IOPS/throughput에따른과금. 위서울단가receipt와분리해적용한다.
+EC2중단과금: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/billing-for-interrupted-spot-instances.html
+FIS에Spot첫시간환급이실제로적용되는지는미확인. 미확인환급을절감으로넣지않는다.
+
+작성 완료. 시스템의새알고리즘·새Restore구조를개발하거나정식실험을실행한보고서가아니다.
+
+최종 작성 완료 KST 2026-11-19T16:13:00.756784+09:00
+이 보고서와 준비 Manifest는 별도 유료 실행 승인을 대체하지 않는다.

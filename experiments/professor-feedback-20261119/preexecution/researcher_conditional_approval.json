@@ -1,0 +1,21 @@
+{
+  "at_recorded": "2026-11-19T16:05:50.288109+09:00",
+  "state": "CONDITIONAL_APPROVAL_RECEIVED",
+  "approved_candidates": {
+    "gpt2": 4800,
+    "resnet50": 26700
+  },
+  "common_settings": "unchanged from E1_E2_Final_Experimental_Review_20261119.txt",
+  "conditions": [
+    "finish storage/transfer/stop rules",
+    "finish risk/fault collision rules",
+    "final runtime and config match",
+    "cost/time/cleanup scope",
+    "existing telemetry coverage"
+  ],
+  "formal_execution_authorized": false,
+  "paid_execution_authorized": false,
+  "freeze_performed": false,
+  "repeat_decision_unchanged": "1 per model/arm;6unique exploratoryruns",
+  "no_goal_recalculation": true
+}

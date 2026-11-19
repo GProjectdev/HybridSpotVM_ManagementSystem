@@ -1,6 +1,7 @@
-2026-11-19 final experimental review completed.
-Formal A/B/C runs NOT started; researcher confirmation and freeze required.
-Proposals unchanged: GPT2 4800, ResNet50 26700; six unique exploratory runs.
-Latest review: final-review/E1_E2_Final_Experimental_Review_20261119.txt
-NFS cleanup recovered295GiB; free415GiB snapshot; per-run archive/staging budget and reserve still required.
-Read-only supply/price/runtime receipts refreshed; no new GPU/FIS in this review.
+2026-11-19: researcher conditional approval recorded; preexecution checks complete.
+READY_FOR_FREEZE_NOT_FROZEN. Final settings unchanged4800/26700 and6exploratoryruns.
+Formal AWS A/B/C requires SEPARATE scope/cost/deadline approval. No formal paid operation authorized.
+Current report: preexecution/E1_E2_PreExecution_Final_Check_20261119.txt
+Current manifest preparation: preexecution/manifest_ready_for_freeze.json
+NFS free415GiB; new-run retention304GiB envelope with early stop rules and selected offline copies.
+All prior changed-path acceptance workers were cleaned. No new GPU orFIS during thispreparation.
