@@ -1,0 +1,37 @@
+{
+  "at": "2026-11-19T04:39:14.372935+00:00",
+  "collector_trust_restored": true,
+  "removed": [
+    {
+      "kind": "Service",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "name": "risk-replay",
+      "uid": "108c8ca4-21e0-4cfc-bd5c-a2744b0334e7"
+    },
+    {
+      "kind": "Deployment",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "name": "risk-replay",
+      "uid": "3df8d851-838c-467b-af6c-d65b59dae8f4"
+    },
+    {
+      "kind": "ConfigMap",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "name": "replay-input",
+      "uid": "c2120683-0992-404b-a456-c9b98a5909ef"
+    },
+    {
+      "kind": "Secret",
+      "namespace": "hybridspot-system",
+      "name": "eval-d19-risk-ca",
+      "uid": "6d4ae185-1e8d-4901-8473-49727d06a42e"
+    },
+    {
+      "kind": "Secret",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "name": "replay-tls",
+      "uid": "77a3f6fc-348b-44be-828a-f587804c34bc"
+    }
+  ],
+  "namespaces_retained": true
+}

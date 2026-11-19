@@ -1,0 +1,19 @@
+{
+  "at_kst": "2026-11-19T13:24:25.501223+09:00",
+  "authority": "researcher explicit reply: 우선 각 조건1회, 두 모델 총6Run, 탐색적 결과로 한정",
+  "models": [
+    "gpt2-small",
+    "resnet50"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C"
+  ],
+  "repeats_per_cell": 1,
+  "total_unique_GPU_runs": 6,
+  "E1_reuses_eligible_A_B_from_E2": true,
+  "exploratory_only": true,
+  "no_inferential_significance_claim": true,
+  "functional_pilots_are_not_formal_runs": true
+}

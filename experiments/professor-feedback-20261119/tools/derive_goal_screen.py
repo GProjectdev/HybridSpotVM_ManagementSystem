@@ -1,0 +1,15 @@
+from pathlib import Path
+import json,csv,math,hashlib,sys
+O=Path(sys.argv[1]);rows=[]
+for model in ('gpt2','resnet50'):
+ e=json.loads((O/'goal-evidence'/(model+'-goal-evidence.json')).read_text());old=json.loads((O/'goal-evidence-old-gpt/gpt2-goal-evidence.json').read_text()) if model=='gpt2' else e
+ sf=min(e['first_all_rank_step_elapsed_seconds'],old['first_all_rank_step_elapsed_seconds']);ss=max(e['first_all_rank_step_elapsed_seconds'],old['first_all_rank_step_elapsed_seconds']);pf=min(e['maximum_first_checkpoint_pause_seconds'],old['maximum_first_checkpoint_pause_seconds']);ps=max(e['maximum_first_checkpoint_pause_seconds'],old['maximum_first_checkpoint_pause_seconds']);fast=min(e['fast_iteration_observed_seconds'],old['fast_iteration_observed_seconds']);slow=e['slow_iteration_observed_seconds']
+ transitions=list(csv.DictReader((O/'day19_reconfiguration_phase_timings.csv').open()));prep=max(float(r['input_to_request_seconds']) for r in transitions if r['direction']=='Spot->OnDemand');margin=120;notice=120
+ lower=(3600+prep+margin-sf-pf)/fast;upper=2*(3600-notice-margin-ss-ps)/slow;assert lower<upper,(model,lower,upper)
+ goal=int(round(((lower+upper)/2)/100)*100);assert goal>lower and goal<upper
+ row=dict(model=model,goal_steps_proposed=goal,fis_common_step=math.ceil(goal/2),startup_fast_seconds=sf,startup_slow_seconds=ss,checkpoint_pause_fast_seconds=pf,checkpoint_pause_slow_seconds=ps,iteration_fast_seconds=fast,iteration_slow_seconds=slow,observed_prepare_seconds=prep,operational_margin_seconds=margin,fis_notice_seconds=notice,goal_step_lower_open=lower,goal_step_upper_open=upper,projected_fast_normal_goal_elapsed_seconds=sf+pf+goal*fast,required_reconfiguration_request_elapsed_seconds=3600+prep+margin,projected_slow_fis_elapsed_seconds=ss+ps+math.ceil(goal/2)*slow,projected_notice_margin_end_seconds=ss+ps+math.ceil(goal/2)*slow+notice+margin,first_durable_checkpoint_elapsed_seconds=e['first_checkpoint']['durable_elapsed_seconds'],status='PROPOSED_NOT_FROZEN_RESEARCHER_CONFIRMATION_REQUIRED',formal_result=False)
+ row['native_transition_headroom_seconds']=3600-row['projected_notice_margin_end_seconds'];row['reconfiguration_request_headroom_seconds']=row['projected_fast_normal_goal_elapsed_seconds']-row['required_reconfiguration_request_elapsed_seconds'];row['historical_short_sample_stress_notice_margin_end_seconds']=ss+ps+math.ceil(goal/2)*old['slow_iteration_observed_seconds']+notice+margin;rows.append(row)
+with (O/'goal_step_screening_20261119.csv').open('w',newline='') as f:
+ w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
+(O/'goal_step_screening_20261119.json').write_text(json.dumps({'scope':'empirical pilot timing screen; not measured formal result, probability bound, forecast of AWS capacity or researcher-approved freeze','selection_rule':'midpoint of strict admissible goal range, rounded to100 optimizer steps; retain even goal and50percent event','rows':rows,'researcher_confirmed':False},indent=2)+'\n')
+print(json.dumps(rows,indent=2))

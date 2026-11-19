@@ -1,0 +1,181 @@
+{
+  "at": "2026-11-19T05:37:54.483575+00:00",
+  "run_id": "d19-rn-b3-02",
+  "namespace": "eval-v3-d19-rn-b3-02",
+  "model": "resnet50",
+  "world_size": 4,
+  "instance_type": "g5.2xlarge",
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "payload_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+  "checkpoint_policy": {
+    "minIntervalSeconds": 60,
+    "resume": true
+  },
+  "transitions": [
+    {
+      "run_id": "d19-rn-b3-02",
+      "model": "resnet50",
+      "world_size": 4,
+      "instance_type": "g5.2xlarge",
+      "direction": "Spot->OnDemand",
+      "passed": true,
+      "policy_uid": "db4eb721-8431-402f-b6ae-8999d603128e",
+      "restore_request_uid": "675418e9-e0dd-4ab2-8361-fde6d40222d8",
+      "replacement_pairs": 3,
+      "full_group_restore_requests": 1,
+      "request_created_at": "2026-11-19T04:56:30Z",
+      "verified_at": "2026-11-19T04:59:06Z",
+      "request_to_verified_seconds": 156.0,
+      "acceptance_observed_at": "2026-11-19T05:04:39.390039+00:00",
+      "all_rank_restore_and_update_audits": true,
+      "source_fenced": true,
+      "old_providers": 3,
+      "formal_result": false,
+      "diagnostic_risk_clock": true
+    }
+  ],
+  "launcher_io_status": "OBSERVATIONS_PRESENT",
+  "launcher_io_semantics": "duplicate observer samples removed; per-rank elapsed sums are not wall-clock union; no end-to-end speedup inferred",
+  "formal_result": false,
+  "not_a_speedup_comparison": true,
+  "receipt_hashes": {
+    "resnet-fresh-payload-acceptance.json": "21c0480c2a1a2b2bd82046a0adb5438a4d24c1bcb569d9120dfde9126822cf2b",
+    "cleanup-complete.json": "cbaa85c9aa03359c221978804839f0d57adf66e63abb739924088aba7c9e47d1",
+    "feed-cleanup.json": "eb05fdf7d3332ed9d5b22e2b4395032cb46691e34bafbc54fe2ba0116454805a",
+    "uncapped-checkpoint-schedule.json": "44587250490e37632cc9af8540f86c639ae5af205c7e62a15a225fb9d769a96b",
+    "hourly-all-od-checkpoint-schedule.json": "d989794039916d33120cd61b4ff9b775ac69c9e9faa845e630147307598683c7"
+  },
+  "cleanup-complete.json": {
+    "historical_positive_termination_receipts": [],
+    "completed_at": "2026-11-19T05:10:39.837183+00:00",
+    "provider_crs_removed": true,
+    "ec2_terminated": [
+      "i-02a4c8724c0a4226c",
+      "i-03a6872d65051729c",
+      "i-05466ae65c0069911",
+      "i-06cb2cb43a0fc4cd3",
+      "i-084ffbe08e8c10897",
+      "i-08c9fe30bb1f4bc8f",
+      "i-09c589ff404b54912"
+    ],
+    "keypairs": [
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-02",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-03",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-03-d7354a9c-0fe-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-02-bb15dafb-6c7-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-01-290e1863-1b9-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-00",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-rn-b3-02-worker-01",
+        "deleted": true
+      }
+    ],
+    "volume_receipts": [
+      {
+        "volume_id": "vol-03928e9a4a7763581",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-045e4fe15193cc1d8",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-05e05116cdedc82bd",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-064bdc122efcf63f4",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-06ae07995c87d193a",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-082062fdfdc07ed40",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0af6e11e26bdf979a",
+        "confirmed_absent": true
+      }
+    ],
+    "gpu_compute_conservative_upper_estimate_usd": 4.025407975830889,
+    "cost_scope": "launch through terminated observation at OD price 1.4903/h; not invoice; EBS/network/FIS excluded",
+    "no_forced_finalizers": true,
+    "checkpoint_pvc_pv_nfs_preserved": true
+  },
+  "feed-cleanup.json": {
+    "at": "2026-11-19T05:10:42.896812+00:00",
+    "collector_trust_restored": true,
+    "removed": [
+      {
+        "kind": "Service",
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "name": "risk-replay",
+        "uid": "2910f217-036c-4d92-acb7-054e33d58be1"
+      },
+      {
+        "kind": "Deployment",
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "name": "risk-replay",
+        "uid": "9b7b469f-02eb-42c8-96eb-596b112ca787"
+      },
+      {
+        "kind": "ConfigMap",
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "name": "replay-input",
+        "uid": "42eff7a5-a8a2-48b7-adb4-df7d315abcda"
+      },
+      {
+        "kind": "Secret",
+        "namespace": "hybridspot-system",
+        "name": "eval-d19-risk-ca",
+        "uid": "11666dad-5fcd-4eba-a889-4a9bcaf21ec5"
+      },
+      {
+        "kind": "Secret",
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "name": "replay-tls",
+        "uid": "4b5f8704-9da5-415d-9baa-b3cb45287c25"
+      }
+    ],
+    "namespaces_retained": true
+  },
+  "uncapped-checkpoint-schedule.json": {
+    "at": "2026-11-19T04:52:13.398937+00:00",
+    "policy_uid": "db4eb721-8431-402f-b6ae-8999d603128e",
+    "interval": 11065,
+    "source": "checkpoint-cost-analytic",
+    "cost_evaluated": true,
+    "schedule_uid": "252f4244-1a63-4ebf-a878-c563457502fa",
+    "schedule_interval": 11065
+  },
+  "hourly-all-od-checkpoint-schedule.json": {
+    "at": "2026-11-19T05:04:39.390485+00:00",
+    "policy_uid": "db4eb721-8431-402f-b6ae-8999d603128e",
+    "interval": 3600,
+    "source": "hourly-risk-refresh-fallback",
+    "cost_evaluated": false,
+    "schedule_uid": null,
+    "schedule_interval": null
+  }
+}

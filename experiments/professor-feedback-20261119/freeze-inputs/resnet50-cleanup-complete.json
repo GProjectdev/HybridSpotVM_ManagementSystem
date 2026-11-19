@@ -1,0 +1,78 @@
+{
+  "historical_positive_termination_receipts": [],
+  "completed_at": "2026-11-19T05:10:39.837183+00:00",
+  "provider_crs_removed": true,
+  "ec2_terminated": [
+    "i-02a4c8724c0a4226c",
+    "i-03a6872d65051729c",
+    "i-05466ae65c0069911",
+    "i-06cb2cb43a0fc4cd3",
+    "i-084ffbe08e8c10897",
+    "i-08c9fe30bb1f4bc8f",
+    "i-09c589ff404b54912"
+  ],
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-02",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-03",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-03-d7354a9c-0fe-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-02-bb15dafb-6c7-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-01-290e1863-1b9-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-00",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-rn-b3-02-worker-01",
+      "deleted": true
+    }
+  ],
+  "volume_receipts": [
+    {
+      "volume_id": "vol-03928e9a4a7763581",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-045e4fe15193cc1d8",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-05e05116cdedc82bd",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-064bdc122efcf63f4",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-06ae07995c87d193a",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-082062fdfdc07ed40",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0af6e11e26bdf979a",
+      "confirmed_absent": true
+    }
+  ],
+  "gpu_compute_conservative_upper_estimate_usd": 4.025407975830889,
+  "cost_scope": "launch through terminated observation at OD price 1.4903/h; not invoice; EBS/network/FIS excluded",
+  "no_forced_finalizers": true,
+  "checkpoint_pvc_pv_nfs_preserved": true
+}

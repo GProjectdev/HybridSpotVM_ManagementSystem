@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "at": "2026-11-19T05:40:51.121932+00:00",
+  "steps": {
+    "0": 1011,
+    "1": 1012,
+    "2": 1012,
+    "3": 1013
+  },
+  "policy_uid": "c72940e3-8a2b-4d2e-90df-400ffd6b9be6",
+  "interval_seconds": 20030,
+  "interval_source": "checkpoint-cost-analytic",
+  "costs": {
+    "checkpointSeconds": 154,
+    "copySeconds": 83,
+    "observedAt": "2026-11-19T05:28:21Z",
+    "source": "fluidcr-status"
+  },
+  "parent_uid": "55b57528-6ae3-4d17-92b2-178360cef591",
+  "parent_interval_seconds": 20030,
+  "placement": [
+    {
+      "rank": 0,
+      "node": "eval-d19-gpt-cal-03-worker-00",
+      "resources": {
+        "limits": {
+          "cpu": "4",
+          "memory": "12Gi",
+          "nvidia.com/gpu": "1"
+        },
+        "requests": {
+          "cpu": "2",
+          "memory": "6Gi",
+          "nvidia.com/gpu": "1"
+        }
+      }
+    },
+    {
+      "rank": 1,
+      "node": "eval-d19-gpt-cal-03-worker-02",
+      "resources": {
+        "limits": {
+          "cpu": "4",
+          "memory": "12Gi",
+          "nvidia.com/gpu": "1"
+        },
+        "requests": {
+          "cpu": "2",
+          "memory": "6Gi",
+          "nvidia.com/gpu": "1"
+        }
+      }
+    },
+    {
+      "rank": 2,
+      "node": "eval-d19-gpt-cal-03-worker-03",
+      "resources": {
+        "limits": {
+          "cpu": "4",
+          "memory": "12Gi",
+          "nvidia.com/gpu": "1"
+        },
+        "requests": {
+          "cpu": "2",
+          "memory": "6Gi",
+          "nvidia.com/gpu": "1"
+        }
+      }
+    },
+    {
+      "rank": 3,
+      "node": "eval-d19-gpt-cal-03-worker-01",
+      "resources": {
+        "limits": {
+          "cpu": "4",
+          "memory": "12Gi",
+          "nvidia.com/gpu": "1"
+        },
+        "requests": {
+          "cpu": "2",
+          "memory": "6Gi",
+          "nvidia.com/gpu": "1"
+        }
+      }
+    }
+  ],
+  "formal_result": false,
+  "FIS_executed": false,
+  "restore_operation_executed": false
+}

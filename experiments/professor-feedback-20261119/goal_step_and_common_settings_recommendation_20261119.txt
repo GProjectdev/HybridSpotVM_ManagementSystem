@@ -1,0 +1,194 @@
+모델별 목표 Step 및 공통 실험 설정 선정 근거 — 2026-11-19
+작성시각 KST: 2026-11-19T14:50:54.568606+09:00
+상태: PROPOSED / 연구자 확인 대기 / 동결하지 않음 / 정식 A·B·C 미실행
+
+적용 방법론
+/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md
+SHA256 5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77
+E1=A/B 정상 운영, E2=A/B/C 선점·복구. 같은 모델의 A와 B를 재사용하려면
+완전히 같은 계약과 비용/완료 증거가 필요하다. 4 Rank, VM당1 GPU/1 Rank.
+연구자가 각 조건1회로 지정했으므로 두 모델 총6개의 고유 Run이며 탐색적 결과다.
+512/1024 수용검사 목표나 기존 진단 goal100000을 정식 목표로 전용하지 않았다.
+
+1. 최종 권장 후보와 연구자 확인 항목
+GPT-2 Small: 목표 4800 optimizer steps, C 트리거 공통 2400 Step.
+ResNet-50: 목표 26700 optimizer steps, C 트리거 공통 13350 Step.
+이는 아래 실측 기반 허용 구간의 중간값을100 Step 단위로 반올림한 후보다.
+현재 파일/manifest 모두 연구자 확인 전 DRAFT다. 입력 시계, 목표 및 운영여유120초,
+정책/Checkpoint 설정, 이미지 버전까지 함께 확인한 뒤 한 번에 동결해야 한다.
+확인 후 A/B/C 실행 중 목표나 위험률·장애 위치를 바꾸지 않는다.
+
+2. 사용한 실제 측정 자료와 새 측정이 필요했던 이유
+(가) GPT-2 d19-gpt-b3-01: g5.2xlarge/4Rank/완료gp3/새payload.
+초기1OD+3Spot NR→전체rank 첫 Step655.379초. 초기 고위험 진단 전 관측은
+rank당106 Step에 불과하고 Checkpoint 직후 warm-up 영향을 포함했다.
+2방향 batch3 full-group RR가 각각226초에 Verified됐고 전체rank 학습재개,
+구Spot/OD provider 종료가 확인됐다. 이 진단은 기존60..600초 정책을 유지했다.
+(나) GPT-2 d19-gpt-cal-03: 새 무상한 Checkpoint 정책/같은 trainer/payload/
+하드웨어에서 초기1OD+3Spot의 공통1000 Step까지 필요한 예비 측정만 보완했다.
+위험률 고정 성분 검사이며 native1시간 전체 성능 Run이나 정식 결과가 아니다.
+NR→전체rank 첫 Step 778.026초.
+rank별 실측 step q10 중 최소 0.713618초,
+q90 중 최대 0.946468초.
+최대rank median 0.766616초,
+Checkpoint 첫 pause→resume 최대 197.960초.
+실측 CRIU D=154초,
+copy=83초, 전체archive durable는 NR 이후
+1044초. D+copy와 DDP pause는 다른 구간이다.
+(다) ResNet d19-rn-b3-02: 같은4Rank/g5.2xlarge/새payload/무상한정책/gp3.
+NR→전체rank 첫 Step 610.755초.
+초기rank당298 Step, high 입력 전 샘플을 재사용했다. q10최소
+0.140460초/q90최대 0.185061초,
+Checkpoint pause→resume 최대 23.007초.
+D=47초/copy=9초,
+전체archive durable NR 이후 697초.
+Spot3→OD3 단일4rank RR156초 Verified 및 네 rank audit/학습재개/구VM 종료 확인.
+R50 추가GPU Run은 만들지 않고 이 초기/복원 자료를 재사용했다.
+(라) 오늘 고위험 입력→RR 생성281.250498초(GPT),256.361765초(R50).
+이 시간은 Collector/reconcile/대체VM 준비/전파/정지 등 혼합 구간이며 순수
+EC2 boot라고 부르지 않는다. 역방향2001초에는 기존 OD1시간 유지 대기가
+포함돼 있어 최초 전환 준비시간 입력으로 쓰지 않았다.
+
+구체적 근거 위치:
+/home/ubuntu/graduate/Evaluation/day19_20261119/goal-evidence/*-goal-evidence.json 및 csv
+/home/ubuntu/graduate/Evaluation/day19_20261119/goal-evidence-old-gpt/gpt2-goal-evidence.json
+/home/ubuntu/graduate/Evaluation/day19_20261119/gpt2-new-policy-initial-calibration/
+/home/ubuntu/graduate/Evaluation/day19_20261119/initial-phase-calibration/resnet50-training-calibration.json
+/home/ubuntu/graduate/Evaluation/day19_20261119/day19_reconfiguration_phase_timings.csv
+/home/ubuntu/graduate/Evaluation/day19_20261119/gpt2-batch-acceptance/ 및 resnet-batch-acceptance/
+원시 UID/시각/round 증거는 /home/ubuntu/day19-pilot-20261119 아래 run별 보존.
+
+3. 계산 방법: 같은 목표로 두 연구 조건을 동시에 만족하는지 점검
+모든 시간의 원점은 source NodeRequest creationTimestamp다. 학습시작 시점으로
+위험 clock을 뒤로 밀지 않는다. 원래 held-out hour14에서 시작해3600초 후
+hour15로 갱신하며 첫시간에는 Spot이 존재하는 구간을 사용한다.
+
+정의: S=NR→첫 전체rank Step, P=최초 Checkpoint 실제 pause시간,
+f=관측 빠른 iteration, s=관측 느린 iteration, G=목표 optimizer Step,
+V=오늘 실측 고위험 입력→RR생성 최대281.250498초,
+M=제안 운영 여유120초, N=FIS 통지120초.
+M은 과거 입력→정책 관찰 약72초 등에 대한 실행 여유다. 논문 유도 상수,
+통계적 상한 또는 공급 보장을 뜻하지 않으며 연구자 확인 대상이다.
+
+E1 하한: S_fast + P_fast + G*f > 3600 + V + M.
+단순히1시간보다 오래 학습하는 데 그치지 않고, 대체VM을 준비해 실제 그룹복원을
+요청할 때까지 원본 학습이 끝나지 않는지 점검한다. RR 이후에는 실제 source
+fence→Verified→네 rank 업데이트를 수집해야 하며, 총 완료시간 예측에는
+실제 rollback/재학습을 추가해야 한다. 이 식 자체가 복원 성공을 보장하지 않는다.
+E2 상한: S_slow + P_slow + ceil(G/2)*s + N + M < 3600.
+추가 조건: 첫 전체rank durable Checkpoint가 해당50% Step 도달 전에 준비돼야 한다.
+
+새 비교 가능 초기구간의 q10/q90를 실무 screening 값으로 사용했다.
+GPT의 빠른 하한에는 더 빨랐던 기존 초기 S/P/f도 포함해 조기 완료를 경계했다.
+q90를 전체 Run의95% 신뢰구간이나 최악 보장이라고 부르지 않는다.
+
+GPT 허용 구간: 4579.156 < G < 5037.704.
+중간값 반올림 후보4800. 빠른 정상 목표 예상 NR+4156.629초,
+RR요청 관측 요구 NR+4001.250초.
+늦은50% 예상 NR+3247.510초,
+통지+여유 종료 NR+3487.510초.
+3600초까지 남는 여유 약112.5초로 좁다.
+R50 허용 구간: 23974.763 < G < 29463.060.
+중간값 반올림 후보26700. 빠른 정상 목표 예상 NR+4384.037초,
+늦은50% 예상 NR+3104.332초,
+통지+여유 종료 NR+3344.332초.
+3600초까지 남는 여유 약255.7초.
+
+중요한 불리한 자료: 과거 GPT 초기106 Step의 q90=1.687367초를 전체 실행에
+그대로 외삽하면, 위 후보의 통지+여유 종료가 NR+5265.667초여서 충돌한다.
+짧은 시작/Checkpoint 직후 표본을 전체의 지속 처리율로 보는 대신, 같은 최신
+정책의 약1000 Step 예비 측정으로 보완했다. 과거 느린 표본을 숨기지 않는다.
+따라서 권장값은 현재 경험적 창에 대한 조건부 후보이며 하드 보장값이 아니다.
+R50도298 Step/한 번의 D이므로 장기 처리율·저장비용 변동은 미확인이다.
+각 정식 Run의 공급 지연·Step·위험clock을 계속 관측한다. 창을 벗어나면
+설정을 바꾸거나 FIS를 늦춰 성공시키지 않고 계획 이탈/실패로 기록한다.
+B/C 동일 입력을 유지하기 불가능하면 방법론에 따라 연구자에게 블록 분리를
+먼저 제안해야 한다. 이번에 블록을 임의로 나누지 않았다.
+
+4. 공통 설정 후보와 선택 이유
+GPU: g5.2xlarge×4,1 A10G/VM,ap-northeast-2c 고정.
+이유: 이전 xlarge Spot공급 실패 이후 실제4rank 배치3의 양방향 실행을 수용한
+동일 타입이다. g5/g6 또는 xlarge/2xlarge 성능 자료를 한 비교에 혼합하지 않는다.
+AMI ami-035e3088f6b7821fb, Ubuntu22.04.5, kernel6.8.0-1069-aws,
+CRI-O1.37.0/Kubelet1.37.2. 실제 네 노드 nvidia-smi는 A10G,
+Driver595.112.07,23028MiB. hardware_and_storage_receipt.json의 실제ID와 대조.
+Quota API는권한거부로 숫자미확인.4OD32vCPU 및3Spot24vCPU 실제admission은
+성공했지만 미래 공급/한도증액을 보장하지 않는다. batch3 peak7GPU/56vCPU.
+
+GPT per-rank batch2, global batch8, sequence512, Seed42,
+AdamW lr5e-5/기존 weight decay. 후보4800은19,660,800 token positions이며
+모든 A/B/C에서 동일 committed optimizer updates로 비교한다.
+ResNet per-rank batch16/global64, Seed42, SGD lr.1/momentum.9/decay.0005.
+후보26700은1,708,800 image presentations(약34.176 CIFAR train-set pass).
+기존 CIFAR stem/10classes/weightsNone/32pixel crop/flip/normalization 유지.
+모델 학습 정확도 우수성이 아닌 시스템 시간·비용·복원운영 비교다.
+
+자산: GPT WikiText103 raw-v1 기존tokenized512 및 GPT2Small revision,
+ResNet CIFAR10 기존manifest를 그대로 사용한다. 정확한 revision/path/hash는
+frozen_protocol_candidate_20261119.json와 freeze-inputs/*-formal-draft.json에 있다.
+Seed42는 기존 GPU/CPU 복원 검증과 일치한다. 새 seed를 결과에 유리하게 선택하지 않는다.
+데이터 순서: GPT global_step/rank 기반 batch 위치와 RNG 복원;
+R50 StepBatchSampler(seed,epoch,rank,step), stateless augmentation(seed,epoch,index)
+및 optimizer/RNG/step 복원. 재개 시 data skip을 두 번 적용하지 않는다.
+관련 코드: evaluation/resnet18/train_resnet18.py StepBatchSampler,
+augmentation_parameters; evaluation/gpt2/; My_FluidCR의 상태 저장/복원 코드.
+
+위험/자원: 기존 paper-eq6-7,alpha.8,minOD1,PT3600,
+OD최소유지3600,경제성 freshness3600. λ출처는 공개USV100 availability proxy
+기반 기존SARIMA held-out168시간이며 서울G5 자연 선점확률이 아니다.
+hour14 λ.0009212361959754303/h→hour15 .3458397557619131/h,
+clock3600초/forecast hour, sourceNR생성 anchor. 수동/압축 전환을 정식으로 쓰지 않는다.
+forecast SHA256 8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2.
+Spot/OD가격은 매 Run 실제 조회·시각·이력 저장. 사전 가격을 정식 비용으로 고정하지 않는다.
+초기 D/L부족은 기존 bootstrap과 명시적 source/costEvaluated=false로 기록한다.
+
+Checkpoint: A 비활성, B/C 동일 min60초/max생략, 기존 risk-band-bootstrap에서
+실측 CRIU비용 기반 analytic으로 전환. zero risk 또는 정책Spot0이면3600초의
+운영상 recovery-point fallback. 이는 일반상한이나 논문0위험최적값이 아니다.
+실제 관측 interval과 설정 interval은 구별한다. Desai 비동기 Eq1–5 경로는 미사용.
+Restore: 기존 application+CRIU full-group, 새로운 byte-identical NFS재쓰기생략
+payload,최종 MGMT/Coordinator digest 동일. sourceUID/fence/Verified와 전체rank
+update audit 유지. payload9ee0860c…f4ac65,trainer0e521f50…ab9b.
+정확한 전체digest는 최종 controller_images.json와 candidate에 저장한다.
+배치교체3: 세목적VM 준비 후 한 번의4rank RR,기존 기본batch1은 변경하지 않고
+실험 opt-in을 사용한다. 생성중첩/대기/정리VM을 모두 비용장부에 포함한다.
+NFS500GiB gp3/3000IOPS/125MiBps completed,기존 공유경로/데이터 유지.
+
+5. 추가 실행 안전 계측 및 해석 한계
+동일 B/C 위험 endpoint의 namespace만 다른 부분은 명시적 transport template로
+기록하고 공통 comparison hash에는 동일 입력 계약을 넣는다. 실제URL도 별도 보존.
+FIS는 전체rank fresh commonStep>=ceil(G/2),현재Pod의full durable CP,
+고정된 최초ownedSpot provider UID/ID,건강한ownedOD stopalarm을 다시 확인한다.
+추가 native window gate는 실제 sourceNR생성시각+3600-120-M 전까지의 dispatch만
+허용한다. template 생성 및 마지막 alarm조회 뒤에도 이 deadline을 확인한다.
+주입/실중단/마지막진전/새VM/Restore/첫전체업데이트/과거진전회복/완료시각을 각각 저장.
+50%는 통제된 장애 위치이며 자연 선점 분포의 대표값이 아니다. 실제 주입 때의
+관측Step이 임계값을 얼마나 초과했는지도 기록한다.
+
+긴 analytic 주기는 위험전환 때 오래된 Checkpoint를 선택해 rollback이 클 수 있다.
+이번에 cutover 직전 신규Checkpoint를 넣는 full-group 재설계는 하지 않았다.
+D/copy를 전부 학습정지시간으로 더하거나 RR156/226초를 총복구시간으로 쓰지 않는다.
+ResNet 긴급저장이 성공해 C가 더신선한 checkpoint를 쓰면 C-B가 음수일 수도 있다.
+유리한 시간차를 미리 가정하거나 그런 결과를 제거하지 않는다.
+6 Run 각1회로 신뢰구간/유의성/예측정확도를 주장할 수 없다.
+
+6. 근거 문헌과 사용 범위
+Desai et al., Cost-Efficient Training and Checkpointing for Large Models on
+Preemptible Cloud VMs, EuroMLSys2026, §4.1 PT1h 예측,§4.2 CP조율,
+§4.3 자원정책 Eq6–7. 제공 원문 Cost_effective.pdf와 실제 구현을 대조했다.
+이 논문이 본 모델의4800/26700Step,Seed42,margin120을 정했다고 주장하지 않는다.
+본 Step은 시스템 실측 및 연구자가 결정한50%·1h 관측조건을 결합한 산출이다.
+연구자 방법론 §3.3/§4.3/§5/§8 및 기존 실제FIS/4rank수용증거를 적용한다.
+AWS FIS의PT2M과PyTorchDDP 공식문서는 연구자 문서§9의 원문 링크를 참조한다.
+추가 위험률 알고리즘을 개발하거나 공급 실패시 하드웨어를 임의로 교체하지 않는다.
+
+7. 다음 절차
+이 TXT와 goal_step_screening_20261119.csv, 최종 verification/readiness를 연구자가
+확인하면 목표/운영여유/이미지/스토리지/정책/위험 입력 및6Run 계약을 동결한다.
+그 전에는 formal flag를FROZEN으로 바꾸거나 정식GPU/FIS를 실행하지 않는다.
+확인 후에도 Run별 현재가격/인증/공급/해시/원시계측/정리예약/FIS정확대상 gate를
+실시간 재확인한다. 미적격은 숨기지 않으며 사전 동결값을 사후 변경하지 않는다.
+
+추가 최종 환경 확인: NFS128905891840bytes(약120GiB)여유.64GiBguard위60186415104bytes(약56GiB).
+6Run아카이브보관용량확보는미완료이며Run별증가량예산/보관·이관확인전연속실행하지않는다.
+기존Checkpoint/PVC/PV/NFS데이터는삭제하지않았다. nfs_capacity_for_formal_runs.json참조.

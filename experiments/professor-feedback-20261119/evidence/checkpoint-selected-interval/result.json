@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-19T05:47:25.691460+00:00",
+  "source_sha256": "564eef889065de2e65028a4438cfc0e6f9682df7e637da11aa5005c934a3cb1c",
+  "tests_passed": true,
+  "telemetry_race_tests_passed": true,
+  "two_component_rollouts_complete": true,
+  "GPU_batch_recovery_verified": false,
+  "GPU_VM_created": false,
+  "FIS_executed": false,
+  "default_batch_size": 1,
+  "policy_algorithms_changed": false,
+  "checkpoint_default_cap_removed": true,
+  "zero_hazard_fallback_seconds": 3600,
+  "explicit_operator_bounds_preserved": true,
+  "images": {
+    "spot-vm-management-controller": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-selected-spot-vm-management-controller-564eef889065",
+      "source_sha256": "564eef889065de2e65028a4438cfc0e6f9682df7e637da11aa5005c934a3cb1c",
+      "registry_verified": true
+    },
+    "checkpoint-recovery-coordinator": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-selected-checkpoint-recovery-coordinator-564eef889065",
+      "source_sha256": "564eef889065de2e65028a4438cfc0e6f9682df7e637da11aa5005c934a3cb1c",
+      "registry_verified": true
+    }
+  }
+}

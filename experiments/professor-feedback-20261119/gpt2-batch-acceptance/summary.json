@@ -1,0 +1,202 @@
+{
+  "at": "2026-11-19T04:43:01.578727+00:00",
+  "run_id": "d19-gpt-b3-01",
+  "namespace": "eval-v3-d19-gpt-b3-01",
+  "model": "gpt2",
+  "world_size": 4,
+  "instance_type": "g5.2xlarge",
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "payload_image": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+  "checkpoint_policy": {
+    "maxIntervalSeconds": 600,
+    "minIntervalSeconds": 60,
+    "resume": true
+  },
+  "transitions": [
+    {
+      "run_id": "d19-gpt-b3-01",
+      "model": "gpt2",
+      "world_size": 4,
+      "instance_type": "g5.2xlarge",
+      "direction": "Spot->OnDemand",
+      "passed": true,
+      "policy_uid": "f0636274-31ae-477f-9051-17640d9d3659",
+      "restore_request_uid": "e00dc9a1-a6af-4191-8e40-a814dc8b8da4",
+      "replacement_pairs": 3,
+      "full_group_restore_requests": 1,
+      "request_created_at": "2026-11-19T03:12:21Z",
+      "verified_at": "2026-11-19T03:16:07Z",
+      "request_to_verified_seconds": 226.0,
+      "acceptance_observed_at": "2026-11-19T03:50:09.424771+00:00",
+      "all_rank_restore_and_update_audits": true,
+      "source_fenced": true,
+      "old_providers": 3,
+      "formal_result": false,
+      "diagnostic_risk_clock": true
+    },
+    {
+      "run_id": "d19-gpt-b3-01",
+      "model": "gpt2",
+      "world_size": 4,
+      "instance_type": "g5.2xlarge",
+      "direction": "OnDemand->Spot",
+      "passed": true,
+      "policy_uid": "f0636274-31ae-477f-9051-17640d9d3659",
+      "restore_request_uid": "4156205f-9f8f-43db-9d26-b4c90385b597",
+      "replacement_pairs": 3,
+      "full_group_restore_requests": 1,
+      "request_created_at": "2026-11-19T04:23:31Z",
+      "verified_at": "2026-11-19T04:27:17Z",
+      "request_to_verified_seconds": 226.0,
+      "acceptance_observed_at": "2026-11-19T04:32:28.636679+00:00",
+      "all_rank_restore_and_update_audits": true,
+      "source_fenced": true,
+      "old_providers": 3,
+      "formal_result": false,
+      "diagnostic_risk_clock": true
+    }
+  ],
+  "launcher_io_status": "OBSERVATIONS_PRESENT",
+  "launcher_io_semantics": "duplicate observer samples removed; per-rank elapsed sums are not wall-clock union; no end-to-end speedup inferred",
+  "formal_result": false,
+  "not_a_speedup_comparison": true,
+  "receipt_hashes": {
+    "full-batch-acceptance.json": "573229947c3ceb7c96afe5f7c1898d49fb404c3b0bc16c0920374623b85f334b",
+    "cleanup-complete.json": "886907ed1576b5ef7db95159ed927f93194e01f41aa2029f1e82cabf573d1512",
+    "feed-cleanup.json": "80ea05e326e21cbb6829e33d34ff71d78d7d4053d8d913893ea0e5caabf71823"
+  },
+  "cleanup-complete.json": {
+    "historical_positive_termination_receipts": [
+      "i-037affb4096d3f3c8",
+      "i-06a5d620771abfced",
+      "i-0f0d530a42376614f"
+    ],
+    "completed_at": "2026-11-19T04:39:11.255762+00:00",
+    "provider_crs_removed": true,
+    "ec2_terminated": [
+      "i-0059fc3d424f1fa7d",
+      "i-01587316ab889f025",
+      "i-037affb4096d3f3c8",
+      "i-04ab4e7e7207b7385",
+      "i-06114d19e1f4e2442",
+      "i-06a5d620771abfced",
+      "i-0785d7976a373f636",
+      "i-084f165bfe89ec772",
+      "i-09062208a9b724d1d",
+      "i-0f0d530a42376614f"
+    ],
+    "keypairs": [
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-02-e0ed5165-e72a7927-ab2-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-01-c64bf17a-5b14bccf-c8a-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-00",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-03-57fe3686-773cdbb5-804-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-02-e0ed5165-a9c-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-01-c64bf17a-e5c-replacement",
+        "deleted": true
+      },
+      {
+        "name": "nodeprovision-eval-d19-gpt-b3-01-worker-03-57fe3686-c88-replacement",
+        "deleted": true
+      }
+    ],
+    "volume_receipts": [
+      {
+        "volume_id": "vol-013ca5808bfd99386",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-016ed18714b529984",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-017ee769158b4f1a0",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0445e022ee9ac6793",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-06f116468883c4c84",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-083f2330f05dd0837",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0c7fa41a474dfa2bf",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0d68261c42efcefb5",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0df8facb0822864f9",
+        "confirmed_absent": true
+      },
+      {
+        "volume_id": "vol-0ef7684f9c0e318ce",
+        "confirmed_absent": true
+      }
+    ],
+    "gpu_compute_conservative_upper_estimate_usd": 12.636546634609914,
+    "cost_scope": "launch through terminated observation at OD price 1.4903/h; not invoice; EBS/network/FIS excluded",
+    "no_forced_finalizers": true,
+    "checkpoint_pvc_pv_nfs_preserved": true
+  },
+  "feed-cleanup.json": {
+    "at": "2026-11-19T04:39:14.372935+00:00",
+    "collector_trust_restored": true,
+    "removed": [
+      {
+        "kind": "Service",
+        "namespace": "eval-v3-d19-gpt-b3-01",
+        "name": "risk-replay",
+        "uid": "108c8ca4-21e0-4cfc-bd5c-a2744b0334e7"
+      },
+      {
+        "kind": "Deployment",
+        "namespace": "eval-v3-d19-gpt-b3-01",
+        "name": "risk-replay",
+        "uid": "3df8d851-838c-467b-af6c-d65b59dae8f4"
+      },
+      {
+        "kind": "ConfigMap",
+        "namespace": "eval-v3-d19-gpt-b3-01",
+        "name": "replay-input",
+        "uid": "c2120683-0992-404b-a456-c9b98a5909ef"
+      },
+      {
+        "kind": "Secret",
+        "namespace": "hybridspot-system",
+        "name": "eval-d19-risk-ca",
+        "uid": "6d4ae185-1e8d-4901-8473-49727d06a42e"
+      },
+      {
+        "kind": "Secret",
+        "namespace": "eval-v3-d19-gpt-b3-01",
+        "name": "replay-tls",
+        "uid": "77a3f6fc-348b-44be-828a-f587804c34bc"
+      }
+    ],
+    "namespaces_retained": true
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "spec": {
+    "capacity": {
+      "aws": {
+        "karmadaCluster": "aws1",
+        "region": "ap-northeast-2",
+        "availabilityZone": "ap-northeast-2c",
+        "instanceType": "g5.2xlarge",
+        "ami": "ami-035e3088f6b7821fb",
+        "credentialsRef": {
+          "name": "aws-node-credentials",
+          "namespace": "PER_RUN_NAMESPACE"
+        },
+        "subnetId": "subnet-0bcaabcff2da649c0",
+        "vpcId": "vpc-09d6222137eca95a5",
+        "securityGroupIds": [
+          "sg-0b4311b00f5734811"
+        ],
+        "rootVolumeSizeGB": 100,
+        "hardwareType": "gpu",
+        "nodeLabel": "gpu"
+      }
+    }
+  }
+}

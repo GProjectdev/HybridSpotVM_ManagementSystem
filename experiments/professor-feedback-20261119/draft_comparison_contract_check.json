@@ -1,0 +1,30 @@
+{
+  "models": [
+    {
+      "model": "gpt2",
+      "goal_steps_proposed": 4800,
+      "B_C_comparison_equal": true,
+      "A_B_C_workload_equal": true,
+      "B_C_hash": "a61b9016996632dfe36639b9c5d06e0238bfe9a4b55447af297776deaa0a20af",
+      "workload_hash": "0fba776fd3d291823da9cc940fe75758c6a70889ed2089aea72557d373ae658b",
+      "rendered_purpose": "acceptance",
+      "formal_policy_frozen": false,
+      "API_resources_applied": false,
+      "fault_step": 2400
+    },
+    {
+      "model": "resnet50",
+      "goal_steps_proposed": 26700,
+      "B_C_comparison_equal": true,
+      "A_B_C_workload_equal": true,
+      "B_C_hash": "26c0ef3bf7d19207f6c935a9ac0a396020b2bae92c3adca1348727ea9cb16a73",
+      "workload_hash": "f58210321bd39fde17bc6ffc3f44fcaae5fa58cc7fc12d0f1a7c05b49c60804d",
+      "rendered_purpose": "acceptance",
+      "formal_policy_frozen": false,
+      "API_resources_applied": false,
+      "fault_step": 13350
+    }
+  ],
+  "researcher_confirmation_pending": true,
+  "cloud_mutations": false
+}

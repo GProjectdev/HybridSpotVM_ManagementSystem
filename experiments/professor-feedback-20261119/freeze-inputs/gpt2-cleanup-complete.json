@@ -1,0 +1,97 @@
+{
+  "historical_positive_termination_receipts": [
+    "i-037affb4096d3f3c8",
+    "i-06a5d620771abfced",
+    "i-0f0d530a42376614f"
+  ],
+  "completed_at": "2026-11-19T04:39:11.255762+00:00",
+  "provider_crs_removed": true,
+  "ec2_terminated": [
+    "i-0059fc3d424f1fa7d",
+    "i-01587316ab889f025",
+    "i-037affb4096d3f3c8",
+    "i-04ab4e7e7207b7385",
+    "i-06114d19e1f4e2442",
+    "i-06a5d620771abfced",
+    "i-0785d7976a373f636",
+    "i-084f165bfe89ec772",
+    "i-09062208a9b724d1d",
+    "i-0f0d530a42376614f"
+  ],
+  "keypairs": [
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-02-e0ed5165-e72a7927-ab2-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-01-c64bf17a-5b14bccf-c8a-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-00",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-03-57fe3686-773cdbb5-804-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-02-e0ed5165-a9c-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-01-c64bf17a-e5c-replacement",
+      "deleted": true
+    },
+    {
+      "name": "nodeprovision-eval-d19-gpt-b3-01-worker-03-57fe3686-c88-replacement",
+      "deleted": true
+    }
+  ],
+  "volume_receipts": [
+    {
+      "volume_id": "vol-013ca5808bfd99386",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-016ed18714b529984",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-017ee769158b4f1a0",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0445e022ee9ac6793",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-06f116468883c4c84",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-083f2330f05dd0837",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0c7fa41a474dfa2bf",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0d68261c42efcefb5",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0df8facb0822864f9",
+      "confirmed_absent": true
+    },
+    {
+      "volume_id": "vol-0ef7684f9c0e318ce",
+      "confirmed_absent": true
+    }
+  ],
+  "gpu_compute_conservative_upper_estimate_usd": 12.636546634609914,
+  "cost_scope": "launch through terminated observation at OD price 1.4903/h; not invoice; EBS/network/FIS excluded",
+  "no_forced_finalizers": true,
+  "checkpoint_pvc_pv_nfs_preserved": true
+}

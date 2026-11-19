@@ -1,0 +1,14 @@
+{
+  "spot-vm-management-controller": {
+    "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:74ced039a5f63aa84eba2d73688c7687d607299defbf19289253162bf98fc90d",
+    "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-spot-vm-management-controller-4fb8282879b6",
+    "source_sha256": "4fb8282879b6b3dc4c133c02794971bf3936bcb57730cc82019e7c4c72e9ace3",
+    "registry_verified": true
+  },
+  "checkpoint-recovery-coordinator": {
+    "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:942c57aee3ea7c77de2e0c01c176a55ac5917a73c59091b6a7222876a35854a4",
+    "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-checkpoint-recovery-coordinator-4fb8282879b6",
+    "source_sha256": "4fb8282879b6b3dc4c133c02794971bf3936bcb57730cc82019e7c4c72e9ace3",
+    "registry_verified": true
+  }
+}

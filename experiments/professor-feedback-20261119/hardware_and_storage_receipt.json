@@ -1,0 +1,207 @@
+{
+  "at": "2026-11-19T05:38:41.711288+00:00",
+  "scope": "actual selected four owned calibration workers; no cloud mutation; proposed common environment, not frozen",
+  "nodes": [
+    {
+      "node": "eval-d19-gpt-cal-03-worker-00",
+      "provider_id": "aws:///i-055b09a24414887d2",
+      "node_info": {
+        "architecture": "amd64",
+        "bootID": "f4d61b28-fec2-4e95-91ce-32b56dd9119a",
+        "containerRuntimeVersion": "cri-o://1.37.0",
+        "kernelVersion": "6.8.0-1069-aws",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.37.2",
+        "machineID": "ec29cbf59623043a178b9e17def2f333",
+        "operatingSystem": "linux",
+        "osImage": "Ubuntu 22.04.5 LTS",
+        "runningInUserNamespace": false,
+        "systemUUID": "ec2ccf0b-3ad4-f9a7-d560-a6d86741232a"
+      },
+      "gpu_labels": {},
+      "instance_type": null,
+      "allocatable_gpu": "1"
+    },
+    {
+      "node": "eval-d19-gpt-cal-03-worker-01",
+      "provider_id": "aws:///i-0a345baf92a5f83b0",
+      "node_info": {
+        "architecture": "amd64",
+        "bootID": "f4a58513-efad-48b7-89b6-0fee09c672fa",
+        "containerRuntimeVersion": "cri-o://1.37.0",
+        "kernelVersion": "6.8.0-1069-aws",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.37.2",
+        "machineID": "ec29cbf59623043a178b9e17def2f333",
+        "operatingSystem": "linux",
+        "osImage": "Ubuntu 22.04.5 LTS",
+        "runningInUserNamespace": false,
+        "systemUUID": "ec259515-0c7b-ae6f-10dc-6527bc76426e"
+      },
+      "gpu_labels": {},
+      "instance_type": null,
+      "allocatable_gpu": "1"
+    },
+    {
+      "node": "eval-d19-gpt-cal-03-worker-02",
+      "provider_id": "aws:///i-09e4380bab8c051aa",
+      "node_info": {
+        "architecture": "amd64",
+        "bootID": "95ed95ca-2ac2-4e2d-b9a8-0ada3301d264",
+        "containerRuntimeVersion": "cri-o://1.37.0",
+        "kernelVersion": "6.8.0-1069-aws",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.37.2",
+        "machineID": "ec29cbf59623043a178b9e17def2f333",
+        "operatingSystem": "linux",
+        "osImage": "Ubuntu 22.04.5 LTS",
+        "runningInUserNamespace": false,
+        "systemUUID": "ec2f3ccd-b17e-5276-c72b-26c3fa6ccfe2"
+      },
+      "gpu_labels": {},
+      "instance_type": null,
+      "allocatable_gpu": "1"
+    },
+    {
+      "node": "eval-d19-gpt-cal-03-worker-03",
+      "provider_id": "aws:///i-086dcc7dc4cd4890e",
+      "node_info": {
+        "architecture": "amd64",
+        "bootID": "6ef7f7d8-1d84-4df9-bf21-f22c4c34aed4",
+        "containerRuntimeVersion": "cri-o://1.37.0",
+        "kernelVersion": "6.8.0-1069-aws",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.37.2",
+        "machineID": "ec29cbf59623043a178b9e17def2f333",
+        "operatingSystem": "linux",
+        "osImage": "Ubuntu 22.04.5 LTS",
+        "runningInUserNamespace": false,
+        "systemUUID": "ec248f26-7c5a-0b01-b5ab-d938351d3fb2"
+      },
+      "gpu_labels": {},
+      "instance_type": null,
+      "allocatable_gpu": "1"
+    }
+  ],
+  "trainers": [
+    {
+      "name": "eval-d19-gpt-cal-03-0",
+      "node": "eval-d19-gpt-cal-03-worker-00",
+      "trainer_image_ids": [
+        {
+          "name": "trainer",
+          "image_id": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b"
+        }
+      ]
+    },
+    {
+      "name": "eval-d19-gpt-cal-03-1",
+      "node": "eval-d19-gpt-cal-03-worker-02",
+      "trainer_image_ids": [
+        {
+          "name": "trainer",
+          "image_id": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b"
+        }
+      ]
+    },
+    {
+      "name": "eval-d19-gpt-cal-03-2",
+      "node": "eval-d19-gpt-cal-03-worker-03",
+      "trainer_image_ids": [
+        {
+          "name": "trainer",
+          "image_id": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b"
+        }
+      ]
+    },
+    {
+      "name": "eval-d19-gpt-cal-03-3",
+      "node": "eval-d19-gpt-cal-03-worker-01",
+      "trainer_image_ids": [
+        {
+          "name": "trainer",
+          "image_id": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b"
+        }
+      ]
+    }
+  ],
+  "nfs_provisioner_pod_images": [
+    {
+      "pod": "nfs-client-provisioner-5f5859bcd7-9jgbk",
+      "container_images": [
+        {
+          "name": "nfs-client-provisioner",
+          "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+          "image_id": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626"
+        }
+      ]
+    }
+  ],
+  "all_four_owned_workers_observed": true,
+  "final_researcher_confirmation_pending": true,
+  "ec2_hardware": [
+    {
+      "instance_id": "i-055b09a24414887d2",
+      "instance_type": "g5.2xlarge",
+      "image_id": "ami-035e3088f6b7821fb",
+      "availability_zone": "ap-northeast-2c",
+      "architecture": "x86_64",
+      "cpu_options": {
+        "CoreCount": 4,
+        "ThreadsPerCore": 2
+      }
+    },
+    {
+      "instance_id": "i-0a345baf92a5f83b0",
+      "instance_type": "g5.2xlarge",
+      "image_id": "ami-035e3088f6b7821fb",
+      "availability_zone": "ap-northeast-2c",
+      "architecture": "x86_64",
+      "cpu_options": {
+        "CoreCount": 4,
+        "ThreadsPerCore": 2
+      }
+    },
+    {
+      "instance_id": "i-086dcc7dc4cd4890e",
+      "instance_type": "g5.2xlarge",
+      "image_id": "ami-035e3088f6b7821fb",
+      "availability_zone": "ap-northeast-2c",
+      "architecture": "x86_64",
+      "cpu_options": {
+        "CoreCount": 4,
+        "ThreadsPerCore": 2
+      }
+    },
+    {
+      "instance_id": "i-09e4380bab8c051aa",
+      "instance_type": "g5.2xlarge",
+      "image_id": "ami-035e3088f6b7821fb",
+      "availability_zone": "ap-northeast-2c",
+      "architecture": "x86_64",
+      "cpu_options": {
+        "CoreCount": 4,
+        "ThreadsPerCore": 2
+      }
+    }
+  ],
+  "gpu_runtime": {
+    "eval-d19-gpt-cal-03-0": {
+      "returncode": 0,
+      "gpu_query": "NVIDIA A10G, 595.112.07, 23028 MiB"
+    },
+    "eval-d19-gpt-cal-03-1": {
+      "returncode": 0,
+      "gpu_query": "NVIDIA A10G, 595.112.07, 23028 MiB"
+    },
+    "eval-d19-gpt-cal-03-2": {
+      "returncode": 0,
+      "gpu_query": "NVIDIA A10G, 595.112.07, 23028 MiB"
+    },
+    "eval-d19-gpt-cal-03-3": {
+      "returncode": 0,
+      "gpu_query": "NVIDIA A10G, 595.112.07, 23028 MiB"
+    }
+  },
+  "supplemented_at": "2026-11-19T05:39:23.458774+00:00"
+}

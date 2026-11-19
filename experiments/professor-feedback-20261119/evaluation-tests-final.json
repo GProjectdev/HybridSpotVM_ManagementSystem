@@ -1,12 +1,10 @@
 {
-  "at": "2026-11-19T02:17:13Z",
+  "at": "2026-11-19T14:55:46.249707+09:00",
   "command": "python3 -m unittest discover -s evaluation -p 'test_*.py'",
-  "cwd": "/home/ubuntu/HybridSpotVM_ManagementSystem",
-  "tests": 308,
+  "tests": 315,
   "skipped": 2,
   "result": "OK",
-  "exit_code": 0,
   "actual_cloud_actions": false,
-  "source_commit": "5863b3874415bb7ff3b455d77ca2806effddccc3",
-  "receipt_scope": "tool-observed test summary; original output retained in tool session 96001"
+  "source_commit": "89705cc3bafa9cfe64b5ad9b8965087f675173e3",
+  "log": "/tmp/day19-evaluation-tests-native-feed.log"
 }

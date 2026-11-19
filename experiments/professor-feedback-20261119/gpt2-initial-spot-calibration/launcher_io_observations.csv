@@ -1,0 +1,5 @@
+run_id,pod_uid,observations,reused_files,atomic_writes,logical_buffer_bytes,written_bytes,sum_local_elapsed_seconds_not_union,scope
+d19-gpt-cal-03,ee0ac0cb-2a8d-46e0-aa33-e57b00a14818,1,1,0,1493473018,0,4.38108765100003,launcher-local I/O only; not DDP pause or full restore
+d19-gpt-cal-03,9badd77f-d5d1-4fb9-bcd7-d6afe2527841,1,1,0,1493473018,0,4.3765933729999915,launcher-local I/O only; not DDP pause or full restore
+d19-gpt-cal-03,02f78f60-2fe7-4550-be1d-7bc7f8bf27a5,1,1,0,1493473018,0,4.383744456000045,launcher-local I/O only; not DDP pause or full restore
+d19-gpt-cal-03,9e81b565-3ddc-4098-8914-6fc4a8b3ccd6,1,1,0,1493473018,0,4.374733053,launcher-local I/O only; not DDP pause or full restore

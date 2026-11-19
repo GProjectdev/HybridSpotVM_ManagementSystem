@@ -1,0 +1,25 @@
+{
+  "kind": "ACTUAL_COST_INPUT_OFFLINE_UNCHANGED_POLICY_SENSITIVITY",
+  "at": "2026-11-19T03:54:28.182690+00:00",
+  "run_id": "d19-gpt-b3-01",
+  "actual_checkpoint_rounds": 4,
+  "selected_actual_rounds": 3,
+  "calculation_rows": 1512,
+  "distinct_intervals": [
+    600
+  ],
+  "bounds": {
+    "maxIntervalSeconds": 600,
+    "minIntervalSeconds": 60,
+    "resume": true
+  },
+  "all_cost_branches_evaluated": true,
+  "cost_observation_timestamps_not_relabelled": true,
+  "GPU_performance_comparison": false,
+  "formal_run": false,
+  "policy_source": "/home/ubuntu/HybridSpotVM_ManagementSystem/internal/policy/contract.go",
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "price_receipt_sha256": "983f477ba8e9685fc3a5d8fb506223b4b8094005350da084120fab57343ca23d",
+  "new_payload_digest": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+  "caveat": "Each D/copy pair comes from one actual round; all forecast hours are counterfactual inputs at that original cost timestamp, not a chronological replay. Clipping at a bound is a valid outcome, not evidence of independent CP optimality."
+}

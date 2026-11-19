@@ -1,0 +1,28 @@
+{
+  "parents": [
+    {
+      "api": "karmada",
+      "snapshot": "2026-11-19T05-04-39.787107+00-00-c16e4e2d",
+      "uid": "252f4244-1a63-4ebf-a878-c563457502fa",
+      "name": "eval-d19-rn-b3-02-periodic",
+      "generation": 5,
+      "observed_generation": null,
+      "enabled": true,
+      "interval_seconds": 3600,
+      "phase": null
+    },
+    {
+      "api": "aws",
+      "snapshot": "2026-11-19T05-04-14.663099+00-00-4a744258",
+      "uid": "f7ad7f39-6c4d-4a1d-8c8f-fc65b61f89fc",
+      "name": "eval-d19-rn-b3-02-periodic",
+      "generation": 5,
+      "observed_generation": 5,
+      "enabled": true,
+      "interval_seconds": 3600,
+      "phase": "Pending"
+    }
+  ],
+  "actual_period_elapsed_one_hour": false,
+  "scope": "3600 schedule applied to source and member; not an observed hour-long checkpoint interval"
+}

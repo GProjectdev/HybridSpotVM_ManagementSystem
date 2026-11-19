@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "protocol": "HybridSpotDDP-ProfessorFeedback-20261119",
-  "status": "CANDIDATE_NOT_FROZEN_BLOCKED",
+  "status": "AWAITING_RESEARCHER_CONFIRMATION",
   "created_at_utc": "2026-11-19T02:23:42.798407+00:00",
   "formal_dispatch_authorized": false,
-  "paid_dispatch_authorized": false,
+  "paid_dispatch_authorized": true,
   "researcher_source": {
     "path": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md",
     "sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
@@ -59,23 +59,25 @@
   },
   "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
   "runtime_code_commits": {
-    "HybridSpotVM_ManagementSystem": "5863b3874415bb7ff3b455d77ca2806effddccc3",
+    "HybridSpotVM_ManagementSystem": "7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1",
     "My_FluidCR": "acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b",
     "PublicCloud-VM-Provisioner_test": "ee87c2d8e428350e59cc487fba70264222cfda9f",
     "Stateful-Migration-Operator-with-PV": "dae0124e9a6b3d9b38ededae97962e5b91f30083",
-    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629"
+    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
+    "note": "Go runtime source commit; Python evaluation scripts receive a later final evidence commit",
+    "evaluation_tools_commit": "89705cc3bafa9cfe64b5ad9b8965087f675173e3"
   },
   "management_images": {
     "spot-vm-management-controller": {
-      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:5bd08eb9fa9b2e2425a1983dbcb5a3ccb6aca630e3e975e8d49fe7820af8b040",
-      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-spot-vm-management-controller-0196844c5b91",
-      "source_sha256": "0196844c5b9174050477b8a8b1868d6bcc7ef032063c117bdbd7c45d911be654",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-selected-spot-vm-management-controller-564eef889065",
+      "source_sha256": "564eef889065de2e65028a4438cfc0e6f9682df7e637da11aa5005c934a3cb1c",
       "registry_verified": true
     },
     "checkpoint-recovery-coordinator": {
-      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:26aa99403c6b3bcc561bb1a6c978b365f255ae7eff71b4a9ea5209eb7f4d8096",
-      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-checkpoint-recovery-coordinator-0196844c5b91",
-      "source_sha256": "0196844c5b9174050477b8a8b1868d6bcc7ef032063c117bdbd7c45d911be654",
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-selected-checkpoint-recovery-coordinator-564eef889065",
+      "source_sha256": "564eef889065de2e65028a4438cfc0e6f9682df7e637da11aa5005c934a3cb1c",
       "registry_verified": true
     }
   },
@@ -86,8 +88,9 @@
     "registry_verified": true,
     "at": "2026-11-19T01:49:00.483843+00:00",
     "scope": "byte-identical heap-buffer reuse; changed/missing file atomic restore; no new policy or full-group recovery design",
-    "GPU_verified": false,
-    "FIS_executed": false
+    "GPU_verified": true,
+    "FIS_executed": false,
+    "GPU_scope": "fresh4rank checkpoints and fullgroup newVM recovery on both GPT2 and ResNet; byte-identical buffer materialization receipts"
   },
   "risk_provenance": {
     "provenance": "external-US-V100-availability-proxy; not measured Seoul hazard",
@@ -106,7 +109,7 @@
     "candidate_start_held_out_hour": 14,
     "lambda_hour14": 0.0009212361959754303,
     "lambda_hour15": 0.3458397557619131,
-    "final_interval": "NOT_FROZEN; C Spot availability constraints pending pilot"
+    "final_interval": "PROPOSED_hour14_then_native3600s; researcher confirmation pending"
   },
   "policy": {
     "method": "paper-eq6-7",
@@ -119,8 +122,9 @@
     ],
     "new_risk_algorithm": false,
     "asynchronous_paper_checkpoint_enabled": false,
-    "measured_loss_economics_available": false,
-    "bootstrap_must_be_reported": true
+    "measured_loss_economics_available": true,
+    "bootstrap_must_be_reported": true,
+    "measured_loss_economics_scope": "verified request latency and checkpoint age observed during diagnostic transitions; not all offline alpha probes supplied loss costs"
   },
   "storage": {
     "volume_id": "vol-01377e5f3154a6011",
@@ -130,31 +134,40 @@
     "MiB_per_second": 125,
     "modification_state": "completed",
     "completed_utc": "2026-11-18T15:30:38+00:00",
-    "free_bytes_snapshot": 254956388352,
-    "snapshot_at_utc": "2026-11-19T00:38:27.238185+00:00"
+    "free_bytes_snapshot": 128905891840,
+    "snapshot_at_utc": "2026-11-19T05:51:57.766959+00:00",
+    "formal_six_run_capacity_confirmed": false
   },
   "hardware": {
     "az": "ap-northeast-2c",
     "zone_id": "apne2-az3",
-    "instance_type": null,
+    "instance_type": "g5.2xlarge",
     "candidates_readonly": [
-      "g5.2xlarge",
-      "g6.2xlarge"
+      "g5.2xlarge"
     ],
     "quota_verified": false,
-    "supply_guaranteed": false
+    "supply_guaranteed": false,
+    "actual_admission": "fourOD32vCPU and threeSpot24vCPU including batch3 peak7workers demonstrated; numeric API quota denied; future supply not guaranteed"
   },
   "checkpoint_buffer_reuse": 1,
-  "replacement_batch_size": null,
+  "replacement_batch_size": 3,
   "replacement_batch_default_in_code": 1,
-  "checkpoint_bounds_seconds": null,
+  "checkpoint_bounds_seconds": {
+    "min": 60,
+    "max": null,
+    "zero_hazard_or_no_Spot_fallback": 3600,
+    "explicit_operator_bounds_remain_supported": true
+  },
   "offline_probe_bounds_only": [
     60,
     600
   ],
   "models_goal_steps": null,
-  "models_batch_sizes": null,
-  "repeats": null,
+  "models_batch_sizes": {
+    "gpt2": 2,
+    "resnet50": 16
+  },
+  "repeats": 1,
   "C_fault": {
     "count": 1,
     "notification": "PT2M",
@@ -168,51 +181,93 @@
     "all_replacement_overlap_and_cleanup_intervals_must_be_counted": true
   },
   "remaining_gates": [
-    {
-      "item": "policy and local I/O instrumentation",
-      "status": "CPU_PASS_LIVE_IDLE_ROLLOUT",
-      "action": "confirm changed path on fresh GPU checkpoint"
-    },
-    {
-      "item": "comparable measured D sensitivity",
-      "status": "BLOCKED",
-      "action": "measure same final configuration first; do not relabel freshness"
-    },
-    {
-      "item": "new payload and batch multi-worker GPU recovery",
-      "status": "BLOCKED",
-      "action": "fresh four-rank checkpoint; multi-destination Verified and old provider termination"
-    },
-    {
-      "item": "GPU quotas",
-      "status": "UNVERIFIED_PERMISSION_DENIED",
-      "action": "console/admin evidence or scoped actual admission; no quota change assumed"
-    },
-    {
-      "item": "GPU supply",
-      "status": "UNVERIFIED_READONLY_SCORE_ONLY",
-      "action": "single chosen type for A/B/C; supply not guaranteed"
-    },
-    {
-      "item": "batch overlap",
-      "status": "NOT_FROZEN",
-      "action": "select batch after capacity/cost budget; both directions acceptance pending"
-    },
-    {
-      "item": "C50percent Spot availability",
-      "status": "NOT_FROZEN",
-      "action": "pilot timings before goal freeze; retain50percent default"
-    },
-    {
-      "item": "formal shared contract",
-      "status": "NOT_FROZEN",
-      "action": "freeze all A/B/C before formal run"
-    },
-    {
-      "item": "paid authorization",
-      "status": "EXPIRED_PRIOR_WINDOW",
-      "action": "new scoped duration/cost/peak resources/FIS permission before paid pilot"
-    }
+    "researcher confirmation of proposed goals/settings including120second reserve",
+    "NFS retained-archive capacity/retention arrangement: currently120GiB free,56GiB above64GiB guard; no existing data deleted",
+    "per-run supply/current prices/exact hashes/native risk feed runtime TLS and source timestamp",
+    "C current durable four-rank checkpoint and exact owned Spot/OD FIS scope",
+    "formal native timing eligibility; abort and record deviations rather than change goal or risk"
   ],
-  "not_a_formal_run_manifest": true
+  "not_a_formal_run_manifest": true,
+  "unique_formal_runs": 6,
+  "inference_scope": "EXPLORATORY_ONLY",
+  "repetition_authority": "researcher reply2026-11-19: each model A/B/C once, total6",
+  "paid_dispatch_scope": "today acceptance and preparation; aim18KST hard22KST; explicit user paid continuation",
+  "update_state": "All three paid acceptance/calibration runs passed and cleaned; final selected-interval followup idle-deployed; researcher confirmation and formal capacity plan remain",
+  "researcher_confirmation_required": true,
+  "researcher_confirmed": false,
+  "updated_at_utc": "2026-11-19T05:50:58.657494+00:00",
+  "goal_settings_proposal": {
+    "gpt2": {
+      "model": "gpt2",
+      "goal_steps_proposed": 4800,
+      "fis_common_step": 2400,
+      "startup_fast_seconds": 655.379,
+      "startup_slow_seconds": 778.026,
+      "checkpoint_pause_fast_seconds": 124.135149,
+      "checkpoint_pause_slow_seconds": 197.960468,
+      "iteration_fast_seconds": 0.7035655189999943,
+      "iteration_slow_seconds": 0.9464682469999843,
+      "observed_prepare_seconds": 281.250498,
+      "operational_margin_seconds": 120,
+      "fis_notice_seconds": 120,
+      "goal_step_lower_open": 4579.156115523088,
+      "goal_step_upper_open": 5037.704200973663,
+      "projected_fast_normal_goal_elapsed_seconds": 4156.628640199972,
+      "required_reconfiguration_request_elapsed_seconds": 4001.250498,
+      "projected_slow_fis_elapsed_seconds": 3247.5102607999625,
+      "projected_notice_margin_end_seconds": 3487.5102607999625,
+      "first_durable_checkpoint_elapsed_seconds": 1044.0,
+      "status": "PROPOSED_NOT_FROZEN_RESEARCHER_CONFIRMATION_REQUIRED",
+      "formal_result": false,
+      "native_transition_headroom_seconds": 112.48973920003755,
+      "reconfiguration_request_headroom_seconds": 155.37814219997244,
+      "historical_short_sample_stress_notice_margin_end_seconds": 5265.666859999937
+    },
+    "resnet50": {
+      "model": "resnet50",
+      "goal_steps_proposed": 26700,
+      "fis_common_step": 13350,
+      "startup_fast_seconds": 610.755,
+      "startup_slow_seconds": 610.755,
+      "checkpoint_pause_fast_seconds": 23.006816,
+      "checkpoint_pause_slow_seconds": 23.006816,
+      "iteration_fast_seconds": 0.14045972700000675,
+      "iteration_slow_seconds": 0.18506144299999505,
+      "observed_prepare_seconds": 281.250498,
+      "operational_margin_seconds": 120,
+      "fis_notice_seconds": 120,
+      "goal_step_lower_open": 23974.763114838162,
+      "goal_step_upper_open": 29463.05983359346,
+      "projected_fast_normal_goal_elapsed_seconds": 4384.03652690018,
+      "required_reconfiguration_request_elapsed_seconds": 4001.250498,
+      "projected_slow_fis_elapsed_seconds": 3104.332080049934,
+      "projected_notice_margin_end_seconds": 3344.332080049934,
+      "first_durable_checkpoint_elapsed_seconds": 697.0,
+      "status": "PROPOSED_NOT_FROZEN_RESEARCHER_CONFIRMATION_REQUIRED",
+      "formal_result": false,
+      "native_transition_headroom_seconds": 255.66791995006588,
+      "reconfiguration_request_headroom_seconds": 382.78602890018055,
+      "historical_short_sample_stress_notice_margin_end_seconds": 3344.332080049934
+    }
+  },
+  "fault_window": {
+    "anchor": "source NodeRequest creationTimestamp",
+    "transition_after_seconds": 3600,
+    "notice_seconds": 120,
+    "margin_seconds": 120
+  },
+  "formal_unique_runs": 6,
+  "repeats_per_cell": 1,
+  "technical_validation": {
+    "gpt2_forward_reverse_batch3": "PASSED_NEW_PAYLOAD",
+    "resnet_forward_batch3": "PASSED_NEW_PAYLOAD_NEW_UNCAPPED_POLICY",
+    "gpt2_initial1000_uncapped": "PASSED",
+    "selected_interval_persistence_followup": "CPU_FULL_GO_AND_FOCUSED_RACE_PASSED_IDLE_DEPLOYED_NOT_NEW_GPU_FIS_TEST",
+    "native_window": "EMPIRICAL_CONDITIONAL_NOT_HARD_GUARANTEE",
+    "same_condition_FIS": "HISTORICAL_ENGINE_EVIDENCE_REUSED_NO_NEW_FIS"
+  },
+  "models_goal_steps_proposed": {
+    "gpt2": 4800,
+    "resnet50": 26700
+  }
 }

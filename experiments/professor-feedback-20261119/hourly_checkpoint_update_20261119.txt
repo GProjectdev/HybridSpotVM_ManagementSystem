@@ -1,0 +1,65 @@
+위험률 갱신 주기와 Checkpoint 주기 — 2026-11-19
+
+논문 확인
+원문: /home/ubuntu/graduate/Evaluation/Cost_effective.pdf
+제목: Cost-Efficient Training and Checkpointing for Large Models on Preemptible Cloud VMs
+Desai et al., EuroMLSys2026.
+§4.1: PT=1hour인 구간으로 나누고 과거 이력으로 다음 구간 위험률을 예측한다.
+§4.2: 선점 예측이 바뀔 때 Checkpoint 간격을 재계산한다.
+따라서1시간 위험률 갱신과 Checkpoint 실행 간격은 별개의 시간이다.
+§4.3의T_od는 Spot 복귀를 시도하기 전 OD를 사용하는 고정기간이다.
+현재 시스템의 T_od=3600초는 설정값이며, 논문이 모든 경우에1시간을
+의무화했다고 주장하지 않는다. 빠른 진단용 위험률 변경과도 구분한다.
+Collector의30초 fetch/poll은 논문의 예측구간30초 변경을 뜻하지 않는다.
+정식 평가 위험 replay는 기존3600초/hour native clock을 유지한다.
+
+적용한 최소 수정
+H main commit ed649faa156de22d964027ea11e74cc671dfa00c; remote main 확인 완료.
+maxIntervalSeconds 생략 시 기본600초 상한 제거. 기존 CRIU 비용 목적함수와
+위험률 산출 알고리즘은 유지. 명시적으로 지정한 상한과 고정주기는 호환 유지.
+양의 위험률+Spot+유효 비용이면 기존 정수 최적화 결과를 이용한다.
+위험률0 또는 정책상 Spot0이면3600초의 운영상 복구지점 유지 규칙을 사용한다.
+이 경우 source=hourly-risk-refresh-fallback, 비용 최적화 성공으로 표시하지 않는다.
+이60분은 논문의0위험 최적값이라는 주장이 아니다. 일반 주기 상한도 아니다.
+주기적 간격은 last-start 기반으로, 위험 feed 게시 시각에 정확히 정렬됨을
+보장하는 구현은 아니다. 실제 장애/교체용 checkpoint와 안전 gate는 별도다.
+상한을 생략한 긴 주기에서는 기존 측정비용의 observedAt을 바꾸지 않고,
+마지막 선택 주기+10분 grace까지 사용한다. 오래된 값·미래시각은 여전히 거부.
+Coordinator도 기존 Verified/UID-bound OD 유지 증거를 읽어 배치전체 all-OD
+유지 중에는 미래 Spot 목표 수를 현재 위험 노출로 잘못 적용하지 않도록 했다.
+
+검사와 실제 적용 범위
+로컬 Go 전체 검사 통과. 변경 경로 race 검사 통과.
+Python 평가 도구 최종315개 검사 통과,2개 skip.
+독립 검산 사례: D=120초, copy=60초, lambda=.001/h, Spot3이면
+기존 목적함수의 정수 최적값16971초. 기본600초로 잘리지 않음을 검사했다.
+동일 parent UID를 유지하면서 낮은 양의 위험률 주기25456초와
+0위험3600초로 갱신되는 Coordinator 검사도 통과했다.
+위 수치들은 검사/오프라인 계산이며 GPU 성능 측정 결과가 아니다.
+
+실제 변경 영향 검증 완료: 기존 GPT2 양방향batch3는 시작 당시60..600초 설정을
+유지하여 정상 종료했다. 새 정책의 ResNet freshCP/newVM 단일4rankRR Verified,
+실제 parent11065초 및 allOD3600초의source/member전파를 확인했다.
+추가 GPT2 초기Spot calibration은공통1000Step/D154copy83/parent20030초를 확인했다.
+긴 주기가 실제 경과해 연속Checkpoint를 관측했다는 의미는 아니다.
+그후pause/inflight의0초상태와구분해 lastSelectedIntervalSeconds를 보존하도록
+7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1을CPU/race검사후idle배포했다.
+마지막작은field변경의추가GPU/FIS는미실행이다.최종digest controller_images.json 참조.
+모든소유GPU는정리했고정식조건은연구자확인전동결하지않았다.
+
+추가 위험
+상한 제거는 현 비용모델의 결과를 노출하는 것이며 실제 최적성/성능 개선을
+입증한 것이 아니다. 낮은 위험률에서 긴 주기를 선택하면 예측 밖 장애 또는
+기존 checkpoint를 사용하는 VM 교체 시 rollback이 커질 수 있다.
+새 cutover 직전 checkpoint 단계 등 full-group 절차를 바꾸려면 효과와 위험을
+별도로 보고하고 승인받는다. 이번 수정으로 그것이 해결됐다고 기록하지 않는다.
+
+실측 입력을 이용한 오프라인 민감도
+같은 GPT2 pilot의 실제 완료된 checkpoint6개에서 실제 D/copy 쌍3개를 선택해
+기존168개 위험률 forecast×alpha3으로1512개 정책 계산을 수행했다.
+471개 양의 Spot 위험 분기에서 계산 주기는870..108820초, 나머지1041개는
+all-OD/0위험의3600초 운영 fallback이었다. 실측 D 입력과 계산 결과를 구분한다.
+원래 비용 관측 시각을 그대로 사용한 반사실 민감도이며 시간순 정책실행이나
+실제 장기 GPU 성능 비교가 아니다. 초기600초 상한 분석 결과는 별도 보존했다.
+CSV: gpt2-measured-D-uncapped/checkpoint_cost_sensitivity.csv
+근거: gpt2-measured-D-uncapped/measured_checkpoint_costs.csv 및 summary.json

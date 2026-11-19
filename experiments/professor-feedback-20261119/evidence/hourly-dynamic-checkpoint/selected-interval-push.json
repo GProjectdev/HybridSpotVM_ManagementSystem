@@ -1,0 +1,6 @@
+{
+  "repository": "HybridSpotVM_ManagementSystem",
+  "commit": "7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1",
+  "remote_main_verified": true,
+  "scope": "retain selected interval across temporary schedule pause; preserve observed cost timestamp and expiry"
+}

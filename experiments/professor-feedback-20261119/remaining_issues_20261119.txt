@@ -1,40 +1,30 @@
-남은 문제 및 반드시 필요한 다음 작업 — 아직 정식 평가 착수 불가
+남은 문제와 정식 착수 조건 — 2026-11-19T14:55:46.249707+09:00
+현재 판정: 기능변경 영향 수용검사 PASS, 조건부 실행준비.
+정식 A/B/C 미실행,연구자확인전동결하지않음.
 
-P0 새payload로 생성한 fresh4Rank Checkpoint -> 새VM Full-group Restore,
-전체UID/Producer/Step/RNG/데이터순서/학습재개/Verified/oldprovider종료를
-확인해야 한다. 기존09/11 성공을 새 버전 증거로 중복 사용하지 않는다.
-기존 batch multi-worker 경로(두목적 또는세목적 뒤 그룹복원)의 양방향
-실제GPU검증도 남았다. 먼저 최소한의 선택된 구성만 검증하고 새 결함 없이
-이미 통과한 FIS infrastructure를 의미없이 반복하지 않는다.
+P0 연구자확인: 별도 goal_step_and_common_settings_recommendation_20261119.txt의
+GPT4800/R5026700,50%2400/13350,운영여유120초,하드웨어/정책/CP/위험/Restore
+전체후보를확인해야한다. 승인목표맵은null이며제안맵과분리했다. 반복은각1회6Run.
+P0 시간창: GPT는신규약1000Step 초기실측으로계산시통지/여유후약112.5초남는다.
+과거짧은초기106Step q90외삽은1h와충돌한다. 새표본으로보완했지만보장값은아니다.
+R50초기298Step와D1회도장기변동의상한이아니다. Run실제clock/속도가창을벗어나면
+주입/입력/goal을옮기지않고실패·계획이탈로남긴다. 필요시블록분리를연구자에게제안.
+P0 저장공간: NFS약120GiB빈공간에서64GiBguard를빼면약56GiB. 오늘보존분은
+GPTbatch53.77GB/ResNet1.51GB/GPTcal11.95GB. NFS부담이없는A와달리B/C는
+추가CRIU/학습checkpoint/livecopy로증가한다.6Run전부보관가능하다고가정하지않는다.
+Run별실측증가량+round예산을검산하고필요시연구자가확인한보관/이관/용량확보가
+필요하다.기존checkpoint를임의삭제하거나500GiB볼륨을확장하지않았다.
 
-P0 같은 최종GPU/모델/Rank/완료gp3/payload에서 Checkpoint D 및copy비용,
-관측시각과 실제 pause/start/finish/resume을 확보해야 한다. 이 D로만 정책
-민감도의빈칸을 채운다. 과거195/70은 진단자료로 보관하고 대체 입력으로 쓰지 않는다.
+P1 숫자Quota권한부재/Spot공급변동: 실제4OD+3Spotadmission재사용,매Run재확인.
+P1 FIS C는고정된최초ownedSpot과건강한ownedOD alarm에새UID/ARN을바인딩한다.
+기존IAMrole재사용가능하나정확한instance범위inlinepolicy/alarm은Run별필요.
+final_fis의50%/durableCP/uid/freshprogress/nativeclock gate를통과해야한다.
+새payload/newVMGPU수용은통과했고,마지막status보존follow-up은CPU검사/idle배포만
+수행했다.마지막digest의추가liveFIS는미실행으로정직하게표기한다.
+P1 긴주기정책은cutover시낡은checkpoint로rollback이크다.실제재학습/중첩비용을
+포함하고유리한결과만고르지않는다.직전freshCP단계/교체알고리즘개편은미적용.
+P1 R50동등D는1round다.D변동범위가실측됐다고쓰지않는다.
 
-P0 비교블록GPU, AMI/Driver, batch/globalbatch, Seed/시작상태, 목표Step,
-CPbounds, 위험구간/clock, 이미지고정/스토리지, 교체batch, 반복수를 동결한다.
-GPT2/ResNet 목표Step은 모델별로 정하되 모델내 A/B/C 일치해야 한다.
-4rank우선이며2rank는 근거 보고후 별도 전체A/B/C로 구성해야 한다.
-현재 v3실행기4rank계약을2rank로 조용히 바꾸거나 결과를 합치지 않는다.
-
-P0 C: 첫전체durable CP <= common goal50%시각,
-그50%시각+FIS120초+margin < 위험high전환(기본sourceNR생성+3600초),
-B는학습중high전환을경험해야 한다. 신버전IO속도가 달라져 과거목표를 그대로
-확정할 수 없다. 파일럿에서 사전추정 후 목표를 동결한다.
-같은B/C위험clock이 불가능하면 E1위험변화블록/E2Spot유지블록+별도B를
-연구자에게 먼저 제안한다. 장애시점/위험값을 결과보고 변경하지 않는다.
-
-P0 신규GPU/FIS는새로운기간/비용/동시대수/종료조건 범위가 필요하다.
-이전 유료검증 deadline2026-11-18T15:00:00Z(11/19 00시KST)는 만료했다.
-오늘은무료/CPU/기존인프라조회/idle업데이트만 진행했다.
-
-P1 Quota열람권한없음/32ODvCPU미확인/수급미보장. 관리자증거 또는승인된
-실제pilot의 admission으로 확인한다. Quota증액성공이나 자동승인을 가정하지 않는다.
-P1 여유NFS237.4GiB는 현재snapshot이다. GPT2payload만5.56GiB/4rank round
-하한이며 CRIU압축/복사/live파일/로그는 별도다. 유지round와반복공간을 계산하고
-run별선별정리는승인/보존정책에따라 진행한다. 기존결과일괄삭제는 하지 않는다.
-P1 기존 pre-provision checkpoint의rollback하한515step 사례는 미해결이며
-IO재쓰기개선으로 사라진것이 아니다. 컷오버순서대개편은효과/위험/별도승인대상이다.
-
-정식착수판정: NOT_READY. 11월19일CPU준비항목은진행완료하였으나
-동등D분석과새복구GPU영향검증/공통조건동결/비용승인 전에는정식결과를생성하지 않는다.
+오늘유료검증은18시목표/22시최종한도에서승인됐으며15시이전에정리완료했다.
+이는과거11/18승인만료와구분한다.다음날정식유료실행의기간은해당시점승인범위와
+최종연구자동결을확인한다.오늘남은시간만채우려고추가GPU/FIS를생성하지않는다.

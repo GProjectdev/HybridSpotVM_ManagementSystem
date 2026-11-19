@@ -1,35 +1,47 @@
-11월19일 검증 결과 및 재사용 범위
-작성시각 UTC 2026-11-19T02:23:42.798407+00:00; 보고 시각은 별도 표기 외에는 KST 기준이다.
-적용 문서 /home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md. 같은 문서의 byte-identical snapshot은 repository에 보관한다.
-검증 상세 목록 verification_results_20261119.csv 참조.
+11월19일 검증 결과 — 최종 갱신 2026-11-19T14:55:46.249707+09:00
+적용문서: HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md.
+정식 실험 결과가 아닌 변경 영향 수용검사와 필요한 처리율 예비 측정이다.
 
-재사용: GPT2 FIS09, ResNet 새VM11의4Rank Full-group Restore/새PodUID/학습재개,
-첫 Spot->OD13 RR Verified 및 종료확인, 기존 Collector/SARIMA/168heldout 예측,
-모델·데이터manifest, native3600초 clock 증거. 이들은11/18 기능수용자료이며
-오늘 새payload 및 multi-worker batch의 정식 성능결과로 바꾸어 쓰지 않았다.
+새 실제 GPU 검증(모두4Rank,g5.2xlarge,각VM1GPU/1Rank):
+1. GPT2 batch3 Spot3→OD3 및 OD3→Spot3: 각방향 단일 full-group RR,
+각각226초(request→Verified), 전체rank 모델/optimizer/RNG/Step 복원 및
+첫유한 gradient/parameter update 감사 통과. 모든 구 provider 종료 확인.
+기존 OD3600초 최소유지시간을 줄이지 않고 관측했다. 이 실행은 시작 당시
+60..600초 설정을 유지했으므로 새 무상한 interval 실증으로 인용하지 않는다.
+2. ResNet batch3 Spot3→OD3: 단일 RR156초 Verified, 네rank audit/재개,
+구Spot3 종료. 새로운 무상한 CP비용 정책과 새payload에서 생성한 fresh CP다.
+실제 D47/copy9초, source parent interval11065초 확인. allOD fallback3600초가
+source/member 동일 parent 세대5로 전파됨을 확인했다. 한시간 간격이 실제
+경과해 두 CP가 발생한 것을 관측했다는 의미는 아니다.
+3. GPT2 초기1OD3Spot 새정책 calibration: 공통1000step 이상,
+4개 서로다른 실제worker와 각1GPU request/limit, fresh4rank durable archive.
+D154/copy83초, 실제parent20030초. 설정을 관측한 것이며20030초가 지나
+연속CP가 발생했거나 주기의 독립적 최적성이 입증된 것은 아니다.
 
-오늘 새 확인:4개 API 접근정상; Karmada/AWS/ONPRE1 NodeRequest+NodeProvision0.
-MGMT 두 변경 컨트롤러 idle rollout, AWS/ONPRE1 payload webhook rollout 성공.
-NFS volume500GiB gp3(3000IOPS/125MiBps)변경100% completed.
-완료2026-11-18T15:30:38Z =11/19 00:30:38KST.
-NFS snapshot 여유254956388352bytes(약237.4GiB), 기존 데이터 유지.
-계정 내 active/stopped9개는 기존 운영/별도 자원으로 유지했다.
-NodeRequest0만으로 계정전체 EC2나 과금자원이0이라고 보고하지 않는다.
-오늘 신규 AWS GPU 생성/FIS/스토리지 변경/정책수식 변경은 없었다.
+재사용: 기존 GPT2 FIS09의 단일ownedSpot PT2M→새VM→4rankVerified/학습재개,
+ResNet11의4rank복원,Collector/SARIMA/168heldout/native1h clock/자산hash.
+새 FIS를 실행하지 않았다. 과거09 실행 중 수정이 있었으므로 성능 비교값으로
+사용하지 않는다. 오늘 새payload의 영향은 두모델 freshCP/newVM audit로 보완했다.
 
-CPU 변경범위 검사는 CSV와 logs 참조. H최종 unittest308(2skip),Go전체/race통과;
-F9단위, training-image13선별, 전체runtime56+25subtests통과. 검사수는 서로 겹친다.
-처음 host runtime contract실행은 상대경로/샌드박스 listener조건으로 실패했다.
-실제 trainer이미지, absolute checkpoint dir, CPU host network 조건에서 확인하여
-통과했으며 처음 실패 로그도 숨기지 않고 원 경로에 보관했다.
-GPU를 사용한 새 버전4Rank/batch복구는 미실행이다.
+CPU/배포: Python 최종315 tests,2skip 통과(실제클라우드행위는mock).
+전체Go 및 변경경로race 통과. payload9단위/13선별/runtime56+25subtests는
+겹치는 범위이며 독립Run으로 더하지 않는다. 마지막selected-interval 보존 수정은
+CPU검사 및 두component idle rollout까지 확인했다. 그 최종digest로 GPU/FIS를
+또실행한 것으로 쓰지 않는다. 최종이미지는 controller_images.json 참조.
+H 평가도구 commit 89705cc3bafa9cfe64b5ad9b8965087f675173e3; Go runtime commit7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1.
+F payload commitacd626a5d202e8a3ef3998ebbd7ff55a1f5d290b.
 
-Quota API는AccessDeniedException으로 여전히 미확인. 오늘 read-only
-Spot placement score는G5.2x/G6.2x 모두apne2-az3에서9/10이었다. 실제 수급,
-Quota 또는 즉시 RunInstances 성공을 보장하는 결과가 아니다.
-4OD는32vCPU, batch2/3 full4rank peak는6/7VM 후보이므로 중첩자원과 비용을
-포함한 범위를 동결한 후 실제검증해야 한다. 관련 계정권한을 임의로 바꾸지 않았다.
+정리: 오늘 생성한 고유GPU EC2 21개 모두 긍정적인terminated
+응답/UID-bound 과거영수증으로 종료 확인. 연결root EBS 부재와임시keypair제거,
+세run의feed/복제Secret정리 확인. 강제finalizer제거없음. PVC/PV/NFS/결과 보존.
+Karmada/AWS/ONPRE1 NodeRequest/NodeProvision0, 최종MGMT 두Deployment available.
+AWS계정전체 자원이나 기반인프라를0으로 표시하지 않는다.
+GPU compute 보수적OD단가상한 합계 $19.7782; 실제청구서/Spot정산액이
+아니며 EBS/NFS/VPN/관리/FIS/네트워크 제외. 인프라는 유지되어 지속과금 가능.
 
-원본 private receipts: /home/ubuntu/day19-optimization-20261119
-공유 가능한 산출물: /home/ubuntu/graduate/Evaluation/day19_20261119
-저장한 Secret/키/인증값은 공유 TXT/CSV/manifest에 포함하지 않는다.
+GPU Quota API숫자는AccessDenied로미확인. 실제4OD32vCPU+3Spot24vCPU admission은
+성공했으나 미래공급보장없음. NFS빈공간 128905891840bytes,약120GiB.
+64GiB guard 위 약56GiB만 남아6개formalRun의보관공간을확보했다고할수없다.
+남은조건은 remaining_issues/readiness 및 별도목표선정TXT를 참조한다.
+공유자료 /home/ubuntu/graduate/Evaluation/day19_20261119; private 원시자료 /home/ubuntu/day19-pilot-20261119 및
+/home/ubuntu/day19-optimization-20261119. 인증값은 공유하지 않는다.

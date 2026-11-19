@@ -3,14 +3,24 @@
   "directory": "experiments/professor-feedback-20261119",
   "source": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md",
   "source_sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
-  "status": "NOV19_CPU_PREPARATION_COMPLETE_FORMAL_BLOCKED",
+  "status": "PREPARATION_CONDITIONAL_AWAITING_RESEARCHER_CONFIRMATION_AND_STORAGE_PLAN",
   "formal_dispatch_authorized": false,
-  "paid_dispatch_authorized": false,
+  "paid_dispatch_authorized": true,
   "readiness_report": "experiments/professor-feedback-20261119/evaluation_readiness_20261119.txt",
   "manifest_candidate": "experiments/professor-feedback-20261119/frozen_protocol_candidate_20261119.json",
   "previous_protocol_preserved": "experiments/professor-feedback-20261119/previous_active_protocol.json",
   "underlying_runner": "evaluation/integrated_protocol.py; v3 four-rank contracts retained",
   "rank_policy": "4preferred;2requires reported separate matched block",
   "previous_paid_deadline_utc": "2026-11-18T15:00:00Z",
-  "note": "metadata only; not formal dispatch approval"
+  "note": "final native conditions remain proposed; signed/researcher-confirmed freeze required; numeric quota and formal retained-storage capacity unverified",
+  "paid_dispatch_scope": "today paid acceptance completed/cleaned;18KST target22KST limit; not future formal authorization",
+  "researcher_confirmation_required": true,
+  "researcher_confirmed": false,
+  "goals_proposed": {
+    "gpt2": 4800,
+    "resnet50": 26700
+  },
+  "repeats_per_condition": 1,
+  "total_unique_formal_runs": 6,
+  "inference_scope": "EXPLORATORY_ONLY"
 }

@@ -1,0 +1,9 @@
+run_id,pod_uid,observations,reused_files,atomic_writes,logical_buffer_bytes,written_bytes,sum_local_elapsed_seconds_not_union,scope
+d19-rn-b3-02,7b48612d-51f0-4638-91af-6194a8a9c75b,1,1,0,188547834,0,0.555601696999986,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,186ac7e3-c404-4e8f-9258-7b03d65da2d3,1,1,0,188547834,0,0.5623564780000834,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,652ce4e1-77bf-4d88-95e4-5b12fe92d76b,1,1,0,188547834,0,0.5604604389999963,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,d7fa31c9-166d-4048-b01a-1066556c33fd,1,1,0,188547834,0,0.5582166419999908,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,27bacc5e-8f63-458b-8205-4e134e75db64,1,1,0,188547834,0,0.5541683099999659,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,dfaf47a1-3242-4e5a-8c4b-cf330d798c8c,1,1,0,188547834,0,0.8164848440000014,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,969abc27-50ed-47c5-8d07-3bce9f569b4a,1,1,0,188547834,0,0.8155440360000057,launcher-local I/O only; not DDP pause or full restore
+d19-rn-b3-02,098475c2-7cb7-428a-8cf5-221cf7102860,1,1,0,188547834,0,0.7921665079999798,launcher-local I/O only; not DDP pause or full restore

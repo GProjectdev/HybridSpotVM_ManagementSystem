@@ -1,0 +1,2 @@
+run_id,model,world_size,instance_type,direction,passed,policy_uid,restore_request_uid,replacement_pairs,full_group_restore_requests,request_created_at,verified_at,request_to_verified_seconds,acceptance_observed_at,all_rank_restore_and_update_audits,source_fenced,old_providers,formal_result,diagnostic_risk_clock
+d19-rn-b3-02,resnet50,4,g5.2xlarge,Spot->OnDemand,True,db4eb721-8431-402f-b6ae-8999d603128e,675418e9-e0dd-4ab2-8361-fde6d40222d8,3,1,2026-11-19T04:56:30Z,2026-11-19T04:59:06Z,156.0,2026-11-19T05:04:39.390039+00:00,True,True,3,False,True

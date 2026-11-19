@@ -1,0 +1,75 @@
+............................{"timestamp": "2026-11-19T05:50:19.813118+00:00", "event": "source_start_requested"}
+{"timestamp": "2026-11-19T05:50:19.819990+00:00", "event": "move_requested"}
+{"timestamp": "2026-11-19T05:50:19.820197+00:00", "event": "policy_resumed_for_move"}
+{"timestamp": "2026-11-19T05:50:19.820330+00:00", "event": "execution_finished", "result": "candidate_requires_evidence_review", "note": "Verify same checkpoint, volume bindings, source fencing and restore receipts offline; resources retained"}
+{"timestamp": "2026-11-19T05:50:19.858677+00:00", "event": "source_start_requested"}
+{"timestamp": "2026-11-19T05:50:19.866540+00:00", "event": "move_requested"}
+.{"timestamp": "2026-11-19T05:50:19.897797+00:00", "event": "source_start_requested"}
+.DOWNLOAD: /tmp/tmpea910zog/run-1795067419914136474.tar.gz
+.....................................................Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+DOWNLOAD: /tmp/tmp4j3y717k/e2-test-e2-presentation.tar.gz
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only. Review AWS template, NFS paths, image and FIS prerequisites before prepare.
+Rendered only: /tmp/tmpfmd0j_hq/A arm= A
+Rendered only: /tmp/tmpp6huabsc/B arm= B
+Rendered only: /tmp/tmpykmcfs_e/B arm= B
+Rendered only: /tmp/tmpy5in22vt/C arm= C
+Rendered only: /tmp/tmpllbb3qo5/A arm= A
+Rendered only: /tmp/tmpllbb3qo5/B arm= B
+Rendered only: /tmp/tmpllbb3qo5/C arm= C
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+..Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+.Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+Collection ended. Check runner-events for successful stop; VMs/PVCs retained until scoped cleanup.
+........................................................................................................usage: python3 -m unittest [-h] [--model {resnet18,resnet50,gpt2}]
+                           [--model-root MODEL_ROOT]
+                           [--sequence-length SEQUENCE_LENGTH]
+                           [--run-id RUN_ID] [--goal-steps GOAL_STEPS]
+                           [--batch-size BATCH_SIZE] [--seed SEED]
+                           [--data-root DATA_ROOT] [--device {cuda,cpu}]
+                           [--learning-rate LEARNING_RATE]
+                           [--momentum MOMENTUM] [--weight-decay WEIGHT_DECAY]
+python3 -m unittest: error: invalid distributed rank/world size
+.................................................s.........s......Plan only; no interruption sent. Inspect /tmp/tmphz28rc29/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpy36je4gr/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpy36je4gr/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpp6u1ecbf/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpp6u1ecbf/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpcfn3lu6t/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpcfn3lu6t/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmppukmof8u/fis-template.json
+REAL Spot interruption started: experiment
+Track FIS/EC2 completion; stop-experiment does not undo an interruption already sent.
+Plan only; no interruption sent. Inspect /tmp/tmpxzst53wq/fis-template.json
+REAL Spot interruption started: experiment
+Track FIS/EC2 completion; stop-experiment does not undo an interruption already sent.
+Plan only; no interruption sent. Inspect /tmp/tmpva0lhzkd/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpva0lhzkd/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpwn9dq105/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2jpxogqn/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2jpxogqn/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2jpxogqn/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmp2jpxogqn/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpjnsaoeu8/fis-template.json
+Plan only; no interruption sent. Inspect /tmp/tmpu6h8q7n8/fis-template.json
+{"observedAt": "2026-11-17T11:00:00Z", "receipt": "/tmp/tmpqcxen5rb/price-history/20261119T055025.649291Z-96588e68.json", "published": false}
+......................................................
+----------------------------------------------------------------------
+Ran 315 tests in 8.919s
+
+OK (skipped=2)
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.
+Scoped deletion requested. No finalizers removed; PVC/PV retained. Verify EC2 termination.

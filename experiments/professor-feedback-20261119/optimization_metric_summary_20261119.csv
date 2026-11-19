@@ -1,0 +1,7 @@
+metric,model,value,unit,scope
+duplicate_payload_rewrite_seconds,CPU_NFS_probe,478.05144465342164,seconds,"1GiB CPU probe, fixed order warm cache; no GPU speedup claim"
+identical_payload_reuse_seconds,CPU_NFS_probe,4.44991759955883,seconds,"1GiB CPU probe, zero payload writes; no GPU speedup claim"
+actual_launcher_reused_observations,gpt2,40,deduplicated local observations,fresh payload GPU run; not independent full-group restores
+actual_launcher_payload_written_bytes,gpt2,0,bytes,observed duplicate materialization only; excludes initial checkpoint writes
+actual_launcher_reused_observations,resnet50,8,deduplicated local observations,fresh payload GPU run; not independent full-group restores
+actual_launcher_payload_written_bytes,resnet50,0,bytes,observed duplicate materialization only; excludes initial checkpoint writes

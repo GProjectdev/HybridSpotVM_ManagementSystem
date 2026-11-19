@@ -1,0 +1,4 @@
+2026-11-19 final: paid changed-path acceptance/calibration completed and cleaned.
+Formal runs NOT started. Proposed goals4800/26700 require researcher confirmation.
+NFS retained-archive capacity planning remains required. See final readiness and goal recommendation.
+Earlier reports-push.json records the initial CPU-only publication, not the current final state.

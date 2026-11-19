@@ -1,0 +1,43 @@
+{
+  "at": "2026-11-19T05:51:57.766959+00:00",
+  "cluster_idle_checks": [
+    {
+      "api": "KARMADA",
+      "NodeRequests": 0,
+      "NodeProvisions": 0,
+      "access_verified": true
+    },
+    {
+      "api": "AWS",
+      "NodeRequests": 0,
+      "NodeProvisions": 0,
+      "access_verified": true
+    },
+    {
+      "api": "ONPRE1",
+      "NodeRequests": 0,
+      "NodeProvisions": 0,
+      "access_verified": true
+    }
+  ],
+  "management_rollouts": [
+    {
+      "name": "spot-vm-management-controller",
+      "uid": "f8fce6c3-97e9-4737-a847-a0b5cdec017c",
+      "generation": 31,
+      "available": true,
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09"
+    },
+    {
+      "name": "checkpoint-recovery-coordinator",
+      "uid": "e616b5bc-73a6-4e8f-b62c-2a4f497d26ea",
+      "generation": 26,
+      "available": true,
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1"
+    }
+  ],
+  "nfs_free_bytes": 128905891840,
+  "nfs_data_and_checkpoint_preserved": true,
+  "formal_runs_started": false,
+  "FIS_started_today": false
+}

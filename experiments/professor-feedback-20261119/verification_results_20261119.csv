@@ -12,4 +12,12 @@ H evaluation tools final CPU test suite,PASS_308_TESTS_2_SKIPPED,unit mocks; mes
 Go whole repository and telemetry race tests,PASS,go test ./... plus focused telemetry -race; unchanged internal/policy,/home/ubuntu/day19-optimization-20261119/decision-telemetry/tests.log; /home/ubuntu/day19-optimization-20261119/decision-telemetry/telemetry-race-tests.log,False
 Actual NFS bounded CPU probe,PASS_NOT_GPU_TIMING,four concurrent 256MiB files; all bytes checked and own mount/files removed,/home/ubuntu/day19-optimization-20261119/nfs-buffer-probe.json,False
 Idle controller and member webhook rollout,PASS,MGMT management/coordinator plus AWS and ONPRE1 payload digest; no active NodeRequest/NodeProvision,/home/ubuntu/day19-optimization-20261119/decision-telemetry/result.json,False
-New payload fresh GPU full-group + multi-worker batch recovery,NOT_RUN,new source checkpoint required because old CRIU snapshots retain old Python code,pending new scoped GPU authorization and pilot settings,False
+changed payload GPU fullgroup,PASS,none,GPTbothdirections and R50forward audits,False
+uncapped checkpoint parent,PASS_APPLIED_NOT_ELAPSED_PERIOD,formalactual intervals must be measured,GPT20030/R5011065/allOD3600,False
+lastSelectedInterval followup,CPU_PASS_IDLE_DEPLOYED,no newGPU/FIS claimed,Go full/race; finaldigest available,False
+quota,NUMERIC_UNVERIFIED_ACTUAL_ADMISSION_PASS,perrun supply check,4OD+3Spot actual,False
+goal settings,RESEARCHER_CONFIRMATION_REQUIRED,confirm then freeze,4800/26700 empirical candidate,False
+native FIS timing,CONDITIONAL_NARROW_WINDOW,live clock gate; never retime,GPT112.5s residual under current screening,False
+NFS capacity,FORMAL_CAPACITY_PLAN_PENDING,review retention/offload/capacity before runs,120GiBfree;56GiBaboveguard,False
+formal execution,NOT_STARTED,researcher frozen contract and runtime gates,6unique exploratory Runs planned,False
+today paid cleanup,PASS,baseinfra retained,21ownedGPU EC2terminated/rootvolabsent,False

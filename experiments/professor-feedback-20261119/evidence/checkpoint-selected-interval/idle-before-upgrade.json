@@ -1,0 +1,10 @@
+{
+  "clusters": [
+    "KARMADA",
+    "AWS",
+    "ONPRE1"
+  ],
+  "no_NodeRequest_or_NodeProvision": true,
+  "gpu_creation": false,
+  "at": "2026-11-19T05:46:46.661289+00:00"
+}

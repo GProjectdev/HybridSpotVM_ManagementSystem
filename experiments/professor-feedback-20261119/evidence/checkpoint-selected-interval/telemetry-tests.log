@@ -1,0 +1,34 @@
+=== RUN   TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule
+=== RUN   TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule/fresh-but-different-spec-cost
+=== RUN   TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule/stale-spec-cost
+--- PASS: TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule (0.04s)
+    --- PASS: TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule/fresh-but-different-spec-cost (0.02s)
+    --- PASS: TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule/stale-spec-cost (0.02s)
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires/valid
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires/expired
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires/recreated-node
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires/unverified
+=== RUN   TestPaperResidencyRequiresVerifiedUIDAndExpires/other-workload
+--- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires (0.00s)
+    --- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires/valid (0.00s)
+    --- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires/expired (0.00s)
+    --- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires/recreated-node (0.00s)
+    --- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires/unverified (0.00s)
+    --- PASS: TestPaperResidencyRequiresVerifiedUIDAndExpires/other-workload (0.00s)
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/all-three
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/recreated-second
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/expired
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/unverified
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/spot-destinations
+=== RUN   TestPaperResidencyHoldsEveryVerifiedBatchDestination/bad-receipt
+--- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination (0.05s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/all-three (0.01s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/recreated-second (0.01s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/expired (0.01s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/unverified (0.01s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/spot-destinations (0.01s)
+    --- PASS: TestPaperResidencyHoldsEveryVerifiedBatchDestination/bad-receipt (0.01s)
+PASS
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/management	0.128s

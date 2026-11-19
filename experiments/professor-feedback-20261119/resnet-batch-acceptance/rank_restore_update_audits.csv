@@ -1,0 +1,5 @@
+run_id,direction,restore_request_uid,rank,pod_uid,attempt_id,restore_step,restore_audit_at,model_ok,optimizer_ok,rng_ok,step_ok,first_update_step,first_update_at,gradients_finite,parameters_changed,later_observed_step
+d19-rn-b3-02,Spot->OnDemand,675418e9-e0dd-4ab2-8361-fde6d40222d8,0,27bacc5e-8f63-458b-8205-4e134e75db64,3564b5f1f8f74f8a94be133f1bc6b481,178,2026-11-19T04:58:45.968Z,True,True,True,True,179,2026-11-19T04:58:47.845Z,True,True,2351
+d19-rn-b3-02,Spot->OnDemand,675418e9-e0dd-4ab2-8361-fde6d40222d8,1,dfaf47a1-3242-4e5a-8c4b-cf330d798c8c,229d77eaef2f41349e830b2f8c9883a2,178,2026-11-19T04:58:44.839Z,True,True,True,True,179,2026-11-19T04:58:47.845Z,True,True,2355
+d19-rn-b3-02,Spot->OnDemand,675418e9-e0dd-4ab2-8361-fde6d40222d8,2,969abc27-50ed-47c5-8d07-3bce9f569b4a,b8b9aafd19894b72a23e99d7f6fa6620,178,2026-11-19T04:58:41.207Z,True,True,True,True,179,2026-11-19T04:58:47.845Z,True,True,2359
+d19-rn-b3-02,Spot->OnDemand,675418e9-e0dd-4ab2-8361-fde6d40222d8,3,098475c2-7cb7-428a-8cf5-221cf7102860,ffa9ac7bb64c4856bae4223fd32a321b,178,2026-11-19T04:58:46.676Z,True,True,True,True,179,2026-11-19T04:58:47.846Z,True,True,2364
