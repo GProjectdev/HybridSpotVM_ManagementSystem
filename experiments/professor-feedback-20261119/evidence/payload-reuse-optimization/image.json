@@ -1,0 +1,10 @@
+{
+  "pinned": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+  "tag": "docker.io/jeongseungjun/fluidcr-payload:v6.0-checkpoint-buffer-reuse-c50182f94398",
+  "source_sha256": "c50182f94398bdcc0a8573da2cdce2deff9311b3ffb3b248234be0f197180fd4",
+  "registry_verified": true,
+  "at": "2026-11-19T01:49:00.483843+00:00",
+  "scope": "byte-identical heap-buffer reuse; changed/missing file atomic restore; no new policy or full-group recovery design",
+  "GPU_verified": false,
+  "FIS_executed": false
+}

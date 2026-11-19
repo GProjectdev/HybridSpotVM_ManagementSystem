@@ -1,0 +1,94 @@
+Hybrid Cloud Spot DDP — 교수님 피드백 반영 11월 19일 준비 결과
+작성 UTC: 2026-11-19T02:23:42.798407+00:00 / 작업 날짜 기준: 한국시간 2026-11-19
+
+판정: CPU·오프라인 준비와 안전한 I/O·계측 개선을 완료했다.
+정식 E1/E2 착수는 NOT_READY이다. 새 버전 GPU 복구 영향 검증, 동등 조건의
+실측 D, 공통 실험 조건 동결 및 새로운 유료 실행 범위가 남았다.
+
+1. 적용한 최종 연구자 방법론
+원본: /home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md
+SHA256: 5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77
+E1은 A(All OD, Checkpoint 없음, 장애 없음)와 B(기존 위험률·가격 통합 정책,
+Checkpoint, 인위적 장애 없음)의 비교이다. E2는 A/B/C이며 C는 B와 같은
+조건에서 공통 목표 Step의 50%에 소유 Spot VM 한 대에 FIS PT2M을 실행한다.
+4-Rank 우선, VM당 GPU 한 개와 Rank 한 개를 유지한다. 두 모델은 GPT-2 Small/
+WikiText-103과 ResNet-50/CIFAR-10이다. 2-Rank 대안은 사유 보고 후 별도의
+동일 조건 A/B/C 블록으로 구성하며, 4-Rank와 결과를 직접 합치지 않는다.
+연구 질문·비교군·위험률 알고리즘을 재선정하지 않았다. Full-group 구조를
+대개편하지 않았으며 기존 발표자료/PPT도 수정하지 않았다.
+
+2. 기존 증거 재사용과 오늘 확인한 사항
+이전 GPT-2/ResNet 4-Rank 새 VM 복원, FIS 기능, 첫 Spot→OD 교체,
+모델·데이터 Hash, 위험률 입력 및 native 3600초 clock 증거를 재사용했다.
+이전 기능 수용 자료를 새 버전의 정식 성능 측정값으로 취급하지 않았다.
+오늘 새 payload의 동일 바이트 재사용과 atomic fallback 검사, 실제 NFS CPU
+probe를 통과했다. 정책 입력·결정 분기·원래 관측시각의 계측을 보완했다.
+초기 비용 정보가 부족하면 기존 Bootstrap으로 동작한다. 로그 추가가 신규
+시작 조건이 되지는 않는다. 유효 위험률이 없을 때의 기존 대기는 유지한다.
+gp3 변경은 100% completed이며 네 API에 접근 가능하다. Karmada/AWS/ONPRE1의
+실험 NodeRequest/NodeProvision은 0이다. 계정 전체 자원이 없다는 뜻은 아니다.
+오늘 추가 GPU 생성과 FIS 실행은 0회이다.
+
+3. 변수 영향 분석
+기존 실제 DecideAt 함수로 2016개 계산 행을 생성했다. alpha에 따라 목표
+구성이 달라진 시점은 28개 고유 시간이며, 네 블록에서 112행에 해당한다.
+held-out hour15에서 alpha0.7은 Spot을 유지하고 0.8/0.9는 All OD를 선택한다.
+모든 행은 ThroughputOnlyBootstrap이며 실측 손실비용 경제성은 평가하지 않았다.
+최종 저장·payload 조건에서 실측 D가 없어 D 민감도 분석은 대기 상태이다.
+계산상 정책 민감도를 실제 GPU 비용·시간 개선이나 예측 정확도로 표현하지 않는다.
+상세: variable_impact_analysis_20261119.txt, policy-analysis/*.csv.
+
+4. 최적화, 코드 및 이미지
+My_FluidCR: acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b
+H runtime/tool: 5863b3874415bb7ff3b455d77ca2806effddccc3
+두 코드 Commit 모두 main Push 및 원격 HEAD 일치를 확인했다.
+Payload: docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65
+VM 관리: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:5bd08eb9fa9b2e2425a1983dbcb5a3ccb6aca630e3e975e8d49fe7820af8b040
+Coordinator: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:26aa99403c6b3bcc561bb1a6c978b365f255ae7eff71b4a9ea5209eb7f4d8096
+Buildah 빌드·Push·registry digest 검증 후 idle 배포했다. 정책 계산은 바꾸지 않았다.
+H 평가 도구 308개 검사(2개 skip), Go 전체 및 telemetry race 검사가 통과했다.
+F는 해당 trainer 환경의 runtime contract 56개 + 25 subtests 및 변경 I/O 검사가
+통과했다. 검사 간 중복과 첫 host 환경 실패는 검증 TXT에 구분해 기록했다.
+Management client 1GiB 중복 쓰기 478.05초 / reuse 4.45초는 탐색적 CPU I/O
+관측이다. GPU 복구가 그 비율로 빨라졌다는 결론이 아니다. 기존 Checkpoint
+시점으로 인한 rollback 문제도 남아 있다.
+상세: optimization_results_20261119.txt/csv.
+
+5. 정식 실행 전 필수 작업과 승인 범위
+동일 GPU 한 종류, 4-Rank 목표 Step, batch, Checkpoint bounds, 교체 batch 등을
+동결해야 한다. 새 payload에서 fresh Checkpoint를 만든 뒤 새 VM Full-group 및
+multi-worker 변경 구간을 검증하고 최종 스토리지 조건의 D를 계측해야 한다.
+C의 50% 시점 Spot 잔존과 B의 위험률 전환 관찰을 동시에 충족하는지는 파일럿에서
+확인해야 한다. 충돌하면 연구자에게 근거를 보고하며 입력이나 장애시점을 바꾸지 않는다.
+Quota API는 AccessDenied이고 4OD의 32vCPU는 미확인이다. G5.2x/G6.2x의
+배치 점수 9/10은 즉시 수급이나 Quota를 보장하지 않는다.
+frozen_protocol_candidate_20261119.json은 명시적으로 NOT_FROZEN이며,
+formal_dispatch_authorized=false, paid_dispatch_authorized=false이다.
+기존 유료 실행 기한은 11월 19일 00:00 KST에 만료했다. 새 실행 기간·비용 상한·
+최대 동시 GPU 수·단일 소유 Spot FIS 범위를 확정한 후 실행한다. 대규모 Restore/
+교체 순서 또는 IAM 변경은 효과·위험 보고와 별도 승인 대상이다.
+상세: readiness_matrix_20261119.csv, remaining_issues_20261119.txt.
+
+6. 12월 2일까지의 실행 준비 일정 — 계획이며 성공 보장이 아님
+11/19: 본 산출물, CPU 검사, 변수 분석, gp3 확인, 안전한 최적화, 동결 후보 완료.
+11/20: 승인 범위 내 동일 GPU 파일럿, 새 복구 영향 구간 수용 검사,
+       동등 D·목표 Step·50% 검산. 통과할 때만 계약 동결 후 A 기준선 시작.
+11/23–24: 모델별 B 정상 위험 전환과 CP/VM 타임라인 수집, E1 A 대응 비교.
+11/25–27: B/C 동등 적격성 확인 후 단일 Spot FIS C, ΔT/ΔC·재학습·정리 비용 검산.
+11/30–12/01: 핵심 대응 반복 및 두 모델 적용성 보완, 실패·공급 거절도 보존.
+12/02: 변수 영향, E1/E2 그래프, 과금 장부 검산 및 한계 정리.
+최소 고유 기본 셀은 모델 2개 × A/B/C = 6개이며 반복수는 미확정이다.
+동등 계약을 만족한 A/B만 E1/E2에서 재사용하며 독립 반복수에 중복 계수하지 않는다.
+
+7. 산출물 위치
+/home/ubuntu/graduate/Evaluation/day19_20261119
+verification_results_20261119.txt/csv: 재사용, 실제 오늘 검증, 미검증.
+variable_impact_analysis_20261119.txt, policy-analysis/*.csv: 변수 영향과 D 빈칸 이유.
+optimization_results_20261119.txt/csv: 최적화, 실제 NFS CPU 측정, 한계.
+remaining_issues_20261119.txt, readiness_matrix_20261119.csv: 남은 차단 조건.
+execution_matrix_20261119.csv, frozen_protocol_candidate_20261119.json: 계획과 동결 후보.
+checkpoint_application_timings.csv, checkpoint_cost_observations.csv,
+reconfiguration_phase_timings.csv: 과거 진단 이벤트 추출이며 정식 성능 자료가 아님.
+원본 private 증거: /home/ubuntu/day19-optimization-20261119
+공유 repository 사본: /home/ubuntu/HybridSpotVM_ManagementSystem/experiments/professor-feedback-20261119
+인증값·비밀번호·API Key·Secret·raw Deployment는 공유 산출물과 Git에 포함하지 않았다.

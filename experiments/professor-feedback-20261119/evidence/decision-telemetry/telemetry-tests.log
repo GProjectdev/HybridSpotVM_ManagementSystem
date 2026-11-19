@@ -1,0 +1,4 @@
+=== RUN   TestDecisionTelemetryKeepsVariableProvenanceAndDoesNotMutatePolicy
+--- PASS: TestDecisionTelemetryKeepsVariableProvenanceAndDoesNotMutatePolicy (0.00s)
+PASS
+ok  	github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/management	0.023s

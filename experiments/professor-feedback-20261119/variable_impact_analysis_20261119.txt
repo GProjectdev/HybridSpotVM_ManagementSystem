@@ -1,0 +1,70 @@
+정책 변수 영향 분석 — 2026-11-19 / 정식 GPU 평가 결과 아님
+적용 방법론: /home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md (SHA256 5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77)
+
+1. 방법과 실제 코드
+evaluation/variable_probe/main.go가 내부 정책 p.ReadPolicyInput와 p.DecideAt을
+직접 호출한다. 위험률 모델을 새로 만들거나 정책 수식을 바꾸지 않았다.
+evaluation/policy_sensitivity.py가 기존 168개 held-out 예측, 오늘 실제 가격,
+alpha0.7/0.8/0.9, world4/2, GPU후보2종을 별도 블록으로 재생했다.
+168x3x2x2=2016 계산 행이며 실제 GPU 학습 Run 수는0이다.
+원시 forecast SHA256: 8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2
+출처는 공개 미국 V100 availability proxy이다. 서울 G5/G6 자연 선점확률의
+정확성·예측력을 입증하는 데이터가 아니다. PT=3600초로 고정했다.
+
+2. 실제 관찰된 자원 결정
+내부 internal/policy/contract.go DecideAt의 paper-eq6-7은 shard별 생존조건
+exp(-lambda*PT_hours)>=alpha를 적용한다. 최소1OD이므로 world4에서는
+조건 통과시1OD+3Spot, 실패시4OD이다. Spot을 조금씩 줄이는 알고리즘이라고
+기술하면 틀리다. world2는1OD+1Spot 또는2OD이며 별도 분석 블록이다.
+1시간 기준 경계: alpha.7 -> lambda.3566749439/h;
+alpha.8 -> .2231435513/h; alpha.9 -> .1053605157/h.
+held-out hour14 lambda.0009212361959754303/h는 세alpha 모두 Spot 유지.
+hour15 lambda.3458397557619131/h는 alpha.7만 Spot 유지, .8/.9는 전부OD.
+alpha에 따라 목표OD가 달라지는 시간은28개 고유 forecast hour이다.
+4개 hardware/world 블록에서112개 행이며112개의 독립 관측이나 Run이 아니다.
+
+3. 가격과 경제성의 범위
+오늘 G5.2xlarge Spot .6813/OD1.4903 USD/h,
+G6.2xlarge Spot .5593/OD1.20208 USD/h. 조회시각 2026-11-19T00:36:50.330968+00:00.
+priceEvaluated=true이며 Spot<OD guard를 통과했다. 신선한 실측 복구 손실비용L은
+없으므로2016행 모두 ThroughputOnlyBootstrap, costEvaluated=false이다.
+가격이 있어도 Desai 경제성 식 전체가 실측 L까지 사용됐다는 뜻은 아니다.
+신규 Verified 복원·Checkpoint 나이 등 기존 조건으로 L이 구성되면 기존 분기로
+전환한다. 초기 L을 임의로0으로 넣거나 과거 관측시각을 현재로 바꾸지 않았다.
+
+4. Checkpoint 비용D — 미완료와 그 이유
+현재 계산2016행은 모두 risk-band-bootstrap이다.60..600초 bounds는 오프라인
+분석 설정일 뿐 정식 GPU 주기 동결값이 아니다. 선택 interval은 실제 실행간격과
+다르며 전체 Rank pause/start/durable finish/resume을 별도 계측해야 한다.
+과거 checkpointSeconds195 / copySeconds70 / observedAt2026-11-18T12:42:36Z는
+gp3 완료(15:30:38Z) 이전이고 오늘 payload도 변경돼 동등한 D로 재사용하지 않았다.
+checkpoint_D_sensitivity_pending.csv의 D/analytic interval은 의도적으로 빈칸이다.
+같은 최종 GPU/Rank/모델/스토리지/이미지의 새 round에서 비용을 확보한 후,
+중간값/관측범위를 이용해 같은 기존 함수를 재생한다. 임의 D의 성능을 실측이라
+표현하지 않는다. 새 비용을 구하는 GPU Run은 오늘 실행하지 않았다.
+
+5. 실제 분기와 논문 분기의 구분
+현 CRIU 측정비용 분기 checkpoint-cost-analytic은 lambda와 Spot 수,
+checkpointSeconds/copySeconds를 사용한다. IterationTime이 이 분기를 직접
+결정한다고 쓰지 않는다. 별도 paper-equations-1-5-analytic은 비동기 GPU-to-DRAM
+가정과 관련되며 실제 GPU 적용은 미검증/비활성이다. Desai §4.2 Eq1-5와 현재
+CRIU 저장비용의 정의 차이를 유지한다. 자원 정책은 §4.3 Eq6/7 연결을 명시한다.
+
+6. 초기 정보 부족 및 계측 의미
+alpha는 설정값이고 위험률·가격은 기존 입력이다. 새 로그가 이를 필수 신규
+초기 정보로 요구하지 않는다. D가 없으면 기존 Bootstrap 주기, 실측 L이 없으면
+기존 ThroughputOnlyBootstrap을 유지한다. 비용0 기본값은 실제 측정0이 아니다.
+checkpointCostsObservedAt 비어 있음 및 intervalCostEvaluated=false 등으로 구분한다.
+유효 위험률 자체가 없으면 기존 risk_unavailable 차단이 유지된다.
+초기부터 실측 비용 최적화가 완료됐다고 주장할 수는 없다.
+
+7. 산출물과 재현
+policy-analysis/policy_sensitivity.csv, alpha_decision_changes.csv,
+checkpoint_D_sensitivity_pending.csv, policy_sensitivity_summary.json 참조.
+실행: cd /home/ubuntu/HybridSpotVM_ManagementSystem
+python3 -m evaluation.policy_sensitivity --forecasts /home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json --prices /home/ubuntu/day19-optimization-20261119/prices-readonly.json --policy-config experiments/ieee-access-final-20261117/config/run_config.provisional.json --out NEW_NONEXISTING_OUTPUT_DIRECTORY
+동일 출력을 덮어쓰지 않도록 새 디렉터리가 필요하다.
+해석 한계: 계산상 정책 민감도이며 E1/E2 완료시간·비용 또는 alpha 최적성의 실측이 아니다.
+근거: 사용자 방법론 §5; 제공 원문 Cost_effective.pdf Desai §4.2/4.3;
+실제 internal/policy/contract.go, interval_optimizer.go, economics.go,
+internal/management/recovery_economics.go. 원문과 구현의 차이를 생략하지 않는다.

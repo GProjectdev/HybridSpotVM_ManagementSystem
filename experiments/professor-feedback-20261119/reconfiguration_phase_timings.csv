@@ -1,0 +1,4 @@
+source_run,restore_request_uid,stage,start_at,end_at,seconds,scope,formal_measurement
+gpt2-four-rank-risk-transition-13-gp3,b5d911ad-c680-454c-8327-6516f9040fc2,high_request_to_policy_observed,2026-11-18T12:43:06.052879+00:00,2026-11-18T12:44:18Z,71.947121,observation timestamps; includes Collector/reconcile polling,False
+gpt2-four-rank-risk-transition-13-gp3,b5d911ad-c680-454c-8327-6516f9040fc2,high_request_to_RestoreRequest_created,2026-11-18T12:43:06.052879+00:00,2026-11-18T12:48:17Z,310.947121,includes policy/VM preparation/source quiescence; not pure EC2 boot time,False
+gpt2-four-rank-risk-transition-13-gp3,b5d911ad-c680-454c-8327-6516f9040fc2,RestoreRequest_created_to_Verified,2026-11-18T12:48:17Z,2026-11-18T12:53:24Z,307.0,full-group pipeline including fence/prepare/restore/verification; not pure CRIU time,False

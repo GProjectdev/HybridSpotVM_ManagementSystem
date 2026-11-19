@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-19T02:18:01.096146+00:00",
+  "repository": "HybridSpotVM_ManagementSystem",
+  "commit": "5863b3874415bb7ff3b455d77ca2806effddccc3",
+  "files": [
+    "internal/management/evaluation_telemetry.go",
+    "internal/management/evaluation_telemetry_test.go",
+    "internal/management/policy_controller.go",
+    "internal/management/checkpoint_controller.go",
+    "evaluation/variable_probe/main.go",
+    "evaluation/variable_probe/main_test.go",
+    "evaluation/policy_sensitivity.py",
+    "evaluation/test_policy_sensitivity.py",
+    "evaluation/launcher_io_summary.py",
+    "evaluation/test_launcher_io_summary.py",
+    "evaluation/ieee_v2_observe.py",
+    "evaluation/test_ieee_v2_observe.py",
+    "evaluation/integrated_protocol.py",
+    "evaluation/test_integrated_protocol.py",
+    "evaluation/integrated-v3-runbook.txt",
+    "docs/batch-group-reconfiguration-20261118.txt"
+  ],
+  "remote_main_verified": true
+}

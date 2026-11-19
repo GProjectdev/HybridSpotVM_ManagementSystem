@@ -1,0 +1,46 @@
+{
+  "protocol": "HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118",
+  "directory": "experiments/integrated-evaluation-v3-20261118",
+  "source": "/home/ubuntu/.codex/attachments/9654d939-5425-4391-a79e-d6e578bfc1fd/붙여넣은 텍스트.txt",
+  "status": "V3_ABC_ALL4RANK_VALIDATION_IN_PROGRESS",
+  "formal_dispatch_authorized": false,
+  "world_size_by_condition": {
+    "A": 4,
+    "B": 4,
+    "C": 4
+  },
+  "unique_conditions": [
+    "A",
+    "B",
+    "C"
+  ],
+  "experiment_mapping": {
+    "E1": [
+      "A",
+      "B"
+    ],
+    "E2": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "models": [
+    "gpt2-small",
+    "resnet50"
+  ],
+  "minimum_unique_runs_if_eligible": 6,
+  "readiness_report": "experiments/integrated-evaluation-v3-20261118/evaluation_readiness_v3_20261118.txt",
+  "manifest_draft": "experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_draft.json",
+  "previous_protocol_preserved": "experiments/integrated-evaluation-v3-20261118/previous_active_protocol.json",
+  "note": "registry metadata only; frozen execution is not authorized",
+  "latest_validation_evidence": "experiments/integrated-evaluation-v3-20261118/validation-20261118",
+  "paid_validation_authorization": {
+    "source": "user2026-11-18 explicit paid continuation and alternate one-GPU instance permission",
+    "deadline_utc": "2026-11-18T15:00:00Z",
+    "formal_experiment_settings_not_frozen": true
+  },
+  "latest_validation_report": "experiments/integrated-evaluation-v3-20261118/evaluation_validation_update_20261118.txt",
+  "latest_validation_manifest": "experiments/integrated-evaluation-v3-20261118/protocol_manifest_v3_validation_20261118.json",
+  "latest_reconfiguration_followup": "experiments/integrated-evaluation-v3-20261118/risk_reconfiguration_batch_update_20261118.txt"
+}

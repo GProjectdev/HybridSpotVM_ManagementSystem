@@ -1,0 +1,35 @@
+11월19일 검증 결과 및 재사용 범위
+작성시각 UTC 2026-11-19T02:23:42.798407+00:00; 보고 시각은 별도 표기 외에는 KST 기준이다.
+적용 문서 /home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md. 같은 문서의 byte-identical snapshot은 repository에 보관한다.
+검증 상세 목록 verification_results_20261119.csv 참조.
+
+재사용: GPT2 FIS09, ResNet 새VM11의4Rank Full-group Restore/새PodUID/학습재개,
+첫 Spot->OD13 RR Verified 및 종료확인, 기존 Collector/SARIMA/168heldout 예측,
+모델·데이터manifest, native3600초 clock 증거. 이들은11/18 기능수용자료이며
+오늘 새payload 및 multi-worker batch의 정식 성능결과로 바꾸어 쓰지 않았다.
+
+오늘 새 확인:4개 API 접근정상; Karmada/AWS/ONPRE1 NodeRequest+NodeProvision0.
+MGMT 두 변경 컨트롤러 idle rollout, AWS/ONPRE1 payload webhook rollout 성공.
+NFS volume500GiB gp3(3000IOPS/125MiBps)변경100% completed.
+완료2026-11-18T15:30:38Z =11/19 00:30:38KST.
+NFS snapshot 여유254956388352bytes(약237.4GiB), 기존 데이터 유지.
+계정 내 active/stopped9개는 기존 운영/별도 자원으로 유지했다.
+NodeRequest0만으로 계정전체 EC2나 과금자원이0이라고 보고하지 않는다.
+오늘 신규 AWS GPU 생성/FIS/스토리지 변경/정책수식 변경은 없었다.
+
+CPU 변경범위 검사는 CSV와 logs 참조. H최종 unittest308(2skip),Go전체/race통과;
+F9단위, training-image13선별, 전체runtime56+25subtests통과. 검사수는 서로 겹친다.
+처음 host runtime contract실행은 상대경로/샌드박스 listener조건으로 실패했다.
+실제 trainer이미지, absolute checkpoint dir, CPU host network 조건에서 확인하여
+통과했으며 처음 실패 로그도 숨기지 않고 원 경로에 보관했다.
+GPU를 사용한 새 버전4Rank/batch복구는 미실행이다.
+
+Quota API는AccessDeniedException으로 여전히 미확인. 오늘 read-only
+Spot placement score는G5.2x/G6.2x 모두apne2-az3에서9/10이었다. 실제 수급,
+Quota 또는 즉시 RunInstances 성공을 보장하는 결과가 아니다.
+4OD는32vCPU, batch2/3 full4rank peak는6/7VM 후보이므로 중첩자원과 비용을
+포함한 범위를 동결한 후 실제검증해야 한다. 관련 계정권한을 임의로 바꾸지 않았다.
+
+원본 private receipts: /home/ubuntu/day19-optimization-20261119
+공유 가능한 산출물: /home/ubuntu/graduate/Evaluation/day19_20261119
+저장한 Secret/키/인증값은 공유 TXT/CSV/manifest에 포함하지 않는다.

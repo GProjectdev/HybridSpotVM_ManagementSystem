@@ -1,0 +1,2 @@
+source_run,model,world_size,formal_measurement,stage,start_at,end_at,duration_seconds,source_uid,scope
+gpt2-four-rank-risk-transition-13-gp3,gpt2,4,False,first_policy_replacement,2026-11-18T12:43:06.052879+00:00,2026-11-18T12:53:24Z,617.947121,b5d911ad-c680-454c-8327-6516f9040fc2,"high fixture request -> Verified; includes collector, VM preparation and full-group restore; not formal timing"

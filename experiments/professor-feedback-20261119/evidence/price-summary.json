@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-19T00:36:50.330968+00:00",
+  "g5.2xlarge_price": {
+    "spotPricePerHour": 0.6813,
+    "onDemandPricePerHour": 1.4903,
+    "spotEffectiveAt": "2026-11-18T20:00:00+00:00",
+    "capturedAt": "2026-11-19T00:36:50.330968+00:00",
+    "onDemandEffectiveAt": "2026-11-01",
+    "currency": "USD"
+  },
+  "g6.2xlarge_price": {
+    "spotPricePerHour": 0.5593,
+    "onDemandPricePerHour": 1.20208,
+    "spotEffectiveAt": "2026-11-18T16:00:00+00:00",
+    "capturedAt": "2026-11-19T00:36:50.330968+00:00",
+    "onDemandEffectiveAt": "2026-11-01",
+    "currency": "USD"
+  },
+  "original_receipt_sha256": "c7db39a65e3ce7eba54888408b0607d87643657f64b0cb6a2c6a664b5e6c53ae"
+}

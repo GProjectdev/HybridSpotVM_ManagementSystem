@@ -1,0 +1,2 @@
+source_run,model,world_size,formal_measurement,source_file,checkpoint_seconds,copy_seconds,observed_at,policy_interval_seconds,interval_source,eligible_for_final_D_sensitivity,exclusion_reason
+gpt2-four-rank-risk-transition-13-gp3,gpt2,4,False,/home/ubuntu/v3-validation-20261118/gpt2-four-rank-risk-transition-13-gp3/native-high-risk-policy-observed.json,195,70,2026-11-18T12:42:36Z,,checkpoint-cost-analytic,False,measurement predates completed gp3 storage baseline; payload optimization changes before freeze

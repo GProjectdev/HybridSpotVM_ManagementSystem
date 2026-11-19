@@ -1,0 +1,69 @@
+안전한 성능 최적화 및 병목 분석 — 2026-11-19
+
+1. 구현 변경
+My_FluidCR/fluidcr/launcher.py의 _checkpoint_matches_buffer/_flush_checkpoint에서
+RAM buffer와 기존 NFS 파일의 모든 바이트를 chunk 단위로 비교한다. inode,
+size, mtime/ctime 및 경로/열린FD 안정성을 확인하고 file fsync 이후에도 동일하면
+중복 payload 재쓰기를 생략한다. 이름·크기만 같다는 이유로 건너뛰지 않는다.
+파일이 없거나 내용이 다르면 같은 디렉터리의 private temp파일에 저장하고
+file fsync, atomic replace, directory fsync를 수행한다. 실패를 성공으로 보고하지
+않으며 immutable hardlink 아카이브를 in-place로 수정하지 않는다.
+Full-group Restore, CRIU GPU 상태, rank계약, UID, source fencing, Verified 및
+provider 정리 순서는 바꾸지 않았다. FLUIDCR_REUSE_UNCHANGED_CHECKPOINT=1이
+기본이며0이면 reuse 경로를 끈다. A/B/C 공통 comparison lock에 이 값을 추가했다.
+
+2. 정확히 무엇을 줄이나
+원본 resume/복원 launcher는 Checkpoint가 이미 NFS에 그대로 있어도 RAM copy를
+재저장했다. 이 중복 쓰기만 줄인다. 새 checkpoint 생성 자체, CRIU dump/transfer,
+VM boot, 이미지 pull, DDP rendezvous 및 실제 학습 재개를 생략하지 않는다.
+파일이 바뀐 경우 비교 읽기가 추가되므로 모든 경우 빠르다고 보장하지 않는다.
+
+3. 실제 NFS CPU probe: 탐색적 근거
+Management client에서 NFS4.1 임시 mount 후4 CPU writer x256MiB=1GiB로 확인했다.
+initial write480.2129초, 기존 duplicate rewrite478.0514초,
+동일 bytes reuse4.4499초(실제 payload write0bytes).
+missing target fallback256MiB119.5935초, 원자적 저장과 내용검증 성공.
+자체 probe파일과 mount는 제거했다. 기존 데이터/체크포인트는 지우지 않았다.
+고정된 old->new 순서, warm cache, Management 네트워크 경로의 영향이 있다.
+이 비율을 GPU Restore 가속배수나 정식 E1/E2 개선율로 쓰면 안 된다.
+관리노드 경로의 약2MiB/s 쓰기 관찰만으로 GPU노드 또는 EBS 자체의 병목이라고
+단정하지 않는다. GPU Pod 경로에서 최종 checkpoint/restore를 확인해야 한다.
+
+4. 과거 GPU 경로에서 확인된 병목과 미해결점
+기존 위험전환13번 run의 fixture고위험요청->policy관찰71.947초,
+policy관찰->RR생성239초, RR생성->Verified307초,
+총617.947초(첫 한대 교체만). 이는 collector/reconcile/VM준비/복구가 혼합된
+기능 진단이며 정식 성능이 아니다. reconfiguration_phase_timings.csv 참조.
+과거 round의 step34를 복구했고 원본은 공통549까지 전진해 rollback 하한515step.
+이번 중복IO 최적화가 그 checkpoint 시점 문제를 해결했다고 주장하지 않는다.
+기존 batch2/3 코드는 여러 목적VM을 준비한 뒤 한 번의 그룹복원을 의도하지만
+실제 GPU multi-worker batch 수용검사는 아직 남았다. 기본 batch1을 바꾸지 않았다.
+
+5. 계측 개선
+H/internal/management/evaluation_telemetry.go에서 alpha, 가격,lambda,PT,
+checkpointSeconds/copySeconds/원 관측시각, lossCost/원 관측시각, 선택분기와
+decisionObservedAt을 명시적 scalar allowlist로 기록한다. 원 policy/Secret/임의
+annotation을 통째로 내보내지 않는다. 정책 계산과 실제 actuation은 구분한다.
+evaluation/ieee_v2_observe.py는 두 정책 주체를 관찰하고 launcher I/O를 별도
+UID/run/timestamp 스트림에 저장한다. 학습 globalStep을 추정해서 넣지 않는다.
+evaluation/launcher_io_summary.py는 중복 표본을 제거하며 rank별 로컬시간 합을
+DDP Pause 시간의 합집합이나 End-to-End 지연으로 해석하지 않는다.
+
+6. 검증/배포와 한계
+변경 launcher9단위검사 및 training-image13선별검사 통과(중복 포함),
+runtime contract56검사+25subtests 통과, H CPU308검사(2skip) 및 Go/race 통과.
+payload: docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65
+payload source commit: acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b
+AWS/ONPRE1 webhook payload 인자를 변경하고 idle rollout 성공.
+VM관리 image: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:5bd08eb9fa9b2e2425a1983dbcb5a3ccb6aca630e3e975e8d49fe7820af8b040
+Coordinator image: docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:26aa99403c6b3bcc561bb1a6c978b365f255ae7eff71b4a9ea5209eb7f4d8096
+H source commit: 5863b3874415bb7ff3b455d77ca2806effddccc3
+CRIU image에는 원본 Python 코드가 남으므로 새payload에서 생성한 새checkpoint로
+GPU 복구해야 최적화 경로를 검증할 수 있다. destination image만 교체한 과거
+snapshot은 새 코드의 GPU검증이 아니다. 오늘 GPU/FIS 신규 실행은0이다.
+
+7. 대규모 변경은 미적용
+VM들이 Ready인 직전으로 cutover용 checkpoint를 늦추면 rollback을 줄일 수
+있지만, checkpoint freeze/실패/대상UID/동시복구와 source fencing의 경쟁조건이
+달라진다. Full-group/교체 알고리즘 변경 효과·위험 보고 및 승인 후의 별도 작업이다.
+오늘 적용하지 않았다. target변경 자동취소/Quota 적응형 분할도 구현됐다고 쓰지 않는다.

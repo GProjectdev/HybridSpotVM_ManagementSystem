@@ -1,0 +1,14 @@
+item,status,evidence,required_next_action
+methodology,PASS,Professor-feedback 20261119 exact source applied; no experiment redesign,none
+historical evidence reuse,PASS,GPT2/ResNet four-rank restore; FIS and first Spot->OD retained,do not repeat same unchanged conditions
+gp3 completed,PASS,500GiB 3000IOPS 125MiBps completed 100%,keep same storage for A/B/C
+offline alpha/lambda sensitivity,PASS_WITH_SCOPE,2016 actual policy decisions; 112 block-hour changes / 28 unique hours,not GPU performance or risk forecast accuracy
+policy and local I/O instrumentation,CPU_PASS_LIVE_IDLE_ROLLOUT,alpha/prices/cost branch/source timestamps added; separate launcher stream,confirm changed path on fresh GPU checkpoint
+comparable measured D sensitivity,BLOCKED,old195s/copy70s predates completed gp3 and new payload,measure same final configuration first; do not relabel freshness
+new payload and batch multi-worker GPU recovery,BLOCKED,only CPU contracts and NFS proxy passed,fresh four-rank checkpoint; multi-destination Verified and old provider termination
+GPU quotas,UNVERIFIED_PERMISSION_DENIED,ListServiceQuotas AccessDenied; 32 OD vCPU not confirmed,console/admin evidence or scoped actual admission; no quota change assumed
+GPU supply,UNVERIFIED_READONLY_SCORE_ONLY,g5.2xlarge and g6.2xlarge score9 in apne2-az3,single chosen type for A/B/C; supply not guaranteed
+batch overlap,NOT_FROZEN,batch1 default; batch2/3 opt-in; four-rank peaks6/7 GPU VMs,select batch after capacity/cost budget; both directions acceptance pending
+C50percent Spot availability,NOT_FROZEN,same native risk clock and first durable CP required,pilot timings before goal freeze; retain50percent default
+formal shared contract,NOT_FROZEN,GPU/goal/batch/bounds/hardware/repeats pending,freeze all A/B/C before formal run
+paid authorization,EXPIRED_PRIOR_WINDOW,previous deadline 2026-11-18T15:00:00Z,new scoped duration/cost/peak resources/FIS permission before paid pilot

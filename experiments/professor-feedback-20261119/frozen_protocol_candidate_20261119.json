@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "protocol": "HybridSpotDDP-ProfessorFeedback-20261119",
+  "status": "CANDIDATE_NOT_FROZEN_BLOCKED",
+  "created_at_utc": "2026-11-19T02:23:42.798407+00:00",
+  "formal_dispatch_authorized": false,
+  "paid_dispatch_authorized": false,
+  "researcher_source": {
+    "path": "/home/ubuntu/graduate/Evaluation/HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md",
+    "sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
+    "repository_snapshot": "researcher-methodology.md"
+  },
+  "rank_policy": {
+    "preferred": 4,
+    "fallback": 2,
+    "fallback_requires_report_and_new_matched_block": true,
+    "ranks_per_vm": 1,
+    "gpus_per_vm": 1,
+    "mixed_rank_or_GPU_blocks_forbidden": true
+  },
+  "experiment_mapping": {
+    "E1": [
+      "A",
+      "B"
+    ],
+    "E2": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "models_assets_reused": {
+    "gpt2-small": {
+      "dataset": "WikiText-103 raw-v1",
+      "model_revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+      "dataset_revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+      "model_path": "/mnt/nfs/validation-assets-v6-20261116/models/gpt2-small",
+      "dataset_path": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1",
+      "processed_manifest_sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988",
+      "sequence_length": 512,
+      "seed": 42,
+      "optimizer": "AdamW",
+      "learning_rate": 5e-05,
+      "weight_decay": 0.0005
+    },
+    "resnet50": {
+      "dataset": "CIFAR-10",
+      "dataset_path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1",
+      "dataset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+      "archive_md5": "c58f30108f718f92721af3b95e74349a",
+      "preprocessing": "CIFAR stem/10classes; step-shuffle-crop-flip-v1; pad4 crop32 hflip normalization",
+      "seed": 42,
+      "optimizer": "SGD",
+      "learning_rate": 0.1,
+      "momentum": 0.9,
+      "weight_decay": 0.0005,
+      "weights": "None"
+    }
+  },
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "runtime_code_commits": {
+    "HybridSpotVM_ManagementSystem": "5863b3874415bb7ff3b455d77ca2806effddccc3",
+    "My_FluidCR": "acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b",
+    "PublicCloud-VM-Provisioner_test": "ee87c2d8e428350e59cc487fba70264222cfda9f",
+    "Stateful-Migration-Operator-with-PV": "dae0124e9a6b3d9b38ededae97962e5b91f30083",
+    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629"
+  },
+  "management_images": {
+    "spot-vm-management-controller": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:5bd08eb9fa9b2e2425a1983dbcb5a3ccb6aca630e3e975e8d49fe7820af8b040",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-spot-vm-management-controller-0196844c5b91",
+      "source_sha256": "0196844c5b9174050477b8a8b1868d6bcc7ef032063c117bdbd7c45d911be654",
+      "registry_verified": true
+    },
+    "checkpoint-recovery-coordinator": {
+      "image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:26aa99403c6b3bcc561bb1a6c978b365f255ae7eff71b4a9ea5209eb7f4d8096",
+      "tag": "docker.io/jeongseungjun/hybrid-spot-vm-system:v6.0-batch-checkpoint-recovery-coordinator-0196844c5b91",
+      "source_sha256": "0196844c5b9174050477b8a8b1868d6bcc7ef032063c117bdbd7c45d911be654",
+      "registry_verified": true
+    }
+  },
+  "fluidcr_payload": {
+    "pinned": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+    "tag": "docker.io/jeongseungjun/fluidcr-payload:v6.0-checkpoint-buffer-reuse-c50182f94398",
+    "source_sha256": "c50182f94398bdcc0a8573da2cdce2deff9311b3ffb3b248234be0f197180fd4",
+    "registry_verified": true,
+    "at": "2026-11-19T01:49:00.483843+00:00",
+    "scope": "byte-identical heap-buffer reuse; changed/missing file atomic restore; no new policy or full-group recovery design",
+    "GPU_verified": false,
+    "FIS_executed": false
+  },
+  "risk_provenance": {
+    "provenance": "external-US-V100-availability-proxy; not measured Seoul hazard",
+    "forecast_path": "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json",
+    "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "training_hours": 672,
+    "held_out_hours": 168,
+    "wall_seconds_per_trace_hour": 3600,
+    "source_trace": "availability/1-node/aws-02-15-2023/us-east-2a_v100_1.json",
+    "population_assumption": "one requested availability slot, not observed at-risk running population"
+  },
+  "risk_clock": {
+    "seconds_per_forecast_hour": 3600,
+    "anchor": "source NodeRequest creationTimestamp",
+    "candidate_start_held_out_hour": 14,
+    "lambda_hour14": 0.0009212361959754303,
+    "lambda_hour15": 0.3458397557619131,
+    "final_interval": "NOT_FROZEN; C Spot availability constraints pending pilot"
+  },
+  "policy": {
+    "method": "paper-eq6-7",
+    "alpha_default": 0.8,
+    "PT_seconds": 3600,
+    "offline_alpha_points": [
+      0.7,
+      0.8,
+      0.9
+    ],
+    "new_risk_algorithm": false,
+    "asynchronous_paper_checkpoint_enabled": false,
+    "measured_loss_economics_available": false,
+    "bootstrap_must_be_reported": true
+  },
+  "storage": {
+    "volume_id": "vol-01377e5f3154a6011",
+    "type": "gp3",
+    "GiB": 500,
+    "IOPS": 3000,
+    "MiB_per_second": 125,
+    "modification_state": "completed",
+    "completed_utc": "2026-11-18T15:30:38+00:00",
+    "free_bytes_snapshot": 254956388352,
+    "snapshot_at_utc": "2026-11-19T00:38:27.238185+00:00"
+  },
+  "hardware": {
+    "az": "ap-northeast-2c",
+    "zone_id": "apne2-az3",
+    "instance_type": null,
+    "candidates_readonly": [
+      "g5.2xlarge",
+      "g6.2xlarge"
+    ],
+    "quota_verified": false,
+    "supply_guaranteed": false
+  },
+  "checkpoint_buffer_reuse": 1,
+  "replacement_batch_size": null,
+  "replacement_batch_default_in_code": 1,
+  "checkpoint_bounds_seconds": null,
+  "offline_probe_bounds_only": [
+    60,
+    600
+  ],
+  "models_goal_steps": null,
+  "models_batch_sizes": null,
+  "repeats": null,
+  "C_fault": {
+    "count": 1,
+    "notification": "PT2M",
+    "when": "all ranks fresh common effective optimizer step >= frozen goal*0.5; durable full-rank CP and still-owned Spot required",
+    "enabled": false
+  },
+  "price_snapshot": {
+    "at": "2026-11-19T00:36:50.330968+00:00",
+    "sha256": "c7db39a65e3ce7eba54888408b0607d87643657f64b0cb6a2c6a664b5e6c53ae",
+    "refresh_before_run": true,
+    "all_replacement_overlap_and_cleanup_intervals_must_be_counted": true
+  },
+  "remaining_gates": [
+    {
+      "item": "policy and local I/O instrumentation",
+      "status": "CPU_PASS_LIVE_IDLE_ROLLOUT",
+      "action": "confirm changed path on fresh GPU checkpoint"
+    },
+    {
+      "item": "comparable measured D sensitivity",
+      "status": "BLOCKED",
+      "action": "measure same final configuration first; do not relabel freshness"
+    },
+    {
+      "item": "new payload and batch multi-worker GPU recovery",
+      "status": "BLOCKED",
+      "action": "fresh four-rank checkpoint; multi-destination Verified and old provider termination"
+    },
+    {
+      "item": "GPU quotas",
+      "status": "UNVERIFIED_PERMISSION_DENIED",
+      "action": "console/admin evidence or scoped actual admission; no quota change assumed"
+    },
+    {
+      "item": "GPU supply",
+      "status": "UNVERIFIED_READONLY_SCORE_ONLY",
+      "action": "single chosen type for A/B/C; supply not guaranteed"
+    },
+    {
+      "item": "batch overlap",
+      "status": "NOT_FROZEN",
+      "action": "select batch after capacity/cost budget; both directions acceptance pending"
+    },
+    {
+      "item": "C50percent Spot availability",
+      "status": "NOT_FROZEN",
+      "action": "pilot timings before goal freeze; retain50percent default"
+    },
+    {
+      "item": "formal shared contract",
+      "status": "NOT_FROZEN",
+      "action": "freeze all A/B/C before formal run"
+    },
+    {
+      "item": "paid authorization",
+      "status": "EXPIRED_PRIOR_WINDOW",
+      "action": "new scoped duration/cost/peak resources/FIS permission before paid pilot"
+    }
+  ],
+  "not_a_formal_run_manifest": true
+}

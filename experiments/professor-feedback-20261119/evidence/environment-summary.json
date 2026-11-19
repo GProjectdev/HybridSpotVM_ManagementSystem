@@ -1,0 +1,101 @@
+{
+  "at": "2026-11-19T02:18:01.186845+00:00",
+  "clusters": {
+    "MGMT": {
+      "reachable": true,
+      "NR_NP_count": null
+    },
+    "KARMADA": {
+      "reachable": true,
+      "NR_NP_count": 0
+    },
+    "AWS": {
+      "reachable": true,
+      "NR_NP_count": 0
+    },
+    "ONPRE1": {
+      "reachable": true,
+      "NR_NP_count": 0
+    }
+  },
+  "management_controller_images": [
+    {
+      "namespace": "hybridspot-system",
+      "name": "checkpoint-recovery-coordinator",
+      "generation": 23,
+      "observedGeneration": 23,
+      "available": 1,
+      "images": [
+        "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:26aa99403c6b3bcc561bb1a6c978b365f255ae7eff71b4a9ea5209eb7f4d8096"
+      ]
+    },
+    {
+      "namespace": "hybridspot-system",
+      "name": "placement-webhook",
+      "generation": 19,
+      "observedGeneration": 19,
+      "available": 1,
+      "images": [
+        "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717"
+      ]
+    },
+    {
+      "namespace": "hybridspot-system",
+      "name": "public-cloud-vm-collector",
+      "generation": 31,
+      "observedGeneration": 31,
+      "available": 1,
+      "images": [
+        "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508"
+      ]
+    },
+    {
+      "namespace": "hybridspot-system",
+      "name": "spot-vm-management-controller",
+      "generation": 28,
+      "observedGeneration": 28,
+      "available": 1,
+      "images": [
+        "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:5bd08eb9fa9b2e2425a1983dbcb5a3ccb6aca630e3e975e8d49fe7820af8b040"
+      ]
+    },
+    {
+      "namespace": "hybridspot-system",
+      "name": "training-lifecycle-controller",
+      "generation": 19,
+      "observedGeneration": 19,
+      "available": 1,
+      "images": [
+        "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b"
+      ]
+    }
+  ],
+  "storage_modification": {
+    "VolumesModifications": [
+      {
+        "VolumeId": "vol-01377e5f3154a6011",
+        "ModificationState": "completed",
+        "TargetSize": 500,
+        "TargetIops": 3000,
+        "TargetVolumeType": "gp3",
+        "TargetThroughput": 125,
+        "TargetMultiAttachEnabled": false,
+        "OriginalSize": 500,
+        "OriginalVolumeType": "standard",
+        "OriginalMultiAttachEnabled": false,
+        "Progress": 100,
+        "StartTime": "2026-11-18T12:25:40+00:00",
+        "EndTime": "2026-11-18T15:30:38+00:00"
+      }
+    ]
+  },
+  "existing_running_or_stopped_count": 9,
+  "no_new_GPU_or_FIS": true,
+  "quota_verified": false,
+  "quota_error": "AccessDeniedException",
+  "spot_placement_scores": {
+    "g5.2xlarge": 9,
+    "g6.2xlarge": 9
+  },
+  "placement_score_not_capacity_guarantee": true
+}

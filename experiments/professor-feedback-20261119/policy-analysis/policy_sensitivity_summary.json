@@ -1,0 +1,32 @@
+{
+  "kind": "OFFLINE_UNCHANGED_PRODUCTION_POLICY_SENSITIVITY",
+  "rows": 2016,
+  "alpha_changed_rows": 112,
+  "alphas": [
+    0.7,
+    0.8,
+    0.9
+  ],
+  "world_sizes_are_separate_blocks": [
+    4,
+    2
+  ],
+  "instance_types_are_separate_blocks": [
+    "g5.2xlarge",
+    "g6.2xlarge"
+  ],
+  "all_vm_stages": [
+    "ThroughputOnlyBootstrap"
+  ],
+  "all_interval_sources": [
+    "risk-band-bootstrap"
+  ],
+  "economics_evaluated_rows": 0,
+  "actual_GPU_measurement": false,
+  "checkpoint_D_analysis_complete": false,
+  "inputs": {
+    "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+    "/home/ubuntu/day19-optimization-20261119/prices-readonly.json": "c7db39a65e3ce7eba54888408b0607d87643657f64b0cb6a2c6a664b5e6c53ae",
+    "experiments/ieee-access-final-20261117/config/run_config.provisional.json": "66cf91b94eae0183d116c875952dfbc18a4c71fd02947f9dd0167b3a960576f1"
+  }
+}

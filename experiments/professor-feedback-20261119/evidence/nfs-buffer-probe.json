@@ -1,0 +1,155 @@
+{
+  "at": "2026-11-19T00:40:31.840101+00:00",
+  "scope": "bounded synthetic 4 concurrent CPU writers over management NFS client; NOT GPU/DDP or end-to-end performance",
+  "bytes_per_rank": 268435456,
+  "world_size": 4,
+  "GPU_creation": false,
+  "FIS_execution": false,
+  "NFS_endpoint": "10.50.1.98:/mnt/nfs",
+  "storage_state_required": "completed",
+  "order": "old duplicate write before new duplicate reuse; warm caches; exploratory only",
+  "measurements": {
+    "initial_write": {
+      "wall_seconds": 480.2128634825349,
+      "ranks": [
+        {
+          "rank": 0,
+          "seconds": 480.18920431658626,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 1,
+          "seconds": 480.1891992036253,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 2,
+          "seconds": 480.20765275135636,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 3,
+          "seconds": 480.1938467528671,
+          "bytes": 268435456,
+          "metadata": []
+        }
+      ],
+      "logical_checkpoint_bytes": 1073741824,
+      "payload_write_bytes": 1073741824
+    },
+    "old_duplicate_rewrite": {
+      "wall_seconds": 478.05144465342164,
+      "ranks": [
+        {
+          "rank": 0,
+          "seconds": 478.02016799524426,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 1,
+          "seconds": 478.01959146372974,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 2,
+          "seconds": 478.04797167889774,
+          "bytes": 268435456,
+          "metadata": []
+        },
+        {
+          "rank": 3,
+          "seconds": 478.01903041265905,
+          "bytes": 268435456,
+          "metadata": []
+        }
+      ],
+      "logical_checkpoint_bytes": 1073741824,
+      "payload_write_bytes": 1073741824
+    },
+    "new_identical_reuse": {
+      "wall_seconds": 4.44991759955883,
+      "ranks": [
+        {
+          "rank": 0,
+          "seconds": 4.4441100768744946,
+          "bytes": 268435456,
+          "metadata": [
+            {
+              "buffer_bytes": 268435456,
+              "elapsed_seconds": 4.44402639567852,
+              "mode": "reuse-identical",
+              "semantics": "launcher-local I/O; not end-to-end restore latency",
+              "written_bytes": 0
+            }
+          ]
+        },
+        {
+          "rank": 1,
+          "seconds": 4.1547200959175825,
+          "bytes": 268435456,
+          "metadata": [
+            {
+              "buffer_bytes": 268435456,
+              "elapsed_seconds": 4.154592486098409,
+              "mode": "reuse-identical",
+              "semantics": "launcher-local I/O; not end-to-end restore latency",
+              "written_bytes": 0
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "seconds": 4.447982229292393,
+          "bytes": 268435456,
+          "metadata": [
+            {
+              "buffer_bytes": 268435456,
+              "elapsed_seconds": 4.44787135347724,
+              "mode": "reuse-identical",
+              "semantics": "launcher-local I/O; not end-to-end restore latency",
+              "written_bytes": 0
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "seconds": 4.441619016230106,
+          "bytes": 268435456,
+          "metadata": [
+            {
+              "buffer_bytes": 268435456,
+              "elapsed_seconds": 4.4414852019399405,
+              "mode": "reuse-identical",
+              "semantics": "launcher-local I/O; not end-to-end restore latency",
+              "written_bytes": 0
+            }
+          ]
+        }
+      ],
+      "logical_checkpoint_bytes": 1073741824,
+      "payload_write_bytes": 0
+    }
+  },
+  "missing_target_NFS_fallback": {
+    "rank": 0,
+    "seconds": 119.59350212849677,
+    "bytes": 268435456,
+    "metadata": [
+      {
+        "buffer_bytes": 268435456,
+        "elapsed_seconds": 119.59343169629574,
+        "mode": "atomic-write",
+        "semantics": "launcher-local I/O; not end-to-end restore latency",
+        "written_bytes": 268435456
+      }
+    ]
+  },
+  "byte_integrity_verified": true,
+  "own_probe_files_removed": true,
+  "own_mount_removed": true
+}

@@ -1,0 +1,5 @@
+stage,world_size,bytes,payload_write_bytes,wall_seconds,scope
+initial_write,4,1073741824,1073741824,480.2128634825349,management NFS client CPU probe; fixed order and warm cache; not GPU/DDP gain
+old_duplicate_rewrite,4,1073741824,1073741824,478.05144465342164,management NFS client CPU probe; fixed order and warm cache; not GPU/DDP gain
+new_identical_reuse,4,1073741824,0,4.44991759955883,management NFS client CPU probe; fixed order and warm cache; not GPU/DDP gain
+missing_target_atomic_fallback,1,268435456,268435456,119.59350212849677,CPU NFS changed/missing-target durable write; not GPU/DDP gain

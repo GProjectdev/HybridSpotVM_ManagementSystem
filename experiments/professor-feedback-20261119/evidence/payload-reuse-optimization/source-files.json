@@ -1,0 +1,21 @@
+{
+  "sha256": "c50182f94398bdcc0a8573da2cdce2deff9311b3ffb3b248234be0f197180fd4",
+  "files": [
+    "fluidcr/__init__.py",
+    "fluidcr/_ast_scan.py",
+    "fluidcr/_config.py",
+    "fluidcr/_hook.py",
+    "fluidcr/backends/__init__.py",
+    "fluidcr/backends/pytorch.py",
+    "fluidcr/ctrl.py",
+    "fluidcr/distributed.py",
+    "fluidcr/evaluation.py",
+    "fluidcr/group_control.py",
+    "fluidcr/group_restore.py",
+    "fluidcr/hf_integration.py",
+    "fluidcr/hf_trainer.py",
+    "fluidcr/iteration.py",
+    "fluidcr/launcher.py",
+    "Dockerfile.payload"
+  ]
+}
