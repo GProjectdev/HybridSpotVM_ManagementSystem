@@ -1,0 +1,37 @@
+{
+  "completed_at": "2026-11-19T06:11:02.383332+00:00",
+  "payload_file_count": 304,
+  "after_free_bytes": 445638832128,
+  "metadata_files_verified": 259,
+  "metadata_hashes_all_unchanged": true,
+  "journal_sha256": "8cc99443feca333dc513c090d7beb8ee34c4ad941891972729ca9f7335a4fafc",
+  "receipt_finalization_error_recovered": true,
+  "no_payload_delete_retried": true,
+  "PV_PVC_CR_changes": false,
+  "directories_preserved": true,
+  "binary_payloads_backed_up": false,
+  "before_free_bytes": 128905891840,
+  "recovered_bytes": 316732940288,
+  "deleted_namespaces": [
+    "eval-final-fix-rn-g6-1811",
+    "eval-final-rn-g6-180948",
+    "eval-final-rn-gpu-171818",
+    "eval-v3-d19-gpt-b3-01",
+    "eval-v3-gpt4-g52m-1817",
+    "eval-v3-gpt4-g52p-1820",
+    "eval-v3-gpt4-gp3-1824",
+    "eval-v3-gpt4-od-1816",
+    "eval-v3-gpt4-risk62-1823",
+    "eval-v3-rn4-odfast-1822",
+    "v6-eval-20261116-0720",
+    "v6-live-20261116-0456",
+    "v6-up-20261116-0604"
+  ],
+  "preserved_namespaces": {
+    "eval-v3-d19-gpt-cal-03": "latest new-policy GPT2 full-rank checkpoint and archive",
+    "eval-v3-d19-rn-b3-02": "latest new-policy ResNet verified full-rank checkpoint and archive",
+    "v6-readiness-20261117": "unretired historical RestorePlans/Requests; exclude uncertain references"
+  },
+  "metadata_backup": "/home/ubuntu/day19-nfs-cleanup-20261119/preserved-checkpoint-metadata.tar.gz",
+  "metadata_backup_sha256": "7babebcb8afac8d41f5b382ea22d2bbef4f385612cbeda4a6b4f3c80b235e30f"
+}

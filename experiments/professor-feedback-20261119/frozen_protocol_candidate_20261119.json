@@ -134,9 +134,11 @@
     "MiB_per_second": 125,
     "modification_state": "completed",
     "completed_utc": "2026-11-18T15:30:38+00:00",
-    "free_bytes_snapshot": 128905891840,
-    "snapshot_at_utc": "2026-11-19T05:51:57.766959+00:00",
-    "formal_six_run_capacity_confirmed": false
+    "free_bytes_snapshot": 445638832128,
+    "snapshot_at_utc": "2026-11-19T06:17:44.413771+00:00",
+    "formal_six_run_capacity_confirmed": false,
+    "initial_capacity_block_resolved": true,
+    "retired_artifact_cleanup_receipt": "nfs-cleanup/cleanup-result.json"
   },
   "hardware": {
     "az": "ap-northeast-2c",
@@ -182,17 +184,17 @@
   },
   "remaining_gates": [
     "researcher confirmation of proposed goals/settings including120second reserve",
-    "NFS retained-archive capacity/retention arrangement: currently120GiB free,56GiB above64GiB guard; no existing data deleted",
     "per-run supply/current prices/exact hashes/native risk feed runtime TLS and source timestamp",
     "C current durable four-rank checkpoint and exact owned Spot/OD FIS scope",
-    "formal native timing eligibility; abort and record deviations rather than change goal or risk"
+    "formal native timing eligibility; abort and record deviations rather than change goal or risk",
+    "per-run checkpoint/archive space monitoring with64GiB reserve; retired old payloads cannot be replayed"
   ],
   "not_a_formal_run_manifest": true,
   "unique_formal_runs": 6,
   "inference_scope": "EXPLORATORY_ONLY",
   "repetition_authority": "researcher reply2026-11-19: each model A/B/C once, total6",
   "paid_dispatch_scope": "today acceptance and preparation; aim18KST hard22KST; explicit user paid continuation",
-  "update_state": "All three paid acceptance/calibration runs passed and cleaned; final selected-interval followup idle-deployed; researcher confirmation and formal capacity plan remain",
+  "update_state": "All changed-path validations cleaned; retired NFS payloads cleaned; proposed goals/settings still await researcher confirmation",
   "researcher_confirmation_required": true,
   "researcher_confirmed": false,
   "updated_at_utc": "2026-11-19T05:50:58.657494+00:00",

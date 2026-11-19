@@ -1,0 +1,76 @@
+{
+  "at": "2026-11-19T06:17:44.413771+00:00",
+  "preserved_paths": [
+    {
+      "path": "/mnt/nfs/eval-v3-d19-gpt-cal-03-eval-d19-gpt-cal-03-checkpoint-pvc-6cca5156-1e6b-4b42-aea2-cdbf879c9a72",
+      "allocated_bytes": 11947941888,
+      "same_inode_and_allocated_size": true
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-d19-rn-b3-02-eval-d19-rn-b3-02-checkpoint-pvc-f527eb3b-904c-467a-beb1-b9e4ba5622f0",
+      "allocated_bytes": 1508556800,
+      "same_inode_and_allocated_size": true
+    },
+    {
+      "path": "/mnt/nfs/validation-assets-v6-20261116",
+      "allocated_bytes": 1355530240,
+      "same_inode_and_allocated_size": true
+    },
+    {
+      "path": "/mnt/nfs/validation-assets-v6-20261117",
+      "allocated_bytes": 356761600,
+      "same_inode_and_allocated_size": true
+    }
+  ],
+  "free_bytes": 445638832128,
+  "df": "Filesystem        1B-blocks        Used    Available Use% Mounted on\n/dev/nvme1n1   527295578112 81639968768 445638832128  16% /mnt/nfs\n",
+  "member_NFS_probes": [
+    {
+      "cluster": "AWS",
+      "storage_class": "nfs-client",
+      "default_class": true,
+      "probe_claim_uid": "e93cf4be-6554-4226-b38b-d72aec65eda2",
+      "probe_pv_uid": "bfb4f6c8-aeb5-4a50-8227-5e019baa0722",
+      "probe_nfs_path": "/mnt/nfs/nfs-provisioner-nfs-cleanup-probe-a08942dd8e25-pvc-e93cf4be-6554-4226-b38b-d72aec65eda2",
+      "provisioner_created_NFS_directory_and_bound_PVC": "PASS",
+      "training_or_GPU_pod_created": false,
+      "probe_claim_and_volume_removed": true,
+      "empty_probe_NFS_directory_removed": true
+    },
+    {
+      "cluster": "ONPRE1",
+      "storage_class": "shared-nfs",
+      "default_class": true,
+      "probe_claim_uid": "b64174a9-e743-4c22-848c-dcb893b613bb",
+      "probe_pv_uid": "3243242f-670d-4dcd-b6d3-f7b119ea3174",
+      "probe_nfs_path": "/mnt/nfs/shared-nfs-provisioner-nfs-cleanup-probe-e344131278d0-pvc-b64174a9-e743-4c22-848c-dcb893b613bb",
+      "provisioner_created_NFS_directory_and_bound_PVC": "PASS",
+      "training_or_GPU_pod_created": false,
+      "probe_claim_and_volume_removed": true,
+      "empty_probe_NFS_directory_removed": true
+    }
+  ],
+  "api_storage_object_checks": [
+    {
+      "api": "MGMT",
+      "PV_PVC_UID_set_unchanged": true,
+      "objects": 5
+    },
+    {
+      "api": "KARMADA",
+      "PV_PVC_UID_set_unchanged": true,
+      "objects": 0
+    },
+    {
+      "api": "AWS",
+      "PV_PVC_UID_set_unchanged": true,
+      "objects": 114
+    },
+    {
+      "api": "ONPRE1",
+      "PV_PVC_UID_set_unchanged": true,
+      "objects": 16
+    }
+  ],
+  "new_VM_or_FIS": false
+}

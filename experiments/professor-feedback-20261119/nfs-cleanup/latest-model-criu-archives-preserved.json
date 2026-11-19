@@ -1,0 +1,14 @@
+[
+  {
+    "namespace": "eval-v3-d19-gpt-cal-03",
+    "archive_files": 4,
+    "allocated_bytes": 6230536192,
+    "unchanged": true
+  },
+  {
+    "namespace": "eval-v3-d19-rn-b3-02",
+    "archive_files": 4,
+    "allocated_bytes": 1044668416,
+    "unchanged": true
+  }
+]

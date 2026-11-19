@@ -1,0 +1,221 @@
+{
+  "state": "COMPLETED_VERIFIED",
+  "at": "2026-11-19T06:08:16.791919+00:00",
+  "roots": [
+    {
+      "path": "/mnt/nfs/v6-eval-20261116-0720-trainer-checkpoint-pvc-08bf8852-6e3d-4111-a79a-8b20781deb0d",
+      "namespace": "v6-eval-20261116-0720",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "08bf8852-6e3d-4111-a79a-8b20781deb0d",
+      "volume_uid": "6cba617b-295d-4b46-a37d-7654ed483512"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/v6-eval-20261116-0720",
+      "namespace": "v6-eval-20261116-0720",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "08bf8852-6e3d-4111-a79a-8b20781deb0d",
+      "volume_uid": "6cba617b-295d-4b46-a37d-7654ed483512"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-rn4-odfast-1822-eval-rn4-odfast-1822-checkpoint-pvc-59a48bcd-1bc4-44d1-b939-e3b25e7baa11",
+      "namespace": "eval-v3-rn4-odfast-1822",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "59a48bcd-1bc4-44d1-b939-e3b25e7baa11",
+      "volume_uid": "656ec059-01c6-40c6-8fbe-394bed3c2fb5"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-rn4-odfast-1822",
+      "namespace": "eval-v3-rn4-odfast-1822",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "59a48bcd-1bc4-44d1-b939-e3b25e7baa11",
+      "volume_uid": "656ec059-01c6-40c6-8fbe-394bed3c2fb5"
+    },
+    {
+      "path": "/mnt/nfs/v6-live-20261116-0456-trainer-checkpoint-pvc-74b2b583-8ebd-4a8e-8691-39e5df298f47",
+      "namespace": "v6-live-20261116-0456",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "74b2b583-8ebd-4a8e-8691-39e5df298f47",
+      "volume_uid": "16c0fa19-8f2b-421f-a6b2-06cf1dbddcba"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/v6-live-20261116-0456",
+      "namespace": "v6-live-20261116-0456",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "74b2b583-8ebd-4a8e-8691-39e5df298f47",
+      "volume_uid": "16c0fa19-8f2b-421f-a6b2-06cf1dbddcba"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-gpt4-risk62-1823-eval-gpt4-risk62-1823-checkpoint-pvc-86f8aedc-9dd2-4275-bc65-574f0396db4b",
+      "namespace": "eval-v3-gpt4-risk62-1823",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "86f8aedc-9dd2-4275-bc65-574f0396db4b",
+      "volume_uid": "7feb5feb-6b91-4905-8da1-1d39dd9dee59"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-d19-gpt-b3-01-eval-d19-gpt-b3-01-checkpoint-pvc-b9592954-f2f3-405e-bf1b-3884236dcf5e",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "b9592954-f2f3-405e-bf1b-3884236dcf5e",
+      "volume_uid": "f0eb3cea-1953-46e3-abae-6dde06b96dfa"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-d19-gpt-b3-01",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "b9592954-f2f3-405e-bf1b-3884236dcf5e",
+      "volume_uid": "f0eb3cea-1953-46e3-abae-6dde06b96dfa"
+    },
+    {
+      "path": "/mnt/nfs/eval-final-rn-g6-180948-eval-rn-g6-180948-checkpoint-pvc-c2d7a4bb-346e-4754-a0f2-70dcbddce1ee",
+      "namespace": "eval-final-rn-g6-180948",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "c2d7a4bb-346e-4754-a0f2-70dcbddce1ee",
+      "volume_uid": "6f62b638-af38-468b-ab69-d05941ef79ab"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-final-rn-g6-180948",
+      "namespace": "eval-final-rn-g6-180948",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "c2d7a4bb-346e-4754-a0f2-70dcbddce1ee",
+      "volume_uid": "6f62b638-af38-468b-ab69-d05941ef79ab"
+    },
+    {
+      "path": "/mnt/nfs/eval-final-fix-rn-g6-1811-eval-fix-rn-g6-1811-checkpoint-pvc-c48bd733-4d34-49d6-bcc6-78b616fbdf7d",
+      "namespace": "eval-final-fix-rn-g6-1811",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "c48bd733-4d34-49d6-bcc6-78b616fbdf7d",
+      "volume_uid": "b9cf0cf4-5b99-435c-9c9a-1d292802444f"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-final-fix-rn-g6-1811",
+      "namespace": "eval-final-fix-rn-g6-1811",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "c48bd733-4d34-49d6-bcc6-78b616fbdf7d",
+      "volume_uid": "b9cf0cf4-5b99-435c-9c9a-1d292802444f"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-gpt4-g52p-1820-eval-gpt4-g52p-1820-checkpoint-pvc-cbd80520-6aad-4bcc-a608-2baeb8ef4e1f",
+      "namespace": "eval-v3-gpt4-g52p-1820",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "cbd80520-6aad-4bcc-a608-2baeb8ef4e1f",
+      "volume_uid": "3dfc0ead-24a9-4a44-9dd8-c4d2f86869d7"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-gpt4-g52p-1820",
+      "namespace": "eval-v3-gpt4-g52p-1820",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "cbd80520-6aad-4bcc-a608-2baeb8ef4e1f",
+      "volume_uid": "3dfc0ead-24a9-4a44-9dd8-c4d2f86869d7"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-gpt4-gp3-1824-eval-gpt4-gp3-1824-checkpoint-pvc-cca23f36-0e4e-42a7-a618-4cb50da49af5",
+      "namespace": "eval-v3-gpt4-gp3-1824",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "cca23f36-0e4e-42a7-a618-4cb50da49af5",
+      "volume_uid": "2c5a31fe-2b5f-4f6e-9504-a2005016ac5b"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-gpt4-gp3-1824",
+      "namespace": "eval-v3-gpt4-gp3-1824",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "cca23f36-0e4e-42a7-a618-4cb50da49af5",
+      "volume_uid": "2c5a31fe-2b5f-4f6e-9504-a2005016ac5b"
+    },
+    {
+      "path": "/mnt/nfs/eval-final-rn-gpu-171818-eval-rn-gpu-171818-checkpoint-pvc-d843e604-0b75-4c42-86b6-ff5bf85b98ac",
+      "namespace": "eval-final-rn-gpu-171818",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "d843e604-0b75-4c42-86b6-ff5bf85b98ac",
+      "volume_uid": "d96e41fc-3158-42c9-9311-b081afff0868"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-final-rn-gpu-171818",
+      "namespace": "eval-final-rn-gpu-171818",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "d843e604-0b75-4c42-86b6-ff5bf85b98ac",
+      "volume_uid": "d96e41fc-3158-42c9-9311-b081afff0868"
+    },
+    {
+      "path": "/mnt/nfs/v6-up-20261116-0604-trainer-checkpoint-pvc-e24c906f-872f-458c-a479-9f392cbbda38",
+      "namespace": "v6-up-20261116-0604",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "e24c906f-872f-458c-a479-9f392cbbda38",
+      "volume_uid": "9ab162d9-a6b6-4b52-a3e5-7a8ba09946f7"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/v6-up-20261116-0604",
+      "namespace": "v6-up-20261116-0604",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "e24c906f-872f-458c-a479-9f392cbbda38",
+      "volume_uid": "9ab162d9-a6b6-4b52-a3e5-7a8ba09946f7"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-gpt4-od-1816-eval-gpt4-od-1816-checkpoint-pvc-fa85845d-487b-4db9-9a36-6d99c7f919db",
+      "namespace": "eval-v3-gpt4-od-1816",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "fa85845d-487b-4db9-9a36-6d99c7f919db",
+      "volume_uid": "39f264e9-522c-400d-bc06-fd6e24880328"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-gpt4-od-1816",
+      "namespace": "eval-v3-gpt4-od-1816",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "fa85845d-487b-4db9-9a36-6d99c7f919db",
+      "volume_uid": "39f264e9-522c-400d-bc06-fd6e24880328"
+    },
+    {
+      "path": "/mnt/nfs/eval-v3-gpt4-g52m-1817-eval-gpt4-g52m-1817-checkpoint-pvc-fed7abc6-2d75-482f-9973-0f685cb6f750",
+      "namespace": "eval-v3-gpt4-g52m-1817",
+      "kind": "application-checkpoint-volume",
+      "claim_uid": "fed7abc6-2d75-482f-9973-0f685cb6f750",
+      "volume_uid": "5f31b8fa-b84e-4da5-8b93-cb1ec1e1174c"
+    },
+    {
+      "path": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-gpt4-g52m-1817",
+      "namespace": "eval-v3-gpt4-g52m-1817",
+      "kind": "CRIU-content-addressed-archive",
+      "claim_uid": "fed7abc6-2d75-482f-9973-0f685cb6f750",
+      "volume_uid": "5f31b8fa-b84e-4da5-8b93-cb1ec1e1174c"
+    }
+  ],
+  "payload_files": 304,
+  "estimated_reclaim_allocated_bytes": 316733124608,
+  "metadata_files_preserved": 259,
+  "metadata_backup_sha256": "7babebcb8afac8d41f5b382ea22d2bbef4f385612cbeda4a6b4f3c80b235e30f",
+  "preserved_namespaces": {
+    "eval-v3-d19-gpt-cal-03": "latest new-policy GPT2 full-rank checkpoint and archive",
+    "eval-v3-d19-rn-b3-02": "latest new-policy ResNet verified full-rank checkpoint and archive",
+    "v6-readiness-20261117": "unretired historical RestorePlans/Requests; exclude uncertain references"
+  },
+  "excluded": [
+    {
+      "namespace": "v6-preflight-20261116-0914",
+      "path": "/mnt/nfs/v6-preflight-20261116-0914-trainer-checkpoint-pvc-4138e700-8b3a-4176-9792-b3e40c7ca87b",
+      "reason": "no live terminal checkpoint CR UID evidence"
+    },
+    {
+      "namespace": "eval-v3-d19-gpt-cal-03",
+      "path": "/mnt/nfs/eval-v3-d19-gpt-cal-03-eval-d19-gpt-cal-03-checkpoint-pvc-6cca5156-1e6b-4b42-aea2-cdbf879c9a72",
+      "reason": "latest new-policy GPT2 full-rank checkpoint and archive"
+    },
+    {
+      "namespace": "v6-readiness-20261117",
+      "path": "/mnt/nfs/v6-readiness-20261117-trainer-checkpoint-pvc-90415b6b-0e95-46a1-80eb-373d83cdca3b",
+      "reason": "unretired historical RestorePlans/Requests; exclude uncertain references"
+    },
+    {
+      "namespace": "v6-preflight-20261116-0914",
+      "path": "/mnt/nfs/v6-preflight-20261116-0914-trainer-checkpoint-fresh-r2-pvc-e6904b86-8b15-4904-9ba3-bc7a7d46ba9b",
+      "reason": "no live terminal checkpoint CR UID evidence"
+    },
+    {
+      "namespace": "eval-v3-d19-rn-b3-02",
+      "path": "/mnt/nfs/eval-v3-d19-rn-b3-02-eval-d19-rn-b3-02-checkpoint-pvc-f527eb3b-904c-467a-beb1-b9e4ba5622f0",
+      "reason": "latest new-policy ResNet verified full-rank checkpoint and archive"
+    }
+  ],
+  "PV_PVC_CR_deletions": false,
+  "binary_payload_backup": false,
+  "result": "cleanup-result.json",
+  "postcheck": "post-cleanup-verification.json"
+}

@@ -1,0 +1,67 @@
+NFS 검증 Checkpoint 정리 결과 — 2026-11-19T15:19:29.010794+09:00
+사용자가11월19일에 기존 작업으로 생긴 Checkpoint 등의 파일 정리를 요청하여 수행했다.
+정식실험/새GPU VM/FIS는 실행하지 않았다. NFS용량/IOPS/스토리지타입 변경없음.
+
+결과
+500GiB gp3 /mnt/nfs,기존사용서버13.125.179.70(내부10.50.1.98).
+정리전 빈공간 120.053GiB → 정리후 415.034GiB.
+실제회수 294.981GiB (316732940288bytes).
+종료된13검증namespace의application Checkpoint/CRIU archive304파일 삭제.
+PV/PVC/Namespace/CR/Finalizer는 기존객체를삭제·변경하지 않았다.
+삭제한바이너리는백업하지않았으며복구/재생불가다.정리의목적이그용량회수다.
+검증성공/실패/정책/성능로그및시간·UID·hash메타데이터는그대로보존한다.
+삭제전작은메타데이터259파일을NFS밖에gzip백업했고삭제후SHA256도동일함을확인했다.
+백업 /home/ubuntu/day19-nfs-cleanup-20261119/preserved-checkpoint-metadata.tar.gz (root접근제한)
+SHA256 7babebcb8afac8d41f5b382ea22d2bbef4f385612cbeda4a6b4f3c80b235e30f
+원본객체inventory/파일별삭제manifest/실행기록도같은private디렉터리에보존했다.
+
+대상확인근거
+NFS path↔현재PV UID↔claimRef PVC UID↔PVC volumeName을상호검증했다.
+MGMT/Karmada/AWS/OnPrem의Pod/controller/job/Checkpoint/Restore/VM요청을대조해
+진행중작업이없는범위만선정했다.파일이름/오래된날짜만으로선정하지않았다.
+일부RestorePlan의phase는Running으로남았으나,
+annotation migration.dcnlab.com/group-target-verified=requestUID와동일source
+RestoreRequest의Verified,완료된prepare/resume Jobs,현재학습Pod/VM요청없음을확인했다.
+이는Stateful-Migration-Operator-with-PV/internal/groupcontract/fence.go TargetVerified와
+문서docs/group-restore-execution.md의retired target규칙에따른종료증거다.
+미확정 v6-readiness-20261117 Restore참조는이번삭제에서제외했다.
+
+보존한것
+- validation-assets-v6-20261116 및20261117의학습데이터·모델·manifest.
+- 최신GPT2 d19-gpt-cal-03:4rank appCheckpoint와CRIU sha256 archive4개.
+- 최신ResNet d19-rn-b3-02:4rank appCheckpoint와CRIU sha256 archive4개.
+- 상태가명확하지않은 v6-readiness-20261117의파일.
+- 현재live terminal CR UID근거가부족한 v6-preflight-20261116-0914파일.
+- 모든기존PV/PVC/Namespaces와실험로그/평가CSV/TXT/원시UID증거.
+정리한과거실험의성공이벤트는역사적검증증거로유효하지만,그바이너리아카이브를
+즉시다시복원할수있는자료로취급하면안된다.각정리root에retirement JSON을남겼다.
+
+정리후검사
+데이터·모델및최신두모델app볼륨의inode/사용바이트동일확인.
+최신두모델CRIU4rank archive8개크기/개수유지확인.
+네API의기존PV/PVC UID집합동일확인.
+AWS default nfs-client와OnPrem default shared-nfs에서각1MiB 임시PVC가
+실제같은NFS서버에동적디렉터리를생성하고Bound됨을확인했다.
+임시PVC와그자신의PV/빈디렉터리는UID대조후정상정리했고기존스토리지객체는보존했다.
+학습Pod/GPUVM없이수행한provisioner의NFS디렉터리쓰기검사다.
+provisioner이미지에shell이없어Pod내shell검사는실행되지않았고,이를파일I/O성공으로
+표현하지않는다.위동적PVC Bound검사로양쪽Member의실제NFS쓰기를확인했다.
+
+실행중발견한기록오류와처리
+삭제후retirement표시파일을생성하는단계에서문자열치환으로파일명이과도하게
+길어지는오류가발생했다.첫삭제를재시도하지않았다.이미fsync된304개개별unlink
+기록과304개실파일부재,보존metadata259개SHA256을대조한뒤표시파일/최종영수증만
+마무리했다.동일payload삭제재실행없음.오류/복구기록도private경로에남겼다.
+
+향후공간운영
+64GiB여유를제외하고약351.034GiB를이용할수있어직전의즉시공간부족문제는
+해소했다.새스토리지확장을현재필수로보지않는다.정식6Run의모든경우에대해
+아카이브증가가무제한허용되는것은아니다.각Run의실제CP/중첩/임시파일증가와
+64GiBguard를계속확인하며정식원시증거보관/정리정책을적용해야한다.
+이번정리는연구자확인전목표4800/26700이나위험clock/Checkpoint정책을변경하지않는다.
+
+공유자료
+/home/ubuntu/graduate/Evaluation/day19_20261119/nfs-cleanup/cleanup-result.json
+/home/ubuntu/graduate/Evaluation/day19_20261119/nfs-cleanup/cleanup-plan.json
+/home/ubuntu/graduate/Evaluation/day19_20261119/nfs-cleanup/post-cleanup-verification.json
+/home/ubuntu/graduate/Evaluation/day19_20261119/nfs-cleanup/retired_payload_files.csv

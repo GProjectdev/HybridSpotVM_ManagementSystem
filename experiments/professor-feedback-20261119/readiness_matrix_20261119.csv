@@ -5,6 +5,6 @@ lastSelectedInterval followup,CPU_PASS_IDLE_DEPLOYED,Go full/race; finaldigest a
 quota,NUMERIC_UNVERIFIED_ACTUAL_ADMISSION_PASS,4OD+3Spot actual,perrun supply check
 goal settings,RESEARCHER_CONFIRMATION_REQUIRED,4800/26700 empirical candidate,confirm then freeze
 native FIS timing,CONDITIONAL_NARROW_WINDOW,GPT112.5s residual under current screening,live clock gate; never retime
-NFS capacity,FORMAL_CAPACITY_PLAN_PENDING,120GiBfree;56GiBaboveguard,review retention/offload/capacity before runs
+NFS capacity,PASS_CLEANED_WITH_RESERVE,304retired payloads removed;415.0GiBfree;latestmodels/data/logs preserved,monitor per-run growth/64GiBguard; no immediate expansion required
 formal execution,NOT_STARTED,6unique exploratory Runs planned,researcher frozen contract and runtime gates
 today paid cleanup,PASS,21ownedGPU EC2terminated/rootvolabsent,baseinfra retained

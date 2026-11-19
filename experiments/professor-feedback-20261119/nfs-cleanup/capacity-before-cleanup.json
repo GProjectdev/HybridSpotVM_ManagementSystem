@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-19T05:52:39.890791+00:00",
+  "free_bytes": 128905891840,
+  "operational_minimum_free_bytes": 68719476736,
+  "bytes_above_guard": 60186415104,
+  "retained_day19_volumes": [
+    {
+      "bytes": 11947941888,
+      "path": "/mnt/nfs/eval-v3-d19-gpt-cal-03-eval-d19-gpt-cal-03-checkpoint-pvc-6cca5156-1e6b-4b42-aea2-cdbf879c9a72"
+    },
+    {
+      "bytes": 1508556800,
+      "path": "/mnt/nfs/eval-v3-d19-rn-b3-02-eval-d19-rn-b3-02-checkpoint-pvc-f527eb3b-904c-467a-beb1-b9e4ba5622f0"
+    },
+    {
+      "bytes": 53765697536,
+      "path": "/mnt/nfs/eval-v3-d19-gpt-b3-01-eval-d19-gpt-b3-01-checkpoint-pvc-b9592954-f2f3-405e-bf1b-3884236dcf5e"
+    }
+  ],
+  "deleted_data": false,
+  "formal_capacity_not_assumed_for_all_six_runs": true,
+  "required_before_each_run": "bound retained archive/copy growth from same-model pilot, retain64GiB reserve; stop rather than delete existing checkpoints; researcher-reviewed retention or expansion if insufficient"
+}

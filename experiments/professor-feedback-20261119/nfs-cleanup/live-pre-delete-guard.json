@@ -1,0 +1,112 @@
+{
+  "at": "2026-11-19T06:09:57.870047+00:00",
+  "clusters_read": [
+    "MGMT",
+    "KARMADA",
+    "AWS",
+    "ONPRE1"
+  ],
+  "selected_namespaces": [
+    "eval-final-fix-rn-g6-1811",
+    "eval-final-rn-g6-180948",
+    "eval-final-rn-gpu-171818",
+    "eval-v3-d19-gpt-b3-01",
+    "eval-v3-gpt4-g52m-1817",
+    "eval-v3-gpt4-g52p-1820",
+    "eval-v3-gpt4-gp3-1824",
+    "eval-v3-gpt4-od-1816",
+    "eval-v3-gpt4-risk62-1823",
+    "eval-v3-rn4-odfast-1822",
+    "v6-eval-20261116-0720",
+    "v6-live-20261116-0456",
+    "v6-up-20261116-0604"
+  ],
+  "no_active_workloads_providers_or_checkpoint_operations": true,
+  "retired_plan_receipts": [
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "plan_uid": "faadbd86-df84-41c6-a213-788d28938684",
+      "verified_request_uid": "4156205f-9f8f-43db-9d26-b4c90385b597"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "plan_uid": "f090a552-519d-4354-a161-0353b088183f",
+      "verified_request_uid": "e00dc9a1-a6af-4191-8e40-a814dc8b8da4"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-gpt4-g52p-1820",
+      "plan_uid": "c43c7dfe-c2ea-4bb6-90e2-53c73fbc57d8",
+      "verified_request_uid": "dbd6bff2-bc9e-4bc8-bfd6-9ac04ed8bdb8"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-gpt4-gp3-1824",
+      "plan_uid": "39beb67d-31c4-4670-bdc3-fb4623daf83e",
+      "verified_request_uid": "b5d911ad-c680-454c-8327-6516f9040fc2"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-gpt4-od-1816",
+      "plan_uid": "f1f8cf7f-d719-4b60-880e-17402095d1e9",
+      "verified_request_uid": "6f70c8d2-35b2-4c6a-9aac-8a5223ee3888"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "eval-v3-rn4-odfast-1822",
+      "plan_uid": "c975def6-69a6-409d-9b35-0392ea5a51b6",
+      "verified_request_uid": "0a9c2ef4-0774-4865-898b-cfcce96fc590"
+    },
+    {
+      "api": "KARMADA",
+      "namespace": "v6-eval-20261116-0720",
+      "plan_uid": "b87dcef4-7002-40d2-836a-9e81a83377db",
+      "verified_request_uid": "21b68ab0-a65e-495c-8622-77e71f6f7f42"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "plan_uid": "6167618d-1d58-48bf-a979-bb903a343730",
+      "verified_request_uid": "4156205f-9f8f-43db-9d26-b4c90385b597"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-d19-gpt-b3-01",
+      "plan_uid": "0ac14222-07e7-4657-9055-8000f149da6c",
+      "verified_request_uid": "e00dc9a1-a6af-4191-8e40-a814dc8b8da4"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-gpt4-g52p-1820",
+      "plan_uid": "f93bf03f-2f3f-4680-8fbd-9c855b880e16",
+      "verified_request_uid": "dbd6bff2-bc9e-4bc8-bfd6-9ac04ed8bdb8"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-gpt4-gp3-1824",
+      "plan_uid": "3ed98b4e-a13b-433f-add2-dee47d77a87a",
+      "verified_request_uid": "b5d911ad-c680-454c-8327-6516f9040fc2"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-gpt4-od-1816",
+      "plan_uid": "f9bfda85-ff14-4c7c-9caa-68da41396537",
+      "verified_request_uid": "6f70c8d2-35b2-4c6a-9aac-8a5223ee3888"
+    },
+    {
+      "api": "AWS",
+      "namespace": "eval-v3-rn4-odfast-1822",
+      "plan_uid": "227b5e55-d1ab-48d7-9cbb-49c94b3a92d4",
+      "verified_request_uid": "0a9c2ef4-0774-4865-898b-cfcce96fc590"
+    },
+    {
+      "api": "AWS",
+      "namespace": "v6-eval-20261116-0720",
+      "plan_uid": "79b06d98-a6c9-4b00-81f4-99e5bb79ba44",
+      "verified_request_uid": "21b68ab0-a65e-495c-8622-77e71f6f7f42"
+    }
+  ],
+  "claim_volume_UID_bindings_rechecked": true
+}

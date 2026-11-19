@@ -2,7 +2,7 @@ Hybrid Cloud Spot DDP — 11월19일 최종 준비 상태
 갱신 KST 2026-11-19T14:55:46.249707+09:00
 
 판정: 변경 영향 수용검사와 필요한 최소 예비 측정 완료.
-정식 E1/E2는 연구자 설정 확인·동결 및 NFS 보관공간 계획 확정 전 대기한다.
+정식 E1/E2는 연구자 설정 확인·동결 전 대기한다. NFS 정리는 아래 후속 갱신을 적용한다.
 적용방법론은 HybridSpotDDP_EvaluationPlan_ProfessorFeedback_20261119.md다.
 기존11:23/13:22진행상태와유료미승인문구는이최종보고서가갱신한다.
 
@@ -34,8 +34,8 @@ GPT는느린예상시에도notice+margin뒤약112.5초만남아조건부이며�
 
 남은필수조건
 1. 목표Step/120초실행여유/이미지/정책/CP/위험입력을연구자가함께확인후동결.
-2. NFS약120GiB여유,64GiBguard위약56GiB.6Run보관용량확보는미완료다.
-   Run별archive증가량예산/보관또는이관계획을확인한다.기존CP임의삭제없음.
+2. 사용자요청후NFS종료검증payload304파일을정리해약415.0GiB여유를확보했다.
+   최신두모델복원본/데이터/로그/기존PV/PVC는보존했다.즉시확장은불필요하며Run별증가량/64GiBguard를확인한다.
 3. 각Run현재공급/가격/입력및자산hash/원시계측/정리시간확인.
    C전에는현재fullrankdurableCP/실제SpotUID/ODstopalarm/정확범위IAM바인딩확인.
 4. 최종작은field보존수정의CPU검증범위와과거FIS엔진증거재사용범위를그대로기재.
@@ -64,3 +64,8 @@ GPT는느린예상시에도notice+margin뒤약112.5초만남아조건부이며�
 NFS/EBS/VPN/관리노드/네트워크/FIS제외이며기존인프라는계속유지된다.
 H평가도구코드89705cc3bafa9cfe64b5ad9b8965087f675173e3,Go runtime7cb8e8f…;이미지전체digest는controller_images.json.
 F acd626a5…새payload원격push확인.현재최종보고서bundle push는별도영수증으로기록한다.
+
+NFS 후속 갱신 2026-11-19T15:19:29.010794+09:00
+사용자명시요청으로종료된검증의큰Checkpoint/CRIUpayload를정리했다.
+빈공간 120.1→415.0GiB,회수295.0GiB.양쪽Member동적PVC검사통과.
+상세 /home/ubuntu/graduate/Evaluation/nfs_cleanup_20261119.txt.위최초검증시의보존기록은그시점의상태이며이번후속정리로갱신된다.

@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-19T05:57:44.305145+00:00",
+  "at": "2026-11-19T06:19:29.503981+00:00",
   "status": "FINAL_PREPARATION_NOT_FROZEN",
   "files": [
     {
@@ -84,8 +84,8 @@
     },
     {
       "path": "evaluation_readiness_20261119.txt",
-      "sha256": "1ee81ee6fd67609bc7049309cc194add0e6ade84ed0512451788fe4f4596b98e",
-      "bytes": 4926
+      "sha256": "f8d8c49be5666d400a8367d147af06172b2863e4b44176ff00f1af6f086a5f80",
+      "bytes": 5380
     },
     {
       "path": "evidence/checkpoint-selected-interval/idle-before-upgrade.json",
@@ -329,8 +329,8 @@
     },
     {
       "path": "frozen_protocol_candidate_20261119.json",
-      "sha256": "9a67ff72ecadb47701fb670dc34a0bab4e10a7d69b73b355d4ee0b466ef73858",
-      "bytes": 12133
+      "sha256": "e5bdc23cd4b26af9bfcb8f5c6fb6e6e124d135202f99e6da1895e33248fba386",
+      "bytes": 12194
     },
     {
       "path": "goal-evidence/gpt2-goal-evidence.csv",
@@ -364,8 +364,8 @@
     },
     {
       "path": "goal_step_and_common_settings_recommendation_20261119.txt",
-      "sha256": "4da96923726c88f1a62ade429b1532cb31c79ec457dc1f230da00cb1474c0a03",
-      "bytes": 14070
+      "sha256": "080ecaede0ebfe9914182ff887ec8ded038c7b74fc962b081e39cb767114bf70",
+      "bytes": 14101
     },
     {
       "path": "goal_step_screening_20261119.csv",
@@ -508,9 +508,49 @@
       "bytes": 3516
     },
     {
-      "path": "nfs_capacity_for_formal_runs.json",
+      "path": "nfs-cleanup/capacity-before-cleanup.json",
       "sha256": "c5df34c24c3801101d6c89744426faed98738f27749aeeb6fbd26f40c88ebe76",
       "bytes": 969
+    },
+    {
+      "path": "nfs-cleanup/cleanup-plan.json",
+      "sha256": "5e1c5b81bae5be5ddd67f9da344e71bf662e2e31cb1e83488f0842e687774746",
+      "bytes": 10137
+    },
+    {
+      "path": "nfs-cleanup/cleanup-result.json",
+      "sha256": "cdf5c6f90907f781cecb0a9908f54a5c8502d0fc979d4ddfb1987f291ff924b6",
+      "bytes": 1483
+    },
+    {
+      "path": "nfs-cleanup/latest-model-criu-archives-preserved.json",
+      "sha256": "a4a784f00aacc44671860dafcd7704cea60159a5a02343f6e32a73bea9342162",
+      "bytes": 266
+    },
+    {
+      "path": "nfs-cleanup/live-pre-delete-guard.json",
+      "sha256": "c80411f0403621b7b636e4537e5b09b1a492f3944796add9613f63499378b081",
+      "bytes": 3578
+    },
+    {
+      "path": "nfs-cleanup/nfs_cleanup_20261119.txt",
+      "sha256": "9b8f9602f2e54ca098e181de6496232dc092cbb0d81726a832d7ab9be9f3eab5",
+      "bytes": 4792
+    },
+    {
+      "path": "nfs-cleanup/post-cleanup-verification.json",
+      "sha256": "515b7b520197612f1c59ba0b0ccd52185ed7059af33f432a073a08c7c712c19c",
+      "bytes": 2574
+    },
+    {
+      "path": "nfs-cleanup/retired_payload_files.csv",
+      "sha256": "8a25ba2629bb6dd8029ba41f7c0eade69145292e7a216bf6cb11f68798ee059d",
+      "bytes": 79639
+    },
+    {
+      "path": "nfs_capacity_for_formal_runs.json",
+      "sha256": "c6973f3fedd66a6146fd41853a39bd046942a975e33b05885a2fa1e88b2a215c",
+      "bytes": 941
     },
     {
       "path": "optimization_metric_summary_20261119.csv",
@@ -554,8 +594,8 @@
     },
     {
       "path": "readiness_matrix_20261119.csv",
-      "sha256": "b3dfefc555e231e43fda8ce32357bcd039b10e5bc60ba9a75cd5b0d94a7226b9",
-      "bytes": 963
+      "sha256": "4a281fc55993e7a81bb58503f0c7bd0f4c8fb1887169504ab255011c5fe4aa6a",
+      "bytes": 1028
     },
     {
       "path": "reconfiguration_phase_timings.csv",
@@ -564,8 +604,8 @@
     },
     {
       "path": "remaining_issues_20261119.txt",
-      "sha256": "022f1294f2a7dbc7a749901bd043aa1423da0e8e27859281d6b68a324aeec44b",
-      "bytes": 2572
+      "sha256": "5f14572f0db9539b3b41e79f236508606eca5b8dd77dbe57ce34db0c0eaa0e8e",
+      "bytes": 2500
     },
     {
       "path": "repetition_decision_20261119.json",

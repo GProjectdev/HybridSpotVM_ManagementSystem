@@ -9,11 +9,10 @@ P0 시간창: GPT는신규약1000Step 초기실측으로계산시통지/여유�
 과거짧은초기106Step q90외삽은1h와충돌한다. 새표본으로보완했지만보장값은아니다.
 R50초기298Step와D1회도장기변동의상한이아니다. Run실제clock/속도가창을벗어나면
 주입/입력/goal을옮기지않고실패·계획이탈로남긴다. 필요시블록분리를연구자에게제안.
-P0 저장공간: NFS약120GiB빈공간에서64GiBguard를빼면약56GiB. 오늘보존분은
-GPTbatch53.77GB/ResNet1.51GB/GPTcal11.95GB. NFS부담이없는A와달리B/C는
-추가CRIU/학습checkpoint/livecopy로증가한다.6Run전부보관가능하다고가정하지않는다.
-Run별실측증가량+round예산을검산하고필요시연구자가확인한보관/이관/용량확보가
-필요하다.기존checkpoint를임의삭제하거나500GiB볼륨을확장하지않았다.
+저장공간초기차단해소:사용자요청으로종료검증payload304개를정리해약415.0GiB여유확보.
+최신두모델Checkpoint/CRIU,학습자산/로그보존.기존PV/PVC/CR객체는그대로다.
+과거retired바이너리재생은불가하므로nfs_cleanup_20261119.txt의목록을적용한다.
+Run별실제archive증가량/64GiBguard감시는계속한다.즉시EBS확장은필수아니다.
 
 P1 숫자Quota권한부재/Spot공급변동: 실제4OD+3Spotadmission재사용,매Run재확인.
 P1 FIS C는고정된최초ownedSpot과건강한ownedOD alarm에새UID/ARN을바인딩한다.
