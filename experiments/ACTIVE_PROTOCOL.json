@@ -12,7 +12,7 @@
   "underlying_runner": "evaluation/integrated_protocol.py; v3 four-rank contracts retained",
   "rank_policy": "4preferred;2requires reported separate matched block",
   "previous_paid_deadline_utc": "2026-11-18T15:00:00Z",
-  "note": "user-authorized retired NFS payload cleanup completed; latest models/data/logs preserved; final goal/settings confirmation still required",
+  "note": "Final experimental review completed; goals4800/26700 and6exploratoryruns remain proposed; native FIS/recovery interaction and NFS archive budget disclosed; researcher confirmation required",
   "paid_dispatch_scope": "today paid acceptance completed/cleaned;18KST target22KST limit; not future formal authorization",
   "researcher_confirmation_required": true,
   "researcher_confirmed": false,
@@ -23,5 +23,6 @@
   "repeats_per_condition": 1,
   "total_unique_formal_runs": 6,
   "inference_scope": "EXPLORATORY_ONLY",
-  "nfs_cleanup_report": "experiments/professor-feedback-20261119/nfs-cleanup/nfs_cleanup_20261119.txt"
+  "nfs_cleanup_report": "experiments/professor-feedback-20261119/nfs-cleanup/nfs_cleanup_20261119.txt",
+  "final_experimental_review": "experiments/professor-feedback-20261119/final-review/E1_E2_Final_Experimental_Review_20261119.txt"
 }

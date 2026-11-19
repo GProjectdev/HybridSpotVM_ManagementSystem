@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-19T06:24:54.855374+00:00",
+  "mutations": false,
+  "new_GPU_or_FIS": false,
+  "account": {
+    "expected_account_verified": true
+  },
+  "spot_price": {
+    "verified": true,
+    "response": {
+      "NextToken": "",
+      "SpotPriceHistory": [
+        {
+          "AvailabilityZone": "ap-northeast-2c",
+          "AvailabilityZoneId": "apne2-az3",
+          "InstanceType": "g5.2xlarge",
+          "ProductDescription": "Linux/UNIX",
+          "SpotPrice": "0.681400",
+          "Timestamp": "2026-11-19T05:00:00+00:00"
+        }
+      ]
+    }
+  },
+  "placement": {
+    "verified": true,
+    "response": {
+      "SpotPlacementScores": [
+        {
+          "Region": "ap-northeast-2",
+          "AvailabilityZoneId": "apne2-az3",
+          "Score": 9
+        },
+        {
+          "Region": "ap-northeast-2",
+          "AvailabilityZoneId": "apne2-az1",
+          "Score": 9
+        },
+        {
+          "Region": "ap-northeast-2",
+          "AvailabilityZoneId": "apne2-az4",
+          "Score": 1
+        }
+      ]
+    }
+  },
+  "quota": {
+    "verified": false,
+    "error_code": "AccessDeniedException"
+  },
+  "nfs_volume": {
+    "verified": true,
+    "response": [
+      {
+        "VolumeId": "vol-01377e5f3154a6011",
+        "Size": 500,
+        "VolumeType": "gp3",
+        "Iops": 3000,
+        "Throughput": 125,
+        "State": "in-use"
+      }
+    ]
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_AWAITING_RESEARCHER_CONFIRMATION",
+  "researcher_confirmed": false,
+  "formal_results_exist": false,
+  "repeats_per_condition_current_decision": 1,
+  "total_unique_planned_runs": 6,
+  "preassignment_note": "Identifiers/order are proposals. Researcher confirms and timestamps register before first dispatch. Append failures; never substitute successful retries into failed slots.",
+  "attempts": [
+    {
+      "attempt_id": "gpt2-block01-a-attempt01",
+      "model": "gpt2",
+      "arm": "A",
+      "block_id": "block01",
+      "planned_order_within_model": 1,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "gpt2-block01-b-attempt01",
+      "model": "gpt2",
+      "arm": "B",
+      "block_id": "block01",
+      "planned_order_within_model": 2,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "gpt2-block01-c-attempt01",
+      "model": "gpt2",
+      "arm": "C",
+      "block_id": "block01",
+      "planned_order_within_model": 3,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-block01-a-attempt01",
+      "model": "resnet50",
+      "arm": "A",
+      "block_id": "block01",
+      "planned_order_within_model": 1,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-block01-b-attempt01",
+      "model": "resnet50",
+      "arm": "B",
+      "block_id": "block01",
+      "planned_order_within_model": 2,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-block01-c-attempt01",
+      "model": "resnet50",
+      "arm": "C",
+      "block_id": "block01",
+      "planned_order_within_model": 3,
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": null,
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 {
-  "at": "2026-11-19T06:19:29.503981+00:00",
-  "status": "FINAL_PREPARATION_NOT_FROZEN",
+  "at": "2026-11-19T06:47:38.259526+00:00",
+  "status": "FINAL_EXPERIMENTAL_REVIEW_NOT_FROZEN",
   "files": [
     {
       "path": "STATUS.txt",
-      "sha256": "d1516bfad7ecade0d2971f45ea279865bced94c5ec704f4c8d5b452d9c0cdff6",
-      "bytes": 364
+      "sha256": "240a473c5f41b58e54da0b2777ecf5745f548be053b823e2ee10f78ebb6b26bf",
+      "bytes": 465
     },
     {
       "path": "artifact_hashes.json",
@@ -84,8 +84,8 @@
     },
     {
       "path": "evaluation_readiness_20261119.txt",
-      "sha256": "f8d8c49be5666d400a8367d147af06172b2863e4b44176ff00f1af6f086a5f80",
-      "bytes": 5380
+      "sha256": "a7d8d04b2a858a519453735c525b53f6b161541508f64dd43429cbd2653534e2",
+      "bytes": 5836
     },
     {
       "path": "evidence/checkpoint-selected-interval/idle-before-upgrade.json",
@@ -268,6 +268,81 @@
       "bytes": 759
     },
     {
+      "path": "final-review/E1_E2_Final_Experimental_Review_20261119.txt",
+      "sha256": "ce7096b0958280fdf16fc17a9bfe9b3c9c70992a49bc582bdf46e2c0b9ad198c",
+      "bytes": 42477
+    },
+    {
+      "path": "final-review/attempt-register.example.json",
+      "sha256": "80ff7ba456f886f81088dff130eb39b633b8c429f639455aa26905030d774105",
+      "bytes": 2996
+    },
+    {
+      "path": "final-review/evaluation-tests.log",
+      "sha256": "110f4c04790ac76a174feeb50963edce0cc155a0cdf5b4b4c4036cf37182ed73",
+      "bytes": 6031
+    },
+    {
+      "path": "final-review/goal_window_limits.json",
+      "sha256": "66ff8c74eb436756a12222e4246578a6a001f4d6d25618fb990abc941cb914ea",
+      "bytes": 881
+    },
+    {
+      "path": "final-review/goal_window_startup_stress.csv",
+      "sha256": "89194375c83c5845a5b174429b6adf879247528a0360d9f399d84bb5a7449c66",
+      "bytes": 662
+    },
+    {
+      "path": "final-review/live-environment.json",
+      "sha256": "b45fd187f21996325bac53e9547d60ba8a674eae5034858a67269f0d8e4855fb",
+      "bytes": 1386
+    },
+    {
+      "path": "final-review/offline-tool-source-files.json",
+      "sha256": "e031d8cefe23737753f4b200811c07aaa55890403fc9ac426b9b996e04569a11",
+      "bytes": 500
+    },
+    {
+      "path": "final-review/ondemand-current.json",
+      "sha256": "83894885484a1bd9400d7bf1f259e794fc111b0328afefecaac1751fd1d1b0c0",
+      "bytes": 3828
+    },
+    {
+      "path": "final-review/planned-register-dry-run-v2.json",
+      "sha256": "bf29a7ff24c8cbd0c8cfe821de5d981ffe488b462983f9f4e498c5cc3bdaee64",
+      "bytes": 8343
+    },
+    {
+      "path": "final-review/planned-register-dry-run.json",
+      "sha256": "9e7e3be9ca6af64be4057e4490ebc68162997616dc5d801a89b9e98fe1bf9a7d",
+      "bytes": 8013
+    },
+    {
+      "path": "final-review/price_only_illustration.json",
+      "sha256": "bac04e7f99cea7bfa6c2258e63a7d05806d9e7f1724b075643e424875ee44d4e",
+      "bytes": 588
+    },
+    {
+      "path": "final-review/report-sha256.json",
+      "sha256": "e99b934f32fa9d2bac6f32acc5eb33aac1f83d229b017ec6fabb61aa7573a27b",
+      "bytes": 192
+    },
+    {
+      "path": "final-review/review-summary.json",
+      "sha256": "f35552cbd4d04c190cf3479d56b35a8d9e7ea4e03a8dd7f4f2781e5bf949ba71",
+      "bytes": 1114
+    },
+    {
+      "path": "final-review/runtime-inventory.json",
+      "sha256": "5a0544ace9b9971c294c0a363776b1448b4b769bdaf8991fae6dca0947cd6b3b",
+      "bytes": 29076
+    },
+    {
+      "path": "final-review/runtime-lock-check.json",
+      "sha256": "a4108e082129bba7bde5ced60bd8a6459b5789292df0b700d66fbfd2e4239188",
+      "bytes": 9889
+    },
+    {
       "path": "final_environment_receipt.json",
       "sha256": "aa2438e7edb6622e0150086eefe228aba3b43e4d8b344e69961f9d87e62bd033",
       "bytes": 1197
@@ -329,8 +404,8 @@
     },
     {
       "path": "frozen_protocol_candidate_20261119.json",
-      "sha256": "e5bdc23cd4b26af9bfcb8f5c6fb6e6e124d135202f99e6da1895e33248fba386",
-      "bytes": 12194
+      "sha256": "60144905ec500889f89c610b2c63ef5a26ef7b19fcac4a992305c805f7dde1eb",
+      "bytes": 12484
     },
     {
       "path": "goal-evidence/gpt2-goal-evidence.csv",
@@ -364,8 +439,8 @@
     },
     {
       "path": "goal_step_and_common_settings_recommendation_20261119.txt",
-      "sha256": "080ecaede0ebfe9914182ff887ec8ded038c7b74fc962b081e39cb767114bf70",
-      "bytes": 14101
+      "sha256": "76d6164f1189781b07a0b521e9e764633eeac17c5c60977b1bb4a7673517ba1b",
+      "bytes": 14557
     },
     {
       "path": "goal_step_screening_20261119.csv",
@@ -541,6 +616,11 @@
       "path": "nfs-cleanup/post-cleanup-verification.json",
       "sha256": "515b7b520197612f1c59ba0b0ccd52185ed7059af33f432a073a08c7c712c19c",
       "bytes": 2574
+    },
+    {
+      "path": "nfs-cleanup/push.json",
+      "sha256": "b8042df94287fd4caef3716defb71df665b8fb166aaa4a179b74180744ec7218",
+      "bytes": 367
     },
     {
       "path": "nfs-cleanup/retired_payload_files.csv",

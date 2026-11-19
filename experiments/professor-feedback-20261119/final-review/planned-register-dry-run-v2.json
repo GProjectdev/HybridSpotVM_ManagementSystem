@@ -1,0 +1,303 @@
+{
+  "kind": "DESCRIPTIVE_OFFLINE_REQUIRES_EXTERNAL_PROTOCOL_REVIEW",
+  "formal_result": false,
+  "confidence_intervals_computed": false,
+  "attempts": [
+    {
+      "attempt_id": "gpt2-block01-a-attempt01",
+      "model": "gpt2",
+      "block_id": "block01",
+      "arm": "A",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    },
+    {
+      "attempt_id": "gpt2-block01-b-attempt01",
+      "model": "gpt2",
+      "block_id": "block01",
+      "arm": "B",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    },
+    {
+      "attempt_id": "gpt2-block01-c-attempt01",
+      "model": "gpt2",
+      "block_id": "block01",
+      "arm": "C",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    },
+    {
+      "attempt_id": "resnet50-block01-a-attempt01",
+      "model": "resnet50",
+      "block_id": "block01",
+      "arm": "A",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    },
+    {
+      "attempt_id": "resnet50-block01-b-attempt01",
+      "model": "resnet50",
+      "block_id": "block01",
+      "arm": "B",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    },
+    {
+      "attempt_id": "resnet50-block01-c-attempt01",
+      "model": "resnet50",
+      "block_id": "block01",
+      "arm": "C",
+      "status": "planned",
+      "comparison_slot": true,
+      "eligible_for_descriptive_comparison": false,
+      "ineligibility_reasons": [
+        "attempt_not_completed",
+        "external_protocol_review_missing_or_ineligible",
+        "all_rank_completion_or_final_state_audit_missing",
+        "complete_time_or_cost_missing",
+        "goal_contract_missing_or_mismatched",
+        "comparison_contract_missing",
+        "common_system_risk_storage_contract_missing"
+      ],
+      "failure_reason": null,
+      "estimated_gpu_compute_cost_usd": null,
+      "T_E2E_seconds": null
+    }
+  ],
+  "comparisons": [
+    {
+      "model": "gpt2",
+      "block_id": "block01",
+      "contrast": "A_vs_B",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    },
+    {
+      "model": "gpt2",
+      "block_id": "block01",
+      "contrast": "B_vs_C",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    },
+    {
+      "model": "gpt2",
+      "block_id": "block01",
+      "contrast": "A_vs_C",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    },
+    {
+      "model": "resnet50",
+      "block_id": "block01",
+      "contrast": "A_vs_B",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    },
+    {
+      "model": "resnet50",
+      "block_id": "block01",
+      "contrast": "B_vs_C",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    },
+    {
+      "model": "resnet50",
+      "block_id": "block01",
+      "contrast": "A_vs_C",
+      "available": false,
+      "reason": "preassigned_slot_missing_or_ineligible"
+    }
+  ],
+  "descriptives": [
+    {
+      "model": "gpt2",
+      "arm": "A",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "gpt2",
+      "arm": "A",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "gpt2",
+      "arm": "B",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "gpt2",
+      "arm": "B",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "gpt2",
+      "arm": "C",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "gpt2",
+      "arm": "C",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "A",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "A",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "B",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "B",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "C",
+      "metric": "T_E2E_seconds",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    },
+    {
+      "model": "resnet50",
+      "arm": "C",
+      "metric": "estimated_gpu_compute_cost_usd",
+      "n": 0,
+      "values": [],
+      "mean": null,
+      "sample_sd": null
+    }
+  ],
+  "all_attempt_cost_accounting_by_model": {
+    "gpt2": {
+      "observed_attempt_cost_usd": 0.0,
+      "executed_attempts": 0,
+      "executed_attempts_missing_cost": 0
+    },
+    "resnet50": {
+      "observed_attempt_cost_usd": 0.0,
+      "executed_attempts": 0,
+      "executed_attempts_missing_cost": 0
+    }
+  },
+  "input_sha256": {},
+  "cost_scope": "gross GPU price integral estimate; not AWS invoice or total cloud cost",
+  "warning": "Unknown costs remain unknown. No failed/ineligible slot is replaced by a successful retry.",
+  "register_sha256": "80ff7ba456f886f81088dff130eb39b633b8c429f639455aa26905030d774105"
+}

@@ -1,0 +1,34 @@
+{
+  "at": "2026-11-19T15:44:07.722439+09:00",
+  "report": "E1_E2_Final_Experimental_Review_20261119.txt",
+  "status": "CONDITIONAL_AWAITING_RESEARCHER_CONFIRMATION",
+  "researcher_confirmed": false,
+  "formal_dispatch_authorized": false,
+  "formal_runs_started": false,
+  "new_GPU_or_FIS_in_this_review": false,
+  "goals_proposed": {
+    "gpt2": 4800,
+    "resnet50": 26700
+  },
+  "repeats_current": 1,
+  "total_unique_runs": 6,
+  "repeat_expansion_recommended_not_applied": {
+    "complete_blocks_per_model": 3,
+    "total_runs": 18,
+    "not_a_power_calculation": true
+  },
+  "blocking_review_items": [
+    "confirm goals and common settings then freeze",
+    "narrow native FIS timing window and possible overlap with later risk-driven recovery",
+    "per-run archive/staging budget and free-space watchdog",
+    "valid paid window and cleanup scheduling",
+    "live GPU admission, FIS scope and raw evidence completeness"
+  ],
+  "tests": {
+    "command": "python3 -m unittest discover -s evaluation -p 'test_*.py'",
+    "count": 322,
+    "skipped": 2,
+    "failed": 0
+  },
+  "current_plan_reselected": false
+}

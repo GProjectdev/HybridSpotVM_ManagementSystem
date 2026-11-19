@@ -271,5 +271,11 @@
   "models_goal_steps_proposed": {
     "gpt2": 4800,
     "resnet50": 26700
+  },
+  "final_experimental_review": "final-review/E1_E2_Final_Experimental_Review_20261119.txt",
+  "repeat_expansion_recommendation_not_applied": {
+    "blocks_per_model": 3,
+    "total_unique_runs": 18,
+    "purpose": "descriptive run-to-run variability, not guaranteed statistical power"
   }
 }

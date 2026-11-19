@@ -69,3 +69,10 @@ NFS 후속 갱신 2026-11-19T15:19:29.010794+09:00
 사용자명시요청으로종료된검증의큰Checkpoint/CRIUpayload를정리했다.
 빈공간 120.1→415.0GiB,회수295.0GiB.양쪽Member동적PVC검사통과.
 상세 /home/ubuntu/graduate/Evaluation/nfs_cleanup_20261119.txt.위최초검증시의보존기록은그시점의상태이며이번후속정리로갱신된다.
+
+최종 실험 검토 2026-11-19T15:44:07.722439+09:00
+상세 /home/ubuntu/graduate/Evaluation/E1_E2_Final_Experimental_Review_20261119.txt
+기존4800/26700목표와각1회6Run후보유지;동결전연구자확인필요.
+GPT의112.5초시간여유,복구와1시간전환의상호작용,반복부족과NFS실보관예산의한계를명시했다.
+실패/비적격/재시도비용보존오프라인집계보완,Python322tests/2skip/실패0.
+새GPU/FIS없음.

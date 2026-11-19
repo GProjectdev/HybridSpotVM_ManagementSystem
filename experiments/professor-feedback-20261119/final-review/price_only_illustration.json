@@ -1,0 +1,20 @@
+{
+  "kind": "PRICE_ARITHMETIC_ONLY_NOT_A_MEASURED_OR_FORECAST_RUN_RESULT",
+  "od_usd_per_hour": 1.4903,
+  "spot_usd_per_hour": 0.6814,
+  "four_od_usd_per_hour": 5.9612,
+  "one_od_three_spot_usd_per_hour": 3.5345,
+  "constant_mix_no_overhead_discount_fraction": 0.4070824666174595,
+  "constant_mix_no_overhead_duration_ratio_break_even": 1.68657518743811,
+  "excludes": [
+    "risk-driven configuration changes",
+    "extra replacement VMs",
+    "checkpoint and recovery",
+    "boot and teardown",
+    "storage",
+    "management",
+    "network",
+    "FIS",
+    "billing adjustments"
+  ]
+}

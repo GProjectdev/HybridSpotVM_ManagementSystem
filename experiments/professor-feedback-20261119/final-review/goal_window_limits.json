@@ -1,0 +1,25 @@
+{
+  "kind": "OFFLINE_CONDITIONAL_SCREEN_NOT_A_CAPACITY_OR_PROBABILITY_GUARANTEE",
+  "source": "goal_step_screening_20261119.json",
+  "source_sha256": "6d5baf5cab1b9874d561d292f66bf7400b0350ac8446dd977f00772004e6b156",
+  "rows": [
+    {
+      "model": "gpt2",
+      "goal_steps_proposed": 4800,
+      "fis_common_step": 2400,
+      "startup_seconds_upper_open": 890.5157392000374,
+      "iteration_seconds_upper_open": 0.9933389716666666,
+      "risk_window_headroom_seconds": 112.48973920003755,
+      "requires_researcher_confirmation": true
+    },
+    {
+      "model": "resnet50",
+      "goal_steps_proposed": 26700,
+      "fis_common_step": 13350,
+      "startup_seconds_upper_open": 866.422919950066,
+      "iteration_seconds_upper_open": 0.20421259805243444,
+      "risk_window_headroom_seconds": 255.66791995006588,
+      "requires_researcher_confirmation": true
+    }
+  ]
+}

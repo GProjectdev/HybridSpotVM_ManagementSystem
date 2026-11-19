@@ -21,9 +21,11 @@ training_lock, same selected one-GPU x86 instance type, full-group route,
 asset/image digests, existing policy/checkpoint/risk/replacement settings.
 GPT2 per-rank batch2, sequence512, globalbatch8 =4096 tokens/step.
 ResNet50 per-rank batch16, globalbatch64 =64 sample presentations/step.
-Goal, GPU, clock anchor, price mode and final checkpoint bounds are still
-subject to live acceptance and researcher protocol review. Do not substitute
-a small acceptance goal for the final experiment goal.
+Current candidate: uniform g5.2xlarge, goals GPT2=4800/ResNet50=26700,
+source NodeRequest creation clock, seed42, live qualified prices, CP min60/no
+configured max. These are proposals awaiting researcher confirmation, not
+FROZEN. See experiments/professor-feedback-20261119/final-review/ and the
+final review TXT. Do not substitute a small acceptance goal for the final goal.
 Formal rendering rejects unfrozen settings, static risk and fixed B/C bounds.
 The renderer does not authorize or bootstrap a paid run.
 acceptance_manual_checkpoint=true is reserved for a separately labelled model
@@ -46,10 +48,12 @@ Record explicit paid_authorization, started_at, max_seconds<=18000,
 hard_deadline_utc and cleanup_start_utc (>=20min cleanup reserve). Use a
 separate host watchdog that invokes normal scoped cleanup at cleanup_start.
 Do not rely on an interactive shell or observer for paid-resource cleanup.
-Current authorization expires at midnightKST 2026-11-19T00:00 (15:00UTC).
-A later experiment needs a still-valid user-authorized window; do not reuse
-this historical deadline. Final formal dispatch remains blocked until its
-frozen manifest and live prerequisites are reviewed.
+The earlier November18 midnight deadline is historical. November19 changed-path
+acceptance was authorized with18KST target/22KST hard limit and is completed and
+cleaned. This is not an authorization for a future formal run. Every dispatch
+needs its still-valid authorization, absolute deadline and cleanup watchdog.
+Final formal dispatch remains blocked until researcher confirmation, frozen
+manifest and live prerequisites are reviewed.
 
 Existing-controller execution stages
  python3 -m evaluation.integrated_control provision --directory /PRIVATE/run19c \
@@ -173,9 +177,14 @@ Opt-in policy batch reconfiguration (2026-11-18)
  In-flight targets remain pinned; after Verified and normal old-provider
  termination the current policy may initiate another operation. There is no
  new automatic cancellation or rollback-prevention guarantee.
- The batch path has controller/regression/race test evidence. Actual multi-VM
- GPU batch restore, final4OD32vCPU supply/quota and end-to-end speedup remain
- unverified; historical serial GPU success is not a batch performance result.
+November19 changed-path GPU evidence: GPT2 both directions Spot3<->OD3,
+one4-rank RestoreRequest per transition (226s each to Verified); ResNet50
+Spot3->OD3 (156s). All-rank state/update audits, resumes and original provider
+termination passed. These request-to-Verified values are functional acceptance,
+not serial-vs-batch speedup or formal E1/E2 performance. Actual4OD32vCPU and
+3Spot24vCPU admission passed, numeric Service Quota remains permission-denied
+and future capacity is not guaranteed. Latest small selected-interval status
+follow-up was CPU/idle-rollout checked, not rerun through GPU/FIS.
 
 2026-11-19 professor-feedback methodology
  experiments/professor-feedback-20261119/researcher-methodology.md supersedes
@@ -187,5 +196,34 @@ Opt-in policy batch reconfiguration (2026-11-18)
  checkpoint_buffer_reuse in the renderer defaults to1 and explicitly controls
  FLUIDCR_REUSE_UNCHANGED_CHECKPOINT in each trainer. It is part of the comparison
  hash so a B/C baseline cannot silently mix the old write path and reuse path.
- GPU validation windows from2026-11-18 expired at midnight KST; they do not
- authorize new GPU/FIS execution on2026-11-19. CPU/read-only work continues.
+Prior GPU windows do not authorize future formal execution. November19 accepted
+21 owned EC2 workers were positively terminated; the existing NFS/baseinfra stays.
+
+Final review / failure-preserving analysis (November19)
+One preassigned A/B/C block per model,6 unique runs total, remains the current
+researcher decision: exploratory only, no between-run variance/significance.
+Additional complete matched blocks are a recommendation requiring confirmation.
+Register attempts before launch, retain aborted/capacity/ineligible/failed
+attempts, and do not replace a failed comparison slot with a faster retry.
+ python3 -m evaluation.compare_abc \
+   --register /PRIVATE/attempt-register.json --out /PRIVATE/comparison-v1.json
+The register example in final-review/ contains six PLANNED slots, no measured
+formal results. Paths to run.json/metrics and a documented external protocol
+review are required before descriptive signed comparisons become available.
+B/C common comparison hashes and all A/B/C workload hashes must agree. Negative
+savings and negative fault overhead stay negative; unknown cost stays unknown.
+The tool never promotes an output to a formal scientific result or an AWS bill.
+
+GPT2 has only112.5s empirical headroom before the native transition when FIS
+notice and the proposed120s margin are included; ResNet50 has255.7s. The
+historical slower GPT2 startup sample conflicts and is preserved. Formal C
+must dispatch before actual source NR creation+3600-120-120, with its pinned
+initial Spot still present and fresh durable full-world checkpoint. Never
+retime/retarget after a missed window. Report deviation and seek researcher
+review if separate E1/E2 blocks with their own B baseline become necessary.
+
+NFS cleanup retained current model checkpoints/data/logs and recovered295GiB;
+snapshot free415GiB,351GiB above proposed64GiB reserve. NFS subdirectory PVC
+requests are not enforced filesystem quotas. Do not assume all6 retained runs
+fit from nominal10Gi PVCs; budget actual archive/copy growth and monitor free
+space per run. No further old data deletion is part of this review.
