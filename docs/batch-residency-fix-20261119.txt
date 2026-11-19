@@ -1,0 +1,22 @@
+Batch replacement minimum OD residency correction — 2026-11-19
+
+Preflight found that applyPaperResidency used only the primary replacement
+annotations on a full-group RestoreRequest. Batch receipts retain a primary
+pair for compatibility, but contain all new destinations in group-replacement-
+pairs. After three Spot-to-OD replacements, only one destination could be held
+for the configured minimum OD duration; a later low-risk decision could send
+the other two back to Spot too early.
+
+The correction keeps the existing policy and duration. For a batch receipt it
+uses the existing validated UID-bound pair parser and retains every currently
+owned, Ready OD destination until the existing Verified time plus the existing
+configured duration. Legacy single-destination receipts keep their behavior.
+Malformed batch receipts return an error. A recreated UID, unverified restore,
+expired observation, or Spot destination does not establish an OD hold.
+
+Regression cases cover all three destinations, a recreated second destination,
+expiration, an unverified request, reverse Spot destinations, and a malformed
+receipt. Existing single-worker cases remain in place. No risk formula, CRD,
+checkpoint selection, source fencing, full-group recovery or cleanup order is
+changed. Actual GPU batch validation is separate and must not be inferred from
+these CPU tests. Formal runs must pin the corrected images for all conditions.

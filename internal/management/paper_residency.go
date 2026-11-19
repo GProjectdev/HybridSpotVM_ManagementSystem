@@ -41,9 +41,22 @@ func (r *PolicyReconciler) applyPaperResidency(ctx context.Context, input p.Poli
 		if !ok || !now.Before(at.Add(time.Duration(seconds)*time.Second)) {
 			continue
 		}
+		// Single-worker receipts retain their original compatibility contract.
+		// A batch must retain every Verified OD destination, not only the
+		// primary pair kept for legacy emergency handlers.
+		targets := map[string]string{req.GetAnnotations()[groupNewName]: req.GetAnnotations()[groupNewUID]}
+		if req.GetAnnotations()[groupBatchPairsAnnotation] != "" {
+			pairs, err := groupReplacementPairs(req)
+			if err != nil {
+				return err
+			}
+			for _, pair := range pairs {
+				targets[pair.NewName] = pair.NewUID
+			}
+		}
 		for j := range nodes.Items {
 			np := &nodes.Items[j]
-			if np.GetUID() == "" || !np.GetDeletionTimestamp().IsZero() || np.GetName() != req.GetAnnotations()[groupNewName] || string(np.GetUID()) != req.GetAnnotations()[groupNewUID] || stringField(np.Object, "spec", "marketType") != "OnDemand" || stringField(np.Object, "status", "phase") != "Ready" {
+			if np.GetUID() == "" || !np.GetDeletionTimestamp().IsZero() || targets[np.GetName()] != string(np.GetUID()) || stringField(np.Object, "spec", "marketType") != "OnDemand" || stringField(np.Object, "status", "phase") != "Ready" {
 				continue
 			}
 			until := at.Add(time.Duration(seconds) * time.Second)

@@ -5,6 +5,7 @@ import (
 	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 	"time"
@@ -57,6 +58,74 @@ func TestPaperResidencyRequiresVerifiedUIDAndExpires(t *testing.T) {
 			}
 			if d.OnDemandWorkers != tc.want {
 				t.Fatalf("%+v", d)
+			}
+		})
+	}
+}
+
+func TestPaperResidencyHoldsEveryVerifiedBatchDestination(t *testing.T) {
+	for _, mode := range []string{"all-three", "recreated-second", "expired", "unverified", "spot-destinations", "bad-receipt"} {
+		t.Run(mode, func(t *testing.T) {
+			ctx := context.Background()
+			r, policy, input, intent := batchFixture(t, mode == "spot-destinations")
+			if _, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil {
+				t.Fatal(err)
+			}
+			readyBatchTargets(t, r, intent, 3)
+			r.GroupStage = groupStageRequest
+			if _, err := r.ensureGroupBatchReplacement(ctx, policy, input, intent); err != nil {
+				t.Fatal(err)
+			}
+			req := batchRequest(t, r, intent)
+			markBatchVerified(t, r, req)
+			now := time.Now().UTC().Truncate(time.Second)
+			req.SetCreationTimestamp(metav1.NewTime(now.Add(-2 * time.Minute)))
+			_ = unstructured.SetNestedField(req.Object, now.Add(-time.Minute).Format(time.RFC3339), "status", "verification", "verifiedAt")
+			_ = unstructured.SetNestedField(req.Object, now.Add(-time.Minute).Format(time.RFC3339), "status", "verification", "sourceFence", "observedAt")
+			want := int64(4)
+			switch mode {
+			case "recreated-second":
+				n := p.NewObject("NodeProvision")
+				if err := r.Get(ctx, client.ObjectKey{Namespace: input.Namespace, Name: intent.Batch[1].Replacement}, n); err != nil {
+					t.Fatal(err)
+				}
+				n.SetUID("recreated-destination")
+				if err := r.Update(ctx, n); err != nil {
+					t.Fatal(err)
+				}
+				want = 3
+			case "expired":
+				now = now.Add(time.Hour)
+				want = 1
+			case "unverified":
+				_ = unstructured.SetNestedField(req.Object, "Restoring", "status", "phase")
+				want = 1
+			case "spot-destinations":
+				want = 1
+			case "bad-receipt":
+				a := req.GetAnnotations()
+				a[groupBatchPairsAnnotation] = "[]"
+				req.SetAnnotations(a)
+			}
+			if err := r.Update(ctx, req); err != nil {
+				t.Fatal(err)
+			}
+			input.MinOnDemand, input.VMPolicyMethod, input.SourceCluster = 1, "paper-eq6-7", "aws"
+			input.Economics.OnDemandDurationSeconds = 3600
+			r.Clock = func() time.Time { return now }
+			d := p.Decision{OnDemandWorkers: 1, SpotWorkers: 3}
+			err := r.applyPaperResidency(ctx, input, p.RuntimeSnapshot{}, p.RiskSnapshot{}, &d)
+			if mode == "bad-receipt" {
+				if err == nil {
+					t.Fatal("malformed batch receipt must block evaluation")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d.OnDemandWorkers != want || d.SpotWorkers != 4-want {
+				t.Fatalf("%s: %+v", mode, d)
 			}
 		})
 	}
