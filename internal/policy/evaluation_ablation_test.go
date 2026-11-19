@@ -34,7 +34,7 @@ func TestEvaluationAblationAxesRemainIndependent(t *testing.T) {
 			if !tc.checkpoint && (low.CheckpointIntervalSeconds != 60 || high.CheckpointIntervalSeconds != 60) {
 				t.Fatal("fixed checkpoint changed")
 			}
-			if tc.checkpoint && (!low.IntervalCostEvaluated || !high.IntervalCostEvaluated || low.CheckpointIntervalSeconds == high.CheckpointIntervalSeconds) {
+			if tc.checkpoint && (!low.IntervalCostEvaluated || high.IntervalCostEvaluated != (high.SpotWorkers > 0) || low.CheckpointIntervalSeconds == high.CheckpointIntervalSeconds) {
 				t.Fatalf("adaptive checkpoint did not independently respond: low=%+v high=%+v", low, high)
 			}
 			t.Logf("%s low: OD=%d Spot=%d interval=%ds; high: OD=%d Spot=%d interval=%ds", tc.name, low.OnDemandWorkers, low.SpotWorkers, low.CheckpointIntervalSeconds, high.OnDemandWorkers, high.SpotWorkers, high.CheckpointIntervalSeconds)

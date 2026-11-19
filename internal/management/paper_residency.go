@@ -84,6 +84,6 @@ func (r *PolicyReconciler) applyPaperResidency(ctx context.Context, input p.Poli
 	}
 	decision.OnDemandWorkers, decision.SpotWorkers = count, input.TargetWorkers-count
 	decision.Reason = "paper_on_demand_minimum_residency"
-	decision.CheckpointIntervalSeconds, decision.IntervalCostEvaluated = p.AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, decision.SpotWorkers, now)
+	decision.CheckpointIntervalSeconds, decision.IntervalCostEvaluated, decision.IntervalSource = p.CheckpointIntervalDecision(input.Checkpoint, risk, runtime, decision.SpotWorkers, now)
 	return nil
 }

@@ -54,6 +54,12 @@ class IntegratedProtocolTests(unittest.TestCase):
     def test_static_or_unfrozen_formal_config_rejected(self):
         self.c['purpose']='formal'
         with self.assertRaises(ValueError):v3.render(self.c,self.source,'bad','C')
+    def test_omitted_checkpoint_maximum_survives_render_and_bc_lock(self):
+        self.c['existing_checkpoint'].pop('maxIntervalSeconds',None)
+        b,_,_,policy=v3.render(self.c,self.source,'uncappedb','B')
+        c=v3.render(self.c,self.source,'uncappedc','C')[0]
+        self.assertNotIn('maxIntervalSeconds',policy['spec']['checkpoint'])
+        self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
     def test_changed_replacement_or_storage_cannot_reuse_bc_baseline(self):
         b=v3.render(self.c,self.source,'base','B')[0]['comparison_lock_sha256']
         for change in ({'existing_replacement':{'enabled':False}},{'checkpoint_size':'20Gi'},{'storage_class':'other-nfs'}):

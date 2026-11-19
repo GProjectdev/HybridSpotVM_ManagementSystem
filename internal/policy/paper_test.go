@@ -31,8 +31,8 @@ func TestPaperSelectionZeroRiskAndMissingEvidence(t *testing.T) {
 	if err != nil || best.Iterations != 40 || best.Seconds != 80 {
 		t.Fatalf("zero risk: %+v %v", best, err)
 	}
-	if seconds, evaluated := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true}, rt, 2, now); seconds != 80 || !evaluated {
-		t.Fatalf("measured paper interval: %d %v", seconds, evaluated)
+	if seconds, evaluated := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true}, rt, 2, now); seconds != 80 || evaluated {
+		t.Fatalf("zero-risk operational fallback respects explicit bound without claiming a paper optimum: %d %v", seconds, evaluated)
 	}
 	rt.IterationRankCount = 1
 	if _, err := SelectPaperInterval(cp, rt, RiskSnapshot{Ready: true}, now); err == nil {

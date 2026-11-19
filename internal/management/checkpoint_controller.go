@@ -203,6 +203,13 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		input.Checkpoint.MeasuredCosts = *measuredCosts
 	}
 	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, now)
+	// Use the same UID-bound minimum-OD-residency evidence as the allocation
+	// controller. Otherwise an all-OD hold could still schedule as if its
+	// desired future Spot workers were already present. This helper is read-only.
+	residency := PolicyReconciler{Client: r.Client, Clock: r.Clock}
+	if err := residency.applyPaperResidency(ctx, input, runtimeSnapshot, riskSnapshot, &decision); err != nil {
+		return ctrl.Result{}, err
+	}
 	logEvaluationDecision(ctx, "checkpoint-coordinator", input, runtimeSnapshot, riskSnapshot, decision, now)
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, nowOr(r.Clock)) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, r.now(), "risk_not_fresh")
@@ -313,7 +320,7 @@ func (r *CheckpointReconciler) checkpointState(ctx context.Context, input traini
 			}
 			return lastStarted, true, item, latestMeasured, nil
 		}
-		if measured, ok, _ := measuredCostsFromMigrationWithMaxAge(item, input.SourceCluster, r.now(), trainingpolicy.MeasuredCostMaxAge(input.Checkpoint.MaxIntervalSeconds)); ok {
+		if measured, ok, _ := measuredCostsFromMigrationWithMaxAge(item, input.SourceCluster, r.now(), trainingpolicy.CheckpointCostMaxAge(input.Checkpoint)); ok {
 			costs := measured
 			if latestMeasured == nil || costs.ObservedAt > latestMeasured.ObservedAt {
 				latestMeasured = &costs

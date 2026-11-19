@@ -63,13 +63,17 @@ func TestFixedCompositionKeepsRiskDrivenCheckpointAndEconomicEvidence(t *testing
 	for _, tc := range []struct {
 		lambda float64
 		want   int64
-	}{{0, 600}, {20, 180}, {80, 90}} {
+	}{{0, 3600}, {20, 180}, {80, 90}} {
 		risk := RiskSnapshot{Ready: true, LambdaPerHour: tc.lambda, SpotPricePerHour: 2, OnDemandPricePerHour: 1}
 		d := DecideAt(input, RuntimeSnapshot{}, risk, now)
 		if d.DesiredWorkers != 2 || d.OnDemandWorkers != 1 || d.SpotWorkers != 1 || d.ProvisioningBlocked || d.Reason != "fixed_worker_composition" {
 			t.Fatalf("lambda=%v changed fixed composition: %+v", tc.lambda, d)
 		}
-		if d.CheckpointIntervalSeconds != tc.want || !d.IntervalCostEvaluated || d.IntervalSource != "checkpoint-cost-analytic" || d.LambdaPerHour != tc.lambda {
+		source := "checkpoint-cost-analytic"
+		if tc.lambda == 0 {
+			source = "hourly-risk-refresh-fallback"
+		}
+		if d.CheckpointIntervalSeconds != tc.want || d.IntervalCostEvaluated != (tc.lambda > 0) || d.IntervalSource != source || d.LambdaPerHour != tc.lambda {
 			t.Fatalf("lambda=%v must drive interval=%d: %+v", tc.lambda, tc.want, d)
 		}
 		if !d.PriceEvaluated || !d.CostEvaluated {

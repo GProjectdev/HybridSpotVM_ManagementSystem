@@ -1,0 +1,60 @@
+Hourly risk predictions and uncapped dynamic checkpoint scheduling — 2026-11-19
+
+Authority and paper evidence
+The researcher explicitly requested removal of the default600-second cap and
+an hourly recovery point when lambda=0 or the policy retains no Spot workers.
+Cost-Efficient Training and Checkpointing for Large Models on Preemptible Cloud
+VMs (Desai et al.), provided original Cost_effective.pdf, section4.1: PT=1hour
+prediction intervals; section4.2: recompute checkpoint interval on prediction
+changes. Faster source collection/polling does not represent a new forecast.
+A1-hour prediction interval is not a1-hour checkpoint maximum. The1-hour
+zero-hazard recovery-point fallback is our operational rule, not a paper optimum.
+
+Implementation
+internal/policy/interval_bounds.go: absent maxIntervalSeconds now means only the
+member scheduler int32 representation limit, not600seconds. Explicit operator
+bounds remain supported for fixed controls and legacy compatibility. Final B/C
+must share the same uncapped configuration before freezing. Historical receipts
+and the currently running GPT2 acceptance retain their original60..600bounds.
+The seconds-domain CRIU objective a/x+max(0,b/x-d)+c*x is unchanged. Positive
+hazard with measured costs uses its existing analytic integer optimum. Missing
+measurements retain the existing explicitly labelled bootstrap risk bands.
+Zero hazard or zero policy Spot count uses3600seconds, even without invented
+cost measurements; intervalSource=hourly-risk-refresh-fallback and
+intervalCostEvaluated=false. Unknown/stale risk remains gated; it is not zero.
+CheckpointIntervalDecision supplies the same provenance to both controllers.
+The coordinator now reads the same UID-bound, Verified OD-residency receipts
+as the allocation controller; a retained all-OD group must not be scheduled as
+if proposed future Spot workers were already active.
+Measured-cost freshness remains one selected interval plus600seconds grace:
+when no explicit max is configured, use status.checkpoint.checkpointIntervalSeconds
+rather than an absent max (which previously expired costs in600seconds).
+Original observedAt is retained; future and expired measurements are rejected.
+No int32-limit-long freshness is assumed merely because the cap was omitted.
+
+Safety and interpretation
+Periodic scheduling remains a stable FluidCR parent. A changed interval updates
+its schedule; no duplicate parent or fabricated completion is created. Hourly
+fallback is an elapsed periodic interval, not a guarantee of exact wall-clock
+alignment with a source publication. Native forecast updates remain3600seconds.
+Emergency checkpoint, in-flight exclusion, replacement quiescence, archive
+hash/provenance, source fencing and Verified restore gates remain in force.
+Full-group restore and the resource replacement algorithm are not redesigned.
+The seconds-domain CRIU adaptation is not evidence that asynchronous GPU-to-DRAM
+buffer assumptions of the paper hold in our runtime.
+Longer periodic intervals can increase rollback after an unpredicted failure;
+removing600seconds does not guarantee better completion time or lower cost.
+The current group selector has no checkpoint age cutoff, but still requires a
+complete world-size round with ownership, same-round and durable archive checks.
+Do not silently reinterpret old capped pilot timings as uncapped measurements.
+
+Verification status at writing
+Local go test ./... passed;309 evaluation Python tests passed with2skips.
+New tests independently check low-positive-risk optimum16971seconds, explicit
+600-second cap compatibility, zero/no-Spot3600-second fallback without costs,
+invalid-risk rejection, long-interval cost freshness and expiry, and stable
+scheduler identity while changing positive-risk intervals above600seconds.
+Image build, idle rollout and ResNet GPU acceptance are separate pending receipts.
+The active GPT2 batch acceptance is pinned to the earlier runtime and is not
+modified in flight. The next queued GPU stage is held until that stage finishes
+normal cleanup and the new images are rolled out while no policy is active.

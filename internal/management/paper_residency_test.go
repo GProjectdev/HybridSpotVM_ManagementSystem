@@ -114,7 +114,7 @@ func TestPaperResidencyHoldsEveryVerifiedBatchDestination(t *testing.T) {
 			input.Economics.OnDemandDurationSeconds = 3600
 			r.Clock = func() time.Time { return now }
 			d := p.Decision{OnDemandWorkers: 1, SpotWorkers: 3}
-			err := r.applyPaperResidency(ctx, input, p.RuntimeSnapshot{}, p.RiskSnapshot{}, &d)
+			err := r.applyPaperResidency(ctx, input, p.RuntimeSnapshot{}, p.RiskSnapshot{Ready: true, LambdaPerHour: .001}, &d)
 			if mode == "bad-receipt" {
 				if err == nil {
 					t.Fatal("malformed batch receipt must block evaluation")
@@ -126,6 +126,9 @@ func TestPaperResidencyHoldsEveryVerifiedBatchDestination(t *testing.T) {
 			}
 			if d.OnDemandWorkers != want || d.SpotWorkers != 4-want {
 				t.Fatalf("%s: %+v", mode, d)
+			}
+			if mode == "all-three" && (d.CheckpointIntervalSeconds != 3600 || d.IntervalCostEvaluated || d.IntervalSource != "hourly-risk-refresh-fallback") {
+				t.Fatalf("all-OD residency must retain an hourly recovery point, not a Spot cost optimum: %+v", d)
 			}
 		})
 	}

@@ -54,7 +54,7 @@ def render(config, source, run_id, condition):
         raise ValueError('resume required; unverified async profile is not enabled')
     if c['purpose']=='formal':
         if c.get('protocol_lock_status')!='FROZEN' or sel['status']!='SELECTED':raise ValueError('formal run requires frozen settings and selected GPU')
-        if condition!='A' and cp['minIntervalSeconds']>=cp['maxIntervalSeconds']:raise ValueError('formal B/C must use adaptive bounds')
+        if condition!='A' and cp.get('maxIntervalSeconds') is not None and cp.get('minIntervalSeconds',1)>=cp['maxIntervalSeconds']:raise ValueError('formal B/C must use adaptive bounds')
         risk=c['existing_risk_spec']
         if not risk.get('paperEstimator',{}).get('feedEndpoint') or 'staticLambdaPerHour' in risk:
             raise ValueError('formal run requires frozen SARIMA replay feed')

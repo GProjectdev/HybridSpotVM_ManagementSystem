@@ -32,7 +32,7 @@ func TestDecisionStagesWithoutSyntheticMeasurements(t *testing.T) {
 	input.Checkpoint.MeasuredCosts.ObservedAt = now.Add(-time.Hour).Format(time.RFC3339)
 	check("Bootstrap", "risk-band-bootstrap")
 	risk.SpotPricePerHour = 2
-	d = check("Bootstrap", "risk-band-bootstrap")
+	d = check("Bootstrap", "hourly-risk-refresh-fallback")
 	if d.SpotWorkers != 0 || d.OnDemandWorkers != 2 || d.Reason != "spot_price_not_cheaper" {
 		t.Fatalf("more expensive Spot: %+v", d)
 	}

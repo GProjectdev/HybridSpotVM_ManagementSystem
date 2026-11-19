@@ -201,7 +201,7 @@ spec:
                     minimum: 1
                     maximum: 2147483647
                   maxIntervalSeconds:
-                    description: Operational upper bound, including zero risk; defaults to max(600, minIntervalSeconds) in the solver.
+                    description: Optional operational upper bound. When omitted, positive-risk cost optimization has only the scheduler int32 representation limit; zero risk or no Spot uses a bounded hourly recovery-point fallback.
                     type: integer
                     format: int64
                     minimum: 1

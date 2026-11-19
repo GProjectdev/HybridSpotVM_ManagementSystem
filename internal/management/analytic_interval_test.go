@@ -67,7 +67,7 @@ func TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule(t *tes
 			for _, step := range []struct {
 				lambda float64
 				want   int64
-			}{{20, 180}, {80, 90}, {0, 600}} {
+			}{{20, 180}, {80, 90}, {.001, 25456}, {0, 3600}} {
 				if first != nil {
 					if err := r.Get(ctx, client.ObjectKeyFromObject(risk), risk); err != nil {
 						t.Fatal(err)
@@ -109,7 +109,11 @@ func TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule(t *tes
 				if err := r.Get(ctx, req.NamespacedName, updated); err != nil {
 					t.Fatal(err)
 				}
-				if stringField(updated.Object, "status", "checkpoint", "intervalSource") != "checkpoint-cost-analytic" || !boolField(updated.Object, "status", "checkpoint", "intervalCostEvaluated") || intField(updated.Object, "status", "checkpoint", "checkpointIntervalSeconds") != step.want {
+				wantSource := "checkpoint-cost-analytic"
+				if step.lambda == 0 {
+					wantSource = "hourly-risk-refresh-fallback"
+				}
+				if stringField(updated.Object, "status", "checkpoint", "intervalSource") != wantSource || boolField(updated.Object, "status", "checkpoint", "intervalCostEvaluated") != (step.lambda > 0) || intField(updated.Object, "status", "checkpoint", "checkpointIntervalSeconds") != step.want {
 					t.Fatalf("missing analytical decision provenance: %v", updated.Object["status"])
 				}
 				if gotCosts := p.ReadPolicyInput(updated).Checkpoint.MeasuredCosts; gotCosts != costs {

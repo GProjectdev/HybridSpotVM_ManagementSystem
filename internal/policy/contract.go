@@ -19,8 +19,11 @@ const (
 	DefaultAlpha                  = 0.8
 	DefaultForecastHorizonSeconds = int64(3600)
 	DefaultCheckpointSeconds      = int64(120)
-	DefaultControlPort            = int64(8298)
-	DefaultAWSCluster             = "aws"
+	// The current hourly prediction contract supplies a recovery-point fallback
+	// when Spot contributes no hazard. This is not an optimum from the paper.
+	RiskRefreshCheckpointSeconds = int64(3600)
+	DefaultControlPort           = int64(8298)
+	DefaultAWSCluster            = "aws"
 
 	StatusPolicyPath     = "policy"
 	StatusCheckpointPath = "checkpoint"
@@ -126,13 +129,14 @@ type CapacityDefaults struct {
 }
 
 type CheckpointPolicy struct {
-	Paper              PaperProfile
-	MinIntervalSeconds int64
-	MaxIntervalSeconds int64
-	CandidateIntervals []int64
-	RiskBands          []RiskBand
-	MeasuredCosts      MeasuredCosts
-	Resume             bool
+	Paper               PaperProfile
+	MinIntervalSeconds  int64
+	MaxIntervalSeconds  int64
+	LastIntervalSeconds int64
+	CandidateIntervals  []int64
+	RiskBands           []RiskBand
+	MeasuredCosts       MeasuredCosts
+	Resume              bool
 }
 
 type MeasuredCosts struct {
@@ -247,12 +251,13 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 				ObservedAt:          nestedStringDefault(obj.Object, "", "spec", "checkpoint", "paperProfile", "observedAt"),
 				CandidateIterations: nestedIntSlice(obj.Object, "spec", "checkpoint", "paperProfile", "candidateIterations"),
 			},
-			MinIntervalSeconds: nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "minIntervalSeconds"),
-			MaxIntervalSeconds: nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "maxIntervalSeconds"),
-			CandidateIntervals: nestedIntSlice(obj.Object, "spec", "checkpoint", "candidateIntervalSeconds"),
-			RiskBands:          nestedRiskBands(obj.Object, "spec", "checkpoint", "riskBands"),
-			MeasuredCosts:      readMeasuredCosts(obj.Object),
-			Resume:             resume,
+			MinIntervalSeconds:  nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "minIntervalSeconds"),
+			MaxIntervalSeconds:  nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "maxIntervalSeconds"),
+			LastIntervalSeconds: nestedIntDefault(obj.Object, 0, "status", StatusCheckpointPath, "checkpointIntervalSeconds"),
+			CandidateIntervals:  nestedIntSlice(obj.Object, "spec", "checkpoint", "candidateIntervalSeconds"),
+			RiskBands:           nestedRiskBands(obj.Object, "spec", "checkpoint", "riskBands"),
+			MeasuredCosts:       readMeasuredCosts(obj.Object),
+			Resume:              resume,
 		},
 	}
 	readExistingCapacity(obj, &input.Capacity)
@@ -418,13 +423,12 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 	if input.FixedOnDemand != nil {
 		vmStage = "StaticCompositionControl"
 	}
-	interval, intervalEvaluated := AdaptiveCheckpointInterval(input.Checkpoint, risk, runtime, spot, now)
-	interval = applyIntervalBounds(interval, input.Checkpoint)
-	stage, source := "Bootstrap", "risk-band-bootstrap"
+	interval, intervalEvaluated, source := CheckpointIntervalDecision(input.Checkpoint, risk, runtime, spot, now)
+	stage := "Bootstrap"
 	if intervalEvaluated {
-		stage, source = "CheckpointMeasured", "checkpoint-cost-analytic"
+		stage = "CheckpointMeasured"
 		if input.Checkpoint.Paper.Enabled {
-			stage, source = "PaperMeasured", "paper-equations-1-5-analytic"
+			stage = "PaperMeasured"
 		}
 	}
 	if costEvaluated {
@@ -450,7 +454,42 @@ func MeasuredCostMaxAge(maxIntervalSeconds int64) time.Duration {
 	return time.Duration(maxIntervalSeconds)*time.Second + grace
 }
 
+// With no configured maximum, preserve the existing one-interval-plus-grace
+// freshness rule using the last selected interval, never the int32 ceiling.
+// The original measurement timestamp remains unchanged and future/expired
+// samples are still rejected. Before any interval is selected, retain the
+// bootstrap freshness budget.
+func CheckpointCostMaxAge(checkpoint CheckpointPolicy) time.Duration {
+	if checkpoint.MaxIntervalSeconds != 0 {
+		return MeasuredCostMaxAge(checkpoint.MaxIntervalSeconds)
+	}
+	return MeasuredCostMaxAge(checkpoint.LastIntervalSeconds)
+}
+
+func noSpotHazard(risk RiskSnapshot, spotWorkers int64) bool {
+	return risk.Ready && finite(risk.LambdaPerHour) && risk.LambdaPerHour >= 0 && spotWorkers >= 0 && (risk.LambdaPerHour == 0 || spotWorkers == 0)
+}
+
+// CheckpointIntervalDecision keeps the operational hourly fallback distinct
+// from a cost optimum in policy and coordinator telemetry.
+func CheckpointIntervalDecision(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot, spotWorkers int64, now time.Time) (int64, bool, string) {
+	interval, evaluated := AdaptiveCheckpointInterval(checkpoint, risk, runtime, spotWorkers, now)
+	source := "risk-band-bootstrap"
+	if noSpotHazard(risk, spotWorkers) {
+		source = "hourly-risk-refresh-fallback"
+	} else if evaluated {
+		source = "checkpoint-cost-analytic"
+		if checkpoint.Paper.Enabled {
+			source = "paper-equations-1-5-analytic"
+		}
+	}
+	return applyIntervalBounds(interval, checkpoint), evaluated, source
+}
+
 func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, runtime RuntimeSnapshot, spotWorkers int64, now time.Time) (int64, bool) {
+	if noSpotHazard(risk, spotWorkers) {
+		return applyIntervalBounds(RiskRefreshCheckpointSeconds, checkpoint), false
+	}
 	if checkpoint.Paper.Enabled {
 		selection, err := SelectPaperInterval(checkpoint, runtime, risk, now)
 		if err != nil {
@@ -460,7 +499,7 @@ func AdaptiveCheckpointInterval(checkpoint CheckpointPolicy, risk RiskSnapshot, 
 	}
 	measured := checkpoint.MeasuredCosts
 	observedAt, err := time.Parse(time.RFC3339, measured.ObservedAt)
-	if err != nil || observedAt.After(now) || now.Sub(observedAt) > MeasuredCostMaxAge(checkpoint.MaxIntervalSeconds) || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || !risk.Ready || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers < 0 {
+	if err != nil || observedAt.After(now) || now.Sub(observedAt) > CheckpointCostMaxAge(checkpoint) || measured.CheckpointSeconds <= 0 || measured.CopySeconds < 0 || !finite(measured.CheckpointSeconds) || !finite(measured.CopySeconds) || !risk.Ready || risk.LambdaPerHour < 0 || !finite(risk.LambdaPerHour) || spotWorkers < 0 {
 		return EstimateCheckpointIntervalSeconds(checkpoint, risk, runtime), false
 	}
 	lambdaJobPerSecond := risk.LambdaPerHour * float64(spotWorkers) / 3600

@@ -23,12 +23,12 @@ func TestMeasuredAnalyticIntervalDoesNotSnapToCandidates(t *testing.T) {
 	}
 	for _, spot := range []int64{0, 1} {
 		got, ok := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: 0}, RuntimeSnapshot{}, spot, now)
-		if !ok || got != 600 {
-			t.Fatalf("zero hazard must use finite cap: %d %v", got, ok)
+		if ok || got != 600 {
+			t.Fatalf("zero hazard uses hourly fallback clipped by explicit cap, not a cost optimum: %d %v", got, ok)
 		}
 	}
-	if got, ok := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: .8}, RuntimeSnapshot{}, 0, now); !ok || got != 600 {
-		t.Fatalf("no Spot workers must use cap: %d %v", got, ok)
+	if got, ok := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: .8}, RuntimeSnapshot{}, 0, now); ok || got != 600 {
+		t.Fatalf("no Spot workers use bounded hourly fallback: %d %v", got, ok)
 	}
 	cp.MinIntervalSeconds, cp.MaxIntervalSeconds = 137, 137
 	if got, ok := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: .8}, RuntimeSnapshot{}, 1, now); !ok || got != 137 {
