@@ -253,7 +253,7 @@ func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
 			},
 			MinIntervalSeconds:  nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "minIntervalSeconds"),
 			MaxIntervalSeconds:  nestedIntDefault(obj.Object, 0, "spec", "checkpoint", "maxIntervalSeconds"),
-			LastIntervalSeconds: nestedIntDefault(obj.Object, 0, "status", StatusCheckpointPath, "checkpointIntervalSeconds"),
+			LastIntervalSeconds: nestedIntDefault(obj.Object, nestedIntDefault(obj.Object, 0, "status", StatusCheckpointPath, "checkpointIntervalSeconds"), "status", StatusCheckpointPath, "lastSelectedIntervalSeconds"),
 			CandidateIntervals:  nestedIntSlice(obj.Object, "spec", "checkpoint", "candidateIntervalSeconds"),
 			RiskBands:           nestedRiskBands(obj.Object, "spec", "checkpoint", "riskBands"),
 			MeasuredCosts:       readMeasuredCosts(obj.Object),

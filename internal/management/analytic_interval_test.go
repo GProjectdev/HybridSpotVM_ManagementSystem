@@ -119,6 +119,18 @@ func TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule(t *tes
 				if gotCosts := p.ReadPolicyInput(updated).Checkpoint.MeasuredCosts; gotCosts != costs {
 					t.Fatalf("published costs=%+v, want verified costs=%+v", gotCosts, costs)
 				}
+				if intField(updated.Object, "status", "checkpoint", "lastSelectedIntervalSeconds") != step.want {
+					t.Fatal("selected interval was not persisted independently of transient status")
+				}
+				if err := patchStatusSubtree(ctx, r.Client, updated, p.StatusCheckpointPath, p.CheckpointStatus("", 0, now, "group_intent_quiesced")); err != nil {
+					t.Fatal(err)
+				}
+				if err := r.Get(ctx, req.NamespacedName, updated); err != nil {
+					t.Fatal(err)
+				}
+				if p.ReadPolicyInput(updated).Checkpoint.LastIntervalSeconds != step.want {
+					t.Fatal("pause status discarded the selected interval")
+				}
 				list := p.NewList("FluidCRMigration")
 				if err := r.List(ctx, list, client.InNamespace(input.Namespace)); err != nil {
 					t.Fatal(err)

@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestPositiveRiskHasNoDefaultTenMinuteCap(t *testing.T) {
@@ -63,5 +65,28 @@ func TestDefaultBoundsOnlyUseSchedulerRepresentation(t *testing.T) {
 	lower, upper, err := checkpointIntervalBounds(CheckpointPolicy{MinIntervalSeconds: 1000})
 	if err != nil || lower != 1000 || upper != math.MaxInt32 {
 		t.Fatalf("default bounds=%d..%d err=%v", lower, upper, err)
+	}
+}
+
+func TestPausedScheduleRetainsSelectedCostFreshnessAfterRestart(t *testing.T) {
+	now := time.Date(2026, 11, 19, 5, 0, 0, 0, time.UTC)
+	obj := NewObject("NodeRequest")
+	obj.Object["status"] = map[string]interface{}{"checkpoint": map[string]interface{}{
+		"checkpointIntervalSeconds": int64(0), "reason": "group_intent_quiesced",
+		"lastSelectedIntervalSeconds": int64(18000),
+	}}
+	cp := ReadPolicyInput(obj).Checkpoint
+	if cp.LastIntervalSeconds != 18000 {
+		t.Fatal("pause forgot the previously selected interval")
+	}
+	cp.MeasuredCosts = MeasuredCosts{CheckpointSeconds: 120, CopySeconds: 60, ObservedAt: now.Add(-30 * time.Minute).Format(time.RFC3339)}
+	if _, ok := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: .001}, RuntimeSnapshot{}, 3, now); !ok {
+		t.Fatal("pause/restart caused premature cost expiry")
+	}
+	// Compatibility with previously deployed statuses before the persistent field.
+	unstructured.RemoveNestedField(obj.Object, "status", "checkpoint", "lastSelectedIntervalSeconds")
+	_ = unstructured.SetNestedField(obj.Object, int64(600), "status", "checkpoint", "checkpointIntervalSeconds")
+	if got := ReadPolicyInput(obj).Checkpoint.LastIntervalSeconds; got != 600 {
+		t.Fatalf("legacy status interval lost: %d", got)
 	}
 }

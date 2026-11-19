@@ -237,6 +237,9 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 	status := trainingpolicy.CheckpointStatus(migration.GetName(), decision.CheckpointIntervalSeconds, now, "schedule_updated")
+	// Merge patches retain this field while pause/in-flight statuses temporarily
+	// expose 0/default intervals. Those states must not shrink cost freshness.
+	status["lastSelectedIntervalSeconds"] = decision.CheckpointIntervalSeconds
 	applyPaperIntervalStatus(status, input, decision)
 	applyMeasuredCostsStatus(status, measuredCosts)
 	if err := patchStatusSubtree(ctx, r.Client, policyObj, trainingpolicy.StatusCheckpointPath, status); err != nil {

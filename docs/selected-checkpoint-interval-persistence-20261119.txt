@@ -1,0 +1,21 @@
+Selected checkpoint interval persistence — 2026-11-19
+
+Observed code issue: checkpointIntervalSeconds is also transient execution
+state. Pausing a schedule during checkpoint/restore can set it to zero.
+Using that transient value to determine the age allowance of a measured
+checkpoint cost can discard a valid observation before the selected long
+interval has elapsed.
+
+After a schedule update succeeds, management now persists
+status.checkpoint.lastSelectedIntervalSeconds. Policy reads prefer this
+field and retain the legacy checkpointIntervalSeconds fallback. Kubernetes
+MergePatch preserves the selected value during pause/in-flight updates.
+The original cost observedAt is unchanged. The selected interval plus the
+existing 600-second grace still bounds freshness. No risk calculation,
+checkpoint objective, source fencing, restore verification or replacement
+algorithm changes.
+
+Validation: full go test ./...; focused race tests for a paused schedule,
+process restart and a real status patch. Existing GPU receipts validate
+the preceding policy/runtime version; this persistence-only follow-up is
+CPU validated and must not be described as another GPU/FIS acceptance.
