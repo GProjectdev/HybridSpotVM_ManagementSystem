@@ -114,9 +114,10 @@ def validate(c, run_id, experiment, arm, *, namespace=None):
     for key in ("goal_steps", "batch_size", "max_seconds"):
         if type(c.get(key)) is not int or c[key] <= 0:
             raise ValueError(key + " must be a positive integer")
-    for key in ("initial_risk", "changed_risk"):
-        if not isinstance(c.get(key), (float, int)) or not math.isfinite(c[key]) or c[key] < 0:
-            raise ValueError(key + " must be finite and nonnegative")
+    if not uses_external_risk_feed(c):
+        for key in ("initial_risk", "changed_risk"):
+            if not isinstance(c.get(key), (float, int)) or not math.isfinite(c[key]) or c[key] < 0:
+                raise ValueError(key + " must be finite and nonnegative")
     if c.get("scenario") not in ("constant", "risk-rise", "risk-schedule", "interruption"):
         raise ValueError("scenario must be constant, risk-rise, risk-schedule, or interruption")
     if has_risk_schedule(c):
@@ -143,6 +144,12 @@ def validate(c, run_id, experiment, arm, *, namespace=None):
 def has_risk_schedule(config):
     return config["scenario"] == "risk-schedule" or (
         config["scenario"] == "interruption" and "risk_schedule" in config)
+
+
+def uses_external_risk_feed(config):
+    risk=config.get('existing_risk_spec',{})
+    return (isinstance(risk,dict) and 'staticLambdaPerHour' not in risk
+            and bool(risk.get('paperEstimator',{}).get('feedEndpoint')))
 
 
 def render(c, source, run_id, experiment, arm, *, namespace=None):
@@ -194,10 +201,11 @@ def render(c, source, run_id, experiment, arm, *, namespace=None):
         policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"] = "disabled"
     if experiment == "checkpoint":
         policy["metadata"]["annotations"]["training.dcnlab.com/planned-partial"] = "disabled"
-    risk = resource_for_run("training.dcnlab.com/v1alpha1", "SpotRiskProfile", app+"-risk", run_id,
-                    {"provider": "aws", "region": c["region"], "availabilityZone": c["availability_zone"],
-                     "instanceType": c["instance_type"], "staticLambdaPerHour": c["initial_risk"],
-                     "pollSeconds": 30, "maxAgeSeconds": 3600})
+    risk_spec=copy.deepcopy(c['existing_risk_spec']) if uses_external_risk_feed(c) else {
+        "provider": "aws", "region": c["region"], "availabilityZone": c["availability_zone"],
+        "instanceType": c["instance_type"], "staticLambdaPerHour": c["initial_risk"],
+        "pollSeconds": 30, "maxAgeSeconds": 3600}
+    risk = resource_for_run("training.dcnlab.com/v1alpha1", "SpotRiskProfile", app+"-risk", run_id,risk_spec)
     data_name = app + "-data"
     pv = resource_for_run("v1", "PersistentVolume", data_name, run_id,
                   {"capacity": {"storage": "1Gi"}, "accessModes": ["ReadOnlyMany"],

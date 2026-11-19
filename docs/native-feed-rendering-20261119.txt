@@ -1,0 +1,14 @@
+Native feed configuration rendering — 2026-11-19
+
+Rendering the actual proposed configurations found a legacy dependency on
+initial_risk/changed_risk, although the four-rank native SARIMA feed completely
+replaces the static risk resource. Do not fabricate zero-risk scalar values to
+satisfy that dependency. The shared renderer now accepts an explicit external
+paperEstimator feed without static risk fields and renders that declared risk
+spec directly. Legacy static configurations retain their numeric checks.
+
+The actual two proposed model configurations render A/B/C offline with matching
+A/B/C workload hashes and matching B/C comparison hashes. Their purposes remain
+acceptance for this rendering check; the stored formal drafts remain DRAFT.
+No Kubernetes resources or cloud workloads were created by this check.
+The test also binds the FIS native-window reserve into the common contract.

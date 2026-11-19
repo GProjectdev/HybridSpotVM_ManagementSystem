@@ -73,6 +73,21 @@ class IntegratedProtocolTests(unittest.TestCase):
             self.assertEqual(info['risk_transport_binding']['feed_endpoint'],endpoint)
         risk['paperEstimator']['feedEndpoint']=template.replace('/risk','/different-input')
         self.assertNotEqual(b['comparison_lock_sha256'],v3.render(self.c,self.source,'otherfeed','B')[0]['comparison_lock_sha256'])
+    def test_external_feed_requires_no_fabricated_static_risk_fields(self):
+        for key in ('initial_risk','changed_risk','risk_change_after_seconds'):
+            self.c.pop(key,None)
+        risk=self.c['existing_risk_spec'];risk.pop('staticLambdaPerHour',None)
+        risk['paperEstimator']={'method':'sarima','feedEndpoint':'https://risk-replay.{namespace}.svc:8443/risk'}
+        self.c['fault_window']={'anchor':'source NodeRequest creationTimestamp',
+            'transition_after_seconds':3600,'notice_seconds':120,'margin_seconds':120}
+        b,_,objects,_=v3.render(self.c,self.source,'nativexb','B')
+        c=v3.render(self.c,self.source,'nativexc','C')[0]
+        self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
+        self.assertEqual(c['fault_window'],self.c['fault_window'])
+        self.assertNotIn('staticLambdaPerHour',next(o for o in objects if o['kind']=='SpotRiskProfile')['spec'])
+        self.assertNotIn('initial_risk',b)
+        self.c['fault_window']['margin_seconds']=121
+        self.assertNotEqual(b['comparison_lock_sha256'],v3.render(self.c,self.source,'otherwindow','C')[0]['comparison_lock_sha256'])
     def test_changed_replacement_or_storage_cannot_reuse_bc_baseline(self):
         b=v3.render(self.c,self.source,'base','B')[0]['comparison_lock_sha256']
         for change in ({'existing_replacement':{'enabled':False}},{'checkpoint_size':'20Gi'},{'storage_class':'other-nfs'}):
