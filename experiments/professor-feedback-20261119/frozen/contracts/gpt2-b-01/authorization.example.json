@@ -1,0 +1,9 @@
+{
+  "authorized": false,
+  "run_id": "gpt2-b-01",
+  "frozen_manifest_sha256": "53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa",
+  "budget_usd": 75,
+  "hard_deadline_utc": "2026-11-23T05:00:00+00:00",
+  "researcher_message_reference": null,
+  "scope": "TEMPLATE_ONLY_NO_PAID_APPROVAL"
+}

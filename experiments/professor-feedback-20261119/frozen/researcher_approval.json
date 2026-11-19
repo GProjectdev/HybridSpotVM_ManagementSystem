@@ -1,0 +1,17 @@
+{
+  "at_recorded_utc": "2026-11-19T07:32:18.183074+00:00",
+  "status": "RESEARCHER_APPROVED_FREEZE_AND_PREPARATION",
+  "message_reference": "user request immediately following review of E1_E2_PreExecution_Final_Check_20261119.txt",
+  "quoted_authorization": "현재 제안한 E1·E2 최종 실험 설정과 공통 조건을 연구자로서 승인한다. 이번 지시는 실험 설정 동결 및 실행 준비에 대한 승인이다. 아직 유료 GPU VM 생성이나 FIS 실행까지 승인하는 것은 아니다.",
+  "approved_values": {
+    "gpt2_goal_steps": 4800,
+    "resnet50_goal_steps": 26700,
+    "world_size": 4,
+    "instance_type": "g5.2xlarge",
+    "risk_checkpoint_resource_policies": "unchanged",
+    "FIS_fraction": 0.5,
+    "predefined_failure_stop_rules": "unchanged"
+  },
+  "methodology_and_arm_changes_authorized": false,
+  "paid_GPU_or_FIS_authorized": false
+}

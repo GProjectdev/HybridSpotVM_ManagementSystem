@@ -1,0 +1,204 @@
+E1·E2 최종 동결 및 실행 준비 결과 — 2026-11-19
+시간대: Asia/Seoul / 정식 GPU·FIS 실행 승인 없음 / 새 VM·FIS·예약 작업 없음
+
+1. 최종 상태
+연구자의 명시적 승인에 따라 과학적 실험 설정을 FROZEN으로 동결했다.
+E1=A/B, E2=A/B/C, 모델별각1회/총6고유Run/탐색적평가를 유지했다.
+목표·위험입력·기존자원/Checkpoint알고리즘·Full-groupRestore·50%장애조건을
+재선정하거나 재계산하지 않았다. 실제유료실행은별도승인이필요하다.
+
+최종 canonical Manifest:
+/home/ubuntu/graduate/Evaluation/day19_20261119/frozen/frozen_protocol_manifest_20261119.json
+SHA256:
+53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa
+
+연구자 승인 기록:
+/home/ubuntu/graduate/Evaluation/day19_20261119/frozen/researcher_approval.json
+기준 준비 Manifest의 SHA도 최종 Manifest에 기록했다.
+status=FROZEN, researcher_final_freeze_confirmed=true.
+formal_dispatch_authorized=false, paid_execution_authorized=false.
+동결은 GPU/FIS 사용권한이 아니다. 현재Run계약에도paid_authorization=false,
+policy_uid=null, 실제started_at=null, approved_budget_usd=null이다.
+
+E 디렉터리의 동일이름 Manifest 사본은 전달용이다. 상대경로 검증/실행에는 위
+canonical 경로 또는 Git bundle의 frozen/ 하위 Manifest를 사용한다.
+Manifest와분리된SHA256파일/132개고정artifact해시로무결성을검증한다.
+운영계약의실제UID·승인된시간창은별도복사본에바인딩하며frozen원본을고치지않는다.
+
+2. 확정값과 근거
+공통:4-Rank/서로다른4VM/VM당1GPU+1Rank, g5.2xlarge/A10G,
+ap-northeast-2c/apne2-az3,기존AMI ami-035e3088f6b7821fb,
+root100GiB gp3,동일NFS500GiB gp3/3000IOPS/125MiBps.
+
+GPT-2 Small:4800Step,per-rankbatch2/global8,sequence512,Seed42,
+AdamWlr5e-5/weightdecay.0005,기존WikiText-103raw-v1과tokenized512.
+ResNet-50:26700Step,per-rankbatch16/global64,Seed42,weightsNone,
+SGDlr.1/momentum.9/decay.0005,CIFARstem10classes/기존CIFAR10전처리.
+기존실측startup/iteration/CPpause/교체준비에근거한승인값이다. 이번에새산식이나
+512/1024수용검사Step으로대체하지않았다.선정근거는기존goal_step_and_common_settings_recommendation_20261119.txt와최종검토에보존했다.
+
+위험:원래SARIMA/672train/168held-out,고정hour14→15,
+λ=.0009212361959754303/h → .3458397557619131/h,
+sourceNR생성부터3600실초/forecast hour.수동전환/시간압축없음.
+실제동결한원본파일은기존US V100가용성Proxy trace/us-east-2a_v100_1.json이다.
+서울G5자연선점률/예측정확도자료라고주장하지않는다.
+policy=paper-eq6-7/α.8/PT3600/minOD1/경제성·OD최소유지기존설정.
+B/C=같은minCP60초/max미설정/실측CRIU비용analytic,
+zeroRisk또는정책Spot0이면3600초운영fallback. A만주기CP비활성.
+CRIU D/copy기반현재경로이며Desai비동기Eq1–5를실행한것처럼쓰지않는다.
+Full-group/배치교체3/byte-identical NFS재쓰기생략/UID/fence/Verified/전체rank감사유지.
+
+C만단일최초ownedSpot에FIS,commonStep GPT2400/ResNet13350,PT2M.
+B/C의정책·입력·체크포인트설정은같고C에만FIS를추가한다.
+실제가격·D·공급차이와복구중후속정책상호작용은관측변수이며숨기지않는다.
+
+코드provenance:
+평가실행소스Git commit aec9450564939619d2c6a466dc06589e31b35d16.
+그commit의evaluation트리와native replay코드를frozen/runner에별도보존했다.
+mutable main이바뀌어도동결Run은이복사본을사용한다.
+실제H Go이미지source 7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1.
+My_FluidCR acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b.
+PublicCloud-VM-Provisioner_test ee87c2d8e428350e59cc487fba70264222cfda9f.
+Stateful-Migration-Operator-with-PV dae0124e9a6b3d9b38ededae97962e5b91f30083.
+Karmada_with_PVMigration b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629.
+동결게시commit은내용자기참조를피해별도pushreceipt에기록한다.
+이번에Controller/CRD/Trainer/Restore이미지를빌드·배포하지않았다.
+
+주요image digest:
+trainer docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b
+payload docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65
+MGMT docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09
+Coordinator docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1
+22개전체참조/기반addon실제imageID는frozen/configs와evidence에기록했다.
+최종작은status보존수정의CPU/idle배포검증과이전GPU/FIS증거재사용범위는기존보고서대로다.
+최종digest의새FIS실측을했다고과장하지않는다.
+
+입력원본을해시일치확인후frozen/inputs에복사:
+trace SHA256 568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562
+forecast SHA256 8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2
+GPT통합assetreceipt cac21bb171fea20c0dcfbdb5b662d6c04c211c342b3595b59c4f90ec39c8b9f3
+GPT전처리manifest 42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988
+ResNet/CIFARmanifest 7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1
+GPT통합receipt는local full-evaluation-assets.json의raw SHA다.개별NFSmanifest와다르며,
+변경된자산이나canonicalhash라고바꿔해석하지않았다.현재NFS의두전처리manifest도일치했다.
+큰모델/데이터바이너리는기존검증된파일별해시와보존증거를재사용했고중복전송하지않았다.
+
+실행호환성처리:준비단계risk manifest는status=INPUT_CANDIDATE였고,기존서버의
+load_locked는status=LOCKED를요구한다.서버용native_replay_manifest_LOCKED.json을
+별도로만들어status한필드만승격했다.기존승인risk계약/예측/시간/선정구간/입력해시는
+그대로보존했고B/C comparison hash도변하지않았다.최종Manifest는서버용래퍼의
+실제SHA도추가고정한다.기존loader로0/3600초payload값만오프라인확인했다.
+새예측/새위험알고리즘/서버기동은없다.초기내부조립Manifest는게시전초안으로
+prepublication_build_receipt에보존하고최종Manifest에교체이유를남겼다.
+
+3. Run 계약과 절대 시간 일정안
+frozen/contracts/<run_id>/ 아래run.json,member-resources.json,
+karmada-resources.json,policy.json,authorization.example.json을준비했다.
+formal FROZEN모드의오프라인렌더이며API apply는없다.원본NR는suspended,
+원본STS는replicas0이며실제bootstrapUID는아직없다.
+A부터수행하는다음시간은미승인제안일뿐이고실행예약/cron/systemd를설치하지않았다.
+연구자가다른실행시각을승인하면과학적설정은유지한별도운영바인딩receipt를작성한다.
+과거제안시각이늦었다고hard deadline을자동연장하지않는다.
+
+Run ID          조건   시작(KST)          정리시작(KST)      절대종료(KST)      최대VM  예산제안
+ gpt2-a-01      A      11/20 09:00       11/20 13:40       11/20 14:00       4       $50
+ resnet50-a-01  A      11/20 15:00       11/20 19:40       11/20 20:00       4       $50
+ gpt2-b-01      B      11/23 09:00       11/23 13:40       11/23 14:00       7       $75
+ resnet50-b-01  B      11/23 15:00       11/23 19:40       11/23 20:00       7       $75
+ gpt2-c-01      C      11/25 09:00       11/25 13:40       11/25 14:00       7       $75
+ resnet50-c-01  C      11/25 15:00       11/25 19:40       11/25 20:00       7       $75
+모두2026년이며 UTC 값도 frozen/proposed_absolute_windows.csv/.json에 저장했다.
+각5시간 총한도에는 최소20분 정상 정리를 포함한다. 실제 학습·복구는 최대4시간40분,
+C dispatch에는 별도로30분 recovery/cleanup 여유가 필요하다.
+공급 대기·복원·재학습도 한도 안에 포함하고 목표 미완료는 timeout으로 남긴다.
+모델 사이 일정 간격은 앞 Run 정리·이관·다음 gate 확인용이다. 앞 시도의 실제 정리와
+종료 증거가 없으면 다음 Run을 시작하지 않는다. 위 시간은 자동 예약이 아니다.
+
+4. 예상 비용과 별도 승인 범위
+기존 timestamp가 있는 공식 receipt 기준 OD$1.4903/h, Spot$0.6814/h,
+서울 gp3$0.0912/GB-month. 실제 Run마다 다시 조회하고 가격 이력을 보존한다.
+A:4OD×5h GPU envelope$29.806,100GiB rootEBS 합계약$0.253.
+B/C:7대 전부OD로 계산한5h GPU envelope$52.1605,rootEBS 합계약$0.443.
+6Run GPU합계$268.254,rootEBS$2.28. 단일Spot FIS가 약2분이면 C당 참고$0.20,
+10분 중지 여유로는 C당$1. NFS 기존 고정비30그룹시간 배분약$1.90,
+선택 이관90decimalGB의 internet-out 참고$11.34. 원본304GiB 전체 이관은 가정하지 않았다.
+관측 API/log egress·관리/VPN/NFS서버 지속비·세금 등의 여유를 포함한 총계획안$400.
+A당$50/B·C당$75는 별도 승인 검토용이다. 연구자의 설정 동결 승인이 지출 허가는 아니다.
+
+A의 참고 시간: 기존 처리율을 승인된G에 적용하면 GPT약1.12~1.48h,
+ResNet약1.21~1.54h.20분 반환 가정 GPU추정 GPT$8.66~10.80/ResNet$9.21~11.18.
+정식A 실측/신뢰구간이 아니다. B/C의 평균시간·비용은 아직 미확인이다.
+RR226/156초를 전체복구시간으로 넣어 낙관적인 예측을 만들지 않는다.
+Spot환급/FIS과금 예외는 확인 전 차감하지 않는다. gross가격적분과invoice는 구분한다.
+API장애·정리 지연·추가 시도·공유 기반비용에 대해 절대 청구 상한을 보장하지 않는다.
+
+5. 관측·공간·비용·정상 정리 준비
+기존 observer/price_watch/final_fis/UID-scoped integrated_control을 frozen/runner에서
+실행한다. 이전 진단 runner의 manualrisk/짧은goal은 실행하지 않는다.
+MGMT 정책 로그, Karmada/AWS CR,4Rank 진전,CP/RR,가격연속장부를 수집한다.
+λ/α/가격/D/copy/decisionObservedAt/분기가 기존 실제 로그에 저장됐다는 증거를 재사용한다.
+오프라인 민감도와 실제 GPU 결과,중복 관측과 독립 반복은 구분한다.
+
+NFS는 승인된304GiB 새6Run 보관 envelope/64GiB reserve/선택 로컬복사 계획을 유지한다.
+GPT B/C는 해당Run 경로합계>=78GiB 또는 NFSfree<=98GiB,
+ResNet B/C는 >=16GiB 또는 free<=80GiB, A는 >=6GiB 또는 free<=80GiB에서 조기 중지한다.
+localfree<=80GiB,2회 연속 센서 실패,owned VM 동시수 초과도 중지 조건이다.
+PVC와 별도 CRIU 경로를 합산하고10Gi PVC요청을 물리 quota로 해석하지 않는다.
+중간/partial/과거결과를 자동 삭제해 성공시키지 않는다.
+
+실험 전용 operational_watch.py를 준비했고 안전 관련6개 focused 검사를 통과했다.
+별도 authorized=true 지출 receipt와 RunID/manifestSHA/예산/절대종료/parentUID가
+일치해야 작동한다. 명시적 --normal-cleanup-on-stop에서만 기존UID삭제경로를 호출한다.
+provision이나 FIS시작 기능은 없으며 현재 receipt/paidflag는false다.
+최대 관측가격·positive 종료관측으로 계산한 보수적GPU+rootEBS 추정에20분 정리비와
+other-cost reserve(A$10/B·C$15)를 더해 승인Run예산 접근을 감시한다.
+결측 가격/종료를0비용으로 처리하지 않는다. 이 값은 안전감시 추정이며 논문주지표가 아니다.
+AWS에 없는 Karmada API종류와 삭제 중인 이전Pod의 비적용 오류는 원시자료에 남기며,
+현재RunningPod 로그/필수CR/heartbeat 누락과 구분한다.
+
+감시 프로세스와 별개인 호스트 deadline 작업도 승인된 절대 cleanup_start에 기존
+quiesce를 호출하도록 준비한다. 지금은 timer를 설치하지 않았다. 실제 승인 후
+프로세스/PID/heartbeat/정리예약 receipt를 확인한 다음 capacity를 활성화한다.
+중지 때 exact sourceNR suspend→bounded drain→정상 cleanup을 요청한다.
+기록된 ownedFIS만 중지하고 모든 historical EC2 positive종료/임시EBS/keys/
+복제Secret/FIS전용 주변자원을 별도 확인한다. finalizer/namespace 강제삭제,
+PVC/PV/NFS 일괄삭제는 없다. 막힌 삭제/잔여과금 가능성은 보고하고 완료로 가정하지 않는다.
+
+6. 시간창 충돌·미적격·연구 한계
+GPT50%의112.5초 여유는 경험적screen이지 보장이 아니다. sourceNR+3360초 이후
+FISdispatch/current4RankdurableCP 부족/초기Spot 소멸/providerpool 변경 등은
+기존 규칙대로 미적격 처리한다. 늦은장애/다른Spot/강제CP/다른risk로 대체하지 않는다.
+B가 실행 중 재구성·재개를 관측하기 전에 목표를 끝내면 관측요건 미충족을 표시한다.
+FIS복구와 native1시간 전환이 겹치면 기존정책/pinnedoperation을 유지하고
+순운영 C-B의 일부로 모두 기록한다. 순수 복구엔진의 독립효과라고 주장하지 않는다.
+시간창 실패가 반복돼 실행불가능이 드러나면 신규 formal dispatch를 중단하고 연구자에게
+보고한다. 승인 없이 E1/E2분리블록과 별도B를 만들지 않는다. 음수절감/실패도 보존한다.
+
+7. 실행 직전 확인과 별도 승인
+- canonical Manifest/132개 artifact/Run계약을 verify_freeze.py로 대조한다.
+- 대상Run/실제날짜·절대시간/비용/최대VM/FIS범위/정리예약의 별도 지출 승인 receipt.
+- 아직 없는 실제UID/namespace/복제credential/riskTLSfeed/가격ConfigMap/정확한NFS경로를
+  기존 호스트 전제로 bootstrap한다. rendered spec에서 벗어나지 않았는지 대조하고,
+  parentUID/sourceNR.creationTimestamp와 실제원본STS UID를 기록한다.
+- fresh계정/클러스터API/이미지ID/AMI/driver/data/SC/free/clock을 확인한다.
+- 독립watchdog와 observer/price/safety heartbeat를 확인한 뒤 provision/start한다.
+- A는4OD/4개별GPU/동일초기상태/CPoff/FIS없음을 확인한다.
+- C는 별도로 FIS인가/exactSpotUID/healthyODalarm/currentCP/50%/nativewindow 확인.
+- Quota수치는권한거부로 미확인이다. 이전4OD+3Spot admission은 재사용하지만 미래공급을
+  보장하지 않는다. 이번에 quota를 시험하려고 새GPU를 만들지 않았다.
+
+동결은 추가GPU/FIS허가를 포함하지 않는다. 모든Run은 미실행이고 실제UID와 지출시간창은
+후속 명시적 승인 이후에만 바인딩한다. 운영 준비를 범용 무인설치가 끝난 상태라고
+과장하지 않는다. 기존 호스트별 bootstrap/인가와 정상 정리 receipt가 실행 전 필요하다.
+상세 명령:
+/home/ubuntu/graduate/Evaluation/E1_E2_Execution_Commands_20261119.txt
+
+8. 검증과 보존
+6개 formal-mode render/계약hash,132개artifact,원본trace/forecast/assetreceipt,
+현재NFS 전처리manifest,LOCKED native loader의 오프라인 로딩을 확인했다.
+실험용 감시보조6개 검사를 통과했다. 기존322평가검사/Go/race/GPU/FIS증거는 재사용했다.
+새 유료회귀검증은 없고 실클러스터 apply/provision/FIS/cron 설치는0회다.
+ManifestSHA와 절대시간제안, 코드/이미지/자산 전체값은 frozen/에 있다.
+과학적 설정·승인기록은 고정하고 실제 운영binding과 결과/실패는 별도 디렉터리에 저장한다.
+
+작성 완료 UTC 2026-11-19T07:45:39.723278+00:00 / 정식 유료 실행 승인 없음.

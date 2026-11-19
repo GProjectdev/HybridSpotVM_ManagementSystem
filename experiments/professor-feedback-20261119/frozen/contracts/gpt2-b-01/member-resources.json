@@ -1,0 +1,134 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "PersistentVolume",
+    "metadata": {
+      "name": "eval-gpt2-b-01-data",
+      "labels": {
+        "training.dcnlab.com/evaluation-run": "gpt2-b-01"
+      }
+    },
+    "spec": {
+      "capacity": {
+        "storage": "1Gi"
+      },
+      "accessModes": [
+        "ReadOnlyMany"
+      ],
+      "persistentVolumeReclaimPolicy": "Retain",
+      "storageClassName": "",
+      "claimRef": {
+        "namespace": "eval-v3-gpt2-b-01",
+        "name": "eval-gpt2-b-01-data"
+      },
+      "mountOptions": [
+        "ro"
+      ],
+      "nfs": {
+        "server": "10.50.1.98",
+        "path": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1",
+        "readOnly": true
+      }
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "PersistentVolumeClaim",
+    "metadata": {
+      "name": "eval-gpt2-b-01-data",
+      "labels": {
+        "training.dcnlab.com/evaluation-run": "gpt2-b-01"
+      },
+      "namespace": "eval-v3-gpt2-b-01"
+    },
+    "spec": {
+      "accessModes": [
+        "ReadOnlyMany"
+      ],
+      "storageClassName": "",
+      "volumeName": "eval-gpt2-b-01-data",
+      "resources": {
+        "requests": {
+          "storage": "1Gi"
+        }
+      }
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "PersistentVolumeClaim",
+    "metadata": {
+      "name": "eval-gpt2-b-01-checkpoint",
+      "labels": {
+        "training.dcnlab.com/evaluation-run": "gpt2-b-01"
+      },
+      "namespace": "eval-v3-gpt2-b-01"
+    },
+    "spec": {
+      "accessModes": [
+        "ReadWriteMany"
+      ],
+      "storageClassName": "nfs-client",
+      "resources": {
+        "requests": {
+          "storage": "10Gi"
+        }
+      }
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "PersistentVolume",
+    "metadata": {
+      "name": "eval-gpt2-b-01-model",
+      "labels": {
+        "training.dcnlab.com/evaluation-run": "gpt2-b-01"
+      }
+    },
+    "spec": {
+      "capacity": {
+        "storage": "1Gi"
+      },
+      "accessModes": [
+        "ReadOnlyMany"
+      ],
+      "persistentVolumeReclaimPolicy": "Retain",
+      "storageClassName": "",
+      "claimRef": {
+        "namespace": "eval-v3-gpt2-b-01",
+        "name": "eval-gpt2-b-01-model"
+      },
+      "mountOptions": [
+        "ro"
+      ],
+      "nfs": {
+        "server": "10.50.1.98",
+        "path": "/mnt/nfs/validation-assets-v6-20261116/models/gpt2-small",
+        "readOnly": true
+      }
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "PersistentVolumeClaim",
+    "metadata": {
+      "name": "eval-gpt2-b-01-model",
+      "labels": {
+        "training.dcnlab.com/evaluation-run": "gpt2-b-01"
+      },
+      "namespace": "eval-v3-gpt2-b-01"
+    },
+    "spec": {
+      "accessModes": [
+        "ReadOnlyMany"
+      ],
+      "storageClassName": "",
+      "volumeName": "eval-gpt2-b-01-model",
+      "resources": {
+        "requests": {
+          "storage": "1Gi"
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "inputs": [
+    {
+      "label": "gpt2-assets",
+      "source": "/home/ubuntu/v6-preflight-20261116T091400Z/live/full-evaluation-assets.json",
+      "path": "inputs/gpt2-assets.json",
+      "sha256": "cac21bb171fea20c0dcfbdb5b662d6c04c211c342b3595b59c4f90ec39c8b9f3",
+      "bytes": 4265,
+      "verified_from_original": true
+    },
+    {
+      "label": "trace",
+      "source": "/home/ubuntu/v6-readiness-20261117/trace/us-east-2a_v100_1.json",
+      "path": "inputs/trace.json",
+      "sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+      "bytes": 60518,
+      "verified_from_original": true
+    },
+    {
+      "label": "forecasts",
+      "source": "/home/ubuntu/v6-readiness-20261117/evidence-upgrade/tls-cpu-test/forecasts.json",
+      "path": "inputs/forecasts.json",
+      "sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+      "bytes": 60562,
+      "verified_from_original": true
+    },
+    {
+      "label": "gpt2-processed",
+      "source": "/mnt/nfs/validation-assets-v6-20261116/datasets/wikitext103-tokenized-gpt2-512-v1/manifest.json",
+      "path": "inputs/gpt2-processed.json",
+      "sha256": "42ab5e01f51f45d2cf58059d94fe048c6dc5e382f70237a5cdce160e2e0d3988",
+      "bytes": 1754,
+      "current_NFS_metadata_hash_verified": true,
+      "binary_payload_not_rehashed_in_this_check": true
+    },
+    {
+      "label": "resnet50-data",
+      "source": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1/manifest.json",
+      "path": "inputs/resnet50-data.json",
+      "sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+      "bytes": 1741,
+      "current_NFS_metadata_hash_verified": true,
+      "binary_payload_not_rehashed_in_this_check": true
+    }
+  ],
+  "new_GPU_or_FIS": false,
+  "model_and_dataset_binary_hashes_are_preserved_in_existing_manifests": true
+}

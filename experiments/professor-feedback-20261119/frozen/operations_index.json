@@ -1,0 +1,318 @@
+{
+  "at": "2026-11-19T07:45:39.723278+00:00",
+  "frozen_manifest_sha256": "53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa",
+  "status": "PREPARED_UNAUTHORIZED_OPERATIONAL_CONTRACTS",
+  "planned_dates_not_reserved": true,
+  "files": [
+    {
+      "path": "E1_E2_Execution_Commands_20261119.txt",
+      "sha256": "28f7a3b28f7ff759c8a2d1915b0f51f1ba1debaf5d9ee73fa9f925c3d0f19eba",
+      "bytes": 12772
+    },
+    {
+      "path": "E1_E2_Frozen_Execution_Plan_20261119.txt",
+      "sha256": "28fe1b7b79283fc510bfa5af49c5da7156b8529505462e7bbf700b42d6ddb45c",
+      "bytes": 15491
+    },
+    {
+      "path": "attempt-register.json",
+      "sha256": "7ee06efe892ea528f76b99152d07d70e1f2244ea4aaa884c614142455f3c40c8",
+      "bytes": 2746
+    },
+    {
+      "path": "code_provenance.json",
+      "sha256": "d849c277e0d1d994adece76e5a145bfef194bb1b80af001147f5c100061adbd7",
+      "bytes": 883
+    },
+    {
+      "path": "configs/gpt2.json",
+      "sha256": "c5f232e84d58811d946d1329b58e73acec7b3cdc52698653f154061b124048be",
+      "bytes": 8405
+    },
+    {
+      "path": "configs/resnet50.json",
+      "sha256": "6a7e757153a86e7311e0dd477611a46e6795cba6848fa51b9f8de82a98729c28",
+      "bytes": 8590
+    },
+    {
+      "path": "contracts/gpt2-a-01/authorization.example.json",
+      "sha256": "96810b1e7430f45c9178d59a1c989f71d92354c4d61b0e847ce59927304c708c",
+      "bytes": 304
+    },
+    {
+      "path": "contracts/gpt2-a-01/karmada-resources.json",
+      "sha256": "f9c75254c360f86dfc5a695aa2a2296a0072c06532134a4792cf8d4364ac7b31",
+      "bytes": 47428
+    },
+    {
+      "path": "contracts/gpt2-a-01/member-resources.json",
+      "sha256": "3c47d25d8b037ccc5e99f881ff04d47d5fd5865a181e52ca3ae2ef14b4027368",
+      "bytes": 2943
+    },
+    {
+      "path": "contracts/gpt2-a-01/policy.json",
+      "sha256": "9e67adcef67645bb7f3c3887cc6a6b13968ded1a28d880e0892ce5afce9f9963",
+      "bytes": 1884
+    },
+    {
+      "path": "contracts/gpt2-a-01/run.json",
+      "sha256": "74619119669a9190abff1aa99462f83e45aa3fd7e5b2bce9a935a8e81878cacf",
+      "bytes": 10712
+    },
+    {
+      "path": "contracts/gpt2-b-01/authorization.example.json",
+      "sha256": "7bd2a1a4f7fa3aecf3606ad13e4094cf68088a9e3297c5e369ff66305edef218",
+      "bytes": 304
+    },
+    {
+      "path": "contracts/gpt2-b-01/karmada-resources.json",
+      "sha256": "3c32fa6a0f5fcff0cd466cb39e037f9e7f0ea9a7fe9b32dfbd50c71550e5e3f5",
+      "bytes": 47428
+    },
+    {
+      "path": "contracts/gpt2-b-01/member-resources.json",
+      "sha256": "4acac7b24b6f181f9dd658a9fc899a651978474fed3ef92ef68cd2c42545f4c2",
+      "bytes": 2943
+    },
+    {
+      "path": "contracts/gpt2-b-01/policy.json",
+      "sha256": "b40dedd4a752e2025aefdb103f796bea5a6ab2ffe69f4d2ed8bc6fe2bed80bea",
+      "bytes": 1797
+    },
+    {
+      "path": "contracts/gpt2-b-01/run.json",
+      "sha256": "b556b8894165439a8784b2b8b1fe718981ed3b7ca09bd2e820e3de27814e361e",
+      "bytes": 10713
+    },
+    {
+      "path": "contracts/gpt2-c-01/authorization.example.json",
+      "sha256": "a650aa0026e0a71ebdba4fa6217261242b2c187775c292c8cd2cd7e2251eba01",
+      "bytes": 304
+    },
+    {
+      "path": "contracts/gpt2-c-01/karmada-resources.json",
+      "sha256": "bbe6a4c57fa44991fb1797ed39d2e6fd7e5749555b1791f774bd8f0f926b28f5",
+      "bytes": 47428
+    },
+    {
+      "path": "contracts/gpt2-c-01/member-resources.json",
+      "sha256": "12628c959f6a92d8b39e117f2be95386ffe655239afcadfaabc592101fcab56a",
+      "bytes": 2943
+    },
+    {
+      "path": "contracts/gpt2-c-01/policy.json",
+      "sha256": "8b9c0ed800fd826187e73f19a7c94ae1214a73fcee9d3255eecbb084bcad914f",
+      "bytes": 1797
+    },
+    {
+      "path": "contracts/gpt2-c-01/run.json",
+      "sha256": "8d7e643377bb27337745288b7a958a7d6eb3704094593c5335699047f95404e6",
+      "bytes": 10794
+    },
+    {
+      "path": "contracts/resnet50-a-01/authorization.example.json",
+      "sha256": "bea70befbddc2792aba4072853326d990c17e4c5bceecd975366e1b1aacc1209",
+      "bytes": 308
+    },
+    {
+      "path": "contracts/resnet50-a-01/karmada-resources.json",
+      "sha256": "f1b39fa6a754ac4b27dc0e6f794d2e088d263307f25cb574e9dc38a78690edfa",
+      "bytes": 36365
+    },
+    {
+      "path": "contracts/resnet50-a-01/member-resources.json",
+      "sha256": "d3702b955b700f294687bfce39fb6f0ca1cb0e22698e788c993cbffedc3d7fb3",
+      "bytes": 1738
+    },
+    {
+      "path": "contracts/resnet50-a-01/policy.json",
+      "sha256": "16135f6618403cf75559cf3230b7b243bc83a7e59206e4894ae6717e55805df4",
+      "bytes": 1912
+    },
+    {
+      "path": "contracts/resnet50-a-01/run.json",
+      "sha256": "05fa40bf77547b049a9e07b8bb5bbc6e1f6635d0e55ee2e9c87d97e8340c695c",
+      "bytes": 10753
+    },
+    {
+      "path": "contracts/resnet50-b-01/authorization.example.json",
+      "sha256": "7023e83ce16edf3adcdb535317bfc83893f6984a1db3f3e5c4e13dafed299115",
+      "bytes": 308
+    },
+    {
+      "path": "contracts/resnet50-b-01/karmada-resources.json",
+      "sha256": "56eeb3037b7c696bcdb77b782c0003e4bdf8ac39d11e7d268cc918605d5c7132",
+      "bytes": 36365
+    },
+    {
+      "path": "contracts/resnet50-b-01/member-resources.json",
+      "sha256": "c8b657e9beedba50398149b9ee055f583a39f6efbbc9fda3d37be0fb8727be3b",
+      "bytes": 1738
+    },
+    {
+      "path": "contracts/resnet50-b-01/policy.json",
+      "sha256": "f9e9c111e47a2cd527cb341e93977a41d8b86772dbaa0e11b6723faf66fc6e6b",
+      "bytes": 1825
+    },
+    {
+      "path": "contracts/resnet50-b-01/run.json",
+      "sha256": "2c9f824b0a3054c6f8c9205c37892332d3c5ac287e0a262f2687d2dbfd6da506",
+      "bytes": 10754
+    },
+    {
+      "path": "contracts/resnet50-c-01/authorization.example.json",
+      "sha256": "30ba4c7d2dd889240e24e9cbdc587cc0cd3249c1ce37dbe17a42c7c2fce1d34a",
+      "bytes": 308
+    },
+    {
+      "path": "contracts/resnet50-c-01/karmada-resources.json",
+      "sha256": "fadb6830c381b2ee638c6f6e355e6d8ef6003220b27ca9f3445582eeeca74324",
+      "bytes": 36365
+    },
+    {
+      "path": "contracts/resnet50-c-01/member-resources.json",
+      "sha256": "0c491ecdd96ab13a5d3c0e0eeaa4e1044e58d018980b2427ea51ce8476642fc3",
+      "bytes": 1738
+    },
+    {
+      "path": "contracts/resnet50-c-01/policy.json",
+      "sha256": "027958c0550331921b229278cc61d42a537cc7457790d7dd2979a8400b43925f",
+      "bytes": 1825
+    },
+    {
+      "path": "contracts/resnet50-c-01/run.json",
+      "sha256": "641c16e17bba0efea0751b41ff424ab175e5e3f2be06d4d4c7dc4d906c1cad75",
+      "bytes": 10836
+    },
+    {
+      "path": "evidence/AGENTS.md",
+      "sha256": "0a03dff799a5f741942b121db957e8e7c274e6d36300174f8427efdb026e77aa",
+      "bytes": 531
+    },
+    {
+      "path": "evidence/existing-policy-telemetry-coverage.json",
+      "sha256": "5b905ecba20721da2800dff759a69e443c22c2f9660fc6d57f3e24f23e76a519",
+      "bytes": 2514
+    },
+    {
+      "path": "evidence/final-config-runtime-check.json",
+      "sha256": "9414b7dc52a83ba025760003d00333231df2aafe2069291c7893479ffecd8dc4",
+      "bytes": 13281
+    },
+    {
+      "path": "evidence/live-storage-clusters-price.json",
+      "sha256": "64e0fedeb1f5d237f6764f917320bcd70d97ad0de50c268924141d3c1299385f",
+      "bytes": 13776
+    },
+    {
+      "path": "evidence/native_lock_compatibility.json",
+      "sha256": "9da2f153c8848dde73300233be9b02f05a5382e1de6b3078ae99cce38154e299",
+      "bytes": 648
+    },
+    {
+      "path": "evidence/operational-watch-tests.log",
+      "sha256": "f8b35628a44920cc06c57740488212829c3f6a3e7091b5b755e55316485f7c8e",
+      "bytes": 628
+    },
+    {
+      "path": "evidence/preexecution-consistency-check.json",
+      "sha256": "66da35a95f078b22b93f55e3c9862f1fd3526f106187d5969d839b283882a2da",
+      "bytes": 522
+    },
+    {
+      "path": "evidence/researcher-methodology.md",
+      "sha256": "5dbc9984049bd0e91d4babe0a4d72af66838574aa1204438401b477f24129b77",
+      "bytes": 20436
+    },
+    {
+      "path": "frozen_protocol_manifest_20261119.json",
+      "sha256": "53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa",
+      "bytes": 28855
+    },
+    {
+      "path": "frozen_protocol_manifest_20261119.json.sha256",
+      "sha256": "a888d54bfd5eab68f109dfbff300eb5445442dbb7a65271d71a7d5a2d5eccd84",
+      "bytes": 105
+    },
+    {
+      "path": "input_integrity_receipt.json",
+      "sha256": "7d7e635136d2f58ab1859906764c338dfbfb854a80d69255f18f9294354e93b2",
+      "bytes": 1875
+    },
+    {
+      "path": "policies/cost_and_execution_envelope.csv",
+      "sha256": "fcb9a020faa6e2da9f247318b9f7602f7ece88b5a5bfe5b01e48fe886fc1a720",
+      "bytes": 981
+    },
+    {
+      "path": "policies/cost_and_execution_envelope.json",
+      "sha256": "864e1092f92f4f2bd9ea0fee994aefccc7a9d48db962ddadc2c28e8925648298",
+      "bytes": 6065
+    },
+    {
+      "path": "policies/nfs_retention_and_stop_plan.json",
+      "sha256": "7266f057b57ae666cae807b4437e7dc6a70111fc680cf561709cd11e17156fba",
+      "bytes": 5342
+    },
+    {
+      "path": "policies/risk_FIS_collision_rules.json",
+      "sha256": "c8ef2150f9b0cef91298a7f48ee0d3dbdaaabeb31bbd9a20ca1336939f938629",
+      "bytes": 1582
+    },
+    {
+      "path": "prepublication_build_receipt/STATUS.txt",
+      "sha256": "9380e903cdd27819aff8434da69882c28ee805acde310fbd70b9fd13c2ada176",
+      "bytes": 269
+    },
+    {
+      "path": "prepublication_build_receipt/superseded_manifest.json",
+      "sha256": "79b656db71eff2f6e9ca26e239e2046e49014fb35fe5a7bcf71980dc29a18447",
+      "bytes": 27830
+    },
+    {
+      "path": "proposed_absolute_windows.csv",
+      "sha256": "49350f411e616927b574c1ef13209ec1a7e6e5d3af03feed1d2b58b3cea8e795",
+      "bytes": 1335
+    },
+    {
+      "path": "proposed_absolute_windows.json",
+      "sha256": "a1a36ba846a2a8d36be9f87cb095986b49bec746d66d423716b5f1cc788d3355",
+      "bytes": 3346
+    },
+    {
+      "path": "researcher_approval.json",
+      "sha256": "50bb4b4a20d0161d9e1f9422027b934efd9620512592f4bb864ff8ed05b95602",
+      "bytes": 884
+    },
+    {
+      "path": "tools/operational_watch.py",
+      "sha256": "ad5567c843b135e0d47e3ced3d492119635a394a64d839a97504406cbdb8e072",
+      "bytes": 11987
+    },
+    {
+      "path": "tools/test_operational_watch.py",
+      "sha256": "3acddae92843fe14d8daae726069be8bf18b24884b51cb7761542a4098594b08",
+      "bytes": 3051
+    },
+    {
+      "path": "tools/verify_freeze.py",
+      "sha256": "b1fe39d21be2dbd080c476393e74714586439167c94ca6a6fe1d37d3519e525c",
+      "bytes": 2440
+    },
+    {
+      "path": "validation/frozen_release_validation.json",
+      "sha256": "3480ee0c97e80dffd402d9d88a53e80b55aa42f0b9f98292870472804b206865",
+      "bytes": 2036
+    },
+    {
+      "path": "validation/guard-tests.log",
+      "sha256": "c6b9b1f09add0403cc07e90bfdf272129b1ddfa2f8f7675ea8218862f2516371",
+      "bytes": 104
+    },
+    {
+      "path": "validation/planned-comparison.json",
+      "sha256": "5664be4f3343637d428bf9d151ede86e473f62aef072a1e3d041b691219660c1",
+      "bytes": 8327
+    }
+  ]
+}

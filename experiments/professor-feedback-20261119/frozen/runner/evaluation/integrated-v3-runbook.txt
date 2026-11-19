@@ -1,0 +1,229 @@
+Four-rank A/B/C evaluation tools — 2026-11-18
+
+Scope
+Protocol HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118. E1=A/B, E2=A/B/C.
+One rank and one GPU on each of four same-type VMs in aws1/ap-northeast-2c.
+A=4OD, periodic checkpoint disabled, no planned fault. B/C use the same
+existing policy, risk sequence, training contract and adaptive checkpoint
+configuration. Only C dispatches one pinned, UID-owned Spot FIS interruption
+at the predeclared50% common committed optimizer-step threshold. A/B results
+may be shared by E1/E2 when their full contract is identical, never counted
+as independent repeats. An acceptance diagnostic is not a formal A/B/C result.
+
+Offline rendering (no Kubernetes/AWS calls)
+ python3 -m evaluation.integrated_protocol prepare \
+   --config /PRIVATE/reviewed-four-rank-config.json \
+   --policy-source /PRIVATE/current-capacity-template.json \
+   --run-id run19c --condition C --out /PRIVATE/run19c
+
+A config must explicitly set world_size=4, purpose=acceptance or formal,
+training_lock, same selected one-GPU x86 instance type, full-group route,
+asset/image digests, existing policy/checkpoint/risk/replacement settings.
+GPT2 per-rank batch2, sequence512, globalbatch8 =4096 tokens/step.
+ResNet50 per-rank batch16, globalbatch64 =64 sample presentations/step.
+Current candidate: uniform g5.2xlarge, goals GPT2=4800/ResNet50=26700,
+source NodeRequest creation clock, seed42, live qualified prices, CP min60/no
+configured max. These are proposals awaiting researcher confirmation, not
+FROZEN. See experiments/professor-feedback-20261119/final-review/ and the
+final review TXT. Do not substitute a small acceptance goal for the final goal.
+Formal rendering rejects unfrozen settings, static risk and fixed B/C bounds.
+The renderer does not authorize or bootstrap a paid run.
+acceptance_manual_checkpoint=true is reserved for a separately labelled model
+restore diagnostic; formal rendering rejects this flag. It is never a formal B/C
+checkpoint policy or an alternate fault threshold.
+
+Explicit host bootstrap and evidence
+The prepared outputs are run.json, member-resources.json (JSON array),
+karmada-resources.json (JSON array), policy.json (suspended/unbound).
+Before provisioning, use the approved host bootstrap to create only the fresh
+run namespace, its reviewed runtime/network package config, dedicated copied
+AWS credential Secret, member storage and Karmada prerequisites/propagation.
+Do not publish Secret contents. Record exact created UIDs. Record source
+NodeRequest UID in run.policy_uid. Keep the workload absent/suspended until
+four owned GPU workers are Ready. Existing private acceptance adapters and
+UID-scoped receipts are under /home/ubuntu/v3-validation-20261118; they are
+host-specific, not a portable unattended installer.
+
+Record explicit paid_authorization, started_at, max_seconds<=18000,
+hard_deadline_utc and cleanup_start_utc (>=20min cleanup reserve). Use a
+separate host watchdog that invokes normal scoped cleanup at cleanup_start.
+Do not rely on an interactive shell or observer for paid-resource cleanup.
+The earlier November18 midnight deadline is historical. November19 changed-path
+acceptance was authorized with18KST target/22KST hard limit and is completed and
+cleaned. This is not an authorization for a future formal run. Every dispatch
+needs its still-valid authorization, absolute deadline and cleanup watchdog.
+Final formal dispatch remains blocked until researcher confirmation, frozen
+manifest and live prerequisites are reviewed.
+
+Existing-controller execution stages
+ python3 -m evaluation.integrated_control provision --directory /PRIVATE/run19c \
+   --profile new-account-v2 --karmada-kubeconfig /etc/karmada/karmada-apiserver.config \
+   --member-kubeconfig /root/aws-cluster/aws1.kubeconfig \
+   --mgmt-kubeconfig /etc/kubernetes/admin.conf \
+   --onprem-kubeconfig /root/on-premise/member/onpre1.kubeconfig
+ python3 -m evaluation.integrated_control start --directory /PRIVATE/run19c \
+   --profile new-account-v2 --karmada-kubeconfig /etc/karmada/karmada-apiserver.config \
+   --member-kubeconfig /root/aws-cluster/aws1.kubeconfig \
+   --mgmt-kubeconfig /etc/kubernetes/admin.conf \
+   --onprem-kubeconfig /root/on-premise/member/onpre1.kubeconfig
+
+Formal provision/start first compare every locked deployed controller image,
+payload argument, UID and rollout readiness against run.system_lock using all
+three execution-cluster kubeconfigs. Keep the full system_lock in run.json.
+A local Git branch name does not identify the image running in a cluster.
+
+provision only unsuspends the exact recorded NodeRequest UID. start requires
+four Ready parent-UID-owned NodeProvisions, four distinct nodes, exact EC2
+ownership/type/AZ/market, an OD rank0 anchor, and no preexisting source STS.
+It creates/binds the exact source STS UID, places rank0 on OD, then scales4.
+Temporary cordons affect only this run's nodes and are removed in finally.
+A failure is preserved as an attempt; do not blindly repeat a start after a
+partial mutation. Reconcile actual UIDs and cleanup first.
+
+Read-only observation and prices
+ export KARMADA_KUBECONFIG=/etc/karmada/karmada-apiserver.config
+ export AWS_KUBECONFIG=/root/aws-cluster/aws1.kubeconfig
+ export MGMT_KUBECONFIG=/etc/kubernetes/admin.conf
+ python3 -m evaluation.ieee_v2_observe --directory /PRIVATE/run19c \
+   --seconds 7200 --interval 15 --aws-profile new-account-v2 \
+   --aws-account-id ACCOUNT_ID
+
+Observer preserves ranks0..3, actual Pod/attempt/node identity, policy decisions,
+CR/restore/propagation evidence and all exact historical provider IDs. It does
+not request Secret contents. Price_watch accepts this explicit v3 protocol;
+keep its bounded process, raw official Spot/OD receipts and UID-bound ConfigMap
+price publication. Missing quota permissions remain unverified, not quota0.
+Record all original, replacement, idle and overlapping VM intervals; absence
+of a CR is not EC2 termination evidence.
+
+Risk replay
+internal/collector/paper_sarima_replay.py preserves the original causal forecast
+and 3600real seconds per trace hour. Nonzero selectedStartHour requires the
+exact original forecast SHA, selected-window evidence file SHA, declared
+adjacent transition and the --selection-evidence file. No compressed clock or
+new forecasting model is introduced. Pin the script/image, selection evidence,
+forecast, input trace and common relative clock anchor in B/C before freeze.
+The input is an external US-V100 availability proxy, not measured Seoul hazard.
+Do not change the sequence to keep Spot alive at a convenient fault time.
+
+FIS C only
+Use evaluation.final_fis plan/start CLI (see --help) with the run directory,
+explicit reviewed role/healthy OD stop alarm and exact run confirmation.
+Before starting training, record fis_target_instance_id (lexically first
+initial owned Spot NP) and fis_stop_alarm_instance_id (rank0 OD), and retain
+initial_instance_ids. No substitute target is allowed. Live validation checks
+all four current Pod UIDs/GPU limits/distinct owned nodes, a complete durable
+checkpoint of those same current UIDs, frozen live spec hash, current common
+step, original provider pool, account/type/AZ/markets and remaining recovery
+reserve. FIS uses exactly1 ARN, PT2M notice and one atomic start intent. An
+ambiguous response requires reconciliation, never a blind retry. A missing
+checkpoint at the predeclared fault makes that attempt ineligible; do not shift
+the trigger to a later convenient checkpoint.
+
+Offline output (preserve all attempts and raw sanitized observations)
+ python3 evaluation/audit_restore.py /PRIVATE/run19c --world-size 4 \
+   --events /PRIVATE/run19c/training-events.jsonl
+ This checks all4 rank-local restore state and three subsequent updates per
+ attempt. It does not prove cross-rank numerical equivalence or replace the
+ current-PodUID/source-fence/Verified/full-goal gates. The CLI defaults to2
+ for existing callers; v3 must select4 explicitly.
+ python3 -m evaluation.export_v2 --run /PRIVATE/run19c/run.json \
+   --events /PRIVATE/run19c/training-events.jsonl --run-id run19c \
+   --output /PRIVATE/run19c/export
+ python3 -m evaluation.integrated_protocol metrics --run /PRIVATE/run19c/run.json \
+   --events /PRIVATE/run19c/training-events.jsonl \
+   --request-at SOURCE_NODEREQUEST_CREATION_RFC3339 \
+   --billing /PRIVATE/run19c/reviewed-billing.json \
+   --out /PRIVATE/run19c/metrics-reviewed.json
+
+The primary denominator is source NodeRequest creation -> all4 goal optimizer
+updates, including startup/CP/recovery. Completion hashing/audit/return time is
+billed but does not move the useful training-completion boundary. Replayed
+steps and duplicate observations do not increase useful work. ResNet reports
+samples, GPT2 tokens. All4 goal/completed and final parameter/optimizer/data
+contract digests are required; rank-local ResNet BN buffers remain separate.
+Metrics are candidates requiring protocol/deviation review, never automatically
+formal scientific results. The historical T_training throughput is secondary.
+GPU Compute Cost is not total cloud cost. EBS/NFS/VPN/network/FIS/management
+cost exclusions and termination polling uncertainty must be disclosed.
+
+Normal cleanup
+ integrated_control quiesce (same explicit flags) suspends the exact parent,
+ deletes source workload/NodeRequest/owned source NodeProvisions with server
+ UID preconditions, preserving PVC/PV/NFS/namespaces.
+ integrated_control verify-cleanup requires positive termination of all exact
+ historical EC2 IDs and absence of source/member provider CRs.
+ Separately verify recorded temporary EBS, keys, copied Secret, scoped IAM/FIS
+ template/alarm and admission exception removal. Do not remove finalizers or
+ delete infrastructure namespaces/storage. A blocked delete is an investigation,
+ not an excuse for forced cleanup.
+
+Opt-in policy batch reconfiguration (2026-11-18)
+ group_replacement_batch_size in the render config defaults to1. Set3 to prepare
+ up to3 mismatched destination workers and issue one existing full-world restore.
+ The renderer writes training.dcnlab.com/group-replacement-batch-size="3" on the
+ suspended NodeRequest. B and C must use the same value; the comparison lock
+ includes it. A does not perform policy replacements. Same risk estimator and
+ checkpoint settings remain required; an emergency FIS victim uses the existing
+ single-worker recovery path.
+ Both spot-vm-management-controller AND checkpoint-recovery-coordinator must
+ run the batch-compatible image digests before enabling it. The Member protocol
+ and CRDs are unchanged. See docs/batch-group-reconfiguration-20261118.txt.
+ Four active workers plus a size3 batch may require7 simultaneous GPU instances;
+ size2 may require6. Existing private acceptance runners with a hard-coded5
+ provider guard must NOT be reused without a separately reviewed bound and
+ deadline/cleanup reserve. Do not change the cleanup ownership/UID checks.
+ A partially prepared batch waits without fencing/deleting the original world.
+ In-flight targets remain pinned; after Verified and normal old-provider
+ termination the current policy may initiate another operation. There is no
+ new automatic cancellation or rollback-prevention guarantee.
+November19 changed-path GPU evidence: GPT2 both directions Spot3<->OD3,
+one4-rank RestoreRequest per transition (226s each to Verified); ResNet50
+Spot3->OD3 (156s). All-rank state/update audits, resumes and original provider
+termination passed. These request-to-Verified values are functional acceptance,
+not serial-vs-batch speedup or formal E1/E2 performance. Actual4OD32vCPU and
+3Spot24vCPU admission passed, numeric Service Quota remains permission-denied
+and future capacity is not guaranteed. Latest small selected-interval status
+follow-up was CPU/idle-rollout checked, not rerun through GPU/FIS.
+
+2026-11-19 professor-feedback methodology
+ experiments/professor-feedback-20261119/researcher-methodology.md supersedes
+ methodological descriptions in earlier plans. Use4-rank as the primary block;
+ a2-rank alternative needs a reported hardware/supply reason and a separately
+ matched A/B/C block, preserving global batch after a reviewed per-rank change.
+ E1 remains A/B; E2 remains A/B/C. Additional alpha points0.7/0.8/0.9 are OFFLINE
+ sensitivity, not additional GPU arms. Do not relabel bootstrap as measured loss.
+ checkpoint_buffer_reuse in the renderer defaults to1 and explicitly controls
+ FLUIDCR_REUSE_UNCHANGED_CHECKPOINT in each trainer. It is part of the comparison
+ hash so a B/C baseline cannot silently mix the old write path and reuse path.
+Prior GPU windows do not authorize future formal execution. November19 accepted
+21 owned EC2 workers were positively terminated; the existing NFS/baseinfra stays.
+
+Final review / failure-preserving analysis (November19)
+One preassigned A/B/C block per model,6 unique runs total, remains the current
+researcher decision: exploratory only, no between-run variance/significance.
+Additional complete matched blocks are a recommendation requiring confirmation.
+Register attempts before launch, retain aborted/capacity/ineligible/failed
+attempts, and do not replace a failed comparison slot with a faster retry.
+ python3 -m evaluation.compare_abc \
+   --register /PRIVATE/attempt-register.json --out /PRIVATE/comparison-v1.json
+The register example in final-review/ contains six PLANNED slots, no measured
+formal results. Paths to run.json/metrics and a documented external protocol
+review are required before descriptive signed comparisons become available.
+B/C common comparison hashes and all A/B/C workload hashes must agree. Negative
+savings and negative fault overhead stay negative; unknown cost stays unknown.
+The tool never promotes an output to a formal scientific result or an AWS bill.
+
+GPT2 has only112.5s empirical headroom before the native transition when FIS
+notice and the proposed120s margin are included; ResNet50 has255.7s. The
+historical slower GPT2 startup sample conflicts and is preserved. Formal C
+must dispatch before actual source NR creation+3600-120-120, with its pinned
+initial Spot still present and fresh durable full-world checkpoint. Never
+retime/retarget after a missed window. Report deviation and seek researcher
+review if separate E1/E2 blocks with their own B baseline become necessary.
+
+NFS cleanup retained current model checkpoints/data/logs and recovered295GiB;
+snapshot free415GiB,351GiB above proposed64GiB reserve. NFS subdirectory PVC
+requests are not enforced filesystem quotas. Do not assume all6 retained runs
+fit from nominal10Gi PVCs; budget actual archive/copy growth and monitor free
+space per run. No further old data deletion is part of this review.

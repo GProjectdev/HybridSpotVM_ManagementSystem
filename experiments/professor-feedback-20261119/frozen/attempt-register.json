@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "protocol": "FROZEN",
+  "frozen_manifest_sha256": "53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa",
+  "attempts": [
+    {
+      "attempt_id": "gpt2-a-01",
+      "run_id": "gpt2-a-01",
+      "model": "gpt2",
+      "arm": "A",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/gpt2-a-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-a-01",
+      "run_id": "resnet50-a-01",
+      "model": "resnet50",
+      "arm": "A",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/resnet50-a-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "gpt2-b-01",
+      "run_id": "gpt2-b-01",
+      "model": "gpt2",
+      "arm": "B",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/gpt2-b-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-b-01",
+      "run_id": "resnet50-b-01",
+      "model": "resnet50",
+      "arm": "B",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/resnet50-b-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "gpt2-c-01",
+      "run_id": "gpt2-c-01",
+      "model": "gpt2",
+      "arm": "C",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/gpt2-c-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    },
+    {
+      "attempt_id": "resnet50-c-01",
+      "run_id": "resnet50-c-01",
+      "model": "resnet50",
+      "arm": "C",
+      "block_id": "block01",
+      "comparison_slot": true,
+      "status": "planned",
+      "run_json": "contracts/resnet50-c-01/run.json",
+      "metrics_json": null,
+      "review": {
+        "protocol_eligible": false,
+        "reviewer": null,
+        "evidence": []
+      },
+      "failure_reason": null
+    }
+  ]
+}

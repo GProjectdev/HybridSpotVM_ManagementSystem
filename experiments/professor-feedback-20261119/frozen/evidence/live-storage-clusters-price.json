@@ -1,0 +1,380 @@
+{
+  "at": "2026-11-19T06:57:59.528200+00:00",
+  "new_GPU_or_FIS": false,
+  "cluster_mutations": false,
+  "nfs": {
+    "at": "2026-11-19T06:57:59.816986+00:00",
+    "free_bytes": 445638832128,
+    "available_inodes": 32767068,
+    "filesystem_mount": {
+      "filesystems": [
+        {
+          "target": "/mnt/nfs",
+          "source": "/dev/nvme1n1",
+          "fstype": "ext4",
+          "options": "rw,relatime"
+        }
+      ]
+    },
+    "volumes": [
+      {
+        "namespace": "eval-v3-d19-gpt-cal-03",
+        "root": "/mnt/nfs/eval-v3-d19-gpt-cal-03-eval-d19-gpt-cal-03-checkpoint-pvc-6cca5156-1e6b-4b42-aea2-cdbf879c9a72",
+        "allocated_bytes": 11947876352,
+        "files": [
+          {
+            "relative_path": "migration-generation",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 10
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-3/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-3/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 648
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-3/rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-1/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-1/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 689
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-1/rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-0/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-0/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 648
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-0/rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-2/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-2/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 648
+          },
+          {
+            "relative_path": "eval-d19-gpt-cal-03-2/rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/latest.pt",
+            "allocated_bytes": 1493479424,
+            "apparent_bytes": 1493473018
+          },
+          {
+            "relative_path": "rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/.triggered",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 27
+          },
+          {
+            "relative_path": "rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/ranks/0.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 506
+          },
+          {
+            "relative_path": "rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/ranks/2.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 506
+          },
+          {
+            "relative_path": "rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/ranks/3.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 506
+          },
+          {
+            "relative_path": "rounds/eval-d19-gpt-cal-03-periodic-092d2988-g1-t1795065834931641046/ranks/1.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 506
+          }
+        ]
+      },
+      {
+        "namespace": "eval-v3-d19-gpt-cal-03",
+        "root": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-d19-gpt-cal-03",
+        "allocated_bytes": 6230536192,
+        "files": [
+          {
+            "relative_path": "sha256/33b65fa1d9b0588a8cf5de9d10ff8a7a568e27bb1bf3bfa09acee020f43a0545",
+            "allocated_bytes": 1507573760,
+            "apparent_bytes": 1507566592
+          },
+          {
+            "relative_path": "sha256/b0f49d7311b1a1aad72969a0a9f38ad5e3e321e3c4a334395ff6fb7e2c65d93c",
+            "allocated_bytes": 1507577856,
+            "apparent_bytes": 1507573760
+          },
+          {
+            "relative_path": "sha256/518b50284736d1f8f9eeae4bacdbbb77079f77ffb11795eb810d13fc42668186",
+            "allocated_bytes": 1507573760,
+            "apparent_bytes": 1507566592
+          },
+          {
+            "relative_path": "sha256/24c92ceb34a7f5f55f4ce05810a9e524dc88f04aac2356a5791c564d318a16de",
+            "allocated_bytes": 1707810816,
+            "apparent_bytes": 1707804160
+          }
+        ]
+      },
+      {
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "root": "/mnt/nfs/eval-v3-d19-rn-b3-02-eval-d19-rn-b3-02-checkpoint-pvc-f527eb3b-904c-467a-beb1-b9e4ba5622f0",
+        "allocated_bytes": 1508487168,
+        "files": [
+          {
+            "relative_path": "migration-generation",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 10
+          },
+          {
+            "relative_path": ".fluidcr-group-restore.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 2524
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-2/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-2/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 645
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-2/rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-0/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-0/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 685
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-0/rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-3/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-3/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 645
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-3/rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/latest.pt",
+            "allocated_bytes": 188551168,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-1/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-1/.fluidcr-runtime.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 645
+          },
+          {
+            "relative_path": "eval-d19-rn-b3-02-1/rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/latest.pt",
+            "allocated_bytes": 188555264,
+            "apparent_bytes": 188547834
+          },
+          {
+            "relative_path": "rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/.triggered",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 27
+          },
+          {
+            "relative_path": "rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/ranks/0.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 497
+          },
+          {
+            "relative_path": "rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/ranks/2.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 497
+          },
+          {
+            "relative_path": "rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/ranks/3.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 497
+          },
+          {
+            "relative_path": "rounds/eval-d19-rn-b3-02-periodic-3cfddbf9-g1-t1795063831088241054/ranks/1.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 497
+          },
+          {
+            "relative_path": ".group-operations/290e1863-1b92-4779-9f53-6bef4752c247.json",
+            "allocated_bytes": 4096,
+            "apparent_bytes": 2524
+          }
+        ]
+      },
+      {
+        "namespace": "eval-v3-d19-rn-b3-02",
+        "root": "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-d19-rn-b3-02",
+        "allocated_bytes": 1044668416,
+        "files": [
+          {
+            "relative_path": "sha256/e262aa43c336adf6f387ea85f771db3e489a52fdfbd4d2c9e1ffd20e0a50dd44",
+            "allocated_bytes": 202457088,
+            "apparent_bytes": 202455552
+          },
+          {
+            "relative_path": "sha256/db8e03ba4916e2e89acbe1e3781e8fdeca25403d5c2837ebdafd8957f915f8ec",
+            "allocated_bytes": 437321728,
+            "apparent_bytes": 437320704
+          },
+          {
+            "relative_path": "sha256/e837d7281fb455441a74ca56d6a59f950adf5e8ab832cc9dfe144ff67312b32c",
+            "allocated_bytes": 202457088,
+            "apparent_bytes": 202455552
+          },
+          {
+            "relative_path": "sha256/2649969631c872fc0c871f74e9b8d5da4947f28ff98b19b021254f0960e0fffa",
+            "allocated_bytes": 202432512,
+            "apparent_bytes": 202430464
+          }
+        ]
+      }
+    ]
+  },
+  "local_archive": {
+    "path": "/home/ubuntu/graduate/Evaluation/archives",
+    "free_bytes": 195479687168,
+    "available_inodes": 29224445,
+    "separate_from_NFS": true,
+    "separate_from_management_OS_disk": false
+  },
+  "clusters": [
+    {
+      "api": "MGMT",
+      "access": true,
+      "version": "v1.35.8",
+      "active_NodeRequest_NodeProvision_count": null,
+      "experiment_CR_api_here": false
+    },
+    {
+      "api": "KARMADA",
+      "access": true,
+      "version": "v1.36.2",
+      "active_NodeRequest_NodeProvision_count": 0,
+      "experiment_CR_api_here": true
+    },
+    {
+      "api": "AWS",
+      "access": true,
+      "version": "v1.37.2",
+      "active_NodeRequest_NodeProvision_count": 0,
+      "experiment_CR_api_here": true
+    },
+    {
+      "api": "ONPRE1",
+      "access": true,
+      "version": "v1.37.1",
+      "active_NodeRequest_NodeProvision_count": 0,
+      "experiment_CR_api_here": true
+    }
+  ],
+  "addon_actual_imageIDs": {
+    "MGMT": [],
+    "AWS": [
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "feab1296-829d-48a4-ae65-b39dbe1384c3",
+        "container": "nfs-client-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      }
+    ],
+    "ONPRE1": [
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "37ac9a7b-2703-4726-b3be-d2a9844952f1",
+        "container": "nfs-subdir-external-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      },
+      {
+        "namespace": "nfs-provisioner",
+        "pod_uid": "34dab805-7cff-4de7-aa08-fdb4b4070000",
+        "container": "nfs-subdir-external-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      },
+      {
+        "namespace": "shared-nfs-provisioner",
+        "pod_uid": "b1512449-5fc8-45b7-9cb1-97a11ca14b7e",
+        "container": "shared-nfs-client-provisioner",
+        "image": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+        "imageID": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626",
+        "ready": true
+      }
+    ]
+  },
+  "spot_price": [
+    {
+      "AvailabilityZone": "ap-northeast-2c",
+      "AvailabilityZoneId": "apne2-az3",
+      "InstanceType": "g5.2xlarge",
+      "ProductDescription": "Linux/UNIX",
+      "SpotPrice": "0.681400",
+      "Timestamp": "2026-11-19T05:00:00+00:00"
+    }
+  ],
+  "nfs_ebs": {
+    "Size": 500,
+    "VolumeType": "gp3",
+    "Iops": 3000,
+    "Throughput": 125,
+    "State": "in-use"
+  },
+  "nfs_ebs_modification": [
+    {
+      "ModificationState": "completed",
+      "TargetVolumeType": "gp3",
+      "Progress": 100
+    }
+  ]
+}

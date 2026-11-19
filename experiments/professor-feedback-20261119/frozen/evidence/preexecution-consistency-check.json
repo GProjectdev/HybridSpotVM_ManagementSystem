@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-19T16:13:00.756784+09:00",
+  "config_checks": [
+    {
+      "model": "gpt2",
+      "config_hash_matches": true,
+      "formal_render_rejected_until_FROZEN": true
+    },
+    {
+      "model": "resnet50",
+      "config_hash_matches": true,
+      "formal_render_rejected_until_FROZEN": true
+    }
+  ],
+  "storage_math_passed": true,
+  "paid_or_GPU_operation": false,
+  "prior_322_test_suite_reused_not_repeated": true,
+  "report_sha256": "105f2c3563423d5ac2eccfb09143a888e57112a726928b5d08f779f6ca0c9b0c"
+}

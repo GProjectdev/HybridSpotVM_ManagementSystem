@@ -1,0 +1,126 @@
+{
+  "at": "2026-11-19T16:05:50.288109+09:00",
+  "status": "FINAL_PREEXEC_OPERATIONAL_PLAN_NOT_EXECUTION_AUTHORIZATION",
+  "free_NFS_GiB_snapshot": 415.033504486084,
+  "base_free_reserve_GiB": 64,
+  "measurement_sources": {
+    "gpt2": {
+      "source_namespace": "eval-v3-d19-gpt-cal-03",
+      "allocated_bytes_PVC_and_separate_CRIU": 18178412544,
+      "allocated_GiB": 16.92996597290039,
+      "round_up_group_GiB": 17,
+      "round_up_CRIU_stage_GiB": 6,
+      "planned_full_group_equivalents": 4,
+      "stage_equivalents": 2,
+      "margin_factor": 1.25,
+      "per_B_C_run_budget_GiB": 112,
+      "stop_when_active_paths_allocated_GiB_ge": 78,
+      "early_free_space_stop_GiB_le": 98,
+      "root_paths": [
+        "/mnt/nfs/eval-v3-d19-gpt-cal-03-eval-d19-gpt-cal-03-checkpoint-pvc-6cca5156-1e6b-4b42-aea2-cdbf879c9a72",
+        "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-d19-gpt-cal-03"
+      ]
+    },
+    "resnet50": {
+      "source_namespace": "eval-v3-d19-rn-b3-02",
+      "allocated_bytes_PVC_and_separate_CRIU": 2553155584,
+      "allocated_GiB": 2.3778114318847656,
+      "round_up_group_GiB": 3,
+      "round_up_CRIU_stage_GiB": 1,
+      "planned_full_group_equivalents": 4,
+      "stage_equivalents": 2,
+      "margin_factor": 1.25,
+      "per_B_C_run_budget_GiB": 32,
+      "stop_when_active_paths_allocated_GiB_ge": 16,
+      "early_free_space_stop_GiB_le": 80,
+      "root_paths": [
+        "/mnt/nfs/eval-v3-d19-rn-b3-02-eval-d19-rn-b3-02-checkpoint-pvc-f527eb3b-904c-467a-beb1-b9e4ba5622f0",
+        "/mnt/nfs/stateful-migration-artifacts-v6/eval-v3-d19-rn-b3-02"
+      ]
+    }
+  },
+  "rows": [
+    {
+      "model": "gpt2",
+      "arm": "A",
+      "nfs_budget_GiB": 8,
+      "active_paths_stop_GiB": 6,
+      "minimum_NFS_free_early_stop_GiB": 80
+    },
+    {
+      "model": "gpt2",
+      "arm": "B",
+      "nfs_budget_GiB": 112,
+      "active_paths_stop_GiB": 78,
+      "minimum_NFS_free_early_stop_GiB": 98
+    },
+    {
+      "model": "gpt2",
+      "arm": "C",
+      "nfs_budget_GiB": 112,
+      "active_paths_stop_GiB": 78,
+      "minimum_NFS_free_early_stop_GiB": 98
+    },
+    {
+      "model": "resnet50",
+      "arm": "A",
+      "nfs_budget_GiB": 8,
+      "active_paths_stop_GiB": 6,
+      "minimum_NFS_free_early_stop_GiB": 80
+    },
+    {
+      "model": "resnet50",
+      "arm": "B",
+      "nfs_budget_GiB": 32,
+      "active_paths_stop_GiB": 16,
+      "minimum_NFS_free_early_stop_GiB": 80
+    },
+    {
+      "model": "resnet50",
+      "arm": "C",
+      "nfs_budget_GiB": 32,
+      "active_paths_stop_GiB": 16,
+      "minimum_NFS_free_early_stop_GiB": 80
+    }
+  ],
+  "total_new_run_envelope_GiB": 304,
+  "expected_free_after_full_envelope_GiB": 111.03350448608398,
+  "budget_is_not_a_filesystem_quota": true,
+  "budget_is_not_a_policy_checkpoint_round_limit": true,
+  "monitor_seconds": 15,
+  "launch_gate": "no other evaluation; NFSfree >=64GiB+thisrun budget; remaining declared retained envelopes fit; positive inode/free/path observations; allocation includes PVC, CRIU and staging for exact run UID",
+  "stop_rules": [
+    "early NFS free threshold per table OR active allocated threshold per table",
+    "any evidence/root-volume capacity measurement unavailable for2consecutive samples",
+    "management local free<=80GiB during active run",
+    "unexpected foreign storage consumer threatens reserve",
+    "no deletion of active/previous evidence to make room"
+  ],
+  "graceful_stop": "record invalidation/reason and current identities; suspend exact source NR to block new work; inspect in-flight CP/RR, allow up to120s to drain when space permits; request normal UID-scoped source/provider cleanup; never force finalizers or mark partial CP durable; preserve last valid and incomplete artifacts",
+  "deletion_authorized": false,
+  "storage_expansion_authorized": false,
+  "transfer": {
+    "destination": "/home/ubuntu/graduate/Evaluation/archives/20261119",
+    "local_free_GiB_snapshot": 182.05464553833008,
+    "separate_from_NFS": true,
+    "separate_from_management_OS": false,
+    "local_reserve_GiB": 64,
+    "selected_GPT_B_C_bundle_GiB_each": 24,
+    "selected_ResNet_B_C_bundle_GiB_each": 4,
+    "logs_and_metadata_GiB_each_run": 4,
+    "total_permanent_copy_envelope_GiB": 80,
+    "one_transfer_temporary_envelope_GiB": 24,
+    "required_initial_free_GiB": 168,
+    "all_NFS_binaries_duplicated": false,
+    "copy_scope": "all exact-run public/sanitized raw logs/receipts; selected final complete4rank application+CRIU bundle forB/C and manifests; earlier complete/partial binaries remain onNFS",
+    "copy_rules": [
+      "only after same-run normal cleanup/positive old provider termination; no next Run during transfer",
+      "exact PV/PVCUID and archive root map; never broad /mnt/nfs rsync",
+      "copy stable immutable files without source deletion or --remove-source-files; use .partial target, before/after inode,size,mtime/ctime and SHA256 then atomic rename/fsync; preserve copy manifest",
+      "stop transfer if localfree<=72GiB, selected bundle exceeds declared budget or source changes; preserve NFS original",
+      "after copy check root hashes and sizes, retain receipt; no permission to delete NFS original implied",
+      "next Run rechecks free budgets; no ongoing auto purge or AWS object storage creation"
+    ],
+    "binary_transfer_executed": false
+  }
+}

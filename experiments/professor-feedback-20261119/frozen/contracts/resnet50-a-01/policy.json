@@ -1,0 +1,73 @@
+{
+  "apiVersion": "training.dcnlab.com/v1alpha1",
+  "kind": "NodeRequest",
+  "metadata": {
+    "name": "eval-resnet50-a-01",
+    "labels": {
+      "training.dcnlab.com/evaluation-run": "resnet50-a-01"
+    },
+    "namespace": "eval-v3-resnet50-a-01",
+    "annotations": {
+      "training.dcnlab.com/suspend": "true",
+      "training.dcnlab.com/planned-partial": "disabled",
+      "training.dcnlab.com/group-replacement-batch-size": "3",
+      "training.dcnlab.com/periodic-checkpoint": "disabled"
+    }
+  },
+  "spec": {
+    "capacity": {
+      "aws": {
+        "karmadaCluster": "aws1",
+        "region": "ap-northeast-2",
+        "availabilityZone": "ap-northeast-2c",
+        "instanceType": "g5.2xlarge",
+        "ami": "ami-035e3088f6b7821fb",
+        "credentialsRef": {
+          "name": "aws-node-credentials",
+          "namespace": "eval-v3-resnet50-a-01"
+        },
+        "subnetId": "subnet-0bcaabcff2da649c0",
+        "vpcId": "vpc-09d6222137eca95a5",
+        "securityGroupIds": [
+          "sg-0b4311b00f5734811"
+        ],
+        "rootVolumeSizeGB": 100,
+        "hardwareType": "gpu",
+        "nodeLabel": "gpu"
+      }
+    },
+    "workloadRef": {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "name": "eval-resnet50-a-01"
+    },
+    "sourceCluster": "aws1",
+    "expectedWorldSize": 4,
+    "targetWorkers": 4,
+    "runtimeRef": {
+      "name": "eval-resnet50-a-01-runtime"
+    },
+    "riskProfileRef": {
+      "name": "eval-resnet50-a-01-risk"
+    },
+    "replacement": {
+      "enabled": true
+    },
+    "policy": {
+      "method": "paper-eq6-7",
+      "alpha": 0.8,
+      "minOnDemand": 1,
+      "forecastHorizonSeconds": 3600,
+      "economics": {
+        "enabled": true,
+        "onDemandDurationSeconds": 3600,
+        "maxAgeSeconds": 3600
+      },
+      "fixedOnDemand": 4
+    },
+    "checkpoint": {
+      "minIntervalSeconds": 60,
+      "resume": true
+    }
+  }
+}

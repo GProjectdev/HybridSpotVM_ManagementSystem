@@ -1,0 +1,89 @@
+{
+  "status": "UNAPPROVED_PROPOSAL_NO_SCHEDULE_INSTALLED",
+  "runs": [
+    {
+      "run_id": "gpt2-a-01",
+      "model": "gpt2",
+      "arm": "A",
+      "proposed_run_budget_usd": 50,
+      "maximum_GPU_VMs": 4,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-20T09:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-20T13:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-20T14:00:00+09:00",
+      "proposed_start_utc": "2026-11-20T00:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-20T04:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-20T05:00:00+00:00"
+    },
+    {
+      "run_id": "resnet50-a-01",
+      "model": "resnet50",
+      "arm": "A",
+      "proposed_run_budget_usd": 50,
+      "maximum_GPU_VMs": 4,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-20T15:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-20T19:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-20T20:00:00+09:00",
+      "proposed_start_utc": "2026-11-20T06:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-20T10:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-20T11:00:00+00:00"
+    },
+    {
+      "run_id": "gpt2-b-01",
+      "model": "gpt2",
+      "arm": "B",
+      "proposed_run_budget_usd": 75,
+      "maximum_GPU_VMs": 7,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-23T09:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-23T13:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-23T14:00:00+09:00",
+      "proposed_start_utc": "2026-11-23T00:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-23T04:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-23T05:00:00+00:00"
+    },
+    {
+      "run_id": "resnet50-b-01",
+      "model": "resnet50",
+      "arm": "B",
+      "proposed_run_budget_usd": 75,
+      "maximum_GPU_VMs": 7,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-23T15:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-23T19:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-23T20:00:00+09:00",
+      "proposed_start_utc": "2026-11-23T06:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-23T10:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-23T11:00:00+00:00"
+    },
+    {
+      "run_id": "gpt2-c-01",
+      "model": "gpt2",
+      "arm": "C",
+      "proposed_run_budget_usd": 75,
+      "maximum_GPU_VMs": 7,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-25T09:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-25T13:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-25T14:00:00+09:00",
+      "proposed_start_utc": "2026-11-25T00:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-25T04:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-25T05:00:00+00:00"
+    },
+    {
+      "run_id": "resnet50-c-01",
+      "model": "resnet50",
+      "arm": "C",
+      "proposed_run_budget_usd": 75,
+      "maximum_GPU_VMs": 7,
+      "paid_authorized": false,
+      "proposed_start_kst": "2026-11-25T15:00:00+09:00",
+      "proposed_cleanup_kst": "2026-11-25T19:40:00+09:00",
+      "proposed_hard_deadline_kst": "2026-11-25T20:00:00+09:00",
+      "proposed_start_utc": "2026-11-25T06:00:00+00:00",
+      "proposed_cleanup_utc": "2026-11-25T10:40:00+00:00",
+      "proposed_hard_deadline_utc": "2026-11-25T11:00:00+00:00"
+    }
+  ]
+}

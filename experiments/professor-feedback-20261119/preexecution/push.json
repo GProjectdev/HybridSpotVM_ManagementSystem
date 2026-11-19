@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-19T07:14:15.174897+00:00",
+  "repository": "HybridSpotVM_ManagementSystem",
+  "commit": "aec9450564939619d2c6a466dc06589e31b35d16",
+  "remote_main_verified": true,
+  "scope": "preexecution reports,conditional approval metadata and unchanged config values; no production code/images/storage changes",
+  "frozen": false,
+  "formal_execution_authorized": false
+}

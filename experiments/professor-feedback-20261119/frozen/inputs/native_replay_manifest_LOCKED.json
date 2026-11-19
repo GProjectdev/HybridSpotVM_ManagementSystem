@@ -1,0 +1,41 @@
+{
+  "status": "LOCKED",
+  "scope": "proposed Nov19 input contract; final protocol and goal require researcher confirmation",
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+  "selection_rule": "first-native-eligible-adjacent-transition",
+  "start_hour": 14,
+  "wall_seconds_per_trace_hour": 3600,
+  "provenance": "external-US-V100-availability-proxy",
+  "population_assumption": "one requested availability slot in 1-node trace; proxy assumption, not observed at-risk running instances",
+  "training_hours": 672,
+  "held_out_hours": 168,
+  "relative_origin": "1970-01-01T00:00:00Z",
+  "profile_spec": {
+    "provider": "aws",
+    "region": "ap-northeast-2",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g5.2xlarge",
+    "pollSeconds": 30,
+    "maxAgeSeconds": 3600,
+    "paperEstimator": {
+      "method": "sarima",
+      "feedEndpoint": "https://risk-replay.{namespace}.svc:8443/risk",
+      "rollingMeanHours": 3,
+      "retrainWindowWeeks": 4,
+      "seasonalPeriodHours": 24
+    }
+  },
+  "initial_forecast_lambda_per_hour": 0.0009212361959754303,
+  "initial_composition_rule": "native paper-eq6-7 with minimum1OD; no fixed-composition bootstrap override",
+  "clock_rule": "one trace forecast hour equals3600wall seconds, anchored to source NodeRequest creationTimestamp; no manual phase change",
+  "runtime_binding_required": [
+    "per-run start UTC",
+    "trusted TLS certificate/collector CA",
+    "fresh actual execution prices",
+    "bounded cleanup",
+    "fresh UID-bound bootstrap activation"
+  ],
+  "selection_evidence_sha256": "74edd9ebcd9b7579825317d6585940283b0fe0bf66ab5506c0117e7fc56b27de",
+  "next_forecast_lambda_per_hour": 0.3458397557619131
+}

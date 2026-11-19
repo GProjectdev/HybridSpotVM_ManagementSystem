@@ -1,0 +1,65 @@
+{
+  "at": "2026-11-19T07:44:26.935248+00:00",
+  "integrity": {
+    "scientific_status": "FROZEN",
+    "manifest_sha256": "53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa",
+    "verified_artifacts": 132,
+    "paid_execution_authorized_by_this_check": false,
+    "cloud_mutations": false
+  },
+  "runs": [
+    {
+      "run_id": "gpt2-a-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    },
+    {
+      "run_id": "gpt2-b-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    },
+    {
+      "run_id": "gpt2-c-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    },
+    {
+      "run_id": "resnet50-a-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    },
+    {
+      "run_id": "resnet50-b-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    },
+    {
+      "run_id": "resnet50-c-01",
+      "FROZEN_contract_hash_passed": true,
+      "paid_authorization": false,
+      "watch_rejects_unapproved_run": true,
+      "policy_uid_unbound": true,
+      "API_apply_or_provision_performed": false
+    }
+  ],
+  "negative_goal_mutation_blocked": true,
+  "guard_tests": 6,
+  "new_paid_GPU_or_FIS": false,
+  "cron_or_systemd_schedule_installed": false,
+  "source_path": "/home/ubuntu/graduate/Evaluation/day19_20261119/frozen/runner"
+}

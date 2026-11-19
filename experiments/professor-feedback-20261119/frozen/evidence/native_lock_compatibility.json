@@ -1,0 +1,15 @@
+{
+  "kind": "OFFLINE_STATUS_PROMOTION_AND_EXISTING_LOADER_CHECK",
+  "original_status": "INPUT_CANDIDATE_AWAITING_RESEARCHER_CONFIRMATION",
+  "served_manifest_status": "LOCKED",
+  "changed_scientific_values": false,
+  "status_is_only_changed_field": true,
+  "forecast_sha256": "8bef94f6997adf630a10203e026b545855f104b284003275b68c04133f8546a2",
+  "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+  "start_hour": 14,
+  "payload_zero_seconds_lambda": 0.0009212361959754303,
+  "payload_3600_seconds_lambda": 0.3458397557619131,
+  "forecast_recalculated": false,
+  "server_started": false,
+  "new_GPU_or_FIS": false
+}

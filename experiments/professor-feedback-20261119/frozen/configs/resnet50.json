@@ -1,0 +1,143 @@
+{
+  "cluster": "aws1",
+  "region": "ap-northeast-2",
+  "availability_zone": "ap-northeast-2c",
+  "instance_type": "g5.2xlarge",
+  "policy_source": "capacity-template.json",
+  "nfs_server": "10.50.1.98",
+  "storage_class": "nfs-client",
+  "checkpoint_size": "10Gi",
+  "goal_steps": 26700,
+  "batch_size": 16,
+  "seed": 42,
+  "max_seconds": 18000,
+  "scenario": "constant",
+  "model": "resnet50",
+  "sequence_length": null,
+  "learning_rate": 0.1,
+  "nfs_dataset_path": "/mnt/nfs/validation-assets-v6-20261117/datasets/cifar10-v1",
+  "nfs_model_path": null,
+  "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+  "asset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+  "hardware_selection": {
+    "status": "SELECTED",
+    "instance_type": "g5.2xlarge",
+    "gpus_per_worker": 1,
+    "architecture": "x86_64",
+    "reason": "g5.2xlarge admitted with1GPU/VM, same4Rank hardware for every A/B/C; actual batch recovery acceptance; supply not guaranteed"
+  },
+  "existing_policy": {
+    "method": "paper-eq6-7",
+    "alpha": 0.8,
+    "minOnDemand": 1,
+    "forecastHorizonSeconds": 3600,
+    "economics": {
+      "enabled": true,
+      "onDemandDurationSeconds": 3600,
+      "maxAgeSeconds": 3600
+    }
+  },
+  "existing_checkpoint": {
+    "minIntervalSeconds": 60,
+    "resume": true
+  },
+  "existing_replacement": {
+    "enabled": true
+  },
+  "planned_partial_mode": "disabled",
+  "existing_risk_spec": {
+    "provider": "aws",
+    "region": "ap-northeast-2",
+    "availabilityZone": "ap-northeast-2c",
+    "instanceType": "g5.2xlarge",
+    "pollSeconds": 30,
+    "maxAgeSeconds": 3600,
+    "paperEstimator": {
+      "method": "sarima",
+      "feedEndpoint": "https://risk-replay.{namespace}.svc:8443/risk",
+      "rollingMeanHours": 3,
+      "retrainWindowWeeks": 4,
+      "seasonalPeriodHours": 24
+    }
+  },
+  "risk_input_interpretation": "same held-out USV100 SARIMA forecasts, not measuredSeoul hazard; hourly native replay from hour14",
+  "training_lock": {
+    "model": "resnet50",
+    "batch_size": 16,
+    "sequence_length": null,
+    "seed": 42,
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "goal_steps": 26700,
+    "training_image": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0e521f50f7130afe1e5b27bedcce1a91d17d5567fa04759a6095d56fd2a7ab9b",
+    "asset_manifest_sha256": "7a68293160c2176460b85eb03d78b3b41727ddfcb218ff4bb595db031354eaf1",
+    "status": "FROZEN",
+    "world_size": 4
+  },
+  "system_lock": {
+    "image_references": {
+      "MGMT/deployments/hybridspot-system/checkpoint-recovery-coordinator/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:bdcfb5df93fc0df43a52a2aa135589788c3a845bdb0afe124e1a69d538f0a6a1",
+      "MGMT/deployments/hybridspot-system/placement-webhook/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:9ca2531216b62983230be68ed493fd0ca0d395d04511f657100ddd3ebdf09717",
+      "MGMT/deployments/hybridspot-system/public-cloud-vm-collector/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:450935bedc769df7e77241ca3a66c4c38d971214360d4fd1c144148d380bf508",
+      "MGMT/deployments/hybridspot-system/spot-vm-management-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:ca77a590fbddd6a6dc8261a00cd9336bcdf2c3fdb0e7238dfba7546207082b09",
+      "MGMT/deployments/hybridspot-system/training-lifecycle-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:0d90d4c72232e15002f63f8c7b6c7c44c10c8f000ae00df0c9286cc52110a15b",
+      "MGMT/deployments/stateful-migration-system/stateful-management/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:92e9207a5a25ca4657f014a0ffad9f3d95397afcd7ecca1ebc888b436db22d24",
+      "AWS/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "AWS/deployments/nfs-provisioner/nfs-client-provisioner/nfs-client-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "AWS/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "AWS/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "AWS/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "AWS/daemonsets/hybridspot-system/spot-watcher/watcher": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:f6f880c6154420425a3801f6c9c59181795419a349bfb9ad861ee4f122e0bff2",
+      "AWS/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "ONPRE1/deployments/hybridspot-system/training-runtime-controller/manager": "docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:411de2143940314189c8193fdc92552c82f35fd69500272b3a4704c795feeed5",
+      "ONPRE1/deployments/nfs-provisioner/e1-aws-nfs-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/nfs-provisioner/legacy-nfs-nfs-subdir-external-provisioner/nfs-subdir-external-provisioner": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2",
+      "ONPRE1/deployments/remote-cluster-provisioner-system/remote-cluster-provisioner/manager": "docker.io/jeongseungjun/my-publiccloudvm-provisioner@sha256:0bdf542e55859283528feec86eff3ec634f776c72dfc4177616b73b028785b62",
+      "ONPRE1/deployments/stateful-migration-system/stateful-checkpoint/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:057cb255be0896dcf2c0fea31074333d49f9a6bd099718f72fb47d08f6bcaa82",
+      "ONPRE1/deployments/stateful-migration-system/stateful-member/manager": "docker.io/jeongseungjun/stateful-migration-system@sha256:339e68a1561577aabf1d8be5a9a3fe6d5e70370ce9f98fafae22a1908a6ddf5a",
+      "ONPRE1/daemonsets/stateful-migration-system/stateful-artifact/verifier": "docker.io/jeongseungjun/stateful-migration-system@sha256:3ab71999a14ade83a565d34fbecd599d28dbbb0a6814fbd2b36521538e72b05a",
+      "AWS/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65",
+      "ONPRE1/fluidcr-payload": "docker.io/jeongseungjun/fluidcr-payload@sha256:9ee0860cf0b773b65097ab26365cb35ac82f28f136dab36e268f142bc1f4ac65"
+    },
+    "provenance": "latest idle controller rollout after all calibration GPUs terminated; final researcher confirmation pending"
+  },
+  "expected_aws_account": "935317843233",
+  "momentum": 0.9,
+  "weight_decay": 0.0005,
+  "dataset": {
+    "name": "cifar10",
+    "split": "train",
+    "examples": 50000,
+    "test_examples": 10000,
+    "recipe": "step-shuffle-crop-flip-v1"
+  },
+  "target_provenance": {
+    "status": "FROZEN",
+    "reason": "measured phase-specific step rate, actual startup/CP pause and observed replacement preparation; joint E1 hourly transition and E2 50percent native window",
+    "evidence": "goal_step_screening_20261119.json",
+    "researcher_confirmed": true,
+    "researcher_conditionally_approved": true
+  },
+  "world_size": 4,
+  "purpose": "formal",
+  "checkpoint_buffer_reuse": 1,
+  "group_replacement_batch_size": 3,
+  "risk_clock_anchor_rule": "source NodeRequest creationTimestamp,3600seconds per trace hour",
+  "checkpoint_validation": "same final CP policy B/C: min60, no operational maximum, zeroSpot/zeroRisk fallback3600",
+  "protocol_lock_status": "FROZEN",
+  "risk_lock_sha256": "c84c851809af4a2e1fcc9d74cabf6ab373d0d3ed8a21c0ac2ea002ff54e42c76",
+  "repeats_per_cell": 1,
+  "inference_scope": "EXPLORATORY_ONLY",
+  "researcher_confirmation_required": false,
+  "researcher_confirmed": true,
+  "fault_window": {
+    "anchor": "source NodeRequest creationTimestamp",
+    "transition_after_seconds": 3600,
+    "notice_seconds": 120,
+    "margin_seconds": 120
+  },
+  "researcher_conditionally_approved": true,
+  "researcher_confirmation_semantics": "scientific freeze approved; paid runtime authorization remains separate",
+  "researcher_final_freeze_confirmed": true
+}

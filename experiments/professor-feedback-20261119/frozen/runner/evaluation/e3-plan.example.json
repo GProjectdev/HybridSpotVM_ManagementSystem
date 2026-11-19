@@ -1,0 +1,17 @@
+{
+  "window_seconds": 5400,
+  "provisioning_timeout_seconds": 1800,
+  "fixed_interval_seconds": 300,
+  "risk_after_seconds": 1800,
+  "fault_after_seconds": 3000,
+  "fault_tolerance_seconds": 120,
+  "initial_risk": 0.05,
+  "changed_risk": 0.8,
+  "alpha": 0.8,
+  "forecast_horizon_seconds": 3600,
+  "approved_for_measurement": false,
+  "timing_rationale": "Budget case: 30 min baseline, 20 min response lead, 38 min post-eviction observation. E2 recovery observed about 15 min; verify pilot before freezing. Not a trace or benchmark standard.",
+  "risk_rationale": "Synthetic threshold-crossing case: one-Spot survival threshold -ln(0.8)/1h=0.2231 per hour; 0.05 below and 0.8 above. Not a measured AWS hazard forecast.",
+  "fixed_interval_rationale": "300 seconds is the existing E2 operational baseline, not an optimum. Retain identical A/B checkpoint settings; pilot must confirm it can finish and is affordable.",
+  "pilot_evidence": "REPLACE with pilot run ID and observed transition/checkpoint durations before approval"
+}

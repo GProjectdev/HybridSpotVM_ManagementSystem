@@ -1,0 +1,29 @@
+{
+  "state": "PREDECLARED_FAILURE_RULES_NO_DESIGN_RESELECTION",
+  "no_existing_static_contradiction_in_empirical_candidate": true,
+  "remaining_timing_variance": "GPT112.49s/R50255.67s empirical headroom, not a guarantee",
+  "rules": [
+    {
+      "event": "B finishes before actual running-world policy replacement+resume observed",
+      "action": "retain completion/cost; report reconfiguration-observation requirement unmet, do not extend goal or switch risk window"
+    },
+    {
+      "event": "C50percent before durable current-Pod4rank CP, no initialSpot, active replacement, changed provider pool or dispatch>=sourceNR+3360s",
+      "action": "do notdispatch FIS, keep metrics/cost as ineligibleC; no retarget/retime/replacement by bestretry"
+    },
+    {
+      "event": "FIS dispatched beforedeadline then recovery overlaps hour15",
+      "action": "keep native input and existing pinned operations/serialization; do not freeze risk or force target; record all recovery+policy costs/RRs as net operational C-B difference"
+    },
+    {
+      "event": "native risk or price/cost feedback has already removed initialSpot beforethreshold",
+      "action": "ineligibleC; retain evidence and no new manualSpot"
+    },
+    {
+      "event": "repeated timing ineligibility means matched intended scenario not feasible",
+      "action": "report researcher design conflict; block freeze/new formaldispatch until reviewed; propose separateE1/E2blocks+ownB only, never implement withoutapproval"
+    }
+  ],
+  "no_checkpoint_force_for_eligibility": true,
+  "no_algorithm_change": true
+}

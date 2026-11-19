@@ -1,0 +1,1 @@
+Internal pre-publication manifest assembly was superseded to promote the server-facing replay wrapper status to LOCKED, required by unchanged load_locked. No approved scientific values changed and no paid run/server was started. Final manifest records this provenance.

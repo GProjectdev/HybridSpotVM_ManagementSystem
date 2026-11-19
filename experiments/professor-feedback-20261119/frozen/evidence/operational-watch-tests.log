@@ -1,0 +1,11 @@
+test_deadline_stops_even_with_failed_sensor (test_operational_watch.WatchTests) ... ok
+test_freeze_approval_is_not_paid_execution_approval (test_operational_watch.WatchTests) ... ok
+test_healthy_sample_has_no_stop (test_operational_watch.WatchTests) ... ok
+test_second_sensor_failure_stops_but_is_not_zero_cost (test_operational_watch.WatchTests) ... ok
+test_space_and_capacity_and_budget_boundaries (test_operational_watch.WatchTests) ... ok
+test_wrong_run_or_deadline_receipt_rejected (test_operational_watch.WatchTests) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK

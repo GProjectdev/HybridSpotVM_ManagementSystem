@@ -1,0 +1,1704 @@
+{
+  "status": "PREVIEW_NOT_LOCKED",
+  "kind": "external-US-V100-availability-proxy",
+  "meaning": "not measured Seoul A10G eviction risk or prediction accuracy",
+  "normalization": {
+    "trace_sha256": "568de3507c66707eaa222fdcf26ab98ee8032959dc72bf3c5c456722be912562",
+    "clock_kind": "explicit-relative-trace-clock",
+    "relative_origin": "1970-01-01T00:00:00Z",
+    "risk_population": 1,
+    "population_assumption": "one requested availability slot in 1-node trace; proxy assumption, not observed at-risk running instances",
+    "source_timestamps_present": false,
+    "status": "PREVIEW_ASSUMPTIONS_NOT_FORMAL_LOCK"
+  },
+  "gap_seconds": 195,
+  "training_hours": 672,
+  "held_out_hours": 168,
+  "wall_seconds_per_trace_hour": 3600,
+  "model": "SARIMA(1,1,1)(1,0,1)[24]",
+  "causal_rolling_mean_hours": 3,
+  "optimizer_maxiter": 500,
+  "vm_policy_divergence": "NOT_CHECKED; forecast preview alone does not establish runtime switching",
+  "forecasts": [
+    {
+      "relative_forecast_hour": "1970-01-29T00:00:00+00:00",
+      "evaluation_hour": 0,
+      "last_input_hour": "1970-01-28T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3702637197335419,
+      "lambda_per_hour": 0.3702637197335419,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T01:00:00+00:00",
+      "evaluation_hour": 1,
+      "last_input_hour": "1970-01-29T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.32106398883432896,
+      "lambda_per_hour": 0.32106398883432896,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T02:00:00+00:00",
+      "evaluation_hour": 2,
+      "last_input_hour": "1970-01-29T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6795746073929602,
+      "lambda_per_hour": 0.6795746073929602,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T03:00:00+00:00",
+      "evaluation_hour": 3,
+      "last_input_hour": "1970-01-29T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.29710744634377956,
+      "lambda_per_hour": 0.29710744634377956,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T04:00:00+00:00",
+      "evaluation_hour": 4,
+      "last_input_hour": "1970-01-29T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.33309072635494685,
+      "lambda_per_hour": 0.33309072635494685,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T05:00:00+00:00",
+      "evaluation_hour": 5,
+      "last_input_hour": "1970-01-29T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T06:00:00+00:00",
+      "evaluation_hour": 6,
+      "last_input_hour": "1970-01-29T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T07:00:00+00:00",
+      "evaluation_hour": 7,
+      "last_input_hour": "1970-01-29T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T08:00:00+00:00",
+      "evaluation_hour": 8,
+      "last_input_hour": "1970-01-29T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T09:00:00+00:00",
+      "evaluation_hour": 9,
+      "last_input_hour": "1970-01-29T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 2.8576624373413793e-05,
+      "lambda_per_hour": 2.8576624373413793e-05,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T10:00:00+00:00",
+      "evaluation_hour": 10,
+      "last_input_hour": "1970-01-29T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.024690337473306213,
+      "lambda_per_hour": 0.024690337473306213,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T11:00:00+00:00",
+      "evaluation_hour": 11,
+      "last_input_hour": "1970-01-29T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T12:00:00+00:00",
+      "evaluation_hour": 12,
+      "last_input_hour": "1970-01-29T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T13:00:00+00:00",
+      "evaluation_hour": 13,
+      "last_input_hour": "1970-01-29T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T14:00:00+00:00",
+      "evaluation_hour": 14,
+      "last_input_hour": "1970-01-29T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0009212361959754303,
+      "lambda_per_hour": 0.0009212361959754303,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T15:00:00+00:00",
+      "evaluation_hour": 15,
+      "last_input_hour": "1970-01-29T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3458397557619131,
+      "lambda_per_hour": 0.3458397557619131,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T16:00:00+00:00",
+      "evaluation_hour": 16,
+      "last_input_hour": "1970-01-29T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.33413578982733083,
+      "lambda_per_hour": 0.33413578982733083,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T17:00:00+00:00",
+      "evaluation_hour": 17,
+      "last_input_hour": "1970-01-29T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6791702837226988,
+      "lambda_per_hour": 0.6791702837226988,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T18:00:00+00:00",
+      "evaluation_hour": 18,
+      "last_input_hour": "1970-01-29T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.7293030482823869,
+      "lambda_per_hour": 0.7293030482823869,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T19:00:00+00:00",
+      "evaluation_hour": 19,
+      "last_input_hour": "1970-01-29T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.0101944977628028,
+      "lambda_per_hour": 1.0101944977628028,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T20:00:00+00:00",
+      "evaluation_hour": 20,
+      "last_input_hour": "1970-01-29T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.0006567978453393,
+      "lambda_per_hour": 1.0006567978453393,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T21:00:00+00:00",
+      "evaluation_hour": 21,
+      "last_input_hour": "1970-01-29T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.9382172175436841,
+      "lambda_per_hour": 0.9382172175436841,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T22:00:00+00:00",
+      "evaluation_hour": 22,
+      "last_input_hour": "1970-01-29T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.0087403631717917,
+      "lambda_per_hour": 1.0087403631717917,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-29T23:00:00+00:00",
+      "evaluation_hour": 23,
+      "last_input_hour": "1970-01-29T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.3703048955381778,
+      "lambda_per_hour": 1.3703048955381778,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T00:00:00+00:00",
+      "evaluation_hour": 24,
+      "last_input_hour": "1970-01-29T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.6915754094475826,
+      "lambda_per_hour": 1.6915754094475826,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T01:00:00+00:00",
+      "evaluation_hour": 25,
+      "last_input_hour": "1970-01-30T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.6854027714555317,
+      "lambda_per_hour": 1.6854027714555317,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T02:00:00+00:00",
+      "evaluation_hour": 26,
+      "last_input_hour": "1970-01-30T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.2956136672813447,
+      "lambda_per_hour": 1.2956136672813447,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T03:00:00+00:00",
+      "evaluation_hour": 27,
+      "last_input_hour": "1970-01-30T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.3208219801979175,
+      "lambda_per_hour": 1.3208219801979175,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T04:00:00+00:00",
+      "evaluation_hour": 28,
+      "last_input_hour": "1970-01-30T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.654763597884384,
+      "lambda_per_hour": 1.654763597884384,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T05:00:00+00:00",
+      "evaluation_hour": 29,
+      "last_input_hour": "1970-01-30T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.3226437484678297,
+      "lambda_per_hour": 1.3226437484678297,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T06:00:00+00:00",
+      "evaluation_hour": 30,
+      "last_input_hour": "1970-01-30T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.9868697135918586,
+      "lambda_per_hour": 0.9868697135918586,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T07:00:00+00:00",
+      "evaluation_hour": 31,
+      "last_input_hour": "1970-01-30T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6533522141883903,
+      "lambda_per_hour": 0.6533522141883903,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T08:00:00+00:00",
+      "evaluation_hour": 32,
+      "last_input_hour": "1970-01-30T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.3573646002865432,
+      "lambda_per_hour": 1.3573646002865432,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T09:00:00+00:00",
+      "evaluation_hour": 33,
+      "last_input_hour": "1970-01-30T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.3349067082966108,
+      "lambda_per_hour": 1.3349067082966108,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T10:00:00+00:00",
+      "evaluation_hour": 34,
+      "last_input_hour": "1970-01-30T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 1.346052686022636,
+      "lambda_per_hour": 1.346052686022636,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T11:00:00+00:00",
+      "evaluation_hour": 35,
+      "last_input_hour": "1970-01-30T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.9870888202678434,
+      "lambda_per_hour": 0.9870888202678434,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T12:00:00+00:00",
+      "evaluation_hour": 36,
+      "last_input_hour": "1970-01-30T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6533589320665184,
+      "lambda_per_hour": 0.6533589320665184,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T13:00:00+00:00",
+      "evaluation_hour": 37,
+      "last_input_hour": "1970-01-30T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6531916083098156,
+      "lambda_per_hour": 0.6531916083098156,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T14:00:00+00:00",
+      "evaluation_hour": 38,
+      "last_input_hour": "1970-01-30T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6916967554471858,
+      "lambda_per_hour": 0.6916967554471858,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T15:00:00+00:00",
+      "evaluation_hour": 39,
+      "last_input_hour": "1970-01-30T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6657744777791734,
+      "lambda_per_hour": 0.6657744777791734,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T16:00:00+00:00",
+      "evaluation_hour": 40,
+      "last_input_hour": "1970-01-30T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.34543940382961114,
+      "lambda_per_hour": 0.34543940382961114,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T17:00:00+00:00",
+      "evaluation_hour": 41,
+      "last_input_hour": "1970-01-30T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T18:00:00+00:00",
+      "evaluation_hour": 42,
+      "last_input_hour": "1970-01-30T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.40107213293376415,
+      "lambda_per_hour": 0.40107213293376415,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T19:00:00+00:00",
+      "evaluation_hour": 43,
+      "last_input_hour": "1970-01-30T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3319840149007656,
+      "lambda_per_hour": 0.3319840149007656,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T20:00:00+00:00",
+      "evaluation_hour": 44,
+      "last_input_hour": "1970-01-30T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6790235267530997,
+      "lambda_per_hour": 0.6790235267530997,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T21:00:00+00:00",
+      "evaluation_hour": 45,
+      "last_input_hour": "1970-01-30T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.2900916721881917,
+      "lambda_per_hour": 0.2900916721881917,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T22:00:00+00:00",
+      "evaluation_hour": 46,
+      "last_input_hour": "1970-01-30T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.7074384697952594,
+      "lambda_per_hour": 0.7074384697952594,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-30T23:00:00+00:00",
+      "evaluation_hour": 47,
+      "last_input_hour": "1970-01-30T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.703654513163965,
+      "lambda_per_hour": 0.703654513163965,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T00:00:00+00:00",
+      "evaluation_hour": 48,
+      "last_input_hour": "1970-01-30T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6716934109091229,
+      "lambda_per_hour": 0.6716934109091229,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T01:00:00+00:00",
+      "evaluation_hour": 49,
+      "last_input_hour": "1970-01-31T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3053472966260091,
+      "lambda_per_hour": 0.3053472966260091,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T02:00:00+00:00",
+      "evaluation_hour": 50,
+      "last_input_hour": "1970-01-31T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.32049671022625886,
+      "lambda_per_hour": 0.32049671022625886,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T03:00:00+00:00",
+      "evaluation_hour": 51,
+      "last_input_hour": "1970-01-31T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3519720468174462,
+      "lambda_per_hour": 0.3519720468174462,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T04:00:00+00:00",
+      "evaluation_hour": 52,
+      "last_input_hour": "1970-01-31T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.29538209696091,
+      "lambda_per_hour": 0.29538209696091,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T05:00:00+00:00",
+      "evaluation_hour": 53,
+      "last_input_hour": "1970-01-31T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T06:00:00+00:00",
+      "evaluation_hour": 54,
+      "last_input_hour": "1970-01-31T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T07:00:00+00:00",
+      "evaluation_hour": 55,
+      "last_input_hour": "1970-01-31T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3959341529012464,
+      "lambda_per_hour": 0.3959341529012464,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T08:00:00+00:00",
+      "evaluation_hour": 56,
+      "last_input_hour": "1970-01-31T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.332363134480363,
+      "lambda_per_hour": 0.332363134480363,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T09:00:00+00:00",
+      "evaluation_hour": 57,
+      "last_input_hour": "1970-01-31T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.33327790747378816,
+      "lambda_per_hour": 0.33327790747378816,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T10:00:00+00:00",
+      "evaluation_hour": 58,
+      "last_input_hour": "1970-01-31T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T11:00:00+00:00",
+      "evaluation_hour": 59,
+      "last_input_hour": "1970-01-31T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T12:00:00+00:00",
+      "evaluation_hour": 60,
+      "last_input_hour": "1970-01-31T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0008986522003068234,
+      "lambda_per_hour": 0.0008986522003068234,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T13:00:00+00:00",
+      "evaluation_hour": 61,
+      "last_input_hour": "1970-01-31T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T14:00:00+00:00",
+      "evaluation_hour": 62,
+      "last_input_hour": "1970-01-31T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.012824276845367587,
+      "lambda_per_hour": 0.012824276845367587,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T15:00:00+00:00",
+      "evaluation_hour": 63,
+      "last_input_hour": "1970-01-31T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T16:00:00+00:00",
+      "evaluation_hour": 64,
+      "last_input_hour": "1970-01-31T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T17:00:00+00:00",
+      "evaluation_hour": 65,
+      "last_input_hour": "1970-01-31T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.025123281298173816,
+      "lambda_per_hour": 0.025123281298173816,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T18:00:00+00:00",
+      "evaluation_hour": 66,
+      "last_input_hour": "1970-01-31T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.027841326626104914,
+      "lambda_per_hour": 0.027841326626104914,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T19:00:00+00:00",
+      "evaluation_hour": 67,
+      "last_input_hour": "1970-01-31T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.02348587094808092,
+      "lambda_per_hour": 0.02348587094808092,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T20:00:00+00:00",
+      "evaluation_hour": 68,
+      "last_input_hour": "1970-01-31T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T21:00:00+00:00",
+      "evaluation_hour": 69,
+      "last_input_hour": "1970-01-31T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.009322005085224967,
+      "lambda_per_hour": 0.009322005085224967,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T22:00:00+00:00",
+      "evaluation_hour": 70,
+      "last_input_hour": "1970-01-31T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.01399819026642799,
+      "lambda_per_hour": 0.01399819026642799,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-01-31T23:00:00+00:00",
+      "evaluation_hour": 71,
+      "last_input_hour": "1970-01-31T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.018459456925026957,
+      "lambda_per_hour": 0.018459456925026957,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T00:00:00+00:00",
+      "evaluation_hour": 72,
+      "last_input_hour": "1970-01-31T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T01:00:00+00:00",
+      "evaluation_hour": 73,
+      "last_input_hour": "1970-02-01T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T02:00:00+00:00",
+      "evaluation_hour": 74,
+      "last_input_hour": "1970-02-01T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T03:00:00+00:00",
+      "evaluation_hour": 75,
+      "last_input_hour": "1970-02-01T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.35533610383568215,
+      "lambda_per_hour": 0.35533610383568215,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T04:00:00+00:00",
+      "evaluation_hour": 76,
+      "last_input_hour": "1970-02-01T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.2901322135991875,
+      "lambda_per_hour": 0.2901322135991875,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T05:00:00+00:00",
+      "evaluation_hour": 77,
+      "last_input_hour": "1970-02-01T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3224133973518824,
+      "lambda_per_hour": 0.3224133973518824,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T06:00:00+00:00",
+      "evaluation_hour": 78,
+      "last_input_hour": "1970-02-01T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00016854374832073193,
+      "lambda_per_hour": 0.00016854374832073193,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T07:00:00+00:00",
+      "evaluation_hour": 79,
+      "last_input_hour": "1970-02-01T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3697162062896775,
+      "lambda_per_hour": 0.3697162062896775,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T08:00:00+00:00",
+      "evaluation_hour": 80,
+      "last_input_hour": "1970-02-01T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.33312224901683424,
+      "lambda_per_hour": 0.33312224901683424,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T09:00:00+00:00",
+      "evaluation_hour": 81,
+      "last_input_hour": "1970-02-01T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3087084380571196,
+      "lambda_per_hour": 0.3087084380571196,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T10:00:00+00:00",
+      "evaluation_hour": 82,
+      "last_input_hour": "1970-02-01T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T11:00:00+00:00",
+      "evaluation_hour": 83,
+      "last_input_hour": "1970-02-01T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T12:00:00+00:00",
+      "evaluation_hour": 84,
+      "last_input_hour": "1970-02-01T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00043753446845800313,
+      "lambda_per_hour": 0.00043753446845800313,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T13:00:00+00:00",
+      "evaluation_hour": 85,
+      "last_input_hour": "1970-02-01T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T14:00:00+00:00",
+      "evaluation_hour": 86,
+      "last_input_hour": "1970-02-01T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.006553887255199776,
+      "lambda_per_hour": 0.006553887255199776,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T15:00:00+00:00",
+      "evaluation_hour": 87,
+      "last_input_hour": "1970-02-01T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T16:00:00+00:00",
+      "evaluation_hour": 88,
+      "last_input_hour": "1970-02-01T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T17:00:00+00:00",
+      "evaluation_hour": 89,
+      "last_input_hour": "1970-02-01T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.01283951422168784,
+      "lambda_per_hour": 0.01283951422168784,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T18:00:00+00:00",
+      "evaluation_hour": 90,
+      "last_input_hour": "1970-02-01T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.014228597727058123,
+      "lambda_per_hour": 0.014228597727058123,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T19:00:00+00:00",
+      "evaluation_hour": 91,
+      "last_input_hour": "1970-02-01T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.012002697891984887,
+      "lambda_per_hour": 0.012002697891984887,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T20:00:00+00:00",
+      "evaluation_hour": 92,
+      "last_input_hour": "1970-02-01T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T21:00:00+00:00",
+      "evaluation_hour": 93,
+      "last_input_hour": "1970-02-01T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.004764105466239121,
+      "lambda_per_hour": 0.004764105466239121,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T22:00:00+00:00",
+      "evaluation_hour": 94,
+      "last_input_hour": "1970-02-01T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0071539195711547,
+      "lambda_per_hour": 0.0071539195711547,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-01T23:00:00+00:00",
+      "evaluation_hour": 95,
+      "last_input_hour": "1970-02-01T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.009433896063913663,
+      "lambda_per_hour": 0.009433896063913663,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T00:00:00+00:00",
+      "evaluation_hour": 96,
+      "last_input_hour": "1970-02-01T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T01:00:00+00:00",
+      "evaluation_hour": 97,
+      "last_input_hour": "1970-02-02T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T02:00:00+00:00",
+      "evaluation_hour": 98,
+      "last_input_hour": "1970-02-02T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.02150359422356712,
+      "lambda_per_hour": 0.02150359422356712,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T03:00:00+00:00",
+      "evaluation_hour": 99,
+      "last_input_hour": "1970-02-02T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.003964632654847368,
+      "lambda_per_hour": 0.003964632654847368,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T04:00:00+00:00",
+      "evaluation_hour": 100,
+      "last_input_hour": "1970-02-02T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T05:00:00+00:00",
+      "evaluation_hour": 101,
+      "last_input_hour": "1970-02-02T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T06:00:00+00:00",
+      "evaluation_hour": 102,
+      "last_input_hour": "1970-02-02T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.03197929823615506,
+      "lambda_per_hour": 0.03197929823615506,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T07:00:00+00:00",
+      "evaluation_hour": 103,
+      "last_input_hour": "1970-02-02T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.011785802129360468,
+      "lambda_per_hour": 0.011785802129360468,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T08:00:00+00:00",
+      "evaluation_hour": 104,
+      "last_input_hour": "1970-02-02T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T09:00:00+00:00",
+      "evaluation_hour": 105,
+      "last_input_hour": "1970-02-02T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T10:00:00+00:00",
+      "evaluation_hour": 106,
+      "last_input_hour": "1970-02-02T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T11:00:00+00:00",
+      "evaluation_hour": 107,
+      "last_input_hour": "1970-02-02T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T12:00:00+00:00",
+      "evaluation_hour": 108,
+      "last_input_hour": "1970-02-02T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00025422479815008324,
+      "lambda_per_hour": 0.00025422479815008324,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T13:00:00+00:00",
+      "evaluation_hour": 109,
+      "last_input_hour": "1970-02-02T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T14:00:00+00:00",
+      "evaluation_hour": 110,
+      "last_input_hour": "1970-02-02T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0033495600970298617,
+      "lambda_per_hour": 0.0033495600970298617,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T15:00:00+00:00",
+      "evaluation_hour": 111,
+      "last_input_hour": "1970-02-02T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T16:00:00+00:00",
+      "evaluation_hour": 112,
+      "last_input_hour": "1970-02-02T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T17:00:00+00:00",
+      "evaluation_hour": 113,
+      "last_input_hour": "1970-02-02T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.006561764689417697,
+      "lambda_per_hour": 0.006561764689417697,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T18:00:00+00:00",
+      "evaluation_hour": 114,
+      "last_input_hour": "1970-02-02T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00727167387596522,
+      "lambda_per_hour": 0.00727167387596522,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T19:00:00+00:00",
+      "evaluation_hour": 115,
+      "last_input_hour": "1970-02-02T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3519140775761101,
+      "lambda_per_hour": 0.3519140775761101,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T20:00:00+00:00",
+      "evaluation_hour": 116,
+      "last_input_hour": "1970-02-02T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6732321010963723,
+      "lambda_per_hour": 0.6732321010963723,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T21:00:00+00:00",
+      "evaluation_hour": 117,
+      "last_input_hour": "1970-02-02T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6699610748569265,
+      "lambda_per_hour": 0.6699610748569265,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T22:00:00+00:00",
+      "evaluation_hour": 118,
+      "last_input_hour": "1970-02-02T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3245985349172378,
+      "lambda_per_hour": 0.3245985349172378,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-02T23:00:00+00:00",
+      "evaluation_hour": 119,
+      "last_input_hour": "1970-02-02T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T00:00:00+00:00",
+      "evaluation_hour": 120,
+      "last_input_hour": "1970-02-02T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T01:00:00+00:00",
+      "evaluation_hour": 121,
+      "last_input_hour": "1970-02-03T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3438896041865997,
+      "lambda_per_hour": 0.3438896041865997,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T02:00:00+00:00",
+      "evaluation_hour": 122,
+      "last_input_hour": "1970-02-03T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3451266536666097,
+      "lambda_per_hour": 0.3451266536666097,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T03:00:00+00:00",
+      "evaluation_hour": 123,
+      "last_input_hour": "1970-02-03T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3354116289454448,
+      "lambda_per_hour": 0.3354116289454448,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T04:00:00+00:00",
+      "evaluation_hour": 124,
+      "last_input_hour": "1970-02-03T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T05:00:00+00:00",
+      "evaluation_hour": 125,
+      "last_input_hour": "1970-02-03T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T06:00:00+00:00",
+      "evaluation_hour": 126,
+      "last_input_hour": "1970-02-03T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.01629100094146396,
+      "lambda_per_hour": 0.01629100094146396,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T07:00:00+00:00",
+      "evaluation_hour": 127,
+      "last_input_hour": "1970-02-03T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.006019863641739046,
+      "lambda_per_hour": 0.006019863641739046,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T08:00:00+00:00",
+      "evaluation_hour": 128,
+      "last_input_hour": "1970-02-03T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T09:00:00+00:00",
+      "evaluation_hour": 129,
+      "last_input_hour": "1970-02-03T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T10:00:00+00:00",
+      "evaluation_hour": 130,
+      "last_input_hour": "1970-02-03T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T11:00:00+00:00",
+      "evaluation_hour": 131,
+      "last_input_hour": "1970-02-03T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T12:00:00+00:00",
+      "evaluation_hour": 132,
+      "last_input_hour": "1970-02-03T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00012992168654027994,
+      "lambda_per_hour": 0.00012992168654027994,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T13:00:00+00:00",
+      "evaluation_hour": 133,
+      "last_input_hour": "1970-02-03T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T14:00:00+00:00",
+      "evaluation_hour": 134,
+      "last_input_hour": "1970-02-03T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0017118270399092196,
+      "lambda_per_hour": 0.0017118270399092196,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T15:00:00+00:00",
+      "evaluation_hour": 135,
+      "last_input_hour": "1970-02-03T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T16:00:00+00:00",
+      "evaluation_hour": 136,
+      "last_input_hour": "1970-02-03T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T17:00:00+00:00",
+      "evaluation_hour": 137,
+      "last_input_hour": "1970-02-03T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0033534585395931377,
+      "lambda_per_hour": 0.0033534585395931377,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T18:00:00+00:00",
+      "evaluation_hour": 138,
+      "last_input_hour": "1970-02-03T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.02833130071195794,
+      "lambda_per_hour": 0.02833130071195794,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T19:00:00+00:00",
+      "evaluation_hour": 139,
+      "last_input_hour": "1970-02-03T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.02683081055927728,
+      "lambda_per_hour": 0.02683081055927728,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T20:00:00+00:00",
+      "evaluation_hour": 140,
+      "last_input_hour": "1970-02-03T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.341383002894995,
+      "lambda_per_hour": 0.341383002894995,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T21:00:00+00:00",
+      "evaluation_hour": 141,
+      "last_input_hour": "1970-02-03T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3107064175836479,
+      "lambda_per_hour": 0.3107064175836479,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T22:00:00+00:00",
+      "evaluation_hour": 142,
+      "last_input_hour": "1970-02-03T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3115541444780169,
+      "lambda_per_hour": 0.3115541444780169,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-03T23:00:00+00:00",
+      "evaluation_hour": 143,
+      "last_input_hour": "1970-02-03T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T00:00:00+00:00",
+      "evaluation_hour": 144,
+      "last_input_hour": "1970-02-03T23:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.020924869475939852,
+      "lambda_per_hour": 0.020924869475939852,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T01:00:00+00:00",
+      "evaluation_hour": 145,
+      "last_input_hour": "1970-02-04T00:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T02:00:00+00:00",
+      "evaluation_hour": 146,
+      "last_input_hour": "1970-02-04T01:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.005553620726243836,
+      "lambda_per_hour": 0.005553620726243836,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T03:00:00+00:00",
+      "evaluation_hour": 147,
+      "last_input_hour": "1970-02-04T02:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T04:00:00+00:00",
+      "evaluation_hour": 148,
+      "last_input_hour": "1970-02-04T03:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T05:00:00+00:00",
+      "evaluation_hour": 149,
+      "last_input_hour": "1970-02-04T04:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T06:00:00+00:00",
+      "evaluation_hour": 150,
+      "last_input_hour": "1970-02-04T05:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.008356302020843368,
+      "lambda_per_hour": 0.008356302020843368,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T07:00:00+00:00",
+      "evaluation_hour": 151,
+      "last_input_hour": "1970-02-04T06:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.003078499652457916,
+      "lambda_per_hour": 0.003078499652457916,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T08:00:00+00:00",
+      "evaluation_hour": 152,
+      "last_input_hour": "1970-02-04T07:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T09:00:00+00:00",
+      "evaluation_hour": 153,
+      "last_input_hour": "1970-02-04T08:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T10:00:00+00:00",
+      "evaluation_hour": 154,
+      "last_input_hour": "1970-02-04T09:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T11:00:00+00:00",
+      "evaluation_hour": 155,
+      "last_input_hour": "1970-02-04T10:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T12:00:00+00:00",
+      "evaluation_hour": 156,
+      "last_input_hour": "1970-02-04T11:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 6.63996580268543e-05,
+      "lambda_per_hour": 6.63996580268543e-05,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T13:00:00+00:00",
+      "evaluation_hour": 157,
+      "last_input_hour": "1970-02-04T12:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T14:00:00+00:00",
+      "evaluation_hour": 158,
+      "last_input_hour": "1970-02-04T13:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.00087484642812129,
+      "lambda_per_hour": 0.00087484642812129,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T15:00:00+00:00",
+      "evaluation_hour": 159,
+      "last_input_hour": "1970-02-04T14:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T16:00:00+00:00",
+      "evaluation_hour": 160,
+      "last_input_hour": "1970-02-04T15:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T17:00:00+00:00",
+      "evaluation_hour": 161,
+      "last_input_hour": "1970-02-04T16:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0017138218638583968,
+      "lambda_per_hour": 0.0017138218638583968,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T18:00:00+00:00",
+      "evaluation_hour": 162,
+      "last_input_hour": "1970-02-04T17:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.014479003414041437,
+      "lambda_per_hour": 0.014479003414041437,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T19:00:00+00:00",
+      "evaluation_hour": 163,
+      "last_input_hour": "1970-02-04T18:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.3841071753889044,
+      "lambda_per_hour": 0.3841071753889044,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T20:00:00+00:00",
+      "evaluation_hour": 164,
+      "last_input_hour": "1970-02-04T19:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6767543676712819,
+      "lambda_per_hour": 0.6767543676712819,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T21:00:00+00:00",
+      "evaluation_hour": 165,
+      "last_input_hour": "1970-02-04T20:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.6554904175945668,
+      "lambda_per_hour": 0.6554904175945668,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T22:00:00+00:00",
+      "evaluation_hour": 166,
+      "last_input_hour": "1970-02-04T21:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.2851663014149614,
+      "lambda_per_hour": 0.2851663014149614,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    },
+    {
+      "relative_forecast_hour": "1970-02-04T23:00:00+00:00",
+      "evaluation_hour": 167,
+      "last_input_hour": "1970-02-04T22:00:00+00:00",
+      "history_hours_used": 672,
+      "aggregate_forecast_per_hour": 0.0,
+      "lambda_per_hour": 0.0,
+      "parameter_fit_count": 1,
+      "future_observations_used": false
+    }
+  ]
+}

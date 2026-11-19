@@ -1,0 +1,825 @@
+import copy
+import importlib.util
+import json
+from pathlib import Path
+import tempfile
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+HERE=Path(__file__).resolve().parent
+spec=importlib.util.spec_from_file_location("eval_run",HERE/"run.py")
+run=importlib.util.module_from_spec(spec);spec.loader.exec_module(run)
+
+class SaveTests(unittest.TestCase):
+    def test_cleanup_retries_with_remaining_node_after_policy_deleted(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            run.save(evidence/"run.json", {"run_id":"test", "policy":"eval-test", "app":"eval-test"})
+            run.save(evidence/"created.json", [{"cluster":"karmada", "kind":"TrainingPolicy",
+                "name":"eval-test", "uid":"old-uid", "namespaced":True}])
+            node = {"metadata":{"name":"eval-test-worker-00", "uid":"node-uid",
+                    "labels":{run.POLICY_UID:"old-uid"}}, "status":{"phase":"Ready"}}
+            def resources(cluster, kind, **kwargs):
+                return {"items":[node] if kind == "nodeprovisions" else []}
+            with patch.object(run, "kubectl", return_value="") as command, patch.object(run, "get", side_effect=resources):
+                run.cleanup(evidence, "test")
+            deletes = [c for c in command.call_args_list if "delete" in c.args]
+            self.assertEqual(len(deletes), 1)
+            self.assertEqual(deletes[0].kwargs["obj"], node)
+            events = [json.loads(line) for line in (evidence/"runner-events.jsonl").read_text().splitlines()]
+            deletion = next(x for x in events if x["event"] == "nodeprovision_delete_requested")
+            self.assertEqual(deletion["name"], "eval-test-worker-00")
+            self.assertEqual(events[-1]["event"], "cleanup_requested")
+
+    def test_reader_sees_complete_old_json_until_atomic_publication(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "run.json"
+            before = {"phase": "prepared", "run_id": "r18a01"}
+            after = {"phase": "running", "run_id": "r18a01", "payload": "x" * 100000}
+            run.save(path, before)
+            replace = run.os.replace
+
+            def publish(source, destination):
+                self.assertEqual(Path(source).parent, path.parent)
+                self.assertNotEqual(Path(source), path)
+                self.assertEqual(run.read(path), before)
+                self.assertEqual(run.read(source), after)
+                replace(source, destination)
+                self.assertEqual(run.read(path), after)
+
+            with patch.object(run.os, "replace", side_effect=publish) as publication:
+                run.save(path, after)
+            publication.assert_called_once()
+            self.assertEqual(list(Path(d).iterdir()), [path])
+
+    def test_failed_publication_preserves_old_json_and_removes_temporary(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "run.json"
+            before = {"phase": "running"}
+            run.save(path, before)
+            with patch.object(run.os, "replace", side_effect=OSError("publication failed")):
+                with self.assertRaisesRegex(OSError, "publication failed"):
+                    run.save(path, {"phase": "completed"})
+            self.assertEqual(run.read(path), before)
+            self.assertEqual(list(Path(d).iterdir()), [path])
+
+class RenderTests(unittest.TestCase):
+    def setUp(self):
+        self.c=json.loads((HERE/"config.example.json").read_text())
+        self.c.update(nfs_server="10.0.0.5",nfs_dataset_path="/exports/datasets/cifar10")
+        self.source={"spec":{"capacity":{"aws":{"ami":"ami-abc","subnetId":"subnet-abc","vpcId":"vpc-abc","securityGroupIds":["sg-abc"],"credentialsRef":{"name":"aws"}}},
+                             "policy":{"alpha":0.8,"minOnDemand":1,"fixedOnDemand":2},
+                             "checkpoint":{"candidateIntervalSeconds":[300]}}}
+    def render(self,exp="cost",arm="A"):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d);(p/"resnet18").mkdir();(p/"resnet18"/"train_resnet18.py").write_text("pass")
+            with patch.object(run,"HERE",p):
+                return run.render(self.c,self.source,"r18a01",exp,arm)
+    def test_cost_and_fixed_policy(self):
+        for exp,arm,expected in [("cost","A",2),("cost","B",0)]+[("checkpoint",arm,1) for arm in ("F60","F300","F600","D")]:
+            info,member,items,policy=self.render(exp,arm)
+            self.assertEqual(policy["spec"]["policy"]["minOnDemand"],expected)
+            self.assertEqual(policy["spec"]["policy"].get("fixedOnDemand"),1 if exp=="checkpoint" else None)
+            self.assertNotIn("candidateIntervalSeconds",policy["spec"]["checkpoint"])
+            self.assertEqual(policy["metadata"]["annotations"]["training.dcnlab.com/suspend"],"true")
+            self.assertEqual(info["namespace"],run.NS)
+            self.assertEqual(info["dataset"],"cifar10")
+            self.assertEqual(policy["metadata"]["annotations"].get("training.dcnlab.com/planned-partial"),
+                             "disabled" if exp=="checkpoint" else None)
+
+    def test_restore_audit_is_opt_in(self):
+        for enabled in (False, True):
+            self.c['restore_audit'] = enabled
+            _, _, items, _ = self.render('cost', 'B')
+            sts = next(o for o in items if o['kind'] == 'StatefulSet')
+            env = sts['spec']['template']['spec']['containers'][0]['env']
+            self.assertEqual(any(e['name'] == 'EVAL_RESTORE_AUDIT' for e in env), enabled)
+        self.c['restore_audit'] = 'false'
+        with self.assertRaises(ValueError):
+            self.render()
+
+    def test_cost_baseline_disabled_and_proposal_dynamic(self):
+        self.c.update(scenario="risk-schedule", risk_schedule=[{"after_seconds":3600,"lambda_per_hour":0.8}])
+        info, _, _, policy = self.render("cost", "A")
+        self.assertEqual(info["scenario"], "constant")
+        self.assertEqual(policy["metadata"]["annotations"]["training.dcnlab.com/periodic-checkpoint"], "disabled")
+        run.verify_scenario(Path("."), dict(info, periodic_disabled_observed=True))
+        with self.assertRaisesRegex(RuntimeError, "acknowledgement"):
+            run.verify_scenario(Path("."), info)
+        info, _, _, policy = self.render("cost", "B")
+        self.assertEqual(info["scenario"], "risk-schedule")
+        self.assertNotIn("training.dcnlab.com/periodic-checkpoint", policy["metadata"]["annotations"])
+        self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], 60)
+        self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], 3600)
+        with self.assertRaisesRegex(RuntimeError, "analytic"):
+            run.verify_scenario(Path("."), dict(info, scenario="constant"))
+
+    def test_dynamic_hour_cap_does_not_change_fixed_arms(self):
+        for arm, lower, upper in (("D", 60, 3600), ("F60", 60, 60),
+                                  ("F300", 300, 300), ("F600", 600, 600)):
+            _, _, _, policy = self.render("checkpoint", arm)
+            self.assertEqual(policy["spec"]["checkpoint"]["minIntervalSeconds"], lower)
+            self.assertEqual(policy["spec"]["checkpoint"]["maxIntervalSeconds"], upper)
+
+    def test_baseline_rejects_checkpoint_and_records_disabled(self):
+        info = {"experiment":"cost", "arm":"A", "scenario":"constant", "policy":"policy",
+                "policy_uid":"uid", "app":"eval-test"}
+        policy = {"status":{"checkpoint":{"reason":"periodic_disabled"}}}
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[]}):
+                run.observe_policy(Path(directory), info)
+            self.assertTrue(info["periodic_disabled_observed"])
+            migration = {"spec":{"workloadRef":{"name":"eval-test"}}}
+            with patch.object(run, "owned", return_value=policy), patch.object(run, "get", return_value={"items":[migration]}):
+                with self.assertRaisesRegex(RuntimeError, "contains a checkpoint"):
+                    run.observe_policy(Path(directory), info)
+    def test_readonly_data_fresh_checkpoint_uid_before_start(self):
+        info,member,items,policy=self.render()
+        self.assertTrue(member[0]["spec"]["nfs"]["readOnly"])
+        self.assertEqual(member[0]["spec"]["persistentVolumeReclaimPolicy"],"Retain")
+        self.assertNotEqual(member[1]["metadata"]["name"],member[2]["metadata"]["name"])
+        sts=next(x for x in items if x["kind"]=="StatefulSet")
+        self.assertEqual(sts["spec"]["replicas"],0)
+        self.assertEqual(policy["spec"]["workloadRef"]["uid"],"BOUND_DURING_PREPARE")
+        self.assertEqual(self.source["spec"]["policy"]["fixedOnDemand"],2)
+    def test_invalid_input(self):
+        for key,value in [("namespace","default"),("goal_steps",0),("initial_risk",float("nan")),("nfs_server","REPLACE_ME")]:
+            c=copy.deepcopy(self.c);c[key]=value
+            with self.assertRaises(ValueError):run.validate(c,"r18a","cost","A")
+        with self.assertRaises(ValueError):run.validate(self.c,"../bad","cost","A")
+        with self.assertRaises(ValueError):run.validate(self.c,"r18a","checkpoint","A")
+    def test_event_filter(self):
+        text='2026-01-01 EVAL_EVENT {"run_id":"r18a","event":"step","rank":0}\nEVAL_EVENT broken\nEVAL_EVENT {"run_id":"other"}'
+        self.assertEqual(len(list(run.training_events(text,"r18a"))),1)
+
+    def test_no_stale_measurements_copied(self):
+        self.source["spec"]["checkpoint"].update(measuredCosts={"checkpointSeconds":100},paperProfile={"enabled":True})
+        _,_,_,policy=self.render("checkpoint","D")
+        self.assertNotIn("measuredCosts",policy["spec"]["checkpoint"])
+        self.assertNotIn("paperProfile",policy["spec"]["checkpoint"])
+
+    def test_completed_risk_change_requires_recovery(self):
+        with tempfile.TemporaryDirectory() as d:
+            info={"scenario":"risk-rise","experiment":"cost","arm":"B","policy_uid":"uid","changed_risk_consumed":True,"analytic_interval_observed":True}
+            with patch.object(run,"get",return_value={"items":[]}):
+                with self.assertRaisesRegex(RuntimeError,"recovery/cleanup"):
+                    run.verify_scenario(Path(d),info)
+            with patch.object(run,"get",return_value={"items":[{"status":{"phase":"Completed"}}]}):
+                run.verify_scenario(Path(d),info)
+
+    def test_unconfirmed_interruption_is_not_success(self):
+        with tempfile.TemporaryDirectory() as d:
+            info={"scenario":"interruption"}
+            with self.assertRaisesRegex(RuntimeError,"no recorded FIS"):
+                run.verify_scenario(Path(d),info)
+
+    def test_failed_replacement_is_still_active(self):
+        failed={"metadata":{"name":"replacement"},"status":{"phase":"Failed"}}
+        with patch.object(run,"get",side_effect=[{"items":[failed]},{"items":[]},{"items":[]}]):
+            self.assertEqual(run.active_operations({"policy_uid":"uid"}),["spotreplacements/replacement"])
+
+    def test_dynamic_bootstrap_and_unconsumed_risk_are_not_valid(self):
+        with self.assertRaisesRegex(RuntimeError,"bootstrap-only"):
+            run.verify_scenario(Path("."),{"arm":"D","scenario":"constant"})
+        with self.assertRaisesRegex(RuntimeError,"not consumed"):
+            run.verify_scenario(Path("."),{"arm":"F300","scenario":"risk-rise"})
+
+    def test_cleanup_is_scoped_and_retryable_after_policy_deletion(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence=Path(d)
+            run.save(evidence/"run.json",{"run_id":"test","policy":"eval-test","app":"eval-test"})
+            run.save(evidence/"created.json",[{"cluster":"karmada","kind":"TrainingPolicy","name":"eval-test","uid":"old-uid","namespaced":True}])
+            with patch.object(run,"kubectl",return_value="") as command, patch.object(run,"get",return_value={"items":[]}), patch.object(run,"patch_policy") as suspend:
+                run.cleanup(evidence,"test")
+                suspend.assert_not_called()
+                self.assertFalse(any("delete" in call.args for call in command.call_args_list))
+            with self.assertRaises(ValueError):run.cleanup(evidence,"wrong")
+
+
+class AbortFailedRunTests(unittest.TestCase):
+    def write_run(self, evidence, phase="failed"):
+        info = {"run_id":"testrun", "phase":phase, "policy":"eval-testrun", "policy_uid":"policy-uid",
+                "app":"eval-testrun", "workload_uid":"workload-uid"}
+        run.save(evidence/"run.json", info)
+        return info
+
+    def op(self, name, kind="SpotReplacement", phase="Failed", policy_uid="policy-uid"):
+        return {"apiVersion":"training.dcnlab.com/v1alpha1", "kind":kind,
+                "metadata":{"name":name, "uid":name+"-uid", "labels":{run.POLICY_UID:policy_uid}},
+                "spec":{"policyRef":{"uid":policy_uid}}, "status":{"phase":phase}}
+
+    def member_migration(self, name="member-plan", workload_uid="workload-uid", policy_uid="policy-uid"):
+        return {"apiVersion":"migration.dcnlab.com/v1alpha1", "kind":"FluidCRMigration",
+                "metadata":{"name":name, "uid":name+"-uid", "labels":{run.POLICY_UID:policy_uid}},
+                "spec":{"workloadRef":{"uid":workload_uid}},
+                "status":{"clusters":[{"clusterName":"aws", "phase":"Failed", "workloadUID":workload_uid}]}}
+
+    def restore_plan(self, name, request_uid, cluster="aws"):
+        return {"apiVersion":"migration.dcnlab.com/v1alpha1", "kind":"RestorePlan",
+                "metadata":{"name":name, "uid":cluster+"-"+name+"-uid"},
+                "spec":{"requestUID":request_uid, "workloadRef":{"uid":"workload-uid"}}}
+
+    def placement(self, name, *targets, owner_uid="restore-op-uid", labelled=False, policy_uid="policy-uid"):
+        labels = {run.POLICY_UID:"policy-uid"} if labelled else {}
+        if policy_uid != "policy-uid":
+            labels = {run.POLICY_UID:policy_uid}
+        return {"apiVersion":"policy.karmada.io/v1alpha1", "kind":"PropagationPolicy",
+                "metadata":{"name":name, "uid":name+"-uid", "labels":labels,
+                            "ownerReferences":[{"apiVersion":"migration.dcnlab.com/v1alpha1", "kind":"RestoreRequest",
+                                                "name":"restore-op", "uid":owner_uid}]},
+                "spec":{"resourceSelectors":[{"apiVersion":target["apiVersion"],
+                    "kind":target["kind"], "name":target["metadata"]["name"]} for target in targets]}}
+
+    def fake_cluster(self, store):
+        def resources(cluster, kind, name=None, selector=None):
+            items = store.get((cluster, kind), [])
+            if name is not None:
+                for obj in items:
+                    if obj["metadata"]["name"] == name:
+                        return obj
+                return {}
+            return {"items": list(items)}
+        def command(cluster, *args, **kwargs):
+            raw = next((arg for arg in args if isinstance(arg, str) and arg.startswith("--raw=")), None)
+            if raw:
+                url = raw.split("=", 1)[1]
+                parts = url.split("/")
+                plural, name = parts[-2], parts[-1]
+                key = (cluster, plural)
+                uid = kwargs["obj"]["preconditions"]["uid"]
+                store[key] = [item for item in store.get(key, [])
+                              if item["metadata"]["name"] != name or item["metadata"]["uid"] != uid]
+            return ""
+        return resources, command
+
+    def test_abort_failed_backs_up_deletes_waits_then_scales_and_marks_terminal(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            replacement = self.op("replace-op", phase="Failed")
+            restore = self.op("restore-op", kind="RestoreRequest", phase="AwaitingRestoreEvidence")
+            checkpoint = self.op("checkpoint-op", kind="FluidCRMigration", phase="Failed")
+            checkpoint["apiVersion"] = "migration.dcnlab.com/v1alpha1"
+            checkpoint["spec"]["workloadRef"] = {"uid":"workload-uid"}
+            placement = self.placement("restore-op-placement", restore)
+            checkpoint_placement = self.placement("checkpoint-placement", checkpoint, labelled=True)
+            shared_placement = self.placement("shared-placement", restore, {"apiVersion":"training.dcnlab.com/v1alpha1",
+                "kind":"NodeProvision", "metadata":{"name":"eval-testrun-worker-0"}})
+            labelled_placement = self.placement("labelled-placement", restore, owner_uid="other-request", labelled=True)
+            foreign_label_placement = self.placement("foreign-label-placement", checkpoint, policy_uid="other-policy")
+            karmada_plan = self.restore_plan("restore-plan", "restore-op-uid", "karmada")
+            member_plan = self.restore_plan("restore-plan", "restore-op-uid", "aws")
+            member = self.member_migration()
+            store = {("karmada", "spotreplacements"): [replacement],
+                     ("karmada", "restorerequests"): [restore],
+                     ("karmada", "fluidcrmigrations"): [checkpoint],
+                     ("karmada", "restoreplans"): [karmada_plan],
+                     ("karmada", "propagationpolicies"): [placement, checkpoint_placement, shared_placement, labelled_placement, foreign_label_placement],
+                     ("aws", "fluidcrmigrations"): [member],
+                     ("aws", "restoreplans"): [member_plan]}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy") as suspend, \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            suspend.assert_called_once()
+            backups = list((evidence/run.ABORT_BACKUP_DIR).glob("*.json"))
+            self.assertEqual(len(backups), 1)
+            backup = run.read(backups[0])
+            self.assertEqual([x["kind"] for x in backup["objects"]],
+                             ["spotreplacements", "restorerequests", "fluidcrmigrations", "restoreplans",
+                              "fluidcrmigrations", "restoreplans", "propagationpolicies", "propagationpolicies", "propagationpolicies"])
+            backed_up_names = [x["object"]["metadata"]["name"] for x in backup["objects"]]
+            self.assertNotIn("shared-placement", backed_up_names)
+            self.assertNotIn("foreign-label-placement", backed_up_names)
+            self.assertIn("checkpoint-placement", backed_up_names)
+            deletes = [c for c in kubectl.call_args_list if "delete" in c.args]
+            self.assertEqual(len(deletes), 9)
+            self.assertNotIn("propagationpolicies", deletes[0].args[2])
+            placement_deletes = [c for c in deletes if "/propagationpolicies/" in c.args[2]]
+            self.assertEqual(len(placement_deletes), 3)
+            self.assertTrue(all(deletes.index(c) > 5 for c in placement_deletes))
+            raw_delete = next(c for c in placement_deletes if "restore-op-placement" in c.args[2])
+            self.assertIn("--filename=-", raw_delete.args)
+            self.assertIn("--raw=/apis/policy.karmada.io/v1alpha1/namespaces/"+run.NS+"/propagationpolicies/restore-op-placement", raw_delete.args)
+            self.assertEqual(raw_delete.kwargs["obj"], {"apiVersion":"v1", "kind":"DeleteOptions",
+                "preconditions":{"uid":"restore-op-placement-uid"}})
+            self.assertEqual(kubectl.call_args_list[-1].args,
+                             ("karmada", "-n", run.NS, "scale", "statefulset", "eval-testrun", "--replicas=0"))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "aborted")
+            self.assertEqual(run.read(evidence/"run.json")["failed_abort_request_uids"], ["restore-op-uid"])
+            self.assertEqual(run.read(evidence/"run.json")["failed_abort_placement_names"], ["checkpoint-placement", "labelled-placement", "restore-op-placement"])
+            events = [json.loads(line) for line in (evidence/"runner-events.jsonl").read_text().splitlines()]
+            self.assertEqual(events[-1]["event"], "failed_run_aborted")
+
+    def test_abort_persists_scope_before_delete_and_reuses_it_for_orphan_plans(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            run.save(evidence/"run.json", dict(run.read(evidence/"run.json"), failed_abort_request_uids=["old-request"]))
+            plan = self.restore_plan("orphan-plan", "old-request", "aws")
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "restoreplans"): [], ("karmada", "propagationpolicies"): [],
+                     ("aws", "fluidcrmigrations"): [], ("aws", "restoreplans"): [plan]}
+            resources, command = self.fake_cluster(store)
+            def failing_command(cluster, *args, **kwargs):
+                current = run.read(evidence/"run.json")
+                self.assertEqual(current["failed_abort_request_uids"], ["old-request"])
+                raise RuntimeError("boom")
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "kubectl", side_effect=failing_command):
+                with self.assertRaisesRegex(RuntimeError, "boom"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            backups = list((evidence/run.ABORT_BACKUP_DIR).glob("*.json"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(run.read(backups[0])["objects"][0]["object"]["metadata"]["name"], "orphan-plan")
+
+    def test_abort_unions_persisted_placement_names_on_retry(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            run.save(evidence/"run.json", dict(run.read(evidence/"run.json"), failed_abort_placement_names=["old-placement"]))
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            placement = self.placement("restore-op-placement", restore)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [restore],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [placement], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command):
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertEqual(run.read(evidence/"run.json")["failed_abort_placement_names"], ["old-placement", "restore-op-placement"])
+
+    def test_abort_retry_deletes_persisted_orphan_placement_after_owner_gone(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            recreated = copy.deepcopy(original)
+            recreated["metadata"]["uid"] = "restore-op-placement-recreated"
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [recreated], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            deletes = [c for c in kubectl.call_args_list if "delete" in c.args]
+            self.assertEqual(len(deletes), 1)
+            self.assertIn("/propagationpolicies/restore-op-placement", deletes[0].args[2])
+            self.assertEqual(deletes[0].kwargs["obj"]["preconditions"], {"uid":"restore-op-placement-recreated"})
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "aborted")
+
+    def test_abort_retry_blocks_foreign_same_name_placement(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            foreign = self.placement("restore-op-placement", restore, owner_uid="other-request", policy_uid="other-policy")
+            foreign["metadata"]["uid"] = "foreign-placement-uid"
+            foreign["spec"]["resourceSelectors"] = [{"apiVersion":"v1", "kind":"ConfigMap", "name":"foreign"}]
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [foreign], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                with self.assertRaisesRegex(ValueError, "does not match validated abort scope"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertFalse(any("delete" in c.args for c in kubectl.call_args_list))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "failed")
+
+    def test_abort_retry_blocks_foreign_label_even_with_matching_owner(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            foreign = self.placement("restore-op-placement", restore, owner_uid="restore-op-uid", policy_uid="other-policy")
+            foreign["metadata"]["uid"] = "foreign-placement-uid"
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [foreign], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                with self.assertRaisesRegex(ValueError, "does not match validated abort scope"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertFalse(any("delete" in c.args for c in kubectl.call_args_list))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "failed")
+
+    def test_abort_retry_blocks_same_uid_with_mutated_selectors(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            mutated = copy.deepcopy(original)
+            mutated["spec"]["resourceSelectors"] = [{"apiVersion":"v1", "kind":"Secret", "name":"other"}]
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [mutated], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command):
+                with self.assertRaisesRegex(ValueError, "does not match validated abort scope"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+
+    def test_selector_scope_sorts_multiple_selectors(self):
+        obj = {"spec":{"resourceSelectors":[
+            {"apiVersion":"z/v1", "kind":"Zed", "name":"z"},
+            {"apiVersion":"a/v1", "kind":"Alpha", "name":"a"}]}}
+        self.assertEqual(run.selector_scope(obj), [
+            {"apiVersion":"a/v1", "kind":"Alpha", "name":"a"},
+            {"apiVersion":"z/v1", "kind":"Zed", "name":"z"}])
+
+    def test_selector_scope_rejects_broad_or_unknown_selectors(self):
+        broad = {"metadata":{"name":"broad"}, "spec":{"resourceSelectors":[
+            {"apiVersion":"v1", "kind":"ConfigMap", "labelSelector":{"matchLabels":{"x":"y"}}}]}}
+        with self.assertRaisesRegex(ValueError, "unsupported resource selector fields"):
+            run.selector_scope(broad)
+
+    def test_abort_retry_blocks_same_name_namespace_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            drifted = copy.deepcopy(original)
+            drifted["spec"]["resourceSelectors"][0]["namespace"] = "foreign-ns"
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [drifted], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command):
+                with self.assertRaisesRegex(ValueError, "does not match validated abort scope"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+
+    def test_abort_ignores_backup_scope_for_wrong_run_or_policy(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            backup_dir = evidence/run.ABORT_BACKUP_DIR
+            backup_dir.mkdir()
+            run.save(backup_dir/"wrong.json", {"run_id":"other", "policy_uid":"other-policy",
+                                            "objects":[{"kind":"propagationpolicies", "object":original}]})
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [original], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command):
+                with self.assertRaisesRegex(ValueError, "does not match validated abort scope"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+
+    def test_abort_recovers_legacy_placement_scope_from_backup(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            backup_dir = evidence/run.ABORT_BACKUP_DIR
+            backup_dir.mkdir()
+            run.save(backup_dir/"original.json", {"run_id":"testrun", "policy_uid":"policy-uid",
+                                               "objects":[{"kind":"propagationpolicies", "object":original}]})
+            recreated = copy.deepcopy(original)
+            recreated["metadata"]["uid"] = "restore-op-placement-recreated"
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [recreated], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            deletes = [c for c in kubectl.call_args_list if "delete" in c.args]
+            self.assertEqual(len(deletes), 1)
+            self.assertEqual(deletes[0].kwargs["obj"]["preconditions"], {"uid":"restore-op-placement-recreated"})
+            self.assertEqual(run.read(evidence/"run.json")["failed_abort_placements"][0]["uid"], "restore-op-placement-recreated")
+
+    def test_abort_recollects_recreated_placement_after_producer_wait(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [restore],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [original], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            def recreating_command(cluster, *args, **kwargs):
+                result = command(cluster, *args, **kwargs)
+                if "/restorerequests/restore-op" in " ".join(args):
+                    recreated = copy.deepcopy(original)
+                    recreated["metadata"]["uid"] = "restore-op-placement-recreated"
+                    store[("karmada", "propagationpolicies")] = [recreated]
+                return result
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=recreating_command) as kubectl:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            placement_delete = next(c for c in kubectl.call_args_list if "delete" in c.args and "/propagationpolicies/" in c.args[2])
+            self.assertEqual(placement_delete.kwargs["obj"]["preconditions"], {"uid":"restore-op-placement-recreated"})
+
+    def test_abort_retry_treats_missing_persisted_placement_as_gone(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            original = self.placement("restore-op-placement", restore, labelled=True)
+            saved = run.read(evidence/"run.json")
+            saved.update(failed_abort_request_uids=["restore-op-uid"],
+                         failed_abort_placement_names=["restore-op-placement"],
+                         failed_abort_placements=[run.placement_scope(original)])
+            run.save(evidence/"run.json", saved)
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("aws", "fluidcrmigrations"): [], ("aws", "restoreplans"): []}
+            def resources(cluster, kind, name=None, selector=None):
+                if kind == "propagationpolicies" and name == "restore-op-placement":
+                    raise RuntimeError("NotFound")
+                items = store.get((cluster, kind), [])
+                if name is not None:
+                    return next((item for item in items if item["metadata"]["name"] == name), {})
+                return {"items": list(items)}
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"),                     patch.object(run, "owned", return_value={}), patch.object(run, "kubectl") as kubectl:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertFalse(any("delete" in c.args for c in kubectl.call_args_list))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "aborted")
+
+    def test_delete_checked_is_idempotent_for_actual_notfound_race(self):
+        obj = self.op("replace-op")
+        with patch.object(run, "get", side_effect=RuntimeError("NotFound")), patch.object(run, "kubectl") as command:
+            self.assertFalse(run.delete_checked("karmada", "spotreplacements", obj))
+            command.assert_not_called()
+        with patch.object(run, "get", side_effect=RuntimeError("network down")), patch.object(run, "kubectl"):
+            with self.assertRaisesRegex(RuntimeError, "network down"):
+                run.delete_checked("karmada", "spotreplacements", obj)
+        with patch.object(run, "get", return_value=obj), patch.object(run, "kubectl", side_effect=RuntimeError("NotFound")):
+            self.assertFalse(run.delete_checked("karmada", "spotreplacements", obj))
+        with patch.object(run, "get", return_value=obj), patch.object(run, "kubectl", side_effect=RuntimeError("forbidden")):
+            with self.assertRaisesRegex(RuntimeError, "forbidden"):
+                run.delete_checked("karmada", "spotreplacements", obj)
+
+    def test_abort_timeout_with_remaining_member_plan_does_not_scale_or_mark_aborted(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            restore = self.op("restore-op", kind="RestoreRequest", phase="Failed")
+            member_plan = self.restore_plan("restore-plan", "restore-op-uid", "aws")
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [restore],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): [member_plan]}
+            def resources(cluster, kind, name=None, selector=None):
+                items = store.get((cluster, kind), [])
+                if name is not None:
+                    return next((item for item in items if item["metadata"]["name"] == name), {})
+                return {"items": list(items)}
+            def command(cluster, *args, **kwargs):
+                if "--raw=/apis/migration.dcnlab.com/v1alpha1/namespaces/"+run.NS+"/restoreplans/restore-plan" in args:
+                    return ""
+                return ""
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command) as kubectl:
+                with self.assertRaisesRegex(RuntimeError, "still exist"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertFalse(any("scale" in call.args for call in kubectl.call_args_list))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "failed")
+
+    def test_abort_timeout_with_remaining_controller_operation_does_not_scale_or_mark_aborted(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            replacement = self.op("replace-op", phase="Failed")
+            store = {("karmada", "spotreplacements"): [replacement], ("karmada", "restorerequests"): [],
+                     ("karmada", "fluidcrmigrations"): [], ("karmada", "restoreplans"): [],
+                     ("karmada", "propagationpolicies"): [], ("aws", "fluidcrmigrations"): [],
+                     ("aws", "restoreplans"): []}
+            def resources(cluster, kind, name=None, selector=None):
+                items = store.get((cluster, kind), [])
+                if name is not None:
+                    return next((item for item in items if item["metadata"]["name"] == name), {})
+                return {"items": list(items)}
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", return_value="") as kubectl:
+                with self.assertRaisesRegex(RuntimeError, "still exist"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertFalse(any("scale" in call.args for call in kubectl.call_args_list))
+            self.assertEqual(run.read(evidence/"run.json")["phase"], "failed")
+
+    def test_abort_refuses_wrong_confirm_nonfailed_and_foreign_member_status(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            with self.assertRaisesRegex(ValueError, "--confirm"):
+                run.abort_failed_run(evidence, "wrong", wait_timeout=0, wait_interval=0)
+            self.write_run(evidence, phase="running")
+            with self.assertRaisesRegex(ValueError, "failed"):
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.write_run(evidence)
+            foreign = self.member_migration(workload_uid="workload-uid")
+            foreign["status"]["clusters"][0]["workloadUID"] = "other-workload"
+            def resources(cluster, kind, name=None, selector=None):
+                return {"items":[foreign] if cluster == "aws" and kind == "fluidcrmigrations" else []}
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "kubectl") as command:
+                with self.assertRaisesRegex(ValueError, "status workload UID mismatch"):
+                    run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            command.assert_not_called()
+
+    def test_abort_idempotent_after_terminal_aborted(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence, phase="aborted")
+            with patch.object(run, "get", return_value={"items":[]}), patch.object(run, "patch_policy") as suspend, \
+                    patch.object(run, "kubectl") as command:
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            suspend.assert_not_called()
+            command.assert_not_called()
+
+    def test_cleanup_after_abort_skips_quiescent_failed_operation_wait(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence, phase="aborted")
+            run.save(evidence/"created.json", [{"cluster":"karmada", "kind":"TrainingPolicy",
+                "name":"eval-testrun", "uid":"policy-uid", "namespaced":True}])
+            with patch.object(run, "kubectl", return_value="") as command, patch.object(run, "get", return_value={"items":[]}), \
+                    patch.object(run, "patch_policy"), patch.object(run, "wait_quiescent") as quiescent, \
+                    patch.object(run, "wait_failed_abort_removed") as abort_wait:
+                run.cleanup(evidence, "testrun")
+            quiescent.assert_called_once()
+            abort_wait.assert_called_once()
+            self.assertFalse(any("delete" in call.args for call in command.call_args_list))
+
+    def test_abort_preserves_existing_backup_attempts(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            directory = evidence/run.ABORT_BACKUP_DIR
+            directory.mkdir()
+            original = directory/"original.json"
+            original.write_text('{"old":true}\n')
+            store = {("karmada", "spotreplacements"): [], ("karmada", "restorerequests"): [],
+                     ("karmada", "restoreplans"): [], ("karmada", "propagationpolicies"): [],
+                     ("aws", "fluidcrmigrations"): [], ("aws", "restoreplans"): []}
+            resources, command = self.fake_cluster(store)
+            with patch.object(run, "get", side_effect=resources), patch.object(run, "patch_policy"), \
+                    patch.object(run, "owned", return_value={}), patch.object(run, "kubectl", side_effect=command):
+                run.abort_failed_run(evidence, "testrun", wait_timeout=0, wait_interval=0)
+            self.assertTrue(original.exists())
+            self.assertEqual(len(list(directory.glob("*.json"))), 2)
+
+    def test_cli_abort_command_requires_confirm_and_dispatches(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence)
+            argv = ["run.py", "abort", "--evidence", str(evidence), "--confirm", "testrun"]
+            with patch.object(run.sys, "argv", argv), patch.object(run, "abort_failed_run") as abort:
+                run.main()
+            abort.assert_called_once_with(evidence, "testrun")
+
+    def test_start_refuses_terminal_aborted_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            evidence = Path(d)
+            self.write_run(evidence, phase="aborted")
+            with self.assertRaisesRegex(ValueError, "prepared"):
+                run.start(evidence)
+
+
+class GroupRecoveryTests(unittest.TestCase):
+    def setUp(self):
+        self.info = {"scenario": "interruption", "experiment": "checkpoint", "arm": "F300",
+                     "policy_uid": "policy-uid", "region": "ap-northeast-2"}
+        self.request = {"metadata": {"name": "op-group-restore", "labels": {
+            run.POLICY_UID: "policy-uid", "training.dcnlab.com/role": "group-restore"},
+            "annotations": {"training.dcnlab.com/group-old-nodeprovision": "old-node",
+                            "training.dcnlab.com/group-old-nodeprovision-uid": "karmada-old"}},
+            "spec": {"groupRestore": {"sourcePods": [{"nodeProvisionRef": {
+                "name": "old-node", "uid": "aws-old"}}]}}, "status": {"phase": "Verified"}}
+
+    def verify(self, evidence, requests, nodes):
+        run.save(evidence/"fis-started.json", {"experiment": {"id": "exp-1"}})
+        run.save(evidence/"fis-target.json", {"instance_id": "i-old"})
+        def aws(region, service, *args):
+            return ({"experiment": {"state": {"status": "completed"}}} if service == "fis"
+                    else {"Reservations": [{"Instances": [{"State": {"Name": "terminated"}}]}]})
+        def get(cluster, kind, name=None, selector=None):
+            if kind == "restorerequests":
+                self.assertEqual(cluster, "karmada")
+                self.assertEqual(selector, run.POLICY_UID+"=policy-uid,training.dcnlab.com/role=group-restore")
+                return {"items": requests}
+            self.assertEqual(kind, "nodeprovisions")
+            self.assertIsNone(selector)
+            return {"items": nodes[cluster]}
+        with patch.dict(run.sys.modules, {"fis": SimpleNamespace(aws=aws)}), patch.object(run, "get", side_effect=get), patch.object(run, "kubectl") as command:
+            try:
+                run.verify_scenario(evidence, self.info)
+            finally:
+                command.assert_not_called()
+
+    def test_group_success_old_name_absent_with_optional_new_name_replacement(self):
+        for replaced in (False, True):
+            with self.subTest(replaced=replaced), tempfile.TemporaryDirectory() as d:
+                evidence = Path(d)
+                nodes = {cluster: ([{"metadata": {"name": "replacement-node", "uid": cluster+"-new"}}]
+                                   if replaced else []) for cluster in ("karmada", "aws")}
+                self.verify(evidence, [self.request], nodes)
+                self.assertEqual(run.read(evidence/"recovery-final.json"), [self.request])
+                self.assertEqual(run.read(evidence/"group-nodeprovisions-final.json"), nodes)
+
+    def test_group_still_old_refused_in_either_cluster_even_when_terminating(self):
+        for cluster, uid in (("karmada", "karmada-old"), ("aws", "aws-old"),
+                             ("karmada", "different-uid"), ("aws", "different-uid")):
+            with self.subTest(cluster=cluster), tempfile.TemporaryDirectory() as d:
+                nodes = {"karmada": [], "aws": []}
+                nodes[cluster] = [{"metadata": {"name": "old-node", "uid": uid,
+                                                "deletionTimestamp": "2026-10-08T00:00:00Z"}}]
+                with self.assertRaisesRegex(RuntimeError, "old NodeProvision remains in "+cluster):
+                    self.verify(Path(d), [self.request], nodes)
+                self.assertEqual(run.read(Path(d)/"group-nodeprovisions-final.json"), nodes)
+
+    def test_group_requires_nonempty_all_verified_owned_requests(self):
+        for invalid in ("empty", "unverified", "foreign", "wrong-role"):
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as d:
+                request = copy.deepcopy(self.request)
+                if invalid == "unverified":
+                    request["status"]["phase"] = "Restoring"
+                elif invalid == "foreign":
+                    request["metadata"]["labels"][run.POLICY_UID] = "other-policy"
+                elif invalid == "wrong-role":
+                    request["metadata"]["labels"]["training.dcnlab.com/role"] = "partial"
+                requests = [] if invalid == "empty" else [self.request, request]
+                with self.assertRaisesRegex(RuntimeError, "all Verified"):
+                    self.verify(Path(d), requests, {"karmada": [], "aws": []})
+
+    def test_batch_cleanup_checks_every_old_provider(self):
+        request=copy.deepcopy(self.request)
+        pairs=[dict(OldName='old-node',OldUID='karmada-old',NewName='new-one',NewUID='uid-new-one'),
+               dict(OldName='old-second',OldUID='uid-old-second',NewName='new-two',NewUID='uid-new-two')]
+        request['metadata']['annotations']['training.dcnlab.com/group-replacement-pairs']=json.dumps(pairs)
+        with tempfile.TemporaryDirectory() as d:
+            evidence=Path(d)
+            self.verify(evidence,[request],{'karmada':[],'aws':[]})
+            for cluster in ('karmada','aws'):
+                with self.assertRaisesRegex(RuntimeError,'old NodeProvision remains'):
+                    self.verify(evidence,[request],{c:([{'metadata':{'name':'old-second','uid':'any-member-uid'}}] if c==cluster else []) for c in ('karmada','aws')})
+            pairs[1]['NewUID']=pairs[0]['NewUID']
+            request['metadata']['annotations']['training.dcnlab.com/group-replacement-pairs']=json.dumps(pairs)
+            with self.assertRaisesRegex(RuntimeError,'unambiguous batch'):
+                self.verify(evidence,[request],{'karmada':[],'aws':[]})
+
+    def test_group_missing_old_identity_fails_closed(self):
+        request = copy.deepcopy(self.request)
+        request["metadata"]["annotations"].pop("training.dcnlab.com/group-old-nodeprovision-uid")
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(RuntimeError, "old NodeProvision identities"):
+                self.verify(Path(d), [request], {"karmada": [], "aws": []})
+
+
+if __name__=="__main__":unittest.main()

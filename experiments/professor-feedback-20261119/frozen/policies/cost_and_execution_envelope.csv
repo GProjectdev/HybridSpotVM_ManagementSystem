@@ -1,0 +1,7 @@
+model,arm,max_seconds_total,cleanup_reserve_seconds,max_active_seconds,max_simultaneous_owned_GPU_VMs,max_simultaneous_vCPU,normal_training_reference_hours_low,normal_training_reference_hours_high,reference_A_compute_plus_20min_cleanup_low_usd,reference_A_compute_plus_20min_cleanup_high_usd,conservative_GPU_price_envelope_usd,root_EBS_100GiB_gp3_30day_envelope_usd,nominal_FIS_2min_usd,FIS_10min_stop_allowance_usd
+gpt2,A,18000,1200,16800,4,32,1.1201370808888813,1.478075995999979,8.664427833261465,10.79817329402174,29.805999999999997,0.25333333333333335,0,0
+gpt2,B,18000,1200,16800,7,56,,,,,52.1605,0.4433333333333333,0,0
+gpt2,C,18000,1200,16800,7,56,,,,,52.1605,0.4433333333333333,0.2,1
+resnet50,A,18000,1200,16800,4,32,1.2113971419167167,1.5421932022499634,9.208447309060597,11.180388783919147,29.805999999999997,0.25333333333333335,0,0
+resnet50,B,18000,1200,16800,7,56,,,,,52.1605,0.4433333333333333,0,0
+resnet50,C,18000,1200,16800,7,56,,,,,52.1605,0.4433333333333333,0.2,1

@@ -1,0 +1,176 @@
+E1·E2 동결 설정 실행 명령 — 2026-11-19
+상태: 준비용. 현재 유료 실행 승인 없음. 아래의 실제 API 변경 명령은 실행하지 않았다.
+
+0. 지금 실행 가능한 오프라인 검증
+export FROZEN_ROOT=/home/ubuntu/graduate/Evaluation/day19_20261119/frozen
+export PYTHONDONTWRITEBYTECODE=1
+python3 "$FROZEN_ROOT/tools/verify_freeze.py" --manifest "$FROZEN_ROOT/frozen_protocol_manifest_20261119.json"
+python3 "$FROZEN_ROOT/tools/verify_freeze.py" --manifest "$FROZEN_ROOT/frozen_protocol_manifest_20261119.json" --run "$FROZEN_ROOT/contracts/gpt2-a-01/run.json"
+
+이 검사는 immutable source/config/input SHA와 Run 계약을 검증하며 AWS/Kubernetes를 호출하지 않는다.
+최초 Run은 GPT-2 A, 그다음 ResNet A라는 일정안이다. 두 모델을 같은 비용/처리율 분모로 합치지 않는다.
+
+1. 별도 유료 승인 후 전용 실행 디렉터리 준비
+실제 승인에서 지정한 Run만 복사한다. frozen/contracts를 직접 수정하지 않는다.
+새 실행경로가 이미 있으면 중단하고 기존 시도/UID/잔여비용부터 조사한다.
+
+export RUN_ID=gpt2-a-01
+export RUN_DIR=/home/ubuntu/graduate/Evaluation/runs/gpt2-a-01
+export KARMADA_KUBECONFIG=/etc/karmada/karmada-apiserver.config
+export AWS_KUBECONFIG=/root/aws-cluster/aws1.kubeconfig
+export MGMT_KUBECONFIG=/etc/kubernetes/admin.conf
+export ONPRE1_KUBECONFIG=/root/on-premise/member/onpre1.kubeconfig
+
+mkdir -p /home/ubuntu/graduate/Evaluation/runs
+호스트 담당자가 RUN_DIR 부재를 확인한 뒤 다음을 수행한다:
+cp -a -- "$FROZEN_ROOT/contracts/$RUN_ID" "$RUN_DIR"
+
+authorization.example.json은 authorized=false이고 실제 승인 파일이 아니다.
+승인 메시지/범위에 따라 RUN_DIR/authorization.json에 다음을 기록한다:
+authorized=true,run_id,frozen_manifest_sha256,budget_usd,hard_deadline_utc,
+researcher_message_reference. proposed slot을 승인받았는지 확인한다.
+다른 날짜/절대시각이면 별도 운영 바인딩 receipt를 남기며 과거 종료시간을 자동 연장하지 않는다.
+run.json의 paid_authorization=true, approved_budget_usd, started_at,
+cleanup_start_utc,hard_deadline_utc와 승인파일이 일치해야 한다.
+이 값들은 실제 승인 후 바인딩하는 운영 필드이고 모델/정책/FIS분율을 바꾸는 허가가 아니다.
+
+2. 기존 클러스터/호스트 준비 (승인 후, provision 이전)
+full kubectl로 context/API, 현재 system lock/imageID, data asset hash, defaultSC,
+free space, clock, namespace isolation 및 다른 평가Run 없음 확인.
+
+kubectl --kubeconfig "$MGMT_KUBECONFIG" get deployments,daemonsets -A
+kubectl --kubeconfig "$KARMADA_KUBECONFIG" get noderequests,nodeprovisions -A
+kubectl --kubeconfig "$AWS_KUBECONFIG" get nodes
+kubectl --kubeconfig "$AWS_KUBECONFIG" get storageclasses
+kubectl --kubeconfig "$ONPRE1_KUBECONFIG" get storageclasses
+ssh -o BatchMode=yes -i /home/ubuntu/jsj-key.pem ubuntu@13.125.179.70 'df -B1 /mnt/nfs'
+
+기존 기능을 재시험하려고 GPU를 만들지 않는다. 정식bootstrap은 다음을 수행해야 한다:
+- 정확한 새 MGMT risk-feed/AWS Member/Karmada namespace, UID/RV 및 고정 runtime/network 전제.
+- 원본 credential은 보존하고 필요한 Run 전용 복제Secret UID만 private 기록. 내용 출력 금지.
+- member-resources.json의 exact PV/PVC/RWX 경로/상호 claim UID 확인.
+- MGMT의 같은 run namespace에서 native TLS risk-replay Service/인증을 바인딩.
+- Karmada 원본 risk/propagation/placement/TrainingRuntime 등 rendered resources 생성.
+- policy.json의 suspended NodeRequest만 생성, 정확한 생성 UID와 creationTimestamp 기록.
+- 학습 StatefulSet은 아직 생성/확대하지 않음. 네 Worker는 이후 provision 단계에서만 만든다.
+- 원래 diagnostic runner/spot_first/manual risk phase/512·1024 goal 스크립트 실행 금지.
+이 bootstrap은 기존 호스트별 전제/인가를 사용한다. 범용 무인 installer로 포장하지 않았다.
+모든 실제 생성물은 frozen rendered spec와 대조하고 API default/runtimeUID 차이만 별도 기록한다.
+
+Risk feed의 실제 시작 원점은 승인시간이 아니라 새 source NodeRequest.creationTimestamp다.
+다음 native replay 명령의 NR_CREATED_AT/TLS_CERT/TLS_KEY/PRICE_FILE은 런타임 바인딩 값이다:
+python3 "$FROZEN_ROOT/runner/internal/collector/paper_sarima_replay.py" \
+  --forecasts "$FROZEN_ROOT/inputs/forecasts.json" \
+  --manifest "$FROZEN_ROOT/inputs/native_replay_manifest_LOCKED.json" \
+  --selection-evidence "$FROZEN_ROOT/inputs/selection-evidence.json" \
+  --start-utc "$NR_CREATED_AT" --bind 0.0.0.0 --port 8443 --execution-instance-type g5.2xlarge \
+  --execution-availability-zone ap-northeast-2c --prices "$PRICE_FILE" \
+  --cert "$TLS_CERT" --key "$TLS_KEY"
+호스트/Pod 배치와TLS Service는 기존 검증경로대로 구성한다. 이 명령만 실행하면
+Cluster의Service/TLS가자동준비된다는뜻은아니다. A에서도같은입력clock을기록한다.
+
+3. 관측·가격·공간/비용/종료 watchdog (실제 승인/UID/경로 바인딩 후)
+run.json에 policy_uid,aws_profile,kubeconfigs,storage_paths(검증된PVC실경로),
+optional_storage_paths(해당namespace의아직미생성가능CRIU경로)를기록한다.
+foreign path/부모경로중복/임의기존PVC경로를넣지않는다.
+
+cd "$FROZEN_ROOT/runner"
+python3 -m evaluation.price_receipt --instance-type g5.2xlarge --out "$RUN_DIR/ondemand-fresh.json"
+python3 -m evaluation.ieee_v2_observe --directory "$RUN_DIR" --seconds 18000 --interval 15 \
+  --aws-profile new-account-v2 --aws-account-id 935317843233
+
+위observer는별도bounded프로세스로기동하고heartbeat/PID를기록한다.
+가격watch도별도기동하며PUB_*는기록된TLSfeed가격ConfigMap의정확한UID바인딩이다.
+HARD_DEADLINE_UTC는실제승인된절대시각이고미래예정안만으로실행하지않는다.
+python3 -m evaluation.price_watch --directory "$RUN_DIR" --profile new-account-v2 \
+  --account 935317843233 --ondemand-receipt "$RUN_DIR/ondemand-fresh.json" \
+  --deadline-utc "$HARD_DEADLINE_UTC" --interval 240 --seconds 18000 \
+  --publish-kubeconfig "$MGMT_KUBECONFIG" --publish-namespace "$PUB_NAMESPACE" \
+  --configmap "$PUB_CONFIGMAP" --configmap-uid "$PUB_CONFIGMAP_UID"
+
+독립적인 운영감시프로세스(시작 전 첫정상sample/heartbeat필수):
+python3 "$FROZEN_ROOT/tools/operational_watch.py" --directory "$RUN_DIR" \
+  --authorization "$RUN_DIR/authorization.json" --repository "$FROZEN_ROOT/runner" \
+  --normal-cleanup-on-stop
+
+유료승인불일치/UID없음/아직시작전이면거부한다. 감시는provision/FIS를호출하지않는다.
+정확한경로사용량/NFSfree/localfree/observer수집/positive종료장부/가격을관측한다.
+운영비용은전체소유VM의최대관측가격·종료관측시각을사용한보수추정+rootEBS+
+정리20분+부대비용reserve이며실제논문GPU비용장부나AWSinvoice가아니다.
+A의other-costreserve10USD/B·C15USD,실제budget은별도승인파일과일치해야한다.
+초과/연속센서실패/종료시각이면stoprequest를남기고exactNR suspend→bounded drain→
+기존integrated_control quiesce의UID삭제경로만사용한다. finalizer강제제거없음.
+C에서기록된FIS가active이면run/policy태그를재확인한정확한experiment만stop한다.
+cleanup이막히면별도verify/operator절차로조사하고완료를가정하지않는다.
+센서오류로감시프로세스가죽을경우를대비해아래정리명령을실제cleanup_start에호출할
+독립호스트deadline작업도승인시각으로바인딩하고설치receipt를기록한다.
+이번준비에서는어떤cron/systemd/예약실행도설치하지않았다.
+
+4. 실제 capacity/training 시작 (별도승인과위live gate통과후에만)
+python3 -m evaluation.integrated_control provision --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --mgmt-kubeconfig "$MGMT_KUBECONFIG" --onprem-kubeconfig "$ONPRE1_KUBECONFIG"
+python3 -m evaluation.integrated_control start --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --mgmt-kubeconfig "$MGMT_KUBECONFIG" --onprem-kubeconfig "$ONPRE1_KUBECONFIG"
+
+provision은 기존 controller에 suspend 해제를 요청한다. start는 owned4ReadyGPU/실제EC2시장/
+서로 다른 node와 OD rank0를 확인해 원본 STS를 생성·확대한다. 현재 두 명령 모두 미실행이다.
+A는4OD/periodicCPoff/FIS없음이다. B/C의 초기Spot·후속구성을 수동 고정하지 않는다.
+
+5. C만 해당: 기존final_fis gate와 명시적FIS승인이 있는 경우
+최초 initial owned Spot을 사전 선택 규칙으로 고정하고 OD stopalarm/role/현재 PodUID의 durable CP를 기록한다.
+python3 -m evaluation.final_fis plan --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --role-arn "$REVIEWED_FIS_ROLE_ARN" --alarm-arn "$OWNED_OD_ALARM_ARN"
+python3 -m evaluation.final_fis start --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --confirm "$RUN_ID"
+
+50%/freshCP/initialSpot/4Rank 일치/절대deadline/nativeNR+3360 gate가 모두 필요하다.
+시간 초과/대상 소멸/CP 부족이면 미적격이다. retime/retarget/manualCP/newSpot으로 성공시키지 않는다.
+모호한 응답은 intent를 저장해 대조하고 start를 재시도하지 않는다.
+현재 C의 role/alarm/target을 만들지 않았고 FIS plan/start도 실행하지 않았다.
+
+6. 정상 완료/중지/절대 cleanup_start
+python3 -m evaluation.integrated_control quiesce --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --mgmt-kubeconfig "$MGMT_KUBECONFIG" --onprem-kubeconfig "$ONPRE1_KUBECONFIG"
+python3 -m evaluation.integrated_control verify-cleanup --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --mgmt-kubeconfig "$MGMT_KUBECONFIG" --onprem-kubeconfig "$ONPRE1_KUBECONFIG"
+
+모든 historical provider ID의 positive 종료, rootEBS/keypair/복제Secret/FIS 임시template/alarm/
+Run 전용 rolepolicy/예외의 정상 정리를 별도 확인한다. 위 두 명령만으로 주변 정리가
+자동 완료된다고 주장하지 않는다. PVC/PV/NFS/Namespace/기존 인증정보/infra는 보존한다.
+보관 예산 내 최신 CP/CRIU/원시 로그를 hash 검증해 이관 계획대로 별도 보관한다. 자동 삭제 없음.
+
+7. 분석
+python3 -m evaluation.integrated_protocol metrics --run "$RUN_DIR/run.json" \
+  --events "$RUN_DIR/training-events.jsonl" --request-at "$SOURCE_NR_CREATION_UTC" \
+  --billing "$RUN_DIR/reviewed-billing.json" --out "$RUN_DIR/metrics-reviewed.json"
+python3 -m evaluation.compare_abc --register /PRIVATE/actual-attempt-register.json \
+  --out /PRIVATE/abc-comparison-reviewed.json
+
+실패/미적격/재시도/음수 절감률을 보존한다. A/B의 E1/E2 재사용은 독립 반복으로 세지 않는다.
+실측·offline 변수 분석·비용 추정·청구액을 구분한다. 6 Run은 탐색적 결과다.
+
+부록: A용 독립 절대 종료 타이머 명령안 (아직 미실행)
+별도 유료 승인 후 exact RUN_DIR/parentUID/승인 시각을 바인딩한 경우만 설치한다.
+첫 GPT A의 제안 cleanup calendar는 "2026-11-20 04:40:00 UTC"다.
+승인된 시각이 다르면 그 승인 receipt의 값을 사용하며 자동 연장하지 않는다.
+
+systemd-run --unit="e1e2-cleanup-$RUN_ID" \
+  --on-calendar="$CLEANUP_SYSTEMD_CALENDAR" --timer-property=Persistent=true \
+  /usr/bin/python3 "$FROZEN_ROOT/runner/evaluation/integrated_control.py" quiesce \
+  --directory "$RUN_DIR" --profile new-account-v2 \
+  --karmada-kubeconfig "$KARMADA_KUBECONFIG" --member-kubeconfig "$AWS_KUBECONFIG" \
+  --mgmt-kubeconfig "$MGMT_KUBECONFIG" --onprem-kubeconfig "$ONPRE1_KUBECONFIG"
+systemctl status "e1e2-cleanup-$RUN_ID.timer" --no-pager
+
+timer 활성/다음 실행시각/UID-bound cleanup 정상경로를 확인한 receipt 없이는 provision하지 않는다.
+위 예는 FIS가 없는 A의 VM 정리용이다. C의 정리 레시피에는 별도의 exact-owned FIS
+get/stop 단계가 먼저 들어가야 하며 A 예만 복사해 FIS 정리를 생략하지 않는다.
+정상 정리 완료 후 해당 Run의 timer/process 종료 상태도 확인한다.
+
+작성 완료 UTC 2026-11-19T07:45:39.723278+00:00 / 정식 유료 실행 승인 없음.

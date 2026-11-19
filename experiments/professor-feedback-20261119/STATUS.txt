@@ -1,7 +1,7 @@
-2026-11-19: researcher conditional approval recorded; preexecution checks complete.
-READY_FOR_FREEZE_NOT_FROZEN. Final settings unchanged4800/26700 and6exploratoryruns.
-Formal AWS A/B/C requires SEPARATE scope/cost/deadline approval. No formal paid operation authorized.
-Current report: preexecution/E1_E2_PreExecution_Final_Check_20261119.txt
-Current manifest preparation: preexecution/manifest_ready_for_freeze.json
-NFS free415GiB; new-run retention304GiB envelope with early stop rules and selected offline copies.
-All prior changed-path acceptance workers were cleaned. No new GPU orFIS during thispreparation.
+2026-11-19: FROZEN scientific protocol, researcher approved freeze/preparation only.
+Canonical: frozen/frozen_protocol_manifest_20261119.json
+SHA256 53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa
+6 formal-mode contracts prepared, paid authorization FALSE; no actual GPU/FIS/cron installed.
+FirstA proposal: GPT2 Nov20 09-14KST / ResNet50 Nov20 15-20KST; not a reserved or authorized schedule.
+Source snapshot and132immutable artifacts preserved; native replay wrapper status LOCKED; approved scientific values unchanged.
+See frozen/E1_E2_Frozen_Execution_Plan_20261119.txt and execution commands.

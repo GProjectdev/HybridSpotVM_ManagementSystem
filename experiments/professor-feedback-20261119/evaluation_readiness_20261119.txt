@@ -83,3 +83,11 @@ GPT의112.5초시간여유,복구와1시간전환의상호작용,반복부족과
 Manifest READY_FOR_FREEZE_NOT_FROZEN, 아직FROZEN으로변경하지않았으며정식유료실행은별도승인이다.
 최종 /home/ubuntu/graduate/Evaluation/E1_E2_PreExecution_Final_Check_20261119.txt
 준비본 /home/ubuntu/graduate/Evaluation/day19_20261119/preexecution/manifest_ready_for_freeze.json
+
+최종 연구자 승인 후 과학적 설정 FROZEN 2026-11-19T07:45:39.723278+00:00
+GPT4800/ResNet26700·4Rank/g5.2xlarge/기존입력·정책·50%·실패규칙 고정.
+canonical /home/ubuntu/graduate/Evaluation/day19_20261119/frozen/frozen_protocol_manifest_20261119.json
+SHA256 53307af44d3d92f4b3d95454fef35ea8bdfb1cd663bd78df1386b812cd5e0faa
+코드snapshot/이미지/입력원본 및승인기록보존.6Run계약준비,유료승인false/UID미바인딩.
+일정은11/20A·11/23B·11/25C의미승인제안.아직GPU/FIS/예약설치없음.
+상세 /home/ubuntu/graduate/Evaluation/E1_E2_Frozen_Execution_Plan_20261119.txt

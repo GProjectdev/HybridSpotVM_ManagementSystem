@@ -1,0 +1,14 @@
+{
+  "evaluation_source_snapshot_commit": "aec9450564939619d2c6a466dc06589e31b35d16",
+  "runtime_image_source_commits": {
+    "HybridSpotVM_ManagementSystem": "7cb8e8f3f0f411ac29cfb5daa0d6cb1db8a914f1",
+    "My_FluidCR": "acd626a5d202e8a3ef3998ebbd7ff55a1f5d290b",
+    "PublicCloud-VM-Provisioner_test": "ee87c2d8e428350e59cc487fba70264222cfda9f",
+    "Stateful-Migration-Operator-with-PV": "dae0124e9a6b3d9b38ededae97962e5b91f30083",
+    "Karmada_with_PVMigration": "b1f5ffe03d4761cab4c8cbaab0a55f85abe1e629",
+    "note": "Go runtime source commit; Python evaluation scripts receive a later final evidence commit",
+    "evaluation_tools_commit": "aec9450564939619d2c6a466dc06589e31b35d16"
+  },
+  "snapshot_scope": "Git-tracked evaluation tree and native SARIMA replay; helper guard files separately SHA256-pinned",
+  "scientific_controller_and_image_changes_in_this_freeze": false
+}
