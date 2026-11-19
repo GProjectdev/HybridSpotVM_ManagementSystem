@@ -176,3 +176,16 @@ Opt-in policy batch reconfiguration (2026-11-18)
  The batch path has controller/regression/race test evidence. Actual multi-VM
  GPU batch restore, final4OD32vCPU supply/quota and end-to-end speedup remain
  unverified; historical serial GPU success is not a batch performance result.
+
+2026-11-19 professor-feedback methodology
+ experiments/professor-feedback-20261119/researcher-methodology.md supersedes
+ methodological descriptions in earlier plans. Use4-rank as the primary block;
+ a2-rank alternative needs a reported hardware/supply reason and a separately
+ matched A/B/C block, preserving global batch after a reviewed per-rank change.
+ E1 remains A/B; E2 remains A/B/C. Additional alpha points0.7/0.8/0.9 are OFFLINE
+ sensitivity, not additional GPU arms. Do not relabel bootstrap as measured loss.
+ checkpoint_buffer_reuse in the renderer defaults to1 and explicitly controls
+ FLUIDCR_REUSE_UNCHANGED_CHECKPOINT in each trainer. It is part of the comparison
+ hash so a B/C baseline cannot silently mix the old write path and reuse path.
+ GPU validation windows from2026-11-18 expired at midnight KST; they do not
+ authorize new GPU/FIS execution on2026-11-19. CPU/read-only work continues.

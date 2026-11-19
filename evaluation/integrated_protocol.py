@@ -35,6 +35,9 @@ def render(config, source, run_id, condition):
         or sel.get('architecture')!='x86_64' or sel.get('status') not in {'PROVISIONAL','SELECTED'}):
         raise ValueError('reviewed one-GPU hardware selection required')
     if c.get('planned_partial_mode')!='disabled':raise ValueError('existing full-group route required')
+    buffer_reuse=c.get('checkpoint_buffer_reuse',1)
+    if type(buffer_reuse) is not int or buffer_reuse not in (0,1):
+        raise ValueError('checkpoint_buffer_reuse must be0 or1 and common across the comparison block')
     batch=c.get('group_replacement_batch_size',1)
     if type(batch) is not int or not 1<=batch<=4:
         raise ValueError('group_replacement_batch_size must be an integer from 1 to 4')
@@ -76,13 +79,13 @@ def render(config, source, run_id, condition):
     sts=next(x for x in objects if x['kind']=='StatefulSet')
     sts['spec']['template']['spec']['nodeSelector']={'ml.dcn.ssu.ac.kr/provider':'AWS','ml.dcn.ssu.ac.kr/node-provision-namespace':ns}
     env=sts['spec']['template']['spec']['containers'][0]['env']
-    controls={'EVAL_COMPLETION_AUDIT':1,'EVAL_LIFECYCLE_EVENTS':1,'NCCL_IB_DISABLE':1,'FLUIDCR_CHECKPOINT_WATCHDOG_TIMEOUT':240,'CTRL_CHECKPOINT_TIMEOUT':300,'FLUIDCR_DISABLE_ENUMERATE_PATCH':1,'FLUIDCR_DISABLE_ITER_PATCH':1,'FLUIDCR_DISABLE_EPOCH_RANGE_PATCH':1}
+    controls={'FLUIDCR_REUSE_UNCHANGED_CHECKPOINT':buffer_reuse,'EVAL_COMPLETION_AUDIT':1,'EVAL_LIFECYCLE_EVENTS':1,'NCCL_IB_DISABLE':1,'FLUIDCR_CHECKPOINT_WATCHDOG_TIMEOUT':240,'CTRL_CHECKPOINT_TIMEOUT':300,'FLUIDCR_DISABLE_ENUMERATE_PATCH':1,'FLUIDCR_DISABLE_ITER_PATCH':1,'FLUIDCR_DISABLE_EPOCH_RANGE_PATCH':1}
     if model=='resnet50':controls.update(EVAL_MOMENTUM=c['momentum'],EVAL_WEIGHT_DECAY=c['weight_decay'])
     env[:]=[e for e in env if e['name'] not in controls];env.extend({'name':k,'value':str(v)} for k,v in controls.items())
     workload=canonical_hash({k:c.get(k) for k in lock_fields+('world_size','instance_type','nfs_server','nfs_model_path','nfs_dataset_path')})
-    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':risk['spec'],'risk_lock':c.get('risk_lock_sha256'),'route':'full-group','group_replacement_batch_size':batch,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
+    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':risk['spec'],'risk_lock':c.get('risk_lock_sha256'),'route':'full-group','group_replacement_batch_size':batch,'checkpoint_buffer_reuse':buffer_reuse,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
     info.update(protocol=PROTOCOL,arm=condition,condition=condition,experiment='E1/E2' if condition!='C' else 'E2',
-                world_size=4,group_replacement_batch_size=batch,max_expected_worker_instances=4 if condition=='A' else 4+batch,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
+                world_size=4,checkpoint_buffer_reuse=buffer_reuse,group_replacement_batch_size=batch,max_expected_worker_instances=4 if condition=='A' else 4+batch,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
                 formal_E1_E2_result=False,purpose=c['purpose'],manual_checkpoint_diagnostic=manual,completion_audit_required=True,
                 workload_lock_sha256=workload,comparison_lock_sha256=comparison,
                 tokens_per_committed_step=4*c['batch_size']*c['sequence_length'] if model=='gpt2' else None,

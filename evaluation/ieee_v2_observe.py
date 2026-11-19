@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime, timezone
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -74,7 +75,37 @@ def log_events(text, info, pod):
         yield e
 
 
-POLICY_FIELDS = set("policyUID policyNamespace policyName policyGeneration workloadUID riskName riskGeneration riskObservedGeneration riskObservedAt riskValidUntil riskFresh lambdaPerHour riskSource method vmPolicySource vmPolicyStage decisionStage intervalSource intervalCostEvaluated onDemandWorkers spotWorkers costEvaluated economicsSource checkpointIntervalSeconds onDemandHoldUntil reason decisionObservedAt".split())
+def launcher_io_events(text, info, pod):
+    """CRI-timestamped local I/O observations, separate from optimizer progress."""
+    app=info.get('app');name=pod['metadata']['name'];uid=pod['metadata'].get('uid')
+    if not app or not uid or not name.startswith(app+'-'):return
+    try:rank=int(name[len(app)+1:])
+    except ValueError:return
+    world=info['world_size']
+    if name!=app+'-'+str(rank) or world not in (2,4) or rank not in range(world):return
+    expected=next((e.get('value') for c in pod['spec']['containers'] if c['name']=='trainer' for e in c.get('env',[]) if e['name']=='EVAL_RUN_ID'),None)
+    if expected!=info['run_id']:raise ValueError('Pod trainer run_id mismatch')
+    after=timestamp(pod['metadata']['creationTimestamp'])
+    if info.get('started_at'):after=max(after,timestamp(info['started_at']))
+    prefix='[Launcher lifecycle] checkpoint_buffer_materialized '
+    for line in text.splitlines():
+        if prefix not in line:continue
+        try:
+            at=line.split(' ',1)[0]
+            if timestamp(at)<after:continue
+            raw=json.loads(line.split(prefix,1)[1])
+            n,w,t=raw['buffer_bytes'],raw['written_bytes'],raw['elapsed_seconds']
+            if type(n) is not int or n<0 or type(w) is not int or type(t) not in (int,float) or not math.isfinite(t) or t<0:continue
+            mode=raw['mode']
+            if mode not in ('reuse-identical','atomic-write') or w!=(0 if mode=='reuse-identical' else n):continue
+        except (TypeError,ValueError,KeyError):continue
+        yield dict(event='launcher_checkpoint_io',timestamp=at,run_id=expected,rank=rank,world_size=world,
+                   pod_uid=uid,pod_name=name,node=pod['spec'].get('nodeName',''),mode=mode,
+                   buffer_bytes=n,written_bytes=w,elapsed_seconds=t,
+                   event_semantics='launcher-local compare/write/fsync; NOT training progress or full restore latency')
+
+
+POLICY_FIELDS = set("decisionActor observationSemantics alpha forecastHorizonSeconds spotPricePerHour onDemandPricePerHour priceEvaluated lossCostPerEviction lossCostObservedAt onDemandDurationSeconds checkpointSeconds copySeconds checkpointCostsObservedAt checkpointMinSeconds checkpointMaxSeconds paperAsyncProfileEnabled iterationTimeSeconds iterationObservedAt globalStep worldSize readyRanks runtimeReadyForCheckpoint policyUID policyNamespace policyName policyGeneration workloadUID riskName riskGeneration riskObservedGeneration riskObservedAt riskValidUntil riskFresh lambdaPerHour riskSource method vmPolicySource vmPolicyStage decisionStage intervalSource intervalCostEvaluated onDemandWorkers spotWorkers costEvaluated economicsSource checkpointIntervalSeconds onDemandHoldUntil reason decisionObservedAt".split())
 
 
 def policy_events(text, policy_uid, namespace):
@@ -134,12 +165,17 @@ class Observer:
         if self.kubeconfigs.get('mgmt') and policy_uid:
             try:
                 since = self.info.get('started_at', instant)
-                cmd = ['kubectl', '--kubeconfig='+self.kubeconfigs['mgmt'], '--request-timeout=15s',
-                       '-n', 'hybridspot-system', 'logs', 'deployment/spot-vm-management-controller',
-                       '--timestamps=true', '--since-time='+since, '--limit-bytes=10000000']
-                p = subprocess.run(cmd, text=True, capture_output=True, timeout=25)
-                if p.returncode:raise RuntimeError('policy logs unavailable')
-                save(target / 'policy-decisions.json', list(policy_events(p.stdout, policy_uid, self.ns)))
+                decision_rows=[]
+                for component in ('spot-vm-management-controller','checkpoint-recovery-coordinator'):
+                    cmd = ['kubectl', '--kubeconfig='+self.kubeconfigs['mgmt'], '--request-timeout=15s',
+                           '-n', 'hybridspot-system', 'logs', 'deployment/'+component,
+                           '--timestamps=true', '--since-time='+since, '--limit-bytes=10000000']
+                    p = subprocess.run(cmd, text=True, capture_output=True, timeout=25)
+                    if p.returncode:
+                        errors.append({'operation':'policy_decision_logs','component':component,'error':'unavailable'});continue
+                    rows=list(policy_events(p.stdout,policy_uid,self.ns));decision_rows.extend(rows)
+                    save(target / (component+'-decisions.json'), rows)
+                save(target / 'policy-decisions.json',decision_rows)
             except (RuntimeError, ValueError, subprocess.TimeoutExpired):
                 errors.append({'operation':'policy_decision_logs','error':'unavailable'})
         if self.aws_reader:
@@ -154,17 +190,22 @@ class Observer:
             except (RuntimeError, ValueError, subprocess.TimeoutExpired):
                 errors.append({'operation':'exact_instance_ledger', 'error':'unavailable_or_identity_mismatch'})
         events = []
+        io_events = []
         for pod in pods:
             if pod.get('metadata', {}).get('labels', {}).get('training.dcnlab.com/evaluation-run') != self.info['run_id']:
                 continue
             try:
-                text = self.command('aws', 'logs', pod['metadata']['name'], '-c', 'trainer', '--limit-bytes=10000000')
+                text = self.command('aws', 'logs', pod['metadata']['name'], '-c', 'trainer', '--timestamps=true', '--limit-bytes=10000000')
                 events.extend(log_events(text, self.info, pod))
+                io_events.extend(launcher_io_events(text, self.info, pod))
             except (RuntimeError, ValueError, subprocess.TimeoutExpired):
                 errors.append({'pod_uid':pod['metadata']['uid'], 'error':'trainer_logs_unavailable'})
         # Per-snapshot original sanitized observations are immutable. Cumulative
         # JSONL may repeat observations; metrics/export deduplicate exact events.
         save(target / 'training-events.json', events)
+        save(target / 'launcher-io-events.json', io_events)
+        with (self.directory / 'launcher-io-events.jsonl').open('a') as f:
+            for e in io_events:f.write(json.dumps(e,sort_keys=True)+'\n')
         with (self.directory / 'training-events.jsonl').open('a') as f:
             for e in events:
                 f.write(json.dumps(e, sort_keys=True) + '\n')

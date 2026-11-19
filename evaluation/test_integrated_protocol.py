@@ -40,6 +40,17 @@ class IntegratedProtocolTests(unittest.TestCase):
         for value in (0,5,True,2.5,'3',None):
             bad=dict(self.c,group_replacement_batch_size=value)
             with self.assertRaisesRegex(ValueError,'batch_size'):v3.render(bad,self.source,'badbatch','B')
+    def test_checkpoint_buffer_io_mode_is_locked_between_bc(self):
+        b=v3.render(self.c,self.source,'reuseb','B')[0]
+        c,_,objects,_=v3.render(self.c,self.source,'reusec','C')
+        self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
+        env={e['name']:e.get('value') for o in objects if o['kind']=='StatefulSet' for e in o['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(env['FLUIDCR_REUSE_UNCHANGED_CHECKPOINT'],'1')
+        self.c['checkpoint_buffer_reuse']=0
+        self.assertNotEqual(b['comparison_lock_sha256'],v3.render(self.c,self.source,'noreuse','C')[0]['comparison_lock_sha256'])
+        for bad in (True,'1',2,None):
+            self.c['checkpoint_buffer_reuse']=bad
+            with self.assertRaisesRegex(ValueError,'buffer_reuse'):v3.render(self.c,self.source,'badreuse','B')
     def test_static_or_unfrozen_formal_config_rejected(self):
         self.c['purpose']='formal'
         with self.assertRaises(ValueError):v3.render(self.c,self.source,'bad','C')

@@ -31,3 +31,8 @@ CPU controller tests는 양방향 3개 목적지/1개 full-world request, 미준
 배포 및 평가
 spot-vm-management-controller와 checkpoint-recovery-coordinator 두 프로세스에 모두 새 코드가 필요하다. 한 프로세스만 업그레이드한 상태에서 batch를 활성화하지 않는다. idle 확인 후 두 이미지로 배포한다. Member 이미지와 CRD는 그대로 사용한다.
 현재 평가 NodeRequest는 모두 정리된 상태이므로 활성 batch 실행은 없다. 정식 B/C에는 같은 batch-size·이미지·하드웨어·가격·CP bounds·위험 clock을 동결해야 한다. 7VM 피크와 최종4OD32vCPU를 실제로 수용하는지는 미확인이다. 배치 전환의 GPU 검증 및 전환 지연·중단시간·rollback·추가 VM 비용 측정이 남아 있다. 세 번의 restore를 한 번으로 줄이는 코드 경로와 end-to-end 실제 속도 개선은 구분한다.
+
+2026-11-19 방법론 적용 시 주의
+교수님 피드백 최종 방법론을 우선한다. 기존 batch 경로의 CPU 검사와 idle
+배포는 재사용하되 실제 GPU batch restore 검증으로 기록하지 않는다.
+새 payload의 byte-identical buffer reuse도 실제 GPU round와 연결해야 한다.

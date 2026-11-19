@@ -203,6 +203,7 @@ func (r *CheckpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		input.Checkpoint.MeasuredCosts = *measuredCosts
 	}
 	decision := trainingpolicy.DecideAt(input, runtimeSnapshot, riskSnapshot, now)
+	logEvaluationDecision(ctx, "checkpoint-coordinator", input, runtimeSnapshot, riskSnapshot, decision, now)
 	if !trainingpolicy.RiskFreshForPolicy(input, riskSnapshot, nowOr(r.Clock)) {
 		status := trainingpolicy.CheckpointStatus("", decision.CheckpointIntervalSeconds, r.now(), "risk_not_fresh")
 		applyMeasuredCostsStatus(status, measuredCosts)
