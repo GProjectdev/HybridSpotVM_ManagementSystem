@@ -28,6 +28,17 @@ class FinalFISTests(unittest.TestCase):
         args=[c.args[1] for c in self.live.cloud.command.call_args_list];self.assertEqual(args,['create-experiment-template','start-experiment'])
         with self.assertRaisesRegex(ValueError,'existing intent'):self.start()
         self.assertEqual(self.live.cloud.command.call_count,2)
+    def test_formal_four_rank_window_expiry_prevents_dispatch_with_fresh_progress(self):
+        self.run.update(protocol='HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118',
+                        purpose='formal',world_size=4,arm='C',namespace='eval-v3-case18')
+        self.live.snapshot.return_value=(self.scope,{'ready':True,
+            'progress_valid_until_utc':'2026-11-18T01:00:20Z',
+            'risk_window_valid_until_utc':NOW})
+        self.plan()
+        with self.assertRaisesRegex(ValueError,'native risk window expired'):
+            self.start()
+        self.assertEqual(self.live.cloud.command.call_count,1)
+        self.assertEqual(self.live.cloud.command.call_args.args[1],'create-experiment-template')
     def test_target_replacement_after_template_creation_never_dispatches(self):
         self.plan();self.live.snapshot.side_effect=[(self.scope,{'ready':True,'progress_valid_until_utc':'2026-11-18T01:00:20Z'}),(dict(self.scope,instance_id='i-0123456789abcdef2'),{'ready':True,'progress_valid_until_utc':'2026-11-18T01:00:20Z'})]
         with self.assertRaisesRegex(ValueError,'changed during'):self.start()

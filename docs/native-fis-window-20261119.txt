@@ -1,0 +1,18 @@
+Formal four-rank FIS native-clock gate — 2026-11-19
+
+The shared comparison contract now includes fault_window (source NodeRequest
+creationTimestamp anchor, transition3600s, FIS notice120s, proposed margin120s).
+The margin is a researcher-reviewable operational reserve, not a paper-derived
+constant or measured quantile. Final settings remain DRAFT pending confirmation.
+
+A formal C live snapshot calculates the last allowable dispatch from the actual
+source policy creation timestamp. It refuses dispatch when notice plus margin
+would reach the native transition. Template creation and the final alarm query
+can consume time; the returned deadline is checked again immediately before
+start-experiment. Missing window contracts fail closed on the live formal path.
+Historical acceptance and two-rank routes remain compatible. A failed eligibility
+check never changes the frozen goal, risk input, target or50percent trigger.
+
+Tests exercise the boundary, missing/future input and fresh progress with an
+expired risk window after template creation. No new live FIS was executed.
+This bounds dispatch eligibility, not future Spot supply or recovery completion.

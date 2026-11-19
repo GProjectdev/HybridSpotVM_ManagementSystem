@@ -5,7 +5,7 @@ Run, reviewed role/alarm, live checks again after template creation, and a
 30-minute recovery reserve. No IAM, VM, or alarm creation is performed here.
 """
 import argparse
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 import json,os,re,subprocess,uuid
 from pathlib import Path
 try:
@@ -22,6 +22,21 @@ except ImportError:
     from collect import timestamp
 
 LABEL='training.dcnlab.com/'
+
+def risk_window_deadline(run,source_created_at,now):
+    """Formal native replay: refuse late faults; never shift the frozen trigger."""
+    if run.get('purpose')!='formal' or run.get('world_size')!=4:
+        return None
+    w=run.get('fault_window',{})
+    if (w.get('anchor')!='source NodeRequest creationTimestamp'
+        or w.get('transition_after_seconds')!=3600 or w.get('notice_seconds')!=120
+        or type(w.get('margin_seconds')) is not int or w['margin_seconds']<0):
+        raise ValueError('formal native risk window contract required')
+    origin=timestamp(source_created_at)
+    if timestamp(now)<origin:raise ValueError('future source policy creation time')
+    deadline=origin+timedelta(seconds=3600-120-w['margin_seconds'])
+    if timestamp(now)>=deadline:raise ValueError('FIS notice/margin overlaps native risk transition; do not retime or retarget')
+    return deadline.isoformat()
 
 def validate_run(run,now):
     v3=run.get('protocol')=='HybridSpotDDP-E1E2-ABC-all4rank-v3-20261118'
@@ -124,7 +139,9 @@ class Live:
             if not any(durable_group_checkpoint(x,r,current) for x in cps):raise ValueError('durable complete current four-rank checkpoint required')
         # Re-evaluate after bounded reads rather than granting freshness at read start.
         observed=datetime.now(timezone.utc).isoformat();validate_run(r,observed)
+        risk_deadline=risk_window_deadline(r,policy['metadata'].get('creationTimestamp'),observed)
         gate=check(r,events,now=observed,current_pods=current)
+        if risk_deadline:gate['risk_window_valid_until_utc']=risk_deadline
         scope={'run_id':r['run_id'],'policy_uid':r['policy_uid'],'workload_uid':r['workload_uid'],'nodeprovision_uid':spot['metadata']['uid'],'instance_id':iid,'od_instance_id':odid,'comparison_lock_sha256':r['comparison_lock_sha256'],'live_spec_sha256':r['live_spec_sha256'],'policy_generation':policy['metadata'].get('generation'),'workload_generation':workload['metadata'].get('generation'),'member_workload_uid':member_uid,'source_pods':{str(rank):uid for rank,uid in current.items()}}
         return scope,gate
     def alarm_ok(self,arn,scope):
@@ -178,6 +195,9 @@ def start(directory,run,live,confirm,now):
     if next_scope!=scope or not next_gate['ready'] or not live.alarm_ok(alarm,scope):raise ValueError('target/progress/health changed during template creation; not started')
     dispatch_at=datetime.now(timezone.utc).isoformat();validate_run(run,dispatch_at)
     if not next_gate.get('progress_valid_until_utc') or timestamp(dispatch_at)>timestamp(next_gate['progress_valid_until_utc']):raise ValueError('progress expired during final health check; not started')
+    if run.get('purpose')=='formal' and run.get('world_size')==4:
+        if not next_gate.get('risk_window_valid_until_utc') or timestamp(dispatch_at)>=timestamp(next_gate['risk_window_valid_until_utc']):
+            raise ValueError('native risk window expired during final health check; not started')
     intent.update(state='start_requested',template_id=created['experimentTemplate']['id'],gate=next_gate)
     save(directory/'fis-start-intent.json',intent)
     try:

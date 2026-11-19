@@ -90,7 +90,7 @@ def render(config, source, run_id, condition):
     if model=='resnet50':controls.update(EVAL_MOMENTUM=c['momentum'],EVAL_WEIGHT_DECAY=c['weight_decay'])
     env[:]=[e for e in env if e['name'] not in controls];env.extend({'name':k,'value':str(v)} for k,v in controls.items())
     workload=canonical_hash({k:c.get(k) for k in lock_fields+('world_size','instance_type','nfs_server','nfs_model_path','nfs_dataset_path')})
-    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':c['existing_risk_spec'],'risk_lock':c.get('risk_lock_sha256'),'route':'full-group','group_replacement_batch_size':batch,'checkpoint_buffer_reuse':buffer_reuse,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
+    comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':c['existing_risk_spec'],'risk_lock':c.get('risk_lock_sha256'),'fault_window':c.get('fault_window'),'route':'full-group','group_replacement_batch_size':batch,'checkpoint_buffer_reuse':buffer_reuse,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
     info.update(protocol=PROTOCOL,arm=condition,condition=condition,experiment='E1/E2' if condition!='C' else 'E2',
                 world_size=4,checkpoint_buffer_reuse=buffer_reuse,group_replacement_batch_size=batch,max_expected_worker_instances=4 if condition=='A' else 4+batch,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
                 formal_E1_E2_result=False,purpose=c['purpose'],manual_checkpoint_diagnostic=manual,completion_audit_required=True,
@@ -100,6 +100,8 @@ def render(config, source, run_id, condition):
                 checkpoint_lock_sha256=canonical_hash(cp),scheduled_fis=condition=='C',
                 fault_trigger={'type':'committed_global_step','value':math.ceil(c['goal_steps']/2),'status':'PREDECLARED'} if condition=='C' else None)
     info['render_sha256']=canonical_hash({'member':storage,'objects':objects,'policy':policy})
+    if c.get('fault_window') is not None:
+        info['fault_window']=copy.deepcopy(c['fault_window'])
     if feed_template:
         info['risk_transport_binding']={'feed_endpoint_template':feed_template,'feed_endpoint':feed_endpoint,'namespace':ns}
     return info,storage,objects,policy
