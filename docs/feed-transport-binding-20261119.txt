@@ -1,0 +1,17 @@
+Transport-only binding for matched B/C — 2026-11-19
+
+A formal renderer previously hashed each concrete risk-feed URL into the common
+comparison lock. Isolated per-run namespaces produce different service names;
+therefore identical forecasts/policy could not yield matching B/C hashes.
+The renderer now accepts an explicit {namespace} token in paperEstimator.feedEndpoint.
+The exact template remains in the common risk contract. Only that token expands
+in the rendered SpotRiskProfile and run.risk_transport_binding. The full concrete
+API manifests remain protected by render_sha256. A different feed path/template
+still changes the common lock; forecast/risk-clock hash remains required.
+No forecast or controller algorithm changes. Native hourly replay and source
+NodeRequest creationTimestamp anchor remain required. Static/discrete diagnostic
+risk inputs still cannot pass the formal renderer guard.
+Test: distinct B/C namespaces resolve to distinct concrete URLs with an identical
+common comparison hash; changing the feed path changes that hash. Evaluation
+Python suite310 tests passed,2skipped. No GPU recheck is required for URL rendering.
+This change does not imply that an actual formal B/C run has completed.

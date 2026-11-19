@@ -60,6 +60,19 @@ class IntegratedProtocolTests(unittest.TestCase):
         c=v3.render(self.c,self.source,'uncappedc','C')[0]
         self.assertNotIn('maxIntervalSeconds',policy['spec']['checkpoint'])
         self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
+    def test_run_scoped_feed_transport_preserves_common_bc_contract(self):
+        risk=self.c['existing_risk_spec'];risk.pop('staticLambdaPerHour',None)
+        template='https://risk-replay.{namespace}.svc:8443/risk'
+        risk['paperEstimator']={'method':'sarima','feedEndpoint':template}
+        b,_,objects_b,_=v3.render(self.c,self.source,'feedb','B')
+        c,_,objects_c,_=v3.render(self.c,self.source,'feedc','C')
+        self.assertEqual(b['comparison_lock_sha256'],c['comparison_lock_sha256'])
+        for info,objects in ((b,objects_b),(c,objects_c)):
+            endpoint=next(o for o in objects if o['kind']=='SpotRiskProfile')['spec']['paperEstimator']['feedEndpoint']
+            self.assertEqual(endpoint,template.replace('{namespace}',info['namespace']))
+            self.assertEqual(info['risk_transport_binding']['feed_endpoint'],endpoint)
+        risk['paperEstimator']['feedEndpoint']=template.replace('/risk','/different-input')
+        self.assertNotEqual(b['comparison_lock_sha256'],v3.render(self.c,self.source,'otherfeed','B')[0]['comparison_lock_sha256'])
     def test_changed_replacement_or_storage_cannot_reuse_bc_baseline(self):
         b=v3.render(self.c,self.source,'base','B')[0]['comparison_lock_sha256']
         for change in ({'existing_replacement':{'enabled':False}},{'checkpoint_size':'20Gi'},{'storage_class':'other-nfs'}):
