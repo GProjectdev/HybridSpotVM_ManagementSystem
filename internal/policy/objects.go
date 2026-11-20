@@ -169,6 +169,7 @@ func PolicyStatus(decision Decision, observedAt time.Time) map[string]interface{
 		"forecastHorizonSeconds":                decision.ForecastHorizonSeconds,
 		"lambdaPerHour":                         decision.LambdaPerHour,
 		"checkpointIntervalSeconds":             decision.CheckpointIntervalSeconds,
+		"checkpointSafetyMaximumSeconds":        MaximumCheckpointIntervalSeconds,
 		"costEvaluated":                         decision.CostEvaluated,
 		"intervalCostEvaluated":                 decision.IntervalCostEvaluated,
 		"provisioningBlocked":                   decision.ProvisioningBlocked,
@@ -180,15 +181,16 @@ func PolicyStatus(decision Decision, observedAt time.Time) map[string]interface{
 
 func CheckpointStatus(name string, intervalSeconds int64, observedAt time.Time, reason string) map[string]interface{} {
 	return map[string]interface{}{
-		"observedAt":                  observedAt.UTC().Format(time.RFC3339),
-		"lastMigrationName":           name,
-		"checkpointIntervalSeconds":   intervalSeconds,
-		"reason":                      reason,
-		"deduplication":               "restart,inflight,emergency,no-catchup",
-		"sourcePropagationPolicyOnly": true,
-		"periodicQuiesced":            false,
-		"replacementOperation":        nil,
-		"message":                     nil,
+		"observedAt":                     observedAt.UTC().Format(time.RFC3339),
+		"lastMigrationName":              name,
+		"checkpointIntervalSeconds":      intervalSeconds,
+		"checkpointSafetyMaximumSeconds": MaximumCheckpointIntervalSeconds,
+		"reason":                         reason,
+		"deduplication":                  "restart,inflight,emergency,no-catchup",
+		"sourcePropagationPolicyOnly":    true,
+		"periodicQuiesced":               false,
+		"replacementOperation":           nil,
+		"message":                        nil,
 	}
 }
 

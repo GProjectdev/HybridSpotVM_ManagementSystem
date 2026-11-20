@@ -8,14 +8,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestPositiveRiskHasNoDefaultTenMinuteCap(t *testing.T) {
+func TestPositiveRiskUsesHourlySafetyMaximum(t *testing.T) {
 	now := time.Date(2026, 11, 19, 4, 0, 0, 0, time.UTC)
 	cp := CheckpointPolicy{MeasuredCosts: MeasuredCosts{CheckpointSeconds: 120, CopySeconds: 60, ObservedAt: now.Format(time.RFC3339)}}
 	seconds, evaluated, source := CheckpointIntervalDecision(cp, RiskSnapshot{Ready: true, LambdaPerHour: .001}, RuntimeSnapshot{}, 3, now)
-	// Independent continuous optimum sqrt(2*120/(3*.001/3600))
-	// is 16970.5627; compare the two adjacent integer objective values.
-	if seconds != 16971 || !evaluated || source != "checkpoint-cost-analytic" {
-		t.Fatalf("unexpected uncapped optimum: %d %v %s", seconds, evaluated, source)
+	// The unconstrained optimum is16971s, but policy safety bounds it to1h.
+	if seconds != 3600 || !evaluated || source != "checkpoint-cost-analytic" {
+		t.Fatalf("unexpected bounded optimum: %d %v %s", seconds, evaluated, source)
 	}
 	cp.MaxIntervalSeconds = 600
 	if seconds, evaluated, _ := CheckpointIntervalDecision(cp, RiskSnapshot{Ready: true, LambdaPerHour: .001}, RuntimeSnapshot{}, 3, now); seconds != 600 || !evaluated {
@@ -63,16 +62,16 @@ func TestExplicitHourlyProtectionBoundsLowRiskButRemainsAdaptive(t *testing.T) {
 	}
 }
 
-func TestUncappedCostFreshnessTracksSelectedIntervalWithoutRetimestamping(t *testing.T) {
+func TestCostFreshnessHonorsHourlySafetyBoundWithoutRetimestamping(t *testing.T) {
 	now := time.Now().UTC()
 	cp := CheckpointPolicy{LastIntervalSeconds: 16971}
-	if age := CheckpointCostMaxAge(cp); age != 17571*time.Second {
+	if age := CheckpointCostMaxAge(cp); age != 4200*time.Second {
 		t.Fatalf("freshness used representation ceiling or old 600 seconds: %v", age)
 	}
 	for _, tc := range []struct {
 		age       time.Duration
 		evaluated bool
-	}{{30 * time.Minute, true}, {17571 * time.Second, true}, {17572 * time.Second, false}, {-time.Second, false}} {
+	}{{30 * time.Minute, true}, {4200 * time.Second, true}, {4201 * time.Second, false}, {-time.Second, false}} {
 		cp.MeasuredCosts = MeasuredCosts{CheckpointSeconds: 120, CopySeconds: 60, ObservedAt: now.Add(-tc.age).Format(time.RFC3339Nano)}
 		original := cp.MeasuredCosts.ObservedAt
 		_, evaluated := AdaptiveCheckpointInterval(cp, RiskSnapshot{Ready: true, LambdaPerHour: .001}, RuntimeSnapshot{}, 3, now)
@@ -82,10 +81,26 @@ func TestUncappedCostFreshnessTracksSelectedIntervalWithoutRetimestamping(t *tes
 	}
 }
 
-func TestDefaultBoundsOnlyUseSchedulerRepresentation(t *testing.T) {
+func TestDefaultBoundsUseHourlyPolicyInvariant(t *testing.T) {
 	lower, upper, err := checkpointIntervalBounds(CheckpointPolicy{MinIntervalSeconds: 1000})
-	if err != nil || lower != 1000 || upper != math.MaxInt32 {
+	if err != nil || lower != 1000 || upper != 3600 {
 		t.Fatalf("default bounds=%d..%d err=%v", lower, upper, err)
+	}
+}
+
+func TestUserSettingsCannotDisableHourlyCheckpointSafety(t *testing.T) {
+	for _, maximum := range []int64{0, 3600, 3601, 86400, math.MaxInt32} {
+		cp := CheckpointPolicy{MinIntervalSeconds: 60, MaxIntervalSeconds: maximum}
+		lo, hi, err := checkpointIntervalBounds(cp)
+		if err != nil || lo != 60 || hi != 3600 {
+			t.Fatalf("maximum=%d bounds=%d..%d err=%v", maximum, lo, hi, err)
+		}
+		if got := applyIntervalBounds(86400, cp); got != 3600 {
+			t.Fatalf("maximum=%d returned %d", maximum, got)
+		}
+	}
+	if _, _, err := checkpointIntervalBounds(CheckpointPolicy{MinIntervalSeconds: 3601}); err == nil {
+		t.Fatal("minimum above policy ceiling accepted")
 	}
 }
 

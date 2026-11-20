@@ -24,6 +24,7 @@ func evaluationDecisionFields(actor string, input p.PolicyInput, runtime p.Runti
 		"checkpointIntervalSeconds", decision.CheckpointIntervalSeconds, "intervalSource", decision.IntervalSource, "intervalCostEvaluated", decision.IntervalCostEvaluated,
 		"checkpointSeconds", input.Checkpoint.MeasuredCosts.CheckpointSeconds, "copySeconds", input.Checkpoint.MeasuredCosts.CopySeconds, "checkpointCostsObservedAt", input.Checkpoint.MeasuredCosts.ObservedAt,
 		"checkpointMinSeconds", input.Checkpoint.MinIntervalSeconds, "checkpointMaxSeconds", input.Checkpoint.MaxIntervalSeconds, "paperAsyncProfileEnabled", input.Checkpoint.Paper.Enabled,
+		"checkpointSafetyMaximumSeconds", p.MaximumCheckpointIntervalSeconds, "checkpointSafetyMaximumReached", decision.CheckpointIntervalSeconds == p.MaximumCheckpointIntervalSeconds,
 		"iterationTimeSeconds", runtime.IterationTimeSeconds, "iterationObservedAt", runtime.IterationObservedAt, "globalStep", runtime.GlobalStep, "worldSize", runtime.WorldSize, "readyRanks", runtime.ReadyRanks,
 		"runtimeReadyForCheckpoint", p.RuntimeReadyForCheckpoint(input, runtime, now), "onDemandHoldUntil", decision.OnDemandHoldUntil, "reason", decision.Reason,
 		"decisionObservedAt", now.UTC().Format(time.RFC3339Nano),

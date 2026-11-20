@@ -454,16 +454,19 @@ func MeasuredCostMaxAge(maxIntervalSeconds int64) time.Duration {
 	return time.Duration(maxIntervalSeconds)*time.Second + grace
 }
 
-// With no configured maximum, preserve the existing one-interval-plus-grace
-// freshness rule using the last selected interval, never the int32 ceiling.
+// Freshness follows the effective, hourly-bounded interval plus grace.
 // The original measurement timestamp remains unchanged and future/expired
 // samples are still rejected. Before any interval is selected, retain the
 // bootstrap freshness budget.
 func CheckpointCostMaxAge(checkpoint CheckpointPolicy) time.Duration {
-	if checkpoint.MaxIntervalSeconds != 0 {
-		return MeasuredCostMaxAge(checkpoint.MaxIntervalSeconds)
+	interval := checkpoint.MaxIntervalSeconds
+	if interval == 0 {
+		interval = checkpoint.LastIntervalSeconds
 	}
-	return MeasuredCostMaxAge(checkpoint.LastIntervalSeconds)
+	if interval > MaximumCheckpointIntervalSeconds && interval <= math.MaxInt32 {
+		interval = MaximumCheckpointIntervalSeconds
+	}
+	return MeasuredCostMaxAge(interval)
 }
 
 func noSpotHazard(risk RiskSnapshot, spotWorkers int64) bool {

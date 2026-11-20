@@ -35,4 +35,7 @@ func TestDecisionTelemetryKeepsVariableProvenanceAndDoesNotMutatePolicy(t *testi
 	if p.DecideAt(input, rt, risk, now) != decision {
 		t.Fatal("telemetry altered policy decision")
 	}
+	if fields["checkpointSafetyMaximumSeconds"] != int64(3600) || fields["checkpointSafetyMaximumReached"] != false {
+		t.Fatal("policy safety bound provenance missing")
+	}
 }

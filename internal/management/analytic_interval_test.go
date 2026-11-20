@@ -67,7 +67,7 @@ func TestAnalyticIntervalUsesFreshEvidenceInOnePassAndUpdatesSameSchedule(t *tes
 			for _, step := range []struct {
 				lambda float64
 				want   int64
-			}{{20, 180}, {80, 90}, {.001, 25456}, {0, 3600}} {
+			}{{20, 180}, {80, 90}, {.001, 3600}, {0, 3600}} {
 				if first != nil {
 					if err := r.Get(ctx, client.ObjectKeyFromObject(risk), risk); err != nil {
 						t.Fatal(err)

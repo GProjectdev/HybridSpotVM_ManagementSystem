@@ -30,9 +30,14 @@ that checkpoint mid-restore is unsafe. No full durable round means blocked
 recovery, never a fabricated success. Partial ranks or unexported archives cannot
 be mixed. Physical NFS archive SHA verification remains a restore gate.
 
-Researcher-requested policy amendment: set spec.checkpoint.maxIntervalSeconds
-to3600 with minIntervalSeconds60/resume=true in the new B/C execution contract.
-The existing analytic optimizer is unchanged, choosing within60..3600s.
+Researcher-requested policy amendment: MaximumCheckpointIntervalSeconds=3600 is
+enforced inside the policy interval bounds, including omitted/user-raised max.
+Users may lower the maximum but cannot raise or disable this safety invariant.
+A minimum above3600 is rejected before scheduling. The new B/C contract also
+records explicit maxIntervalSeconds3600, minIntervalSeconds60/resume=true.
+The objective/risk estimator is unchanged; optimization is now constrained to
+the safety interval. Cost measurement freshness follows the effective maximum
+plus existing600s grace without retimestamping observations.
 This constrains scheduled interval, not guaranteed maximum recoverable-work age:
 the member scheduler waits from prior completion, and checkpoint duration,
 failed export, paused schedule or active recovery can add delay. Record actual

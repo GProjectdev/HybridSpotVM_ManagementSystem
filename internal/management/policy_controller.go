@@ -198,6 +198,9 @@ func validatePolicyInput(input trainingpolicy.PolicyInput) error {
 	if input.Checkpoint.MinIntervalSeconds < 0 || input.Checkpoint.MaxIntervalSeconds < 0 || input.Checkpoint.MinIntervalSeconds > math.MaxInt32 || input.Checkpoint.MaxIntervalSeconds > math.MaxInt32 {
 		return fmt.Errorf("checkpoint interval bounds must fit the member scheduler's positive int32 seconds")
 	}
+	if input.Checkpoint.MinIntervalSeconds > trainingpolicy.MaximumCheckpointIntervalSeconds {
+		return fmt.Errorf("checkpoint minimum cannot exceed policy safety maximum %d seconds", trainingpolicy.MaximumCheckpointIntervalSeconds)
+	}
 	return nil
 }
 
