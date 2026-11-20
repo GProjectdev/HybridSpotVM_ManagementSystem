@@ -153,6 +153,21 @@ class Control:
         save(self.d/'cleanup-owned-instance-identities.json',known)
         if p:
             if p['metadata']['uid']!=r['policy_uid']:raise ValueError('recreated policy; refuse cleanup')
+            # Operational amendment: bind successful completion BEFORE deletion.
+            # Invalid/missing success evidence never relaxes training monitoring
+            # and must not prevent the pre-existing normal abort cleanup path.
+            if (self.d/'formal-completion-observed.json').exists():
+                try:
+                    try:
+                        from .operational_watch import enter_cleanup,cleanup_phase
+                    except ImportError:
+                        from operational_watch import enter_cleanup,cleanup_phase
+                    now=datetime.now(timezone.utc)
+                    if (self.d/'cleanup-phase.json').exists():cleanup_phase(self.d,r,now)
+                    else:enter_cleanup(self.d,r,now)
+                except (ValueError,KeyError,TypeError,OSError) as error:
+                    save(self.d/'cleanup-phase-rejected.json',{'at':datetime.now(timezone.utc).isoformat(),
+                         'error':type(error).__name__,'training_monitor_not_relaxed':True})
             self.kub('karmada','-n',r['namespace'],'patch','noderequest',r['policy'],'--type=json','--patch-file=/dev/stdin',obj=[{'op':'test','path':'/metadata/uid','value':r['policy_uid']},{'op':'add','path':'/metadata/annotations/training.dcnlab.com~1suspend','value':'true'}])
         sts=self.get('karmada','statefulset',r['app'])
         if sts:

@@ -1,11 +1,14 @@
 """Read-only, fresh-namespace evidence collector for IEEE Access v2 runs.
 
-Never requests Secret/ConfigMap contents or writes raw application log lines.
+Never requests Secret/ConfigMap contents. Captured trainer stdout is retained
+only in private lossless gzip frames; public metrics still use the allowlist.
 This observer is independent of the legacy runner's fixed namespace/arm names.
 """
 import argparse
 from datetime import datetime, timezone
 import fcntl
+import gzip
+import hashlib
 import json
 import math
 import os
@@ -119,6 +122,41 @@ def policy_events(text, policy_uid, namespace):
         yield {k:v for k,v in raw.items() if k in POLICY_FIELDS}
 
 
+def trainer_log_skip_reason(pod):
+    """Retired Pods remain in resource evidence, without blocking kubelet RPCs.
+
+    A Running Pod with no deletion timestamp always keeps strict log collection.
+    Final full stdout must be captured by the cleanup operator BEFORE deletion.
+    """
+    if pod['metadata'].get('deletionTimestamp'):
+        return 'deleting'
+    phase = pod.get('status', {}).get('phase')
+    if phase == 'Pending':
+        return 'phase-' + phase
+    return None  # Terminal/unknown Pods still get final logs/audits before deletion.
+
+
+def save_trainer_log_frame(target, pod_uid, text):
+    """Preserve the exact captured UTF-8 response, including duplicate lines.
+
+    This is a private capture receipt, not a guarantee of unobserved kubelet
+    history or logs generated after a node disappears. No new log RPC is made.
+    """
+    import re
+    if not re.fullmatch(r'[A-Za-z0-9_.-]+',pod_uid):
+        raise ValueError('invalid Pod UID in private log frame')
+    folder=target/'private-trainer-log-frames';folder.mkdir(mode=0o700,exist_ok=True)
+    path=folder/(pod_uid+'.log.gz');payload=text.encode('utf-8')
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(fd,'wb') as raw:
+        with gzip.GzipFile(fileobj=raw,mode='wb',compresslevel=1,mtime=0) as zipped:
+            zipped.write(payload)
+        raw.flush();os.fsync(raw.fileno())
+    return dict(pod_uid=pod_uid,path=str(path.relative_to(target)),captured_bytes=len(payload),
+                captured_utf8_sha256=hashlib.sha256(payload).hexdigest(),compressed_bytes=path.stat().st_size,
+                private=True,rpc_limit_bytes=10000000,near_rpc_limit=len(payload)>=9500000)
+
+
 class Observer:
     def __init__(self, directory, kubeconfigs, aws_reader=None):
         self.directory = Path(directory)
@@ -191,11 +229,18 @@ class Observer:
                 errors.append({'operation':'exact_instance_ledger', 'error':'unavailable_or_identity_mismatch'})
         events = []
         io_events = []
+        skipped_logs = []
+        log_frames = []
         for pod in pods:
             if pod.get('metadata', {}).get('labels', {}).get('training.dcnlab.com/evaluation-run') != self.info['run_id']:
                 continue
+            skip = trainer_log_skip_reason(pod)
+            if skip:
+                skipped_logs.append({'pod_uid':pod['metadata']['uid'], 'reason':skip})
+                continue
             try:
                 text = self.command('aws', 'logs', pod['metadata']['name'], '-c', 'trainer', '--timestamps=true', '--limit-bytes=10000000')
+                log_frames.append(save_trainer_log_frame(target,pod['metadata']['uid'],text))
                 events.extend(log_events(text, self.info, pod))
                 io_events.extend(launcher_io_events(text, self.info, pod))
             except (RuntimeError, ValueError, subprocess.TimeoutExpired):
@@ -210,6 +255,9 @@ class Observer:
             for e in events:
                 f.write(json.dumps(e, sort_keys=True) + '\n')
         save(target / 'manifest.json', {'observed_at':instant, 'namespace':self.ns, 'errors':errors,
+                                       'completed_at':datetime.now(timezone.utc).isoformat(),
+                                       'trainer_logs_skipped':skipped_logs,
+                                       'private_trainer_log_frames':log_frames,
                                        'events_sha256':canonical_hash(events)})
         return {'snapshot':str(target), 'errors':errors, 'events':len(events)}
 
