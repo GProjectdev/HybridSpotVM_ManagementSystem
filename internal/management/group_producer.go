@@ -148,6 +148,13 @@ func (r *PolicyReconciler) ensureGroupReplacement(ctx context.Context, policy *u
 		return false, fmt.Errorf("old NodeProvision no longer hosts a source rank")
 	}
 	nodes[oldNode] = stringField(replacement.Object, "status", "nodeName")
+	if event == "" && fallback == nil {
+		pairs := []groupReplacementPair{{old.GetName(), string(old.GetUID()), replacement.GetName(), string(replacement.GetUID())}}
+		round, err = r.ensurePlannedGroupCheckpoint(ctx, policy, input, operation, source, pairs)
+		if err != nil || round == nil {
+			return false, err
+		}
+	}
 	req, err := r.newGroupRequest(ctx, input, name, string(old.GetUID()), input.SourceCluster, round, source, pvc, root, nodes)
 	if err != nil {
 		return false, err

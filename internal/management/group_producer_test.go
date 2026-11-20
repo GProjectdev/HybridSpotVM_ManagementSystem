@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
+func TestEmergencyGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 	cp, input := groupCheckpointFixture()
 	input.PolicyName = "policy"
 	input.RuntimeRefName = "runtime"
@@ -71,7 +71,7 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 	r := &PolicyReconciler{Client: fixture.Client, APIReader: fixture.Client}
 	for _, stage := range []string{groupStageIntent, groupStageCapacity} {
 		r.GroupStage = stage
-		if _, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", ""); err != nil {
+		if _, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "notice"); err != nil {
 			t.Fatalf("stage %s: %v", stage, err)
 		}
 		if err := r.Get(context.Background(), client.ObjectKey{Namespace: "demo", Name: "operation-group-restore"}, newRestoreRequest()); !apierrors.IsNotFound(err) {
@@ -79,7 +79,7 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 		}
 	}
 	r.GroupStage = groupStageRequest
-	created, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "")
+	created, err := r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "notice")
 	if err != nil || !created {
 		t.Fatalf("created=%v err=%v", created, err)
 	}
@@ -101,7 +101,7 @@ func TestGroupReplacementSeparatesCurrentAndArchiveUIDs(t *testing.T) {
 		t.Fatal("unaffected rank mapping missing")
 	}
 	// A repeat must not create another request or advance identity.
-	created, err = r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "")
+	created, err = r.ensureGroupReplacement(context.Background(), policy, input, old, "operation", "replacement", "OnDemand", "notice")
 	if err != nil || created {
 		t.Fatalf("retry created=%v err=%v", created, err)
 	}

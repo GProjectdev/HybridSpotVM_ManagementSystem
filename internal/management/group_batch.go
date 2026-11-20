@@ -206,6 +206,11 @@ func (r *PolicyReconciler) ensureGroupBatchReplacement(ctx context.Context, poli
 	if waiting != "" {
 		return false, fmt.Errorf("waiting for complete batch replacement capacity: %s", waiting)
 	}
+	// Never replay an old periodic round after a planned capacity change.
+	round, err = r.ensurePlannedGroupCheckpoint(ctx, policy, input, intent.Operation, source, pairs)
+	if err != nil || round == nil {
+		return false, err
+	}
 	req, err = r.newGroupRequest(ctx, input, name, intent.OldUID, input.SourceCluster, round, source, pvc, root, nodes)
 	if err != nil {
 		return false, err

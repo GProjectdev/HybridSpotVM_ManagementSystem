@@ -1,0 +1,47 @@
+2026-11-20: planned replacement checkpoint freshness correction
+
+Observed in formal attempt gpt2-b-01 (preserved, researcher-interrupted):
+native risk hour14 lambda=0.0009212361959754303/h, measured checkpoint138s,
+copy57s,3Spot produced an uncapped18961s interval. At hour15 the policy
+prepared3OD but restored the initial Step41 round, rolling back about3100steps.
+The request was genuinely Verified; this did not make its checkpoint fresh.
+
+Correction: GroupRequest waits until all planned replacement NodeProvisions
+are Ready, then requests an operation-bound full-world FluidCRMigration.
+Source Pod UIDs, policy UID/generation, workload UID and target provider UIDs
+are pinned in an immutable receipt. RestoreRequest uses only that exact round
+after complete current-generation durable export evidence. A failed/incomplete
+round cannot silently select an old periodic checkpoint for planned migration.
+Single-worker and bounded parallel batch paths share this gate.
+
+Existing full checkpoint resume=true is preserved: a healthy old world resumes
+after checkpointing and is fenced by the existing group recovery controller.
+Thus the completion-to-fence gap can still cause limited re-execution; this is
+not a zero-rollback or zero-downtime claim. No early duplicate DDP world is run.
+Provisioner Ready includes GPU resource/TLS readiness for StatefulMigration;
+the existing target volume/archive/restore verification gates remain required.
+
+Emergency Spot interruption is different. An available notice may attempt its
+existing emergency checkpoint. Failure/pending at the interruption deadline,
+or an already unavailable world, retains the existing latest complete durable
+full-world selection/fallback path. Once handed off, its exact checkpoint UID,
+generation and checkpointID remain pinned for fencing and idempotence; changing
+that checkpoint mid-restore is unsafe. No full durable round means blocked
+recovery, never a fabricated success. Partial ranks or unexported archives cannot
+be mixed. Physical NFS archive SHA verification remains a restore gate.
+
+Researcher-requested policy amendment: set spec.checkpoint.maxIntervalSeconds
+to3600 with minIntervalSeconds60/resume=true in the new B/C execution contract.
+The existing analytic optimizer is unchanged, choosing within60..3600s.
+This constrains scheduled interval, not guaranteed maximum recoverable-work age:
+the member scheduler waits from prior completion, and checkpoint duration,
+failed export, paused schedule or active recovery can add delay. Record actual
+durable checkpoint age as well as selected interval. Extra I/O/stall/storage
+costs belong to the amended condition. The original uncapped manifest and
+interrupted result must remain unchanged and separately identifiable.
+
+No changes to Full-group Restore, CRDs, risk model, training code, dataset,
+target steps, GPU type, alpha, price policy or emergency ownership/fences.
+Tests cover fresh pending/completed/failed rounds, source/archive/target
+identity mismatch, incomplete durable export,2/4rank bounded batch, one-worker
+planned replacement, and newest-valid emergency fallback after failed saving.

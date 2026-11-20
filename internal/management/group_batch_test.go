@@ -23,6 +23,7 @@ func batchFixture(t *testing.T, reverse bool) (*PolicyReconciler, *unstructured.
 	input.PolicyName = "policy"
 	input.RuntimeRefName = "runtime"
 	input.Capacity.AWSCluster = "aws"
+	input.Checkpoint.Resume = true
 	policy := p.NewObject("NodeRequest")
 	policy.SetNamespace("demo")
 	policy.SetName("policy")
@@ -102,6 +103,9 @@ func readyBatchTargets(t *testing.T, r *PolicyReconciler, intent groupOperation,
 			t.Fatal(err)
 		}
 	}
+	if count == len(intent.Batch) {
+		completePlannedBatchCheckpoint(t, r, intent)
+	}
 }
 
 func batchRequest(t *testing.T, r *PolicyReconciler, intent groupOperation) *unstructured.Unstructured {
@@ -160,7 +164,7 @@ func TestPolicyBatchPreparesThreeVMsAndUsesOneFourRankRestoreBothDirections(t *t
 				if i > 0 {
 					want = fmt.Sprintf("new-node-%d", i-1)
 				}
-				if stringField(pod, "targetNode") != want || stringField(pod, "sourcePodUID") != fmt.Sprintf("archive-%d", i) || stringField(sources[i].(map[string]interface{}), "podUID") != fmt.Sprintf("current-%d", i) {
+				if stringField(pod, "targetNode") != want || stringField(pod, "sourcePodUID") != fmt.Sprintf("current-%d", i) || stringField(sources[i].(map[string]interface{}), "podUID") != fmt.Sprintf("current-%d", i) {
 					t.Fatalf("rank %d mapping/provenance changed: %#v", i, pod)
 				}
 			}
@@ -235,7 +239,7 @@ func markBatchVerified(t *testing.T, r *PolicyReconciler, req *unstructured.Unst
 	evidence := restoreRequest("unused", "restore-uid", 1, "node").Object["status"].(map[string]interface{})
 	evidence["verification"].(map[string]interface{})["sourceFenced"] = true
 	evidence["verification"].(map[string]interface{})["operation"] = stringField(req.Object, "spec", "groupRestore", "operationUID")
-	evidence["verification"].(map[string]interface{})["checkpointID"] = "round"
+	evidence["verification"].(map[string]interface{})["checkpointID"] = stringField(req.Object, "spec", "checkpointRef", "checkpointID")
 	evidence["verification"].(map[string]interface{})["targetCluster"] = "aws"
 	evidence["verification"].(map[string]interface{})["sourceFence"].(map[string]interface{})["operation"] = stringField(req.Object, "spec", "groupRestore", "operationUID")
 	req.Object["status"] = evidence

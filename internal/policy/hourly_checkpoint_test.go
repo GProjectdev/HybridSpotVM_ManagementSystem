@@ -42,6 +42,27 @@ func TestHourlyFallbackDoesNotRequireInventedCostMeasurements(t *testing.T) {
 	}
 }
 
+func TestExplicitHourlyProtectionBoundsLowRiskButRemainsAdaptive(t *testing.T) {
+	now := time.Now().UTC()
+	cp := CheckpointPolicy{MinIntervalSeconds: 60, MaxIntervalSeconds: 3600, MeasuredCosts: MeasuredCosts{CheckpointSeconds: 138, CopySeconds: 57, ObservedAt: now.Format(time.RFC3339)}}
+	for _, tc := range []struct {
+		lambda float64
+		spot   int64
+		want   int64
+	}{
+		{.0009212361959754303, 3, 3600}, {0, 3, 3600}, {.3458397557619131, 0, 3600},
+	} {
+		seconds, _, _ := CheckpointIntervalDecision(cp, RiskSnapshot{Ready: true, LambdaPerHour: tc.lambda}, RuntimeSnapshot{}, tc.spot, now)
+		if seconds != tc.want {
+			t.Fatalf("lambda=%g spot=%d selected=%d", tc.lambda, tc.spot, seconds)
+		}
+	}
+	seconds, evaluated, _ := CheckpointIntervalDecision(cp, RiskSnapshot{Ready: true, LambdaPerHour: .3458397557619131}, RuntimeSnapshot{}, 3, now)
+	if !evaluated || seconds <= 60 || seconds >= 3600 {
+		t.Fatalf("higher hazard must still optimize inside bounds: %d %v", seconds, evaluated)
+	}
+}
+
 func TestUncappedCostFreshnessTracksSelectedIntervalWithoutRetimestamping(t *testing.T) {
 	now := time.Now().UTC()
 	cp := CheckpointPolicy{LastIntervalSeconds: 16971}

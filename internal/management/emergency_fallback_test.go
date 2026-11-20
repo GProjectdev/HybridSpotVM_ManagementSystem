@@ -83,6 +83,30 @@ func TestEmergencyFallbackDeadlineAndOwnership(t *testing.T) {
 	}
 }
 
+func TestFailedEmergencyCheckpointUsesNewestCompleteDurableRound(t *testing.T) {
+	now := mustParseTime(t, "2026-09-28T00:02:00Z")
+	op, policy, runtime, old, replacement, partial, full, sts := emergencyFallbackFixtures(t, now)
+	markReplacementPartialFailed(partial)
+	newer := full.DeepCopy()
+	newer.SetName("newest-complete")
+	newer.SetUID("newest-complete-uid")
+	groupReport(newer)["completionTime"] = now.Add(-30 * time.Second).Format(time.RFC3339)
+	incomplete := full.DeepCopy()
+	incomplete.SetName("newer-incomplete")
+	incomplete.SetUID("incomplete-uid")
+	groupReport(incomplete)["completionTime"] = now.Add(-10 * time.Second).Format(time.RFC3339)
+	delete(groupFile(incomplete), "exportedAt")
+	r := replacementFallbackReconcilerFixture(t, now, op, policy, runtime, old, replacement, partial, full, newer, incomplete, replacementFallbackSurvivorNode(), sts)
+	spec, err := readReplacementSpec(op)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, eligible, err := r.classifyPartialToGroupFallback(context.Background(), "demo", spec)
+	if err != nil || !eligible || stringField(d.CheckpointRef, "uid") != "newest-complete-uid" {
+		t.Fatalf("decision=%+v eligible=%v err=%v", d, eligible, err)
+	}
+}
+
 func TestEmergencyFallbackWaitsForMemberAndPinsRound(t *testing.T) {
 	now := mustParseTime(t, "2026-09-28T00:02:00Z")
 	op, policy, runtime, old, replacement, partial, full, sts := emergencyFallbackFixtures(t, now)
