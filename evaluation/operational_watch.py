@@ -171,6 +171,19 @@ def file_sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def ownership_document_sha(path):
+    """Bind every ownership field while allowing equivalent JSON encodings.
+
+    The observer and cleanup operator both atomically rewrite this ledger, but
+    use different whitespace. Formatting must not look like an ownership change.
+    Completion evidence remains bound to its original, immutable file bytes.
+    """
+    document = json.loads(path.read_text())
+    encoded = json.dumps(document, sort_keys=True, separators=(',', ':'),
+                         ensure_ascii=True, allow_nan=False).encode('utf-8')
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def completion_proof(run, proof, now):
     goal = run['goal_steps']; world = run['world_size']
     if not 4 == world or not stamp(run['started_at']) <= stamp(proof['at']) <= now:
@@ -203,10 +216,10 @@ def enter_cleanup(directory, run, now):
     owned=json.loads((directory/'instance-ownership.json').read_text())
     if not owned or any(v.get('policy_uid')!=run['policy_uid'] or not v.get('nodeprovision_uid') or v.get('nodeprovision_namespace')!=run['namespace'] for v in owned.values()):
         raise ValueError('exact cleanup ownership binding required')
-    receipt=dict(schema='success-cleanup-phase-v1',at=now.isoformat(),run_id=run['run_id'],
+    receipt=dict(schema='success-cleanup-phase-v2',at=now.isoformat(),run_id=run['run_id'],
                  namespace=run['namespace'],policy_uid=run['policy_uid'],
                  frozen_manifest_sha256=run['frozen_manifest_sha256'],
-                 ownership_sha256=file_sha(directory/'instance-ownership.json'),
+                 ownership_sha256=ownership_document_sha(directory/'instance-ownership.json'),
                  completion_sha256=file_sha(directory/'formal-completion-observed.json'))
     # Atomic and exclusive: monitor never sees a partial receipt; no replacement.
     temporary=directory/('.cleanup-phase-'+__import__('uuid').uuid4().hex)
@@ -223,9 +236,13 @@ def cleanup_phase(directory, run, now):
     path=directory/'cleanup-phase.json'
     if not path.exists():return None
     r=json.loads(path.read_text())
-    if (r.get('schema')!='success-cleanup-phase-v1' or any(r.get(k)!=run.get(k) for k in
+    schema = r.get('schema')
+    ownership_sha = (ownership_document_sha(directory/'instance-ownership.json')
+                     if schema == 'success-cleanup-phase-v2'
+                     else file_sha(directory/'instance-ownership.json'))
+    if (schema not in {'success-cleanup-phase-v1', 'success-cleanup-phase-v2'} or any(r.get(k)!=run.get(k) for k in
         ('run_id','namespace','policy_uid','frozen_manifest_sha256'))
-        or r.get('ownership_sha256')!=file_sha(directory/'instance-ownership.json')
+        or r.get('ownership_sha256')!=ownership_sha
         or r.get('completion_sha256')!=file_sha(directory/'formal-completion-observed.json')
         or not stamp(run['started_at'])<=stamp(r['at'])<=now):
         raise ValueError('invalid UID-bound cleanup phase receipt')

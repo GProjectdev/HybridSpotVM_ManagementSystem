@@ -1,0 +1,40 @@
+Cleanup monitor ownership receipt encoding correction — 2026-11-20
+
+The completed gpt2-b-02 run exposed an operational receipt error after all four
+ranks reached step4800 and passed final state verification. No training settings,
+policy algorithm, controller image, original run evidence or verdict are changed
+by this correction. A new GPU run is not needed to reproduce this defect.
+
+Cause
+The observer's run.save writes indented JSON with a trailing newline. The normal
+cleanup operator writes the same ownership object without the newline. The v1
+cleanup phase receipt binds the changing ledger's raw file SHA256. Therefore a
+formatting-only atomic rewrite invalidates the phase and the safety watcher
+reports two sensor failures. The original stop record remains authoritative.
+
+Correction
+New success-cleanup-phase-v2 receipts hash the entire parsed ownership document
+as canonical JSON (sorted keys, compact separators, fixed UTF-8 encoding). Every
+field remains bound. Changed VM/NodeProvision UID, namespace, ownership membership
+or any other value still fails. Completion proof continues using its original
+file-byte SHA. Existing v1 receipts retain strict byte validation and are never
+silently upgraded or repaired.
+
+Safety and scope
+Heartbeat and essential log checks remain strict during training. Source UID,
+provider tags, positive termination evidence, price freshness, cost reserves,
+storage limits, deadline and normal cleanup protections remain unchanged.
+This Python monitoring amendment requires no controller image rebuild. It must
+be included in a future operational freeze before another paid run; the B02
+frozen runner and recorded automatic false are preserved.
+
+Validation
+27 CPU-only tests passed, including equivalent JSON encodings, changed provider
+UID rejection, legacy receipt behavior, training heartbeat/log failure, stale
+prices, unknown/foreign instances, deadlines, cost/capacity/storage boundaries.
+An isolated replay of B02's actual completion/ownership/termination/price records
+reproduced the old error and passed the v2 phase after formatting changes.
+AWS/Kubernetes/SSH sensor calls were mocked in replay; no paid resource was
+created. Original run/proof/phase/stop/cleanup evidence hashes remained unchanged.
+Replay is a counterfactual monitor validation and does not retroactively certify
+B02 as a protocol-valid run. Researcher comparison adoption remains separate.

@@ -40,6 +40,31 @@ class CleanupTests(unittest.TestCase):
     def test_receipt_cannot_be_replaced(self):
         self.enter()
         with self.assertRaises(FileExistsError):self.enter()
+    def test_equivalent_observer_and_cleanup_json_encodings_keep_phase_valid(self):
+        receipt=self.enter()
+        self.assertEqual(receipt['schema'],'success-cleanup-phase-v2')
+        path=self.d/'instance-ownership.json'
+        for sort in (False,True):
+            for indent in (None,2,4):
+                for newline in ('','\n'):
+                    path.write_text(json.dumps(self.owned,sort_keys=sort,indent=indent)+newline)
+                    self.assertEqual(cleanup_phase(self.d,self.run,self.now),receipt)
+    def test_equivalent_format_does_not_allow_changed_ownership(self):
+        self.enter()
+        changed=copy.deepcopy(self.owned)
+        changed[next(iter(changed))]['nodeprovision_uid']='foreign'
+        self.write('instance-ownership.json',changed)
+        with self.assertRaises(ValueError):cleanup_phase(self.d,self.run,self.now)
+    def test_legacy_byte_bound_receipt_remains_strict_and_unchanged(self):
+        import hashlib
+        receipt=self.enter()
+        receipt['schema']='success-cleanup-phase-v1'
+        path=self.d/'instance-ownership.json'
+        receipt['ownership_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+        self.write('cleanup-phase.json',receipt)
+        self.assertEqual(cleanup_phase(self.d,self.run,self.now),receipt)
+        path.write_text(path.read_text()+'\n')
+        with self.assertRaises(ValueError):cleanup_phase(self.d,self.run,self.now)
     def test_recreated_source_rejected(self):
         with self.assertRaises(ValueError):cleanup_policy({'metadata':{'uid':'foreign'}},self.run,True)
     def test_receipt_or_bound_inputs_tampering_fails(self):
