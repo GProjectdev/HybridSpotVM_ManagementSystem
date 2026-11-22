@@ -131,7 +131,7 @@ def observe(directory, run, key, now):
     began=datetime.now(timezone.utc)
     rows=reader.observe(owned,began.isoformat())
     ended=datetime.now(timezone.utc)
-    validate_current_ledger(run,owned,rows,ended)
+    retired = validate_current_ledger(run,owned,rows,ended,directory=directory)
     if fault_candidate:
         try:
             from .fis_observation_guard import expected_lost_pod_uids
@@ -148,8 +148,9 @@ def observe(directory, run, key, now):
         result['expected_FIS_target_log_unavailable']=[dict(e,verified_experiment_id=experiment['id']) for e in essential]
     with (directory/'training-watch-ledger.jsonl').open('a') as f:
         f.write(json.dumps(dict(at=ended.isoformat(),ownership_bound_at=bound_at.isoformat(),
-                               owned=owned,rows=rows))+'\n')
+                               owned=owned,rows=rows,prior_termination_receipts=retired))+'\n')
     result['noncritical_observer_errors_preserved']=noncritical
+    result['absent_retired_instances_with_positive_receipts']=sorted(retired)
     return ledger_sample(directory, run, ended, result, rows,
                          owned_override=owned, history_cutoff=bound_at)
 
@@ -176,10 +177,10 @@ def ledger_sample(directory, run, now, result, current_rows=None, *, owned_overr
             if iid not in history or stamp(row['observed_at']) > stamp(history[iid]['observed_at']):
                 history[iid] = row
     if current_rows is not None:
-        validate_current_ledger(run, ownership, current_rows, now)
+        validate_current_ledger(run, ownership, current_rows, now, directory=directory)
     if set(history) != set(ownership):
         raise ValueError('incomplete owned instance ledger')
-    if current_rows is not None and any(r['instance_id'] in terminal and r['state']!='terminated' for r in current_rows):
+    if current_rows is not None and any(r['instance_id'] in terminal and r['state'] not in {'terminated','NOT_OBSERVED'} for r in current_rows):
         raise ValueError('terminal receipt conflicts with current provider state')
     prices = [json.loads(p.read_text()) for p in (directory/'price-history').glob('*.json')]
     prices = [p for p in prices if stamp(p['observedAt']) <= now]
@@ -304,15 +305,35 @@ def cleanup_policy(policy, run, receipt):
     return policy
 
 
-def validate_current_ledger(run, owned, rows, now):
+def validate_current_ledger(run, owned, rows, now, *, directory=None):
+    # A fresh exact-ID query may omit an instance that already terminated.
+    # Reuse only the original UID-bound positive receipt; never turn absence
+    # into a new termination timestamp or relax live-provider checks.
+    retired = {}
+    missing = {r['instance_id']: owned[r['instance_id']] for r in rows
+               if r.get('state') == 'NOT_OBSERVED' and r.get('instance_id') in owned}
+    if directory is not None and missing:
+        try:
+            from .ieee_v2_ledger import historical_termination_receipts
+        except ImportError:
+            from ieee_v2_ledger import historical_termination_receipts
+        retired = historical_termination_receipts(directory, run, missing)
     if len(rows)!=len(owned) or {r['instance_id'] for r in rows}!=set(owned):
         raise ValueError('incomplete current cleanup ledger')
     for row in rows:
         if (row.get('policy_uid')!=run['policy_uid'] or row.get('nodeprovision_namespace')!=run['namespace'] or row.get('nodeprovision_uid')!=owned[row['instance_id']]['nodeprovision_uid']
-            or not row.get('provider_ownership_verified') or row.get('state') not in
-            {'pending','running','stopping','stopped','shutting-down','terminated'}
+            or (row.get('state') != 'NOT_OBSERVED' and not row.get('provider_ownership_verified'))
+            or row.get('state') not in
+            {'pending','running','stopping','stopped','shutting-down','terminated','NOT_OBSERVED'}
             or not 0<=(now-stamp(row['observed_at'])).total_seconds()<=90):
             raise ValueError('stale/unknown/foreign current cleanup ledger')
+        if row['state'] == 'NOT_OBSERVED':
+            proof = retired.get(row['instance_id'])
+            if (not proof or not stamp(run['started_at']) <=
+                    stamp(proof['ledger_row']['launch_time']) <=
+                    stamp(proof['ledger_row']['observed_at']) <= stamp(row['observed_at'])):
+                raise ValueError('absent instance lacks prior UID-bound positive termination')
+    return retired
 
 
 def observe_cleanup(directory, run, key, now):
@@ -331,12 +352,13 @@ def observe_cleanup(directory, run, key, now):
     began=datetime.now(timezone.utc)
     rows=control.cloud.observe(owned,began.isoformat())
     ended=datetime.now(timezone.utc)
-    validate_current_ledger(run,owned,rows,ended)
+    retired = validate_current_ledger(run,owned,rows,ended,directory=directory)
     with (directory/'cleanup-watch-ledger.jsonl').open('a') as f:
-        f.write(json.dumps(dict(at=ended.isoformat(),rows=rows))+'\n')
+        f.write(json.dumps(dict(at=ended.isoformat(),rows=rows,prior_termination_receipts=retired))+'\n')
     result=ledger_sample(directory,run,ended,storage_sample(directory,run,key),rows)
     result['phase']='cleanup'
-    result['positive_EC2_termination_observed']=all(r['state']=='terminated' for r in rows)
+    result['absent_retired_instances_with_positive_receipts']=sorted(retired)
+    result['positive_EC2_termination_observed']=all(r['state']=='terminated' or r['instance_id'] in retired for r in rows)
     # EBS/ENI/keypairs/temporary resources still require the normal cleanup audit.
     return result
 
