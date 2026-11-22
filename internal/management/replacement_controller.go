@@ -438,12 +438,12 @@ func verifyReplacementOldNode(oldNP *unstructured.Unstructured, spec replacement
 	if oldNP.GetLabels()[trainingpolicy.LabelPolicyUID] != spec.PolicyUID {
 		return fmt.Errorf("old NodeProvision policy uid mismatch")
 	}
-	if market := stringField(oldNP.Object, "spec", "marketType"); !validReplacementMarket(market) || market == spec.DesiredMarketType {
+	if market := stringField(oldNP.Object, "spec", "marketType"); !validReplacementTransition(market, spec.DesiredMarketType, spec.EmergencyEventID) {
 		return fmt.Errorf("old NodeProvision marketType must be Spot/OnDemand and differ from desiredMarketType")
 	}
 	if spec.EmergencyEventID != "" {
-		if spec.DesiredMarketType != "OnDemand" || stringField(oldNP.Object, "spec", "marketType") != "Spot" {
-			return fmt.Errorf("emergency replacement requires Spot to OnDemand replacement")
+		if !validReplacementMarket(spec.DesiredMarketType) || stringField(oldNP.Object, "spec", "marketType") != "Spot" {
+			return fmt.Errorf("emergency replacement requires a Spot source and a valid replacement market")
 		}
 		if spec.Operation != replacementOperationName(spec.OldNodeProvisionName, spec.OldNodeProvisionUID) {
 			return fmt.Errorf("emergency replacement operation must be UID-bound to old NodeProvision")

@@ -81,7 +81,10 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 		if !apierrors.IsNotFound(err) {
 			return "", err
 		}
-		// Same-market emergency recovery is confined to the explicit group route.
+		// Recover the market already selected by policy; interruption is not a
+		// policy decision to promote Spot to OnDemand. Planned market changes
+		// remain owned by the ordinary capacity policy after recovery.
+		market := stringField(node.Object, "spec", "marketType")
 		if input.FixedOnDemand != nil {
 			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
 			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "Spot", event.EventID)
@@ -96,14 +99,14 @@ func (r *CheckpointReconciler) ensureEmergencyReplacement(ctx context.Context, p
 				return "", errPartialReplacementNotReady
 			}
 			producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
-			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID)
+			_, err := producer.ensureGroupReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), market, event.EventID)
 			return name, err
 		}
 		if err := r.validateLiveWorkloadUID(ctx, input); err != nil {
 			return "", err
 		}
 		producer := &PolicyReconciler{Client: r.Client, APIReader: r.Client, Clock: r.Clock, GroupStage: r.GroupStage}
-		if _, err := producer.ensureAutomaticSpotReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), "OnDemand", event.EventID); err != nil {
+		if _, err := producer.ensureAutomaticSpotReplacement(ctx, policy, input, node, name, replacementNodeProvisionName(node.GetName(), event.NodeUID), market, event.EventID); err != nil {
 			return "", err
 		}
 		return name, nil

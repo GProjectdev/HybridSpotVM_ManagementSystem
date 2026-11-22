@@ -216,7 +216,7 @@ func (s recoverySpec) validateStaticContract() error {
 		return fmt.Errorf("replacement NodeProvision ref must include both name and uid when provided")
 	}
 	if s.ReplacementNodeProvisionName != "" {
-		if !validReplacementMarket(s.OldMarketType) || !validReplacementMarket(s.DesiredMarketType) || s.OldMarketType == s.DesiredMarketType {
+		if !validReplacementTransition(s.OldMarketType, s.DesiredMarketType, s.EmergencyEventID) {
 			return fmt.Errorf("oldMarketType and desiredMarketType must be Spot/OnDemand and differ for replacement cleanup")
 		}
 	}
@@ -226,8 +226,8 @@ func (s recoverySpec) validateStaticContract() error {
 	if s.EmergencyEventID != "" && s.EventID == "" {
 		return fmt.Errorf("eventID is required for emergency replacement cleanup")
 	}
-	if s.EmergencyEventID != "" && (s.OldMarketType != "Spot" || s.DesiredMarketType != "OnDemand") {
-		return fmt.Errorf("emergency replacement cleanup requires Spot to OnDemand market transition")
+	if s.EmergencyEventID != "" && (s.OldMarketType != "Spot" || !validReplacementMarket(s.DesiredMarketType)) {
+		return fmt.Errorf("emergency replacement cleanup requires Spot source and valid replacement market")
 	}
 	if s.ReplacementNodeProvisionUID != "" && (s.OldNodeProvisionUID == s.ReplacementNodeProvisionUID || s.OldNodeProvisionName == s.ReplacementNodeProvisionName) {
 		return fmt.Errorf("old and replacement NodeProvision must not be the same node")
@@ -662,7 +662,7 @@ func verifyOldNodeRIC(np *unstructured.Unstructured, spec recoverySpec, restore 
 	if !validReplacementMarket(oldMarket) {
 		return fmt.Errorf("old NodeProvision marketType evidence required")
 	}
-	if spec.DesiredMarketType != "" && oldMarket == spec.DesiredMarketType {
+	if spec.DesiredMarketType != "" && !validReplacementTransition(oldMarket, spec.DesiredMarketType, spec.EmergencyEventID) {
 		return fmt.Errorf("old NodeProvision marketType must differ from desiredMarketType")
 	}
 	if oldMarket == "OnDemand" && !spec.sameClusterReplacement() {

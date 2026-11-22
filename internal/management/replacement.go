@@ -51,3 +51,15 @@ func boundedReplacementName(oldNodeProvisionName, oldNodeProvisionUID, suffix st
 func validReplacementMarket(market string) bool {
 	return market == "Spot" || market == "OnDemand"
 }
+
+// Same-market capacity is only valid for an independently verified Spot event.
+// Legacy cross-market emergency intents remain readable for safe cleanup.
+func validReplacementTransition(oldMarket, desiredMarket, emergencyEvent string) bool {
+	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarket) {
+		return false
+	}
+	if emergencyEvent != "" {
+		return oldMarket == "Spot"
+	}
+	return oldMarket != desiredMarket
+}

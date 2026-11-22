@@ -30,7 +30,9 @@ creates:
   `spec.partialCheckpoint.targetRanks[]` only.
 
 For an interruption/rebalance event with replacement enabled, the checkpoint
-coordinator creates a UID-bound emergency operation targeting OnDemand.
+coordinator creates a UID-bound emergency operation preserving the source Spot market.
+Interruption does not override the policy-selected market. Ordinary risk/price
+policy transitions remain a separate planned operation after recovery.
 Emergency operations request the partial checkpoint immediately after capacity
 creation rather than waiting for node readiness. An existing checkpoint must
 still finish first. Event handling is independent of periodic-checkpoint dedupe.

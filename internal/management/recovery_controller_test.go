@@ -515,3 +515,32 @@ func recoveryReconciler(t *testing.T, objects ...client.Object) *RecoveryReconci
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objects...).Build()
 	return &RecoveryReconciler{Client: c, Clock: func() time.Time { return time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC) }}
 }
+
+func TestRecoveryAllowsSameMarketEmergencyOnlyWithVerifiedEvidence(t *testing.T) {
+	r := recovery("recover")
+	addFullRecoverySpec(r)
+	spec := r.Object["spec"].(map[string]interface{})
+	spec["targetCluster"] = "aws"
+	spec["emergencyEventID"] = "event-1"
+	spec["desiredMarketType"] = "Spot"
+	restore := restoreRequest("restore", "restore-uid", 7, "source-node")
+	addSameClusterRestoreEvidence(restore)
+	operation := spotReplacement()
+	operation.Object["spec"].(map[string]interface{})["targetCluster"] = "aws"
+	operation.Object["spec"].(map[string]interface{})["desiredMarketType"] = "Spot"
+	operation.SetAnnotations(map[string]string{annotationEmergencyEventID: "event-1"})
+	policy := trainingPolicy()
+	runtimeObj := object("TrainingRuntime", "default", "runtime", "runtime-uid")
+	runtimeObj.Object["spec"] = map[string]interface{}{"workloadRef": map[string]interface{}{"uid": "workload-uid"}}
+	oldNP := nodeProvision("old", "old-uid", "policy-uid", "op-1", "aws", "Ready")
+	oldNP.Object["spec"].(map[string]interface{})["hostname"] = "source-node"
+	replacement := nodeProvision("new", "new-uid", "policy-uid", "op-1", "aws", "Ready")
+
+	setAtRiskSpot(oldNP)
+	_ = unstructured.SetNestedField(replacement.Object, "Spot", "spec", "marketType")
+	reconciler := recoveryReconciler(t, r, restore, operation, policy, runtimeObj, oldNP, replacement)
+	phase, err := reconciler.recover(context.Background(), r)
+	if err == nil || phase != phaseCleanupRequested {
+		t.Fatalf("recover phase/error = %q/%v, want planned CleanupRequested without emergency RIC", phase, err)
+	}
+}

@@ -221,7 +221,7 @@ func (r *PolicyReconciler) ensureAutomaticSpotReplacement(ctx context.Context, p
 		return false, fmt.Errorf("replacement requires old NodeProvision UID evidence")
 	}
 	oldMarket := stringField(oldNP.Object, "spec", "marketType")
-	if !validReplacementMarket(oldMarket) || !validReplacementMarket(desiredMarketType) || oldMarket == desiredMarketType {
+	if !validReplacementTransition(oldMarket, desiredMarketType, emergencyEventID) {
 		return false, fmt.Errorf("replacement requires old and desired marketType to differ and be Spot/OnDemand")
 	}
 	// Missing partial evidence must not widen deletion to the whole world.

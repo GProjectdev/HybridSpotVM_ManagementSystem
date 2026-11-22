@@ -24,9 +24,8 @@ func TestEmergencyFixedCompositionMarket(t *testing.T) {
 					if mode == "group-healthy" {
 						sourceStatusForFixedEmergency(objects[1])["phase"] = "Running"
 					}
-					market := "OnDemand"
+					market := "Spot"
 					if fixed {
-						market = "Spot"
 						_ = unstructured.SetNestedField(policy.Object, int64(1), "spec", "policy", "fixedOnDemand")
 					}
 					r := checkpointReconcilerFixture(t, func() time.Time { return now }, objects...)
