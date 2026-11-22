@@ -30,11 +30,33 @@ type groupOperation struct {
 	Replacement      string
 	Market           string
 	Event            string
+	EmergencyBinding map[string]string  `json:",omitempty"`
 	Batch            []groupBatchTarget `json:",omitempty"`
 }
 
 func (r *PolicyReconciler) recordGroupOperation(ctx context.Context, policy, old *unstructured.Unstructured, operation, replacement, market, event string) error {
 	intent := groupOperation{PolicyUID: string(policy.GetUID()), PolicyGeneration: policy.GetGeneration(), OldName: old.GetName(), OldUID: string(old.GetUID()), Operation: operation, Replacement: replacement, Market: market, Event: event}
+	if event != "" {
+		intent.EmergencyBinding = emergencyBinding(old)
+		current := p.NewObject("NodeRequest")
+		if err := r.reader().Get(ctx, client.ObjectKeyFromObject(policy), current); err != nil {
+			return err
+		}
+		if raw := current.GetAnnotations()[groupOperationAnnotation]; raw != "" {
+			var previous groupOperation
+			if err := json.Unmarshal([]byte(raw), &previous); err != nil {
+				return err
+			}
+			identity := intent
+			identity.Event, identity.EmergencyBinding = previous.Event, previous.EmergencyBinding
+			if current.GetUID() == policy.GetUID() && current.GetGeneration() == policy.GetGeneration() && current.GetDeletionTimestamp().IsZero() &&
+				reflect.DeepEqual(identity, previous) && matchesGroupEmergency(old, p.ReadPolicyInput(policy), previous) {
+				// A watcher may republish the same interruption with a successor ID.
+				// Keep the original event and binding immutable through VM startup.
+				return nil
+			}
+		}
+	}
 	return r.recordGroupIntent(ctx, policy, intent)
 }
 
@@ -151,8 +173,7 @@ func (r *PolicyReconciler) reconcileGroupOperation(ctx context.Context, req ctrl
 		return again, fmt.Errorf("group capacity intent identity mismatch")
 	}
 	if intent.Event != "" {
-		event, valid := readEmergencySpotEvent(old, input)
-		if !valid || event.EventID != intent.Event || !validSpotSignalType(stringField(old.Object, "status", "spot", "signalType")) {
+		if !matchesGroupEmergency(old, input, intent) {
 			return again, fmt.Errorf("group emergency event changed")
 		}
 	}
@@ -164,4 +185,16 @@ func (r *PolicyReconciler) reconcileGroupOperation(ctx context.Context, req ctrl
 	}
 	_, err := producer.ensureGroupReplacement(ctx, policy, input, old, intent.Operation, intent.Replacement, intent.Market, intent.Event)
 	return again, err
+}
+
+// Reuse the existing event-successor contract without accepting another provider,
+// a backwards notice, signal downgrade, stale UID, or an unbound legacy successor.
+func matchesGroupEmergency(old *unstructured.Unstructured, input p.PolicyInput, intent groupOperation) bool {
+	event, valid := readEmergencySpotEvent(old, input)
+	if !valid || string(old.GetUID()) != intent.OldUID || old.GetName() != intent.OldName ||
+		event.InstanceID == "" || !validSpotSignalType(stringField(old.Object, "status", "spot", "signalType")) {
+		return false
+	}
+	spot, _, _ := unstructured.NestedMap(old.Object, "status", "spot")
+	return matchesEmergencyEvent(spot, event.InstanceID, intent.Event, intent.EmergencyBinding)
 }

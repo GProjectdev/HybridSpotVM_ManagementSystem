@@ -23,3 +23,18 @@ C02 bootstrap stopped before GPU provisioning because its qualified OnDemand
 price receipt was not copied. Preserve its operational stop/cleanup evidence;
 do not produce scientific metrics for it. The next runner must verify this input
 before bootstrap and before any paid provisioning.
+
+## Group event continuity follow-up
+
+The actual C retry confirmed a replacement Spot provider, but group request
+creation stopped when the watcher republished the same interruption with a newer
+event ID. The partial route already had a provider/signal/notice-bound successor
+check; the group route still compared the event ID literally. The run was stopped
+for repair and is not used for scientific performance analysis.
+
+Group intent now captures the original emergency instance/signal/notice binding.
+A later same-provider forward notice can continue the immutable original intent;
+foreign provider/UID, backwards notice, signal downgrade, or unbound legacy
+successor remain rejected. A CPU regression covers original intent preservation,
+replacement Ready, successor event, actual RestoreRequest creation, and negatives.
+Existing archive selection/fencing/Verified gates are unchanged.
