@@ -108,16 +108,59 @@ def observe(directory, run, key, now):
         not_applicable=error.get('cluster')=='aws' and error.get('kind') in ['resourcebindings','propagationpolicies']
         retired_or_not_running=error.get('error')=='trainer_logs_unavailable' and error.get('pod_uid') not in active
         (noncritical if not_applicable or retired_or_not_running else essential).append(error)
-    if not 0 <= (now-stamp(last['observed_at'])).total_seconds() <= 90 or essential:
+    if not 0 <= (now-stamp(last['observed_at'])).total_seconds() <= 90:
         raise ValueError('observer heartbeat stale or essential collection incomplete')
+    # A live Running rank remains strict unless it is the exact positively lost
+    # Spot from this Run's already completed FIS action. Other collection errors
+    # are never hidden by an experiment being in progress.
+    fault_candidate = (run.get('arm') == 'C' and essential
+                       and all(e.get('error') == 'trainer_logs_unavailable' for e in essential)
+                       and (directory/'fis-started.json').exists())
+    if essential and not fault_candidate:
+        raise ValueError('observer heartbeat stale or essential collection incomplete')
+    # Bind the ownership set before an independent provider query. The observer
+    # publishes growing ownership before its complete snapshot, so joining that
+    # new set to only older ledgers can falsely report a missing replacement.
+    try:
+        from .ieee_v2_ledger import AWSReader
+    except ImportError:
+        from ieee_v2_ledger import AWSReader
+    bound_at=datetime.now(timezone.utc)
+    owned=json.loads((directory/'instance-ownership.json').read_text())
+    reader=AWSReader(run['aws_profile'],run['expected_aws_account'],run['region'])
+    began=datetime.now(timezone.utc)
+    rows=reader.observe(owned,began.isoformat())
+    ended=datetime.now(timezone.utc)
+    validate_current_ledger(run,owned,rows,ended)
+    if fault_candidate:
+        try:
+            from .fis_observation_guard import expected_lost_pod_uids
+        except ImportError:
+            from fis_observation_guard import expected_lost_pod_uids
+        load=lambda name:json.loads((directory/name).read_text())
+        started=load('fis-started.json')
+        experiment=reader.command('fis','get-experiment','--id',started['experiment']['id'])['experiment']
+        ended=datetime.now(timezone.utc)
+        allowed=expected_lost_pod_uids(run,load('authorization.json'),load('fis-final-plan.json'),
+            started,experiment,pods,json.loads((newest.parent/'aws-nodeprovisions.json').read_text())['items'],owned,rows,ended)
+        if any(e.get('pod_uid') not in allowed for e in essential):
+            raise ValueError('non-target Running rank log is still essential')
+        result['expected_FIS_target_log_unavailable']=[dict(e,verified_experiment_id=experiment['id']) for e in essential]
+    with (directory/'training-watch-ledger.jsonl').open('a') as f:
+        f.write(json.dumps(dict(at=ended.isoformat(),ownership_bound_at=bound_at.isoformat(),
+                               owned=owned,rows=rows))+'\n')
     result['noncritical_observer_errors_preserved']=noncritical
-    return ledger_sample(directory, run, now, result)
+    return ledger_sample(directory, run, ended, result, rows,
+                         owned_override=owned, history_cutoff=bound_at)
 
 
-def ledger_sample(directory, run, now, result, current_rows=None):
-    ownership = json.loads((directory/'instance-ownership.json').read_text())
+def ledger_sample(directory, run, now, result, current_rows=None, *, owned_override=None, history_cutoff=None):
+    ownership = (owned_override if owned_override is not None
+                 else json.loads((directory/'instance-ownership.json').read_text()))
     history, terminal = {}, {}
     groups = [json.loads(path.read_text()) for path in sorted((directory/'snapshots').glob('*/aws-instance-ledger.json')) if (path.parent/'manifest.json').exists()]
+    if history_cutoff is not None:
+        groups=[[r for r in group if stamp(r['observed_at']) <= history_cutoff] for group in groups]
     if current_rows is not None:
         groups.append(current_rows)
     for group in groups:
@@ -139,6 +182,7 @@ def ledger_sample(directory, run, now, result, current_rows=None):
     if current_rows is not None and any(r['instance_id'] in terminal and r['state']!='terminated' for r in current_rows):
         raise ValueError('terminal receipt conflicts with current provider state')
     prices = [json.loads(p.read_text()) for p in (directory/'price-history').glob('*.json')]
+    prices = [p for p in prices if stamp(p['observedAt']) <= now]
     if not prices or not 0 <= (now-max(stamp(p['observedAt']) for p in prices)).total_seconds() <= 360:
         raise ValueError('fresh price receipts required for safety estimate')
     rate = max(max(p['spotPricePerHour'],p['onDemandPricePerHour']) for p in prices)
