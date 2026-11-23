@@ -48,7 +48,12 @@ rollingMeanHours retrainWindowWeeks seasonalPeriodHours riskPopulation maxLambda
 aggregateForecastPreemptionsPerHour perInstanceLambdaApproximation samplingGapSeconds hourlyBinning
 partialEdgeHours lastObservedHourStart forecastTargetHour host priceObservedAt ondemandReceiptSHA256
 priceInstanceType priceAvailabilityZone
+riskProfileRef resume partialCheckpoint targetRanks
 """.split())
+
+# Post-risk admission needs the source workload binding even after projection.
+# Keep arbitrary labels, Pod environment and credential/provider fields excluded.
+EVIDENCE_LABELS = SAFE_LABELS | {"training.dcnlab.com/workload-uid"}
 
 
 def evidence_resource(value):
@@ -59,7 +64,7 @@ def evidence_resource(value):
     result = {}
     for k, v in value.items():
         if k in ("labels", "annotations"):
-            allowed = SAFE_LABELS if k == "labels" else SAFE_ANNOTATIONS
+            allowed = EVIDENCE_LABELS if k == "labels" else SAFE_ANNOTATIONS
             result[k] = {a: b for a, b in v.items() if a in allowed}
         elif k in ("capacity", "allocatable", "requests", "limits"):
             result[k] = {a: b for a, b in v.items() if a in ("cpu", "memory", "storage", "nvidia.com/gpu")}

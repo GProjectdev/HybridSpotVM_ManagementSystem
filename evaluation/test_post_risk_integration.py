@@ -5,11 +5,46 @@ import integrated_protocol as protocol
 import final_fis as fis
 import post_risk_observe as observer
 import test_integrated_protocol as historical_tests
+from e1_experiment import evidence_resource
 from test_post_risk_evidence import raw_fixture
 from test_post_risk_fault_gate import fixture,NOW
 
 
 class IntegrationTests(unittest.TestCase):
+    def test_collector_projection_preserves_negative_gate_evidence(self):
+        for mode in ('partial', 'resume_disabled', 'foreign_workload'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as t:
+                d=Path(t);r,o,s,w=self.prepare(d)
+                if mode == 'foreign_workload':
+                    p=s/'aws-pods.json';obj=json.loads(p.read_text())
+                    obj['items'][0]['metadata']['labels']['training.dcnlab.com/workload-uid']='foreign'
+                else:
+                    p=s/'aws-fluidcrmigrations.json';obj=json.loads(p.read_text())
+                    child=next(x for x in obj['items'] if x['metadata']['uid']=='child')
+                    if mode == 'partial':child['spec']['partialCheckpoint']={'targetRanks':[1]}
+                    else:child['spec']['resume']=False
+                p.write_text(json.dumps(evidence_resource(obj)))
+                if mode == 'foreign_workload':
+                    with self.assertRaisesRegex(ValueError,'ownership'):
+                        observer.evaluate(d,r,s,w,NOW)
+                else:
+                    result,_=observer.evaluate(d,r,s,w,NOW)
+                    self.assertFalse(result['ready'])
+                    self.assertEqual(result['reason'],'checkpoint_not_owned_periodic_full_world')
+
+    def test_projection_keeps_identity_but_still_omits_sensitive_material(self):
+        raw=dict(metadata=dict(labels={'training.dcnlab.com/workload-uid':'workload',
+                                      'private-token':'do-not-export'}),
+                 spec=dict(riskProfileRef=dict(name='risk'),
+                           credentialsRef=dict(name='private'),
+                           containers=[dict(name='trainer',env=[dict(name='TOKEN',value='secret')])]),
+                 data={'token':'do-not-export'},stringData={'password':'do-not-export'})
+        projected=evidence_resource(raw)
+        self.assertEqual(projected['spec']['riskProfileRef'],{'name':'risk'})
+        self.assertEqual(projected['metadata']['labels'],{'training.dcnlab.com/workload-uid':'workload'})
+        for key in ('credentialsRef','private-token','do-not-export','secret','TOKEN','password'):
+            self.assertNotIn(key,json.dumps(projected))
+
     def test_renderer_explicit_new_mode_and_historical_contract_unchanged(self):
         base=historical_tests.IntegratedProtocolTests();base.setUp();c=base.c
         old=protocol.render(c,base.source,'old','C')[0]
@@ -28,6 +63,9 @@ class IntegrationTests(unittest.TestCase):
         s['manifest']['namespace']=r['namespace']
         snapshot=d/'snapshot';snapshot.mkdir()
         for name,obj in dict(s,**{'training-events':o['training_events'],'policy-decisions':decisions}).items():
+            # Exercise the actual collector boundary, not unsanitized fixtures.
+            if name.startswith(('karmada-', 'aws-')) and name != 'aws-instance-ledger':
+                obj = evidence_resource(obj)
             (snapshot/(name+'.json')).write_text(json.dumps(obj))
         watch=dict(run_id=r['run_id'],at=NOW,phase='training',stop_requested=False,sample=dict(
             nfs_free_bytes=200*1024**3,local_free_bytes=120*1024**3,
