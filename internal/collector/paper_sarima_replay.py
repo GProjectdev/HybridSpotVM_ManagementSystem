@@ -30,7 +30,8 @@ def load_locked(forecast_path, manifest, selection_evidence_path=None):
         raise ValueError('unexpected estimator/data split')
     if manifest.get('trace_sha256') != data['normalization']['trace_sha256']:
         raise ValueError('trace hash mismatch')
-    selected=manifest.get('selection_rule')=='first-native-eligible-adjacent-transition'
+    post_risk=manifest.get('selection_rule')=='researcher-approved-post-risk-durable-window'
+    selected=manifest.get('selection_rule')=='first-native-eligible-adjacent-transition' or post_risk
     if manifest.get('wall_seconds_per_trace_hour') != 3600:
         raise ValueError('uncompressed clock required')
     if selected:
@@ -45,6 +46,13 @@ def load_locked(forecast_path, manifest, selection_evidence_path=None):
             or evidence.get('candidate_window',{}).get('start_hour')!=start
             or evidence.get('candidate_window',{}).get('change_hour')!=start+1):
             raise ValueError('selection evidence does not bind this forecast/adjacent window')
+        if post_risk:
+            approval=manifest.get('researcher_approval_sha256','')
+            if (start!=9 or evidence.get('purpose')!='E1-L/E2-L'
+                or evidence.get('status')!='RESEARCHER_APPROVED'
+                or not isinstance(approval,str) or not re.fullmatch(r'[a-f0-9]{64}',approval)
+                or evidence.get('researcher_approval_sha256')!=approval):
+                raise ValueError('post-risk hour9/10 input requires explicit researcher-approved selection evidence')
     elif manifest.get('selection_rule') != 'first-held-out-hour' or manifest.get('start_hour') != 0:
         raise ValueError('explicit reviewed selection required')
     if manifest.get('provenance') != 'external-US-V100-availability-proxy' or not manifest.get('population_assumption'):

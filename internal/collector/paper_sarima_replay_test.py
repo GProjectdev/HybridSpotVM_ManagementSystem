@@ -70,3 +70,18 @@ class ReplayTests(unittest.TestCase):
             with self.assertRaises(ValueError):replay.load_locked(p,m)
             e.write_text('{}')
             with self.assertRaises(ValueError):replay.load_locked(p,m,e)
+
+    def test_post_risk_selection_requires_approval_and_does_not_retrain(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'forecast.json';p.write_bytes(self.body)
+            e=Path(d)/'selection.json'
+            obj=dict(forecast_sha256=self.manifest['forecast_sha256'],candidate_window=dict(start_hour=9,change_hour=10),purpose='E1-L/E2-L',status='DRAFT',researcher_approval_sha256=None)
+            e.write_text(json.dumps(obj))
+            m=dict(self.manifest,selection_rule='researcher-approved-post-risk-durable-window',start_hour=9,selection_evidence_sha256=hashlib.sha256(e.read_bytes()).hexdigest())
+            with self.assertRaisesRegex(ValueError,'researcher-approved'):replay.load_locked(p,m,e)
+            obj.update(status='RESEARCHER_APPROVED',researcher_approval_sha256='b'*64);e.write_text(json.dumps(obj))
+            m.update(researcher_approval_sha256='b'*64,selection_evidence_sha256=hashlib.sha256(e.read_bytes()).hexdigest())
+            loaded=replay.load_locked(p,m,e);self.assertEqual(loaded,self.data)
+            start=datetime(2026,11,23,tzinfo=timezone.utc)
+            for seconds,hour in [(0,9),(3599,9),(3600,10)]:
+                self.assertEqual(replay.payload(loaded,m,start,start+timedelta(seconds=seconds))['source']['heldOutHour'],hour)

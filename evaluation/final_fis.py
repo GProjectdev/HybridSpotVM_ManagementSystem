@@ -55,6 +55,12 @@ def validate_run(run,now):
         raise ValueError('frozen comparison hash required even for separate acceptance')
     if not re.fullmatch(r'[a-f0-9]{64}',run.get('live_spec_sha256','') or ''):raise ValueError('reviewed live policy/workload spec hash required')
     if not re.fullmatch(r'[A-Za-z0-9._:/=+@-]{1,128}',run.get('fis_authorization_tag','') or ''):raise ValueError('reviewed account FIS authorization tag required')
+    if run.get('post_risk_gate') is not None:
+        try:
+            from .post_risk_fault_gate import validate_contract
+        except ImportError:
+            from post_risk_fault_gate import validate_contract
+        validate_contract(run)
     if not run.get('started_at') or not run.get('hard_deadline_utc'):
         raise ValueError('absolute start/deadline required')
     if timestamp(now)<timestamp(run['started_at']) or (timestamp(run['hard_deadline_utc'])-timestamp(now)).total_seconds()<1800:
@@ -135,15 +141,24 @@ class Live:
                 from .integrated_protocol import durable_group_checkpoint
             except ImportError:
                 from integrated_protocol import durable_group_checkpoint
-            cps=json.loads(self.kub('karmada','get','fluidcrmigrations','-o','json'))['items']
-            if not any(durable_group_checkpoint(x,r,current) for x in cps):raise ValueError('durable complete current four-rank checkpoint required')
+            if r.get('post_risk_gate') is None:
+                cps=json.loads(self.kub('karmada','get','fluidcrmigrations','-o','json'))['items']
+                if not any(durable_group_checkpoint(x,r,current) for x in cps):raise ValueError('durable complete current four-rank checkpoint required')
         # Re-evaluate after bounded reads rather than granting freshness at read start.
         observed=datetime.now(timezone.utc).isoformat();validate_run(r,observed)
-        risk_deadline=risk_window_deadline(r,policy['metadata'].get('creationTimestamp'),observed)
-        gate=check(r,events,now=observed,current_pods=current)
-        if risk_deadline:gate['risk_window_valid_until_utc']=risk_deadline
+        gate=self.final_gate(policy,current,events,observed)
         scope={'run_id':r['run_id'],'policy_uid':r['policy_uid'],'workload_uid':r['workload_uid'],'nodeprovision_uid':spot['metadata']['uid'],'instance_id':iid,'od_instance_id':odid,'comparison_lock_sha256':r['comparison_lock_sha256'],'live_spec_sha256':r['live_spec_sha256'],'policy_generation':policy['metadata'].get('generation'),'workload_generation':workload['metadata'].get('generation'),'member_workload_uid':member_uid,'source_pods':{str(rank):uid for rank,uid in current.items()}}
+        if r.get('post_risk_gate') is not None and gate.get('ready'):
+            if gate.get('target_instance_id')!=iid or gate.get('target_nodeprovision_uid')!=spot['metadata']['uid']:
+                raise ValueError('first eligible target differs from pinned FIS target')
         return scope,gate
+    def final_gate(self,policy,current,events,observed):
+        if self.run.get('post_risk_gate') is not None:
+            raise ValueError('post-risk contract requires its evidence adapter')
+        deadline=risk_window_deadline(self.run,policy['metadata'].get('creationTimestamp'),observed)
+        result=check(self.run,events,now=observed,current_pods=current)
+        if deadline:result['risk_window_valid_until_utc']=deadline
+        return result
     def alarm_ok(self,arn,scope):
         xs=self.cloud.command('cloudwatch','describe-alarms','--alarm-names',arn.split(':alarm:',1)[1])['MetricAlarms']
         if len(xs)!=1:return False
@@ -162,7 +177,10 @@ def save(path,value,exclusive=False):
 def plan(directory,run,live,role,alarm,now):
     validate_run(run,now)
     if (directory/'fis-start-intent.json').exists():raise ValueError('one FIS attempt per Run; inspect existing intent')
-    scope,gate=live.snapshot(now);t=template(run,scope,role,alarm)
+    scope,gate=live.snapshot(now)
+    if run.get('post_risk_gate') is not None and not gate.get('ready'):
+        raise ValueError('first post-risk durable admission not ready')
+    t=template(run,scope,role,alarm)
     if not live.alarm_ok(alarm,scope):raise ValueError('healthy owned OD stop alarm required')
     receipt={'scope':scope,'template':t,'gate_at_plan':gate,'planned_at':now,'template_sha256':canonical_hash(t)}
     save(directory/'fis-final-plan.json',receipt,exclusive=True)
@@ -195,7 +213,10 @@ def start(directory,run,live,confirm,now):
     if next_scope!=scope or not next_gate['ready'] or not live.alarm_ok(alarm,scope):raise ValueError('target/progress/health changed during template creation; not started')
     dispatch_at=datetime.now(timezone.utc).isoformat();validate_run(run,dispatch_at)
     if not next_gate.get('progress_valid_until_utc') or timestamp(dispatch_at)>timestamp(next_gate['progress_valid_until_utc']):raise ValueError('progress expired during final health check; not started')
-    if run.get('purpose')=='formal' and run.get('world_size')==4:
+    if run.get('post_risk_gate') is not None:
+        if not next_gate.get('admission_valid_until_utc') or timestamp(dispatch_at)>=timestamp(next_gate['admission_valid_until_utc']):
+            raise ValueError('post-risk admission expired during final health check; not started')
+    elif run.get('purpose')=='formal' and run.get('world_size')==4:
         if not next_gate.get('risk_window_valid_until_utc') or timestamp(dispatch_at)>=timestamp(next_gate['risk_window_valid_until_utc']):
             raise ValueError('native risk window expired during final health check; not started')
     intent.update(state='start_requested',template_id=created['experimentTemplate']['id'],gate=next_gate)
@@ -212,7 +233,16 @@ def start(directory,run,live,confirm,now):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('command',choices=['plan','start']);p.add_argument('--directory',type=Path,required=True);p.add_argument('--profile',required=True);p.add_argument('--karmada-kubeconfig',required=True);p.add_argument('--member-kubeconfig',required=True);p.add_argument('--role-arn');p.add_argument('--alarm-arn');p.add_argument('--confirm')
-    a=p.parse_args();run=json.loads((a.directory/'run.json').read_text());live=Live(run,a.profile,{'karmada':a.karmada_kubeconfig,'aws':a.member_kubeconfig});now=datetime.now(timezone.utc).isoformat()
+    a=p.parse_args();run=json.loads((a.directory/'run.json').read_text())
+    configs={'karmada':a.karmada_kubeconfig,'aws':a.member_kubeconfig}
+    if run.get('post_risk_gate') is not None:
+        try:
+            from .post_risk_live import PostRiskLive
+        except ImportError:
+            from post_risk_live import PostRiskLive
+        live=PostRiskLive(run,a.profile,configs,a.directory)
+    else:live=Live(run,a.profile,configs)
+    now=datetime.now(timezone.utc).isoformat()
     if a.command=='plan':
         if not a.role_arn or not a.alarm_arn:p.error('plan requires reviewed role/alarm ARNs')
         result=plan(a.directory,run,live,a.role_arn,a.alarm_arn,now);print(json.dumps({'plan_only':True,'scope':result['scope'],'step_ready':result['gate_at_plan']['ready']}))

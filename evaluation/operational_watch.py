@@ -363,6 +363,17 @@ def observe_cleanup(directory, run, key, now):
     return result
 
 
+def external_gate_stop(directory, run):
+    """Only the explicit new contract consumes its UID-bound fault-gate stop."""
+    if run.get('post_risk_gate') is None:return False
+    path=Path(directory)/'post-risk-stop-request.json'
+    if not path.exists():return False
+    value=json.loads(path.read_text())
+    if any(value.get(k)!=run.get(k) for k in ('run_id','policy_uid','workload_uid')):
+        raise ValueError('foreign post-risk stop request')
+    return value.get('normal_uid_cleanup_required') is True
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--directory',type=Path,required=True)
@@ -386,12 +397,18 @@ def main():
         run = json.loads((args.directory/'run.json').read_text())
         now = datetime.now(timezone.utc)
         authorization(run,json.loads(args.authorization.read_text()),now)
+        phase = None
         try:
             phase = cleanup_phase(args.directory, run, now)
             sample = (observe_cleanup(args.directory,run,args.ssh_key,now) if phase else observe(args.directory,run,args.ssh_key,now))
         except Exception as error:
             sample = {'error':type(error).__name__, 'reason':str(error)[:300]}
         state = decision(run,sample,now,failures);failures=state['consecutive_sensor_failures']
+        if not phase:
+            try:gate_stop=external_gate_stop(args.directory,run)
+            except (ValueError,OSError):gate_stop=True
+            if gate_stop:
+                state['stop_requested']=True;state['reasons'].append('post_risk_observer_stop_request')
         record = dict(at=now.isoformat(),run_id=run['run_id'],sample=sample,**state)
         record['phase'] = 'cleanup' if (args.directory/'cleanup-phase.json').exists() else 'training'
         with (args.directory/'safety-watch.jsonl').open('a') as f:

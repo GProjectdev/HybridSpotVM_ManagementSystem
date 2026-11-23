@@ -59,6 +59,13 @@ def render(config, source, run_id, condition):
         if not risk.get('paperEstimator',{}).get('feedEndpoint') or 'staticLambdaPerHour' in risk:
             raise ValueError('formal run requires frozen SARIMA replay feed')
         if not SHA.fullmatch(c.get('risk_lock_sha256','')):raise ValueError('formal risk/clock lock required')
+    post=c.get('post_risk_gate')
+    if post is not None:
+        try:
+            from .post_risk_fault_gate import validate_settings
+        except ImportError:
+            from post_risk_fault_gate import validate_settings
+        validate_settings(dict(c,protocol=PROTOCOL,arm=condition))
     ns=PREFIX+run_id;c.update(namespace=ns,scenario='constant',restore_audit=True)
     if not re.fullmatch(r'[a-z][a-z0-9-]{0,15}[a-z0-9]|[a-z]',run_id):
         raise ValueError('bounded run identity required for all control stages')
@@ -91,6 +98,9 @@ def render(config, source, run_id, condition):
     env[:]=[e for e in env if e['name'] not in controls];env.extend({'name':k,'value':str(v)} for k,v in controls.items())
     workload=canonical_hash({k:c.get(k) for k in lock_fields+('world_size','instance_type','nfs_server','nfs_model_path','nfs_dataset_path')})
     comparison=canonical_hash({'workload':workload,'training_code':info['training_code_sha256'],'policy':policy['spec']['policy'],'checkpoint':cp,'replacement':policy['spec']['replacement'],'risk':c['existing_risk_spec'],'risk_lock':c.get('risk_lock_sha256'),'fault_window':c.get('fault_window'),'route':'full-group','group_replacement_batch_size':batch,'checkpoint_buffer_reuse':buffer_reuse,'system':c['system_lock'],'account':c['expected_aws_account'],'ami':policy['spec']['capacity']['aws'].get('ami'),'storage_class':c['storage_class'],'checkpoint_size':c['checkpoint_size'],'periodic':condition!='A' and not manual})
+    # Preserve every historical comparison hash when the new mode is absent.
+    if post is not None:
+        comparison=canonical_hash({'legacy_comparison':comparison,'post_risk_gate':post})
     info.update(protocol=PROTOCOL,arm=condition,condition=condition,experiment='E1/E2' if condition!='C' else 'E2',
                 world_size=4,checkpoint_buffer_reuse=buffer_reuse,group_replacement_batch_size=batch,max_expected_worker_instances=4 if condition=='A' else 4+batch,namespace=ns,phase='rendered-suspended',ready_for_paid_execution=False,
                 formal_E1_E2_result=False,purpose=c['purpose'],manual_checkpoint_diagnostic=manual,completion_audit_required=True,
@@ -99,6 +109,9 @@ def render(config, source, run_id, condition):
                 samples_per_committed_step=4*c['batch_size'] if model=='resnet50' else None,
                 checkpoint_lock_sha256=canonical_hash(cp),scheduled_fis=condition=='C',
                 fault_trigger={'type':'committed_global_step','value':math.ceil(c['goal_steps']/2),'status':'PREDECLARED'} if condition=='C' else None)
+    if post is not None:
+        info.update(post_risk_gate=copy.deepcopy(post),risk_lock_sha256=c['risk_lock_sha256'],
+                    fault_trigger=None,evaluation_block='E1-L/E2-L')
     info['render_sha256']=canonical_hash({'member':storage,'objects':objects,'policy':policy})
     if c.get('fault_window') is not None:
         info['fault_window']=copy.deepcopy(c['fault_window'])
