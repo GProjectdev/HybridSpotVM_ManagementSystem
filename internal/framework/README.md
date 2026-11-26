@@ -12,9 +12,14 @@ capacity. Initial market composition uses the existing paper-eq6-7 calculation a
 fresh market-matched risk/prices. Periodic Cloud checkpoint intervals use actual
 active Spot count and identity-verified member-local checkpoint cost receipts.
 
-TrainingTransition is still a reserved execution contract: transition execution
-and full recovery are not yet enabled by this revision. CRD installation alone
-must not be reported as a completed recovery path.
+TrainingTransition now has a reconciler for target GPU/image/shared-storage probes,
+post-preparation planned checkpointing, bounded emergency fallback, and the existing
+full-group RestoreRequest engine. Run owns additive capacity intents, native placement,
+and exact restored Pod execution grants. Capacity can fence a failed provider while
+retaining its NodeProvision evidence until verified retirement. Live integration
+validation is still required; CRD installation or CPU tests alone are not proof of
+successful recovery. Cross-member storage currently requires identity-verified shared
+NFS. Unreachable source/storage or insufficient fencing evidence fails closed.
 
 Covered contracts:
 
@@ -32,10 +37,10 @@ Covered contracts:
 - Verify workload / binding / member / Pod identities and fresh rank telemetry.
   Pod readiness alone is insufficient evidence that training has started.
 
-Remaining integration: Transition reconciler loop, restore receipt adapters and
-full cross-cluster recovery verification. Cloud activation requires live integration
-verification in addition to its CPU tests. A node connection
-or initial On-Premise checkpoint does not validate these paths.
+Remaining acceptance: live Cloud placement, planned replacement, actual interruption
+handling, and cross-member recovery. Existing node and initial On-Premise checkpoint
+evidence does not validate these paths. Abrupt Node loss is recorded as an unannounced
+failure, not as evidence of a natural AWS Spot interruption.
 
 All staged controller binaries require TRAINING_NAMESPACE. Keep credentials scoped to that
 namespace; member credentials need read-only StatefulSet and Pod access. Old

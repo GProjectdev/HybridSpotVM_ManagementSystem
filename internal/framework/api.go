@@ -68,9 +68,10 @@ type CloudSpec struct {
 }
 
 type Allocation struct {
-	Name   string `json:"name"`
-	Market string `json:"market"`
-	State  string `json:"state"` // Prepare, Retain, Retire
+	FenceOperationUID string `json:"fenceOperationUID,omitempty"`
+	Name              string `json:"name"`
+	Market            string `json:"market"`
+	State             string `json:"state"` // Prepare, Retain, Fence, Retire
 }
 
 type CapacitySpec struct {

@@ -117,15 +117,20 @@ func initialPermit(status map[string]interface{}, work *unstructured.Unstructure
 		return nil
 	}
 	pods := map[string]interface{}{}
+	nodes := map[string]interface{}{}
 	for name, uid := range o.ScheduledPods {
 		pods[name] = uid
+		nodes[name] = o.ScheduledNodes[name]
 	}
 	if existing, ok := status["executionPermit"].(map[string]interface{}); ok {
 		if existing["cluster"] != o.SelectedCluster || existing["memberWorkloadUID"] != o.MemberWorkloadUID || !reflect.DeepEqual(existing["pods"], pods) {
 			return fmt.Errorf("Pod incarnation changed; verified transition required before new execution grant")
 		}
+		if existing["nodes"] == nil {
+			existing["nodes"] = nodes
+		}
 		return nil
 	}
-	status["executionPermit"] = map[string]interface{}{"workloadUID": string(work.GetUID()), "memberWorkloadUID": o.MemberWorkloadUID, "cluster": o.SelectedCluster, "pods": pods, "issuedAt": now}
+	status["executionPermit"] = map[string]interface{}{"workloadUID": string(work.GetUID()), "memberWorkloadUID": o.MemberWorkloadUID, "cluster": o.SelectedCluster, "pods": pods, "nodes": nodes, "issuedAt": now}
 	return nil
 }

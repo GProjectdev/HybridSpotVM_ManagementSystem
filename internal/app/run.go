@@ -56,7 +56,7 @@ func Run(component string, setup func(ctrl.Manager) error) {
 	}
 	if ns := os.Getenv("TRAINING_NAMESPACE"); ns != "" {
 		managerOptions.Cache.DefaultNamespaces = map[string]cache.Config{ns: {}}
-	} else if component == "training-run-controller" || component == "training-run-checkpoint-coordinator" || component == "training-capacity-controller" {
+	} else if component == "training-run-controller" || component == "training-run-checkpoint-coordinator" || component == "training-capacity-controller" || component == "training-transition-controller" {
 		must(fmt.Errorf("TRAINING_NAMESPACE is required for staged framework deployment"))
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)

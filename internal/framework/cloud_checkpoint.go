@@ -18,7 +18,7 @@ func (r *FrameworkCheckpointReconciler) cloudInterval(ctx context.Context, run, 
 		return 0, nil, fmt.Errorf("current capacity identity not verified")
 	}
 	var cs CapacitySpec
-	if decodeSpec(cap, &cs) != nil {
+	if decodeSpec(activeCapacityView(run, cap), &cs) != nil {
 		return 0, nil, fmt.Errorf("invalid capacity")
 	}
 	spot := int64(0)

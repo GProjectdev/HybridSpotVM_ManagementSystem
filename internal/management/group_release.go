@@ -14,6 +14,18 @@ import (
 
 const groupFenceAnnotation = "migration.dcnlab.com/group-source-fence"
 
+// ValidatePreparedGroupRestore preserves the existing receipt and source-fence
+// checks for the TrainingRun execution-grant path. It performs no writes.
+func ValidatePreparedGroupRestore(ctx context.Context, reader client.Reader, request *unstructured.Unstructured) error {
+	return validateGroupRelease(ctx, reader, request)
+}
+
+// ValidateVerifiedGroupRestore validates a backend completion receipt without
+// assigning ownership or authorizing resource deletion on the caller's behalf.
+func ValidateVerifiedGroupRestore(request *unstructured.Unstructured) error {
+	return validateGroupVerified(request)
+}
+
 // validateGroupRelease reads controller evidence rather than trusting the
 // request's phase alone. It never changes either the request or the plan.
 func validateGroupRelease(ctx context.Context, reader client.Reader, request *unstructured.Unstructured) error {

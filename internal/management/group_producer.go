@@ -341,6 +341,11 @@ func (r *PolicyReconciler) groupCheckpointVolume(ctx context.Context, input p.Po
 	return "", "", fmt.Errorf("shared checkpoint PVC mount at %s required", root)
 }
 
+// ReadGroupCheckpointVolume reuses the existing full-group storage contract.
+func ReadGroupCheckpointVolume(ctx context.Context, reader client.Reader, input p.PolicyInput) (string, string, error) {
+	return (&PolicyReconciler{APIReader: reader}).groupCheckpointVolume(ctx, input)
+}
+
 func (r *PolicyReconciler) newGroupRequest(ctx context.Context, input p.PolicyInput, name, operation, target string, round *groupCheckpoint, source []interface{}, pvc, root string, targetNodes map[string]string) (*unstructured.Unstructured, error) {
 	rt := p.NewObject("TrainingRuntime")
 	runtimeNameValue := input.RuntimeRefName

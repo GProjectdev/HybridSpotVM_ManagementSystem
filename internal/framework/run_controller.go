@@ -79,6 +79,20 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := r.exclusiveWorkload(ctx, run, work); err != nil {
 		return report("OwnershipConflict", err.Error())
 	}
+
+	if s.Mode == "Execute" {
+		transition, err := activeTransition(ctx, r.Client, run)
+		if err != nil {
+			return report("TransitionConflict", err.Error())
+		}
+		if transition != nil {
+			phase, message, e := r.reconcileTransitionIntent(ctx, run, work, transition, s, status)
+			if e != nil {
+				message = e.Error()
+			}
+			return report(phase, message)
+		}
+	}
 	committed, _ := status["committedCluster"].(string)
 	var capacity *unstructured.Unstructured
 	if s.Cloud.Allowed && s.Mode == "Execute" {
@@ -86,6 +100,15 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		capacity, err = r.initialCapacity(ctx, run, s, status, false)
 		if err != nil {
 			return report("CapacityBlocked", err.Error())
+		}
+	}
+	if s.Mode == "Execute" && committed != "" {
+		created, e := r.transitionTrigger(ctx, run, work, capacity, s, WorkloadObservation{}, status)
+		if e != nil {
+			status["transitionObservationError"] = e.Error()
+		}
+		if created {
+			return report("TransitionRequested", "observed interruption or confirmed failure; immutable recovery intent persisted")
 		}
 	}
 	cloudReady := capacityReady(capacity, s.WorldSize, r.now())
@@ -158,7 +181,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		admitted = o.AllPodsScheduled
 	}
 	if s.ExecutionGate && s.Mode == "Execute" && s.Cloud.Allowed && o.SelectedCluster == s.Cloud.Cluster {
-		if err := verifyCloudScheduledNodes(ctx, r.Members, capacity, o, s.Cloud.Cluster); err != nil {
+		if err := verifyCloudScheduledNodes(ctx, r.Members, activeCapacityView(run, capacity), o, s.Cloud.Cluster); err != nil {
 			return report("CloudExecutionBlocked", err.Error())
 		}
 	}
@@ -168,6 +191,17 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 		committed = o.SelectedCluster
 		status["committedCluster"] = committed
+	}
+	if s.Mode == "Execute" {
+		created, e := r.transitionTrigger(ctx, run, work, capacity, s, o, status)
+		if e != nil {
+			status["transitionObservationError"] = e.Error()
+		} else {
+			delete(status, "transitionObservationError")
+		}
+		if created {
+			return report("TransitionRequested", "immutable transition intent recorded before replacement capacity changes")
+		}
 	}
 	if s.ExecutionGate && s.Mode == "Execute" {
 		if err := initialPermit(status, work, o, stamp(r.now())); err != nil {

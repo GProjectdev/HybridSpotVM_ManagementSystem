@@ -120,7 +120,7 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	seen := map[string]bool{}
 	for _, a := range s.Allocations {
-		if a.Name == "" || len(a.Name) > 63 || seen[a.Name] || (a.Market != "spot" && a.Market != "on-demand") || (a.State != "Prepare" && a.State != "Retain" && a.State != "Retire") {
+		if a.Name == "" || len(a.Name) > 63 || seen[a.Name] || (a.Market != "spot" && a.Market != "on-demand") || (a.State != "Prepare" && a.State != "Retain" && a.State != "Retire" && a.State != "Fence") {
 			return report("Invalid", "unique allocation names, explicit markets and valid lifecycle states required")
 		}
 		seen[a.Name] = true
@@ -289,7 +289,7 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			entry["originUID"] = string(np.GetUID())
 			return report("Preparing", "recovered allocation UID before propagation")
 		}
-		if rs.Suspend && !retire {
+		if rs.Suspend && !retire && a.State != "Fence" {
 			entry["phase"] = "Retained"
 			continue
 		}
@@ -348,6 +348,10 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return report("IdentityConflict", "member NodeProvision was recreated")
 		}
 		entry["memberUID"] = string(member.GetUID())
+		if spot, ok, _ := unstructured.NestedMap(member.Object, "status", "spot"); ok {
+			entry["spot"] = spot
+		}
+		entry["memberGeneration"] = member.GetGeneration()
 		instance := str(member, "status", "instanceId")
 		if previous, ok := entry["instanceID"].(string); ok && instance != "" && previous != instance {
 			return report("IdentityConflict", "allocation instance ID changed")
@@ -355,12 +359,16 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if instance != "" {
 			entry["instanceID"] = instance
 		}
-		if retire {
+		if retire || a.State == "Fence" {
 			if instance == "" {
 				entry["phase"] = "RetirementPending"
 				continue
 			}
-			request := map[string]interface{}{"operationUID": string(cap.GetUID()), "instanceID": instance}
+			operation, fenceErr := authorizedFenceOperation(ctx, r.Client, cap, run, a, entry, instance)
+			if fenceErr != nil {
+				return report("FenceConflict", fenceErr.Error())
+			}
+			request := map[string]interface{}{"operationUID": operation, "instanceID": instance}
 			old, found, _ := unstructured.NestedMap(np.Object, "spec", "fence")
 			if !found {
 				base := np.DeepCopy()
@@ -371,19 +379,23 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				entry["phase"] = "Fencing"
 				continue
 			}
-			if old["operationUID"] != string(cap.GetUID()) || old["instanceID"] != instance {
+			if old["operationUID"] != operation || old["instanceID"] != instance {
 				return report("FenceConflict", "foreign fence intent")
 			}
-			if str(member, "status", "fence", "phase") != "Fenced" || str(member, "status", "fence", "operationUID") != string(cap.GetUID()) || str(member, "status", "fence", "instanceID") != instance || integer(member, "status", "fence", "observedGeneration") != member.GetGeneration() {
+			if str(member, "status", "fence", "phase") != "Fenced" || str(member, "status", "fence", "operationUID") != operation || str(member, "status", "fence", "instanceID") != instance || integer(member, "status", "fence", "observedGeneration") != member.GetGeneration() {
 				entry["phase"] = "Fencing"
 				continue
 			}
 			if entry["fencedAt"] == nil {
-				entry["fencedAt"], entry["phase"] = str(member, "status", "fence", "observedAt"), "Fenced"
+				entry["fencedAt"], entry["phase"], entry["fenceOperationUID"] = str(member, "status", "fence", "observedAt"), "Fenced", operation
 				if entry["fencedAt"] == "" {
 					return report("FenceConflict", "provider fence timestamp missing")
 				}
 				return report("Retiring", "provider-confirmed termination receipt persisted")
+			}
+			if !retire {
+				entry["phase"] = "Fenced"
+				continue
 			}
 			if np.GetDeletionTimestamp().IsZero() {
 				uid := np.GetUID()

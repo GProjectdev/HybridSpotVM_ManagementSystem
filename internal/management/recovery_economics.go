@@ -9,6 +9,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// ApplyVerifiedRecoveryEconomics reuses the established opt-in measured-loss
+// calculation. It cannot attest a restore or authorize cleanup.
+func ApplyVerifiedRecoveryEconomics(ctx context.Context, c client.Client, input *p.PolicyInput, runtime p.RuntimeSnapshot, risk p.RiskSnapshot, now time.Time) error {
+	return (&PolicyReconciler{Client: c, APIReader: c, Clock: func() time.Time { return now }}).applyRecoveryEconomics(ctx, input, runtime, risk)
+}
+
 // Calibration is opt-in. It never certifies restoration or authorizes deletion.
 // Request-to-verification latency is an end-to-end recovery proxy, not CRIU time.
 func (r *PolicyReconciler) applyRecoveryEconomics(ctx context.Context, input *p.PolicyInput, runtime p.RuntimeSnapshot, risk p.RiskSnapshot) error {
