@@ -72,6 +72,26 @@ spec:
                 format: int64
                 minimum: 1
                 maximum: 604800
+              resourcePolicy:
+                type: object
+                properties:
+                  alpha:
+                    type: number
+                    minimum: 0
+                    exclusiveMinimum: true
+                    maximum: 1
+                    default: 0.8
+                  minOnDemand:
+                    type: integer
+                    format: int64
+                    minimum: 0
+                    default: 0
+                  forecastSeconds:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    maximum: 86400
+                    default: 3600
               runtimePort:
                 type: integer
                 format: int64

@@ -36,9 +36,14 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 	if r.Now != nil {
 		now = r.Now().UTC()
 	}
+	var intervalEvidence map[string]interface{}
 	report := func(phase, msg string, interval int64) (ctrl.Result, error) {
 		base := run.DeepCopy()
-		_ = unstructured.SetNestedMap(run.Object, map[string]interface{}{"phase": phase, "message": msg, "intervalSeconds": interval, "observedAt": stamp(now)}, "status", "checkpoint")
+		receipt := map[string]interface{}{"phase": phase, "message": msg, "intervalSeconds": interval, "observedAt": stamp(now)}
+		if intervalEvidence != nil {
+			receipt["policyEvidence"] = intervalEvidence
+		}
+		_ = unstructured.SetNestedMap(run.Object, receipt, "status", "checkpoint")
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, r.Status().Patch(ctx, run, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{}))
 	}
 	var s RunSpec
@@ -88,9 +93,6 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 	if err != nil || !o.Running {
 		return pause("fresh all-rank training progress unavailable")
 	}
-	if o.SelectedCluster != s.OnPremiseCluster {
-		return pause("Cloud interval receipt integration is not enabled")
-	}
 	transitions, err := listItems(ctx, r.Client, "training.dcnlab.com/v1alpha1", "TrainingTransition", req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -102,6 +104,14 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 		}
 	}
 	interval, err := CheckpointInterval(s.CheckpointSeconds, 0, false, false)
+	if o.SelectedCluster == s.Cloud.Cluster && s.Cloud.Allowed {
+		// The current schedule may be absent on the first pass; that is an
+		// explicit bootstrap cost state, never a fabricated measured duration.
+		if e := r.Get(ctx, client.ObjectKeyFromObject(schedule), schedule); e != nil && !apierrors.IsNotFound(e) {
+			return ctrl.Result{}, e
+		}
+		interval, intervalEvidence, err = r.cloudInterval(ctx, run, work, schedule, s, o, now)
+	}
 	if err != nil {
 		return pause(err.Error())
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"time"
 
@@ -28,20 +29,29 @@ type ObjectRef struct {
 }
 
 type RunSpec struct {
-	WorkloadRef        ObjectRef `json:"workloadRef"`
-	OnPremiseCluster   string    `json:"onPremiseCluster"`
-	WorldSize          int64     `json:"worldSize"`
-	WaitSeconds        *int64    `json:"waitSeconds,omitempty"`
-	PreparationSeconds *int64    `json:"preparationSeconds,omitempty"`
-	CheckpointSeconds  int64     `json:"checkpointSeconds"`
-	RuntimePort        int64     `json:"runtimePort,omitempty"`
-	Container          string    `json:"container,omitempty"`
-	ExecutionGate      bool      `json:"executionGate,omitempty"`
-	Suspend            bool      `json:"suspend,omitempty"`
+	WorkloadRef        ObjectRef          `json:"workloadRef"`
+	OnPremiseCluster   string             `json:"onPremiseCluster"`
+	WorldSize          int64              `json:"worldSize"`
+	WaitSeconds        *int64             `json:"waitSeconds,omitempty"`
+	PreparationSeconds *int64             `json:"preparationSeconds,omitempty"`
+	CheckpointSeconds  int64              `json:"checkpointSeconds"`
+	RuntimePort        int64              `json:"runtimePort,omitempty"`
+	Container          string             `json:"container,omitempty"`
+	ExecutionGate      bool               `json:"executionGate,omitempty"`
+	Suspend            bool               `json:"suspend,omitempty"`
+	ResourcePolicy     ResourcePolicySpec `json:"resourcePolicy,omitempty"`
 	// Observe is the default for staged rollout. Execute is an explicit user
 	// intent, not an annotation silently enabling mutations on old workloads.
 	Mode  string    `json:"mode"`
 	Cloud CloudSpec `json:"cloud"`
+}
+
+// ResourcePolicySpec configures the existing paper-eq6-7 policy. It is part of
+// the training request, not a replacement for Karmada placement policy.
+type ResourcePolicySpec struct {
+	Alpha           *float64 `json:"alpha,omitempty"`
+	MinOnDemand     int64    `json:"minOnDemand,omitempty"`
+	ForecastSeconds int64    `json:"forecastSeconds,omitempty"`
 }
 
 type CloudSpec struct {
@@ -192,6 +202,12 @@ func (s RunSpec) Validate() error {
 	}
 	if s.Mode != "Observe" && s.Mode != "Execute" {
 		return fmt.Errorf("mode must be Observe or Execute")
+	}
+	if s.ResourcePolicy.Alpha != nil && (math.IsNaN(*s.ResourcePolicy.Alpha) || math.IsInf(*s.ResourcePolicy.Alpha, 0) || *s.ResourcePolicy.Alpha <= 0 || *s.ResourcePolicy.Alpha > 1) {
+		return fmt.Errorf("resourcePolicy.alpha must be in (0,1]")
+	}
+	if s.ResourcePolicy.MinOnDemand < 0 || s.ResourcePolicy.MinOnDemand > s.WorldSize || s.ResourcePolicy.ForecastSeconds < 0 || s.ResourcePolicy.ForecastSeconds > 86400 {
+		return fmt.Errorf("invalid resourcePolicy worker minimum or forecast horizon")
 	}
 	w, p := s.Wait()
 	if _, err := PreparationAt(time.Now(), w, p); err != nil {

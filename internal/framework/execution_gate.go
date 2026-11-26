@@ -74,7 +74,7 @@ func (r *RunReconciler) prepareExecutionGate(ctx context.Context, run, work *uns
 	u := object("v1", "Secret")
 	u.SetName(secret.Name)
 	u.SetNamespace(secret.Namespace)
-	if err := ensurePlacement(ctx, r.Client, run, u, []string{s.OnPremiseCluster}); err != nil {
+	if err := ensureGateDependencyPlacement(ctx, r.Client, run, u, s); err != nil {
 		return err
 	}
 	gate := map[string]interface{}{"name": "training-execution-permit", "image": r.GateImage, "command": []interface{}{"/manager"}, "args": []interface{}{"--kubeconfig=/training-access/kubeconfig", "--namespace=" + run.GetNamespace(), "--run=" + run.GetName(), "--run-uid=" + string(run.GetUID()), "--workload-uid=" + string(work.GetUID())}, "env": []interface{}{map[string]interface{}{"name": "POD_NAME", "valueFrom": map[string]interface{}{"fieldRef": map[string]interface{}{"fieldPath": "metadata.name"}}}, map[string]interface{}{"name": "POD_UID", "valueFrom": map[string]interface{}{"fieldRef": map[string]interface{}{"fieldPath": "metadata.uid"}}}}, "resources": map[string]interface{}{"requests": map[string]interface{}{"cpu": "10m", "memory": "32Mi"}, "limits": map[string]interface{}{"cpu": "100m", "memory": "64Mi"}}, "securityContext": map[string]interface{}{"runAsNonRoot": true, "runAsUser": int64(65532), "allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true}, "volumeMounts": []interface{}{map[string]interface{}{"name": "training-execution-access", "mountPath": "/training-access", "readOnly": true}}}

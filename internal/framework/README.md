@@ -5,13 +5,16 @@ TrainingRun / Checkpoint reconciler processes. Execute mode currently supports
 initial On-Premise placement, runtime registration and the existing FluidCR
 periodic checkpoint engine. Observe mode writes Run status only.
 
-Cloud activation and transition execution are NOT enabled. The separate
-TrainingCapacity controller implements UID-bound AWS VPC provisioning and
-provider-receipted retirement; TrainingRun does not yet submit capacities.
-A due Cloud preparation is reported as CloudActivationBlocked. No paid allocation,
-source fencing, workload migration or restore is initiated by this revision.
-TrainingTransition remains a reserved execution contract. CRD installation alone
-does not establish that any controller or recovery path is deployed.
+Cloud activation now submits a UID-bound TrainingCapacity after the preparation
+lead time. Karmada receives the Cloud candidate only after all owned GPU nodes are
+ready and the user wait has elapsed. An On-Premise commitment retires unused Cloud
+capacity. Initial market composition uses the existing paper-eq6-7 calculation and
+fresh market-matched risk/prices. Periodic Cloud checkpoint intervals use actual
+active Spot count and identity-verified member-local checkpoint cost receipts.
+
+TrainingTransition is still a reserved execution contract: transition execution
+and full recovery are not yet enabled by this revision. CRD installation alone
+must not be reported as a completed recovery path.
 
 Covered contracts:
 
@@ -29,9 +32,9 @@ Covered contracts:
 - Verify workload / binding / member / Pod identities and fresh rank telemetry.
   Pod readiness alone is insufficient evidence that training has started.
 
-Remaining integration: Transition reconciler loop, Cloud execution
-permit and cancellation/retirement integration, checkpoint evidence/restore
-receipt adapters and full cross-cluster recovery verification. A node connection
+Remaining integration: Transition reconciler loop, restore receipt adapters and
+full cross-cluster recovery verification. Cloud activation requires live integration
+verification in addition to its CPU tests. A node connection
 or initial On-Premise checkpoint does not validate these paths.
 
 All staged controller binaries require TRAINING_NAMESPACE. Keep credentials scoped to that
@@ -47,8 +50,7 @@ Optional executionGate injects a read-only init container before first propagati
 The Run controller grants the exact all-rank Pod UIDs only after scheduling. An
 initial permit cannot be reassigned to replacement Pods or retrofitted after a
 ResourceBinding exists. This startup guard does not replace source fencing during
-recovery. Cloud activation remains blocked until Capacity and Transition receipt
-integration is ready. `suspend: true` pauses new control/checkpoint actions; it does
+recovery. A changed Pod incarnation remains blocked until transition verification. `suspend: true` pauses new control/checkpoint actions; it does
 not terminate existing workloads or retained infrastructure.
 
 Capacity templates are immutable ConfigMaps containing `nodeProvisionSpec.json`.

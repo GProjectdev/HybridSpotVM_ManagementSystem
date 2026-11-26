@@ -101,3 +101,39 @@ func TestWorkloadObservationUsesCurrentMemberPodUIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestCandidateRuntimeMayMoveOnlyBeforeExecutionCommitment(t *testing.T) {
+	ctx := context.Background()
+	run, work := initialObjects("Execute")
+	b := object("work.karmada.io/v1alpha2", "ResourceBinding")
+	b.SetName("a")
+	b.SetNamespace("ns")
+	b.Object["spec"] = map[string]interface{}{"resource": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "namespace": "ns", "name": "a", "uid": string(work.GetUID())}, "clusters": []interface{}{map[string]interface{}{"name": "aws1", "replicas": int64(1)}}}
+	rt := named("TrainingRuntime", "ns", "a-runtime")
+	setOwner(rt, run)
+	rt.Object["spec"] = map[string]interface{}{"sourceCluster": "onpre1"}
+	sts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns", UID: "member", Labels: map[string]string{"training.dcnlab.com/workload-uid": string(work.GetUID())}}, Spec: appsv1.StatefulSetSpec{Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "a"}}}}
+	scheme := runtime.NewScheme()
+	_ = appsv1.AddToScheme(scheme)
+	_ = corev1.AddToScheme(scheme)
+	member := fake.NewClientBuilder().WithScheme(scheme).WithObjects(sts).Build()
+	for _, state := range []string{"waiting", "committed", "permit", "ungated"} {
+		t.Run(state, func(t *testing.T) {
+			obj := run.DeepCopy()
+			s := RunSpec{WorldSize: 1, OnPremiseCluster: "onpre1", ExecutionGate: true, Cloud: CloudSpec{Cluster: "aws1"}}
+			switch state {
+			case "committed":
+				obj.Object["status"] = map[string]interface{}{"committedCluster": "onpre1"}
+			case "permit":
+				obj.Object["status"] = map[string]interface{}{"executionPermit": map[string]interface{}{"cluster": "onpre1"}}
+			case "ungated":
+				s.ExecutionGate = false
+			}
+			control := frameworkClient(obj, work, b, rt)
+			o, err := ObserveWorkload(ctx, control, func(string) (client.Reader, error) { return member, nil }, obj, work, s, time.Now())
+			if (err == nil) != (state == "waiting") || o.Running {
+				t.Fatal(state, o, err)
+			}
+		})
+	}
+}

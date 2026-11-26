@@ -63,6 +63,7 @@ type WorkloadObservation struct {
 	Runtime                                        p.RuntimeSnapshot
 	MemberWorkloadUID                              string
 	ScheduledPods                                  map[string]string
+	ScheduledNodes                                 map[string]string
 }
 
 // ObserveWorkload rejects stale bindings and multiple target worlds. Running is
@@ -145,6 +146,7 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 	}
 	var scheduled int64
 	livePods := map[string]string{}
+	liveNodes := map[string]string{}
 	for _, pod := range pods.Items {
 		owner := metav1.GetControllerOf(&pod)
 		if owner == nil || owner.UID != memberWork.UID || !pod.DeletionTimestamp.IsZero() {
@@ -153,6 +155,7 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 		if pod.Spec.NodeName != "" {
 			scheduled++
 			livePods[pod.Name] = string(pod.UID)
+			liveNodes[pod.Name] = pod.Spec.NodeName
 		}
 		for _, cond := range pod.Status.Conditions {
 			if cond.Type == corev1.PodScheduled && cond.Status == corev1.ConditionFalse && cond.Reason == "Unschedulable" && strings.Contains(cond.Message, "Insufficient nvidia.com/gpu") {
@@ -164,14 +167,24 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 	result.AllPodsScheduled = scheduled == s.WorldSize
 	result.MemberWorkloadUID = string(memberWork.UID)
 	result.ScheduledPods = livePods
+	result.ScheduledNodes = liveNodes
 	rt := p.NewObject("TrainingRuntime")
 	if err = c.Get(ctx, key(run.GetNamespace(), run.GetName()+"-runtime"), rt); apierrors.IsNotFound(err) {
 		return result, nil
 	} else if err != nil {
 		return result, err
 	}
-	if !owned(rt, run) || str(rt, "spec", "sourceCluster") != result.SelectedCluster {
+	if !owned(rt, run) {
 		return result, fmt.Errorf("runtime ownership mismatch")
+	}
+	if str(rt, "spec", "sourceCluster") != result.SelectedCluster {
+		_, permit, _ := unstructured.NestedMap(run.Object, "status", "executionPermit")
+		if s.ExecutionGate && str(run, "status", "committedCluster") == "" && !permit {
+			// Karmada selected a different initial candidate before any process
+			// was admitted. The reconciler may register that candidate next.
+			return result, nil
+		}
+		return result, fmt.Errorf("runtime member changed after execution commitment")
 	}
 	result.Runtime = p.ReadRuntimeStatus(rt, result.SelectedCluster)
 	if result.Runtime.MemberWorkloadUID == "" {

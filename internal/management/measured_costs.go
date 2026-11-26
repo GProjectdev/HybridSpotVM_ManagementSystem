@@ -12,6 +12,22 @@ import (
 
 var sha256Pattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
+// MeasuredCostsFromLocalMigration reuses the established archive/time checks for
+// a directly read member-local child. Callers must verify its owner/workload UID.
+func MeasuredCostsFromLocalMigration(migration *unstructured.Unstructured, now time.Time, maxAge time.Duration) (trainingpolicy.MeasuredCosts, bool, string) {
+	if migration == nil {
+		return trainingpolicy.MeasuredCosts{}, false, "missing_migration"
+	}
+	status, found, err := unstructured.NestedMap(migration.Object, "status")
+	if err != nil || !found {
+		return trainingpolicy.MeasuredCosts{}, false, "missing_status"
+	}
+	status["clusterName"] = "verified-local-member"
+	copy := migration.DeepCopy()
+	copy.Object["status"] = map[string]interface{}{"clusters": []interface{}{status}}
+	return measuredCostsFromMigrationWithMaxAge(copy, "verified-local-member", now, maxAge)
+}
+
 func measuredCostsFromMigration(migration *unstructured.Unstructured, sourceCluster string, now time.Time) (trainingpolicy.MeasuredCosts, bool, string) {
 	return measuredCostsFromMigrationWithMaxAge(migration, sourceCluster, now, trainingpolicy.MeasuredCostMaxAge(0))
 }

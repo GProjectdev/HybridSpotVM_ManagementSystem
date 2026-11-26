@@ -79,17 +79,37 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := r.exclusiveWorkload(ctx, run, work); err != nil {
 		return report("OwnershipConflict", err.Error())
 	}
+	committed, _ := status["committedCluster"].(string)
+	var capacity *unstructured.Unstructured
+	if s.Cloud.Allowed && s.Mode == "Execute" {
+		var err error
+		capacity, err = r.initialCapacity(ctx, run, s, status, false)
+		if err != nil {
+			return report("CapacityBlocked", err.Error())
+		}
+	}
+	cloudReady := capacityReady(capacity, s.WorldSize, r.now())
+	cloudEligible, _ := status["cloudEligible"].(bool)
 	if s.Mode == "Execute" {
 		if err := r.labelWorkload(ctx, run, work); err != nil {
 			return report("OwnershipConflict", err.Error())
 		}
-		// Until a UID-bound execution-permit backend is integrated, changing a
-		// live member is prohibited. This is a declared capability limit, not a
-		// successful Cloud activation or a simulated recovery.
 		if err := r.prepareExecutionGate(ctx, run, work, s); err != nil {
 			return report("ExecutionGateBlocked", err.Error())
 		}
-		if err := ensurePlacement(ctx, r.Client, run, work, []string{s.OnPremiseCluster}); err != nil {
+		clusters := []string{s.OnPremiseCluster}
+		if committed != "" {
+			if committed != s.OnPremiseCluster && committed != s.Cloud.Cluster {
+				return report("IdentityConflict", "foreign committed cluster")
+			}
+			clusters = []string{committed}
+		} else if cloudEligible && cloudReady {
+			if err := ensureCloudNodePlacement(ctx, r.Client, run, work, capacity, s); err != nil {
+				return report("CloudPlacementBlocked", err.Error())
+			}
+			clusters = append(clusters, s.Cloud.Cluster)
+		}
+		if err := ensurePlacement(ctx, r.Client, run, work, clusters); err != nil {
 			return report("PlacementError", err.Error())
 		}
 	}
@@ -99,17 +119,21 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	status["selectedCluster"], status["gpuShortage"], status["allPodsScheduled"] = o.SelectedCluster, o.GPUShortage, o.AllPodsScheduled
 	if s.Mode == "Execute" && o.SelectedCluster != "" {
-		if o.SelectedCluster != s.OnPremiseCluster {
-			return report("UnsafePlacement", "unexpected member; no automatic restore or checkpoint requested")
+		if o.SelectedCluster != s.OnPremiseCluster && (o.SelectedCluster != s.Cloud.Cluster || (committed == "" && (!cloudEligible || !cloudReady))) {
+			return report("UnsafePlacement", "Cloud is not eligible with a verified complete target world")
 		}
 		if err := r.ensureRuntime(ctx, run, work, s, o.SelectedCluster); err != nil {
 			return report("RuntimeError", err.Error())
 		}
 	}
-	committed, _ := status["committedCluster"].(string)
 	admitted := o.AnyPodScheduled
 	if s.ExecutionGate {
 		admitted = o.AllPodsScheduled
+	}
+	if s.ExecutionGate && s.Mode == "Execute" && s.Cloud.Allowed && o.SelectedCluster == s.Cloud.Cluster {
+		if err := verifyCloudScheduledNodes(ctx, r.Members, capacity, o, s.Cloud.Cluster); err != nil {
+			return report("CloudExecutionBlocked", err.Error())
+		}
 	}
 	if admitted && o.SelectedCluster != "" {
 		if committed != "" && committed != o.SelectedCluster {
@@ -128,13 +152,30 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	shortageAt, _ := time.Parse(time.RFC3339Nano, fmt.Sprint(status["shortageSince"]))
 	w, lead := s.Wait()
-	d, err := DecideActivation(ActivationObservation{Now: r.now(), ShortageAt: shortageAt, WaitSeconds: w, PreparationSeconds: lead, CloudAllowed: s.Cloud.Allowed, ResourceShortage: o.GPUShortage, OnPremAdmitted: admitted && o.SelectedCluster == s.OnPremiseCluster, CommittedCluster: committed, OnPremCluster: s.OnPremiseCluster, CloudCluster: s.Cloud.Cluster})
+	d, err := DecideActivation(ActivationObservation{Now: r.now(), ShortageAt: shortageAt, WaitSeconds: w, PreparationSeconds: lead, CloudAllowed: s.Cloud.Allowed, ResourceShortage: o.GPUShortage, CloudReady: cloudReady, OnPremAdmitted: admitted && o.SelectedCluster == s.OnPremiseCluster, CommittedCluster: committed, OnPremCluster: s.OnPremiseCluster, CloudCluster: s.Cloud.Cluster})
 	if err != nil {
 		return report("DecisionBlocked", err.Error())
 	}
 	status["activation"] = map[string]interface{}{"phase": d.Phase, "prepareCloud": d.PrepareCloud, "allowCloud": d.AllowCloud, "retireUnusedCloud": d.RetireUnusedCloud}
 	if !d.PrepareAt.IsZero() {
 		status["activation"].(map[string]interface{})["prepareAt"] = stamp(d.PrepareAt)
+	}
+	if s.Mode == "Execute" {
+		if d.RetireUnusedCloud {
+			if err := retireUnusedCapacity(ctx, r.Client, capacity); err != nil {
+				return report("CapacityRetirementBlocked", err.Error())
+			}
+		}
+		if d.PrepareCloud && capacity == nil {
+			var err error
+			capacity, err = r.initialCapacity(ctx, run, s, status, true)
+			if err != nil {
+				return report("CloudPolicyBlocked", err.Error())
+			}
+		}
+		if d.AllowCloud {
+			status["cloudEligible"] = true
+		}
 	}
 	if o.Running {
 		if status["trainingStartedAt"] == nil {
@@ -144,7 +185,13 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return report("Running", "all ranks have fresh UID-bound training progress")
 	}
 	if d.PrepareCloud {
-		return report("CloudActivationBlocked", "preparation is due; capacity and execution-permit integration must be verified before paid allocation")
+		if s.Mode != "Execute" {
+			return report("CloudActivationBlocked", "Observe mode records decisions without creating capacity")
+		}
+		if d.AllowCloud {
+			return report("CloudEligible", "complete GPU world ready; Karmada may select Cloud after the requested wait")
+		}
+		return report("PreparingCloud", "UID-bound capacity requested; On-Premise admission retains priority before commitment")
 	}
 	if committed != "" {
 		return report("AwaitingTrainingProgress", "member committed; waiting for fresh all-rank telemetry")

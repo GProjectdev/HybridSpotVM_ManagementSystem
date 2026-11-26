@@ -171,6 +171,15 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		raw = template.Data["nodeProvisionSpec.json"]
 		sum := sha256.Sum256([]byte(raw))
 		status["templateUID"], status["templateSHA256"], status["templateJSON"] = string(template.UID), hex.EncodeToString(sum[:]), raw
+		if evidence := cap.GetAnnotations()[initialPolicyAnnotation]; evidence != "" {
+			var receipt map[string]interface{}
+			if json.Unmarshal([]byte(evidence), &receipt) != nil || receipt["templateUID"] != string(template.UID) || receipt["templateSHA256"] != hex.EncodeToString(sum[:]) {
+				delete(status, "templateUID")
+				delete(status, "templateSHA256")
+				delete(status, "templateJSON")
+				return report("TemplateConflict", "initial policy was evaluated against a different template")
+			}
+		}
 		return report("BindingTemplate", "template identity persisted before allocation")
 	}
 	var spec map[string]interface{}
