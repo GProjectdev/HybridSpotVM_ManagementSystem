@@ -54,12 +54,10 @@ func Run(component string, setup func(ctrl.Manager) error) {
 		LeaderElectionID:        leaderElectionID(component),
 		LeaderElectionNamespace: os.Getenv("POD_NAMESPACE"),
 	}
-	if component == "training-run-controller" || component == "training-run-checkpoint-coordinator" || component == "training-capacity-controller" {
-		ns := os.Getenv("TRAINING_NAMESPACE")
-		if ns == "" {
-			must(fmt.Errorf("TRAINING_NAMESPACE is required for staged framework deployment"))
-		}
+	if ns := os.Getenv("TRAINING_NAMESPACE"); ns != "" {
 		managerOptions.Cache.DefaultNamespaces = map[string]cache.Config{ns: {}}
+	} else if component == "training-run-controller" || component == "training-run-checkpoint-coordinator" || component == "training-capacity-controller" {
+		must(fmt.Errorf("TRAINING_NAMESPACE is required for staged framework deployment"))
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	must(err)
