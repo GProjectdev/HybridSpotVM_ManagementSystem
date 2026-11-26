@@ -15,7 +15,7 @@ import (
 // ExecutionPermit matches a concrete Pod incarnation. A name, Ready condition,
 // lease, risk estimate or Cloud readiness alone cannot authorize training.
 func ExecutionPermitted(run *unstructured.Unstructured, runUID, workUID, podName, podUID string) bool {
-	if runUID == "" || workUID == "" || podUID == "" || podName == "" || string(run.GetUID()) != runUID || !run.GetDeletionTimestamp().IsZero() {
+	if runUID == "" || workUID == "" || podUID == "" || podName == "" || string(run.GetUID()) != runUID || !run.GetDeletionTimestamp().IsZero() || boolAt(run, "spec", "suspend") {
 		return false
 	}
 	return str(run, "status", "committedCluster") != "" && str(run, "status", "workloadUID") == workUID && str(run, "status", "executionPermit", "workloadUID") == workUID && str(run, "status", "executionPermit", "pods", podName) == podUID && str(run, "status", "executionPermit", "memberWorkloadUID") != "" && str(run, "status", "executionPermit", "cluster") == str(run, "status", "committedCluster")

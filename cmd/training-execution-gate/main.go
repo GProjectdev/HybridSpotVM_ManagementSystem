@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -14,14 +15,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type options struct{ path, ns, name, uid, workUID string }
+
+func parseOptions(args []string) (options, error) {
+	var o options
+	// controller-runtime registers kubeconfig on the global FlagSet during
+	// import. A dedicated command FlagSet avoids duplicate registration panics.
+	f := flag.NewFlagSet("training-execution-gate", flag.ContinueOnError)
+	f.SetOutput(io.Discard)
+	f.StringVar(&o.path, "kubeconfig", "", "read-only Run credential")
+	f.StringVar(&o.ns, "namespace", "", "Run namespace")
+	f.StringVar(&o.name, "run", "", "Run name")
+	f.StringVar(&o.uid, "run-uid", "", "Run UID")
+	f.StringVar(&o.workUID, "workload-uid", "", "workload UID")
+	err := f.Parse(args)
+	return o, err
+}
+
 func main() {
-	var path, ns, name, uid, workUID string
-	flag.StringVar(&path, "kubeconfig", "", "read-only Run credential")
-	flag.StringVar(&ns, "namespace", "", "Run namespace")
-	flag.StringVar(&name, "run", "", "Run name")
-	flag.StringVar(&uid, "run-uid", "", "Run UID")
-	flag.StringVar(&workUID, "workload-uid", "", "workload UID")
-	flag.Parse()
+	o, err := parseOptions(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "invalid execution gate arguments")
+		os.Exit(1)
+	}
+	path, ns, name, uid, workUID := o.path, o.ns, o.name, o.uid, o.workUID
 	podName, podUID := os.Getenv("POD_NAME"), os.Getenv("POD_UID")
 	if path == "" || ns == "" || name == "" || uid == "" || workUID == "" || podName == "" || podUID == "" {
 		fmt.Fprintln(os.Stderr, "execution gate identity/configuration missing")
