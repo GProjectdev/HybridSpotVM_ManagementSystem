@@ -219,3 +219,31 @@ func TestRunPrewarmsOnlyAfterLeadTimeAndCancelsOnPremCommit(t *testing.T) {
 		}
 	}
 }
+
+func TestInitialWorkloadUsesResourceAwareSingleClusterScheduling(t *testing.T) {
+	run, work := initialObjects("Execute")
+	c := frameworkClient(run, work)
+	if err := ensureWorkloadPlacement(context.Background(), c, run, work, []string{"onpre1", "aws1"}, true); err != nil {
+		t.Fatal(err)
+	}
+	pp := object("policy.karmada.io/v1alpha1", "PropagationPolicy")
+	if err := c.Get(context.Background(), key("ns", "a-training-placement"), pp); err != nil {
+		t.Fatal(err)
+	}
+	if str(pp, "spec", "placement", "replicaScheduling", "replicaSchedulingType") != "Divided" || str(pp, "spec", "placement", "replicaScheduling", "replicaDivisionPreference") != "Aggregated" {
+		t.Fatal(pp.Object)
+	}
+	groups, _, _ := unstructured.NestedSlice(pp.Object, "spec", "placement", "spreadConstraints")
+	if groups[0].(map[string]interface{})["maxGroups"] != int64(1) {
+		t.Fatal("world may split", groups)
+	}
+	if err := ensureWorkloadPlacement(context.Background(), c, run, work, []string{"aws1"}, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Get(context.Background(), key("ns", "a-training-placement"), pp); err != nil {
+		t.Fatal(err)
+	}
+	if str(pp, "spec", "placement", "replicaScheduling", "replicaSchedulingType") != "Divided" {
+		t.Fatal("commit unexpectedly removed scheduler contract")
+	}
+}

@@ -109,7 +109,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			}
 			clusters = append(clusters, s.Cloud.Cluster)
 		}
-		if err := ensurePlacement(ctx, r.Client, run, work, clusters); err != nil {
+		if err := ensureWorkloadPlacement(ctx, r.Client, run, work, clusters, committed == ""); err != nil {
 			return report("PlacementError", err.Error())
 		}
 	}
@@ -259,7 +259,7 @@ func (r *RunReconciler) labelWorkload(ctx context.Context, run, work *unstructur
 	return r.Patch(ctx, work, client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{}))
 }
 
-func ensurePlacement(ctx context.Context, c client.Client, owner, obj *unstructured.Unstructured, clusters []string) error {
+func placementPolicy(obj *unstructured.Unstructured, clusters []string) *unstructured.Unstructured {
 	pp := object("policy.karmada.io/v1alpha1", "PropagationPolicy")
 	pp.SetNamespace(obj.GetNamespace())
 	pp.SetName(obj.GetName() + "-training-placement")
@@ -268,7 +268,22 @@ func ensurePlacement(ctx context.Context, c client.Client, owner, obj *unstructu
 		groups = append(groups, map[string]interface{}{"affinityName": fmt.Sprintf("priority-%d", i), "clusterNames": []interface{}{cluster}})
 	}
 	pp.Object["spec"] = map[string]interface{}{"conflictResolution": "Abort", "resourceSelectors": []interface{}{map[string]interface{}{"apiVersion": obj.GetAPIVersion(), "kind": obj.GetKind(), "name": obj.GetName()}}, "placement": map[string]interface{}{"clusterAffinities": groups, "spreadConstraints": []interface{}{map[string]interface{}{"spreadByField": "cluster", "minGroups": int64(1), "maxGroups": int64(1)}}}}
-	return ensureSpec(ctx, c, pp, owner)
+	return pp
+}
+
+func ensurePlacement(ctx context.Context, c client.Client, owner, obj *unstructured.Unstructured, clusters []string) error {
+	return ensureSpec(ctx, c, placementPolicy(obj, clusters), owner)
+}
+
+func ensureWorkloadPlacement(ctx context.Context, c client.Client, run, work *unstructured.Unstructured, clusters []string, initial bool) error {
+	pp := placementPolicy(work, clusters)
+	if initial {
+		// Duplicated scheduling does not divide according to available resources.
+		// Aggregated uses Karmada's native capacity calculation; maxGroups=1 keeps
+		// the full DDP world together and ordered affinities retain On-Prem priority.
+		_ = unstructured.SetNestedMap(pp.Object, map[string]interface{}{"replicaSchedulingType": "Divided", "replicaDivisionPreference": "Aggregated"}, "spec", "placement", "replicaScheduling")
+	}
+	return ensureSpec(ctx, c, pp, run)
 }
 
 func (r *RunReconciler) ensureRuntime(ctx context.Context, run, work *unstructured.Unstructured, s RunSpec, cluster string) error {
