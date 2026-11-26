@@ -1,0 +1,22 @@
+Management API return routes: required infrastructure preflight
+
+Before provisioning cloud workers, run on the Management API host:
+  python3 scripts/check-cloud-return-routes.py --subnet 10.50.1.0/24 --interface wgaws1
+
+Use the subnet/interface actually assigned by the administrator. This command is
+read-only and checks every usable private address, rather than just existing
+workers. A stale /32 route overrides a correct /24 route and can break only a
+new worker whose private address happens to match that old route.
+
+On 2026-11-26, stale wg0 routes for .10/.31/.53 and a wgaws1 PreUp directive
+were removed from the Management host after confirming the current AWS subnet
+uses wgaws1 with a public WireGuard endpoint. The old wider VPN network was
+preserved. Do not copy this remediation to another network without inspecting
+its intended endpoint, routes and owners. Back up WireGuard configuration in a
+root-only location; never commit private keys.
+
+Also verify the actual workload network can reach the Karmada API using its
+scoped credential, validating TLS. Route selection alone does not prove VPN
+handshake, firewall, token, or API availability. Do not bypass the execution
+gate when API access fails. Stop the affected validation and preserve error
+and resource cleanup evidence, then correct infrastructure before a fresh run.
