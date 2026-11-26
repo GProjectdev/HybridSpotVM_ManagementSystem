@@ -378,9 +378,11 @@ func (r *RunReconciler) operatingCloudDecision(ctx context.Context, run, work, c
 		return d, nil, e
 	}
 	template := object("ml.dcn.ssu.ac.kr/v1alpha1", "NodeProvision")
-	if e = json.Unmarshal([]byte(`{"spec":`+str(cap, "status", "templateJSON")+`}`), template); e != nil {
+	var templateSpec map[string]interface{}
+	if e = json.Unmarshal([]byte(str(cap, "status", "templateJSON")), &templateSpec); e != nil {
 		return d, nil, e
 	}
+	template.Object["spec"] = templateSpec
 	in, e := resourcePolicyInput(run, template, s)
 	if e != nil {
 		return d, nil, e

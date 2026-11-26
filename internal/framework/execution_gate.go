@@ -38,6 +38,10 @@ func (r *RunReconciler) prepareExecutionGate(ctx context.Context, run, work *uns
 	if len(source.Data["kubeconfig"]) == 0 {
 		return fmt.Errorf("execution-gate kubeconfig is absent")
 	}
+	credentialData := map[string][]byte{"kubeconfig": source.Data["kubeconfig"]}
+	if len(source.Data["token"]) > 0 {
+		credentialData["token"] = source.Data["token"]
+	}
 	secret := &corev1.Secret{}
 	secret.Namespace = run.GetNamespace()
 	secret.Name = run.GetName() + "-execution-access"
@@ -48,7 +52,7 @@ func (r *RunReconciler) prepareExecutionGate(ctx context.Context, run, work *uns
 		obj.SetName(secret.Name)
 		setOwner(obj, run)
 		// Convert bytes via the typed API to preserve Secret base64 encoding.
-		secret.Data = map[string][]byte{"kubeconfig": source.Data["kubeconfig"]}
+		secret.Data = credentialData
 		secret.OwnerReferences = obj.GetOwnerReferences()
 		secret.Type = corev1.SecretTypeOpaque
 		if err = r.Create(ctx, secret); err != nil {
@@ -63,9 +67,9 @@ func (r *RunReconciler) prepareExecutionGate(ctx context.Context, run, work *uns
 		if !owned(u, run) {
 			return fmt.Errorf("execution-gate Secret ownership conflict")
 		}
-		if !reflect.DeepEqual(secret.Data["kubeconfig"], source.Data["kubeconfig"]) {
+		if !reflect.DeepEqual(secret.Data, credentialData) {
 			base := secret.DeepCopy()
-			secret.Data = map[string][]byte{"kubeconfig": source.Data["kubeconfig"]}
+			secret.Data = credentialData
 			if err = r.Patch(ctx, secret, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{})); err != nil {
 				return err
 			}

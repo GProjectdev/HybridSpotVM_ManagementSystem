@@ -77,3 +77,33 @@ func TestGateIsInjectedBeforePropagationAndCannotRetrofit(t *testing.T) {
 		t.Fatal("gate retrofitted after propagation")
 	}
 }
+
+func TestGatePropagatesRotatingTokenFileWithoutTemplateChange(t *testing.T) {
+	ctx := context.Background()
+	run, work := initialObjects("Execute")
+	source := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "credentials", Namespace: "ns"}, Data: map[string][]byte{"kubeconfig": []byte("tokenFile fixture"), "token": []byte("first-test-token")}}
+	c := frameworkClient(run, work, source)
+	r := &RunReconciler{Client: c, GateImage: "example.invalid/gate@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", GateCredentialSecret: source.Name}
+	s := RunSpec{ExecutionGate: true, OnPremiseCluster: "onpre1"}
+	if e := r.prepareExecutionGate(ctx, run, work, s); e != nil {
+		t.Fatal(e)
+	}
+	if e := c.Get(ctx, key("ns", "a"), work); e != nil {
+		t.Fatal(e)
+	}
+	template := workloadTemplateSHA(work)
+	source.Data["token"] = []byte("rotated-test-token")
+	if e := c.Update(ctx, source); e != nil {
+		t.Fatal(e)
+	}
+	if e := r.prepareExecutionGate(ctx, run, work, s); e != nil {
+		t.Fatal(e)
+	}
+	target := &corev1.Secret{}
+	if e := c.Get(ctx, key("ns", "a-execution-access"), target); e != nil {
+		t.Fatal(e)
+	}
+	if string(target.Data["token"]) != "rotated-test-token" || workloadTemplateSHA(work) != template {
+		t.Fatal("token rotation changed workload or lost token")
+	}
+}

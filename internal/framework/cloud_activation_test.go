@@ -303,3 +303,29 @@ func TestCloudRuntimeMappingIsExplicitAndMemberScoped(t *testing.T) {
 		})
 	}
 }
+
+func TestOperatingCloudDecisionDecodesPinnedSpecAndChangesComposition(t *testing.T) {
+	run, s, cm, risk, now := cloudPolicyFixture()
+	_, work := initialObjects("Execute")
+	cap := named("TrainingCapacity", "ns", initialCapacityName(run))
+	cap.Object["status"] = map[string]interface{}{"templateJSON": cm.Data["nodeProvisionSpec.json"]}
+	c := frameworkClient(run, work, cm, risk, cap)
+	r := &RunReconciler{Client: c, Now: func() time.Time { return now }}
+	for _, lambda := range []float64{0.001, 1.0} {
+		_ = unstructured.SetNestedField(risk.Object, lambda, "status", "lambdaPerHour")
+		if e := c.Update(context.Background(), risk); e != nil {
+			t.Fatal(e)
+		}
+		d, receipt, e := r.operatingCloudDecision(context.Background(), run, work, cap, s, WorkloadObservation{SelectedCluster: "aws1", Running: true, Runtime: p.RuntimeSnapshot{WorldSize: 2}})
+		if e != nil {
+			t.Fatal(e)
+		}
+		want := int64(1)
+		if lambda == 1.0 {
+			want = 0
+		}
+		if d.SpotWorkers != want || receipt["lambdaPerHour"] != lambda {
+			t.Fatal(d, receipt)
+		}
+	}
+}
