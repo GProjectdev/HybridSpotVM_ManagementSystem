@@ -1,0 +1,200 @@
+package framework
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"time"
+
+	"github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/resource"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const RunUIDLabel = "training.dcnlab.com/run-uid"
+const CapacityUIDLabel = "training.dcnlab.com/capacity-uid"
+const FrameworkManagedBy = "hybrid-training-framework"
+const Finalizer = "training.dcnlab.com/framework-cleanup"
+
+type ObjectRef struct {
+	Name string `json:"name"`
+	UID  string `json:"uid,omitempty"`
+}
+
+type RunSpec struct {
+	WorkloadRef        ObjectRef `json:"workloadRef"`
+	OnPremiseCluster   string    `json:"onPremiseCluster"`
+	WorldSize          int64     `json:"worldSize"`
+	WaitSeconds        *int64    `json:"waitSeconds,omitempty"`
+	PreparationSeconds *int64    `json:"preparationSeconds,omitempty"`
+	CheckpointSeconds  int64     `json:"checkpointSeconds"`
+	RuntimePort        int64     `json:"runtimePort,omitempty"`
+	Container          string    `json:"container,omitempty"`
+	// Observe is the default for staged rollout. Execute is an explicit user
+	// intent, not an annotation silently enabling mutations on old workloads.
+	Mode  string    `json:"mode"`
+	Cloud CloudSpec `json:"cloud"`
+}
+
+type CloudSpec struct {
+	Allowed        bool   `json:"allowed"`
+	Cluster        string `json:"cluster,omitempty"`
+	TemplateRef    string `json:"templateRef,omitempty"`
+	RiskProfileRef string `json:"riskProfileRef,omitempty"`
+	MaxWorkers     int64  `json:"maxWorkers,omitempty"`
+	// Every paid allocation has a precommitted absolute stop deadline.
+	Deadline string `json:"deadline,omitempty"`
+}
+
+type Allocation struct {
+	Name   string `json:"name"`
+	Market string `json:"market"`
+	State  string `json:"state"` // Prepare, Retain, Retire
+}
+
+type CapacitySpec struct {
+	RunRef      ObjectRef    `json:"runRef"`
+	Cluster     string       `json:"cluster"`
+	TemplateRef string       `json:"templateRef"`
+	MaxWorkers  int64        `json:"maxWorkers"`
+	Deadline    string       `json:"deadline"`
+	Allocations []Allocation `json:"allocations"`
+}
+
+func decodeSpec(o *unstructured.Unstructured, into interface{}) error {
+	b, err := json.Marshal(o.Object["spec"])
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, into)
+}
+func encode(v interface{}) map[string]interface{} {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	var m map[string]interface{}
+	if err = json.Unmarshal(b, &m); err != nil {
+		panic(err)
+	}
+	// JSON round trips through UnstructuredJSONScheme preserve Kubernetes
+	// integer values rather than converting all numbers to float64.
+	u := &unstructured.Unstructured{}
+	if err = u.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return u.Object
+}
+func object(apiVersion, kind string) *unstructured.Unstructured {
+	u := &unstructured.Unstructured{}
+	u.SetAPIVersion(apiVersion)
+	u.SetKind(kind)
+	return u
+}
+func objects(apiVersion, kind string) *unstructured.UnstructuredList {
+	l := &unstructured.UnstructuredList{}
+	l.SetAPIVersion(apiVersion)
+	l.SetKind(kind + "List")
+	return l
+}
+func owned(child, parent *unstructured.Unstructured) bool {
+	for _, o := range child.GetOwnerReferences() {
+		if o.UID == parent.GetUID() && o.Name == parent.GetName() && o.Kind == parent.GetKind() && o.APIVersion == parent.GetAPIVersion() {
+			return true
+		}
+	}
+	return false
+}
+func setOwner(child, parent *unstructured.Unstructured) {
+	controller := true
+	child.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: parent.GetAPIVersion(), Kind: parent.GetKind(), Name: parent.GetName(), UID: parent.GetUID(), Controller: &controller}})
+}
+
+// ensureSpec uses an optimistic resourceVersion and never adopts a name collision.
+func ensureSpec(ctx context.Context, c client.Client, desired, parent *unstructured.Unstructured) error {
+	if parent.GetUID() == "" {
+		return fmt.Errorf("persisted owner UID required")
+	}
+	setOwner(desired, parent)
+	old := object(desired.GetAPIVersion(), desired.GetKind())
+	err := c.Get(ctx, client.ObjectKeyFromObject(desired), old)
+	if apierrors.IsNotFound(err) {
+		return c.Create(ctx, desired)
+	}
+	if err != nil {
+		return err
+	}
+	if !owned(old, parent) || !old.GetDeletionTimestamp().IsZero() {
+		return fmt.Errorf("%s %s ownership conflict or deletion in progress", desired.GetKind(), desired.GetName())
+	}
+	if reflect.DeepEqual(old.Object["spec"], desired.Object["spec"]) {
+		return nil
+	}
+	base := old.DeepCopy()
+	old.Object["spec"] = desired.Object["spec"]
+	return c.Patch(ctx, old, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{}))
+}
+func named(kind, ns, name string) *unstructured.Unstructured {
+	o := resource.Object(kind)
+	o.SetNamespace(ns)
+	o.SetName(name)
+	return o
+}
+func str(o *unstructured.Unstructured, path ...string) string    { return resource.String(o, path...) }
+func integer(o *unstructured.Unstructured, path ...string) int64 { return resource.Int(o, path...) }
+func stamp(t time.Time) string                                   { return t.UTC().Format(time.RFC3339Nano) }
+func boolAt(o *unstructured.Unstructured, path ...string) bool {
+	b, _, _ := unstructured.NestedBool(o.Object, path...)
+	return b
+}
+func listItems(ctx context.Context, c client.Reader, api, kind, ns string) ([]unstructured.Unstructured, error) {
+	l := objects(api, kind)
+	err := c.List(ctx, l, client.InNamespace(ns))
+	return l.Items, err
+}
+func sameWorkload(o *unstructured.Unstructured, name, uid string) bool {
+	return str(o, "spec", "workloadRef", "name") == name && str(o, "spec", "workloadRef", "uid") == uid
+}
+func key(ns, name string) types.NamespacedName {
+	return types.NamespacedName{Namespace: ns, Name: name}
+}
+func gvk(kind string) schema.GroupVersionKind {
+	return schema.GroupVersionKind{Group: resource.Group, Version: "v1alpha1", Kind: kind}
+}
+
+func (s RunSpec) Validate() error {
+	if s.WorkloadRef.Name == "" || s.OnPremiseCluster == "" || s.WorldSize < 1 || s.WorldSize > 128 || s.CheckpointSeconds <= 0 {
+		return fmt.Errorf("workload, cluster, worldSize and checkpointSeconds are required")
+	}
+	if s.Mode != "Observe" && s.Mode != "Execute" {
+		return fmt.Errorf("mode must be Observe or Execute")
+	}
+	w, p := s.Wait()
+	if _, err := PreparationAt(time.Now(), w, p); err != nil {
+		return err
+	}
+	if s.Cloud.Allowed && (s.Cloud.Cluster == "" || s.Cloud.Cluster == s.OnPremiseCluster || s.Cloud.TemplateRef == "" || s.Cloud.RiskProfileRef == "" || s.Cloud.MaxWorkers < s.WorldSize) {
+		return fmt.Errorf("cloud cluster, reviewed template, risk profile and capacity limit required")
+	}
+	if s.Cloud.Allowed {
+		if _, err := time.Parse(time.RFC3339, s.Cloud.Deadline); err != nil {
+			return fmt.Errorf("absolute cloud deadline required")
+		}
+	}
+	return nil
+}
+func (s RunSpec) Wait() (int64, int64) {
+	w, p := DefaultWaitSeconds, DefaultPreparationSeconds
+	if s.WaitSeconds != nil {
+		w = *s.WaitSeconds
+	}
+	if s.PreparationSeconds != nil {
+		p = *s.PreparationSeconds
+	}
+	return w, p
+}
