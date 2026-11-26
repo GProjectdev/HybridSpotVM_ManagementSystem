@@ -54,6 +54,10 @@ func (r *RuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 	status := map[string]interface{}{"observedGeneration": o.GetGeneration(), "observedAt": resource.Timestamp(time.Now()), "readyRanks": int64(0), "phase": "Collecting"}
+	if err := recordRuntimeOrigin(o, status); err != nil {
+		status["phase"], status["message"] = "Unavailable", err.Error()
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, resource.SetStatus(ctx, r.Client, o, status)
+	}
 	collectErr := r.collect(ctx, o.GetNamespace(), resource.String(o, "spec", "workloadRef", "name"), resource.String(o, "spec", "workloadRef", "uid"), resource.Int(o, "spec", "expectedWorldSize"), resource.Int(o, "spec", "port"), status)
 	if collectErr != nil {
 		status["phase"] = "Unavailable"
@@ -294,4 +298,20 @@ func sourcePodIdentities(sts *appsv1.StatefulSet, pods *corev1.PodList, expected
 }
 func SetupRuntime(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).Named("training-runtime").WithEventFilter(predicate.GenerationChangedPredicate{}).For(resource.Object("TrainingRuntime")).Complete(&RuntimeReconciler{Client: mgr.GetClient()})
+}
+
+// Kubernetes generations are local to each API server. Preserve the member
+// observedGeneration and separately attest the Karmada template identity.
+func recordRuntimeOrigin(o *unstructured.Unstructured, status map[string]interface{}) error {
+	a := o.GetAnnotations()
+	uid, generation := a["resourcetemplate.karmada.io/uid"], a["resourcetemplate.karmada.io/generation"]
+	if uid == "" && generation == "" {
+		return nil
+	}
+	n, err := strconv.ParseInt(generation, 10, 64)
+	if uid == "" || err != nil || n < 1 {
+		return fmt.Errorf("invalid Karmada runtime template identity")
+	}
+	status["observedTemplateUID"], status["observedTemplateGeneration"] = uid, n
+	return nil
 }

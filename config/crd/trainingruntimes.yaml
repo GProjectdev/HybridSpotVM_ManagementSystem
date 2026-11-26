@@ -124,6 +124,11 @@ spec:
               observedAt:
                 type: string
                 format: date-time
+              observedTemplateUID:
+                type: string
+              observedTemplateGeneration:
+                type: integer
+                format: int64
               observedGeneration:
                 type: integer
                 format: int64
@@ -278,6 +283,11 @@ spec:
                         observedAt:
                           type: string
                           format: date-time
+                        observedTemplateUID:
+                          type: string
+                        observedTemplateGeneration:
+                          type: integer
+                          format: int64
                         observedGeneration:
                           type: integer
                           format: int64

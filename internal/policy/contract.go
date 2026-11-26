@@ -297,6 +297,16 @@ func ReadRuntimeStatus(obj *unstructured.Unstructured, sourceCluster string) Run
 			break
 		}
 	}
+	observed := nestedIntDefault(selected, 0, "status", "observedGeneration")
+	uid := nestedStringDefault(selected, "", "status", "observedTemplateUID")
+	templateGeneration := nestedIntDefault(selected, 0, "status", "observedTemplateGeneration")
+	if uid != "" || templateGeneration != 0 {
+		if uid != string(obj.GetUID()) || observed < 1 || templateGeneration < 1 {
+			observed = 0
+		} else {
+			observed = templateGeneration
+		}
+	}
 	return RuntimeSnapshot{
 		IterationTimeSeconds: nestedFloatDefault(selected, 0, "status", "iterationTimeSeconds"),
 		IterationMethod:      nestedStringDefault(selected, "", "status", "iterationMeasurement", "method"),
@@ -320,7 +330,7 @@ func ReadRuntimeStatus(obj *unstructured.Unstructured, sourceCluster string) Run
 		CheckpointID:         nestedStringDefault(selected, "", "status", "checkpointID"),
 		ReadyRanks:           nestedIntDefault(selected, 0, "status", "readyRanks"),
 		WorldSize:            nestedIntDefault(selected, 0, "status", "worldSize"),
-		ObservedGeneration:   nestedIntDefault(selected, 0, "status", "observedGeneration"),
+		ObservedGeneration:   observed,
 		Pods:                 readRuntimePods(selected),
 		ObservedAt:           nestedStringDefault(selected, "", "status", "observedAt"),
 	}
