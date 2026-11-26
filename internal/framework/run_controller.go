@@ -203,6 +203,11 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			return report("TransitionRequested", "immutable transition intent recorded before replacement capacity changes")
 		}
 	}
+	if s.ExecutionGate && s.Mode == "Execute" && o.SelectedCluster != "" && o.AllPodsScheduled {
+		if err := checkpointIsolation(ctx, r.Client, r.Members, run, work, o.SelectedCluster); err != nil {
+			return report("CheckpointStorageConflict", err.Error())
+		}
+	}
 	if s.ExecutionGate && s.Mode == "Execute" {
 		if err := initialPermit(status, work, o, stamp(r.now())); err != nil {
 			return report("TransitionRequired", err.Error())

@@ -97,6 +97,9 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 	if err != nil || !o.Running {
 		return pause("fresh all-rank training progress unavailable")
 	}
+	if err := checkpointIsolation(ctx, r.Client, r.Members, run, work, o.SelectedCluster); err != nil {
+		return pause(err.Error())
+	}
 	transitions, err := listItems(ctx, r.Client, "training.dcnlab.com/v1alpha1", "TrainingTransition", req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
