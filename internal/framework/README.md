@@ -1,9 +1,15 @@
 # On-Premise-first control foundations
 
-This package contains decision functions and read-only identity-aware observations
-for the TrainingRun / TrainingCapacity / TrainingTransition architecture. It is
-not yet a deployed replacement for the existing management controllers. No new
-paid allocation or restore is initiated by this package at this revision.
+This package contains decision functions, identity-aware observations and staged
+TrainingRun / Checkpoint reconciler processes. Execute mode currently supports
+initial On-Premise placement, runtime registration and the existing FluidCR
+periodic checkpoint engine. Observe mode writes Run status only.
+
+Cloud activation, capacity lifecycle and transition execution are NOT enabled.
+A due Cloud preparation is reported as CloudActivationBlocked. No paid allocation,
+source fencing, workload migration or restore is initiated by this revision.
+TrainingCapacity/Transition schemas reserve the control contracts; their CRDs do
+not imply that corresponding execution controllers are deployed.
 
 Covered contracts:
 
@@ -21,7 +27,16 @@ Covered contracts:
 - Verify workload / binding / member / Pod identities and fresh rank telemetry.
   Pod readiness alone is insufficient evidence that training has started.
 
-Remaining integration: reconciler loops, validated CRD schemas, ownership/RBAC,
-checkpoint and restore engine receipt adapters, runtime deployment, actual
-On-Premise-to-Cloud activation and recovery verification. CPU tests are not a
-claim that these live paths have passed.
+Remaining integration: Capacity/Transition reconciler loops, Cloud execution
+permit and cancellation/retirement integration, checkpoint evidence/restore
+receipt adapters and full cross-cluster recovery verification. A node connection
+or initial On-Premise checkpoint does not validate these paths.
+
+Both staged binaries require TRAINING_NAMESPACE. Keep credentials scoped to that
+namespace; member credentials need read-only StatefulSet and Pod access. Old
+NodeRequest workloads are rejected rather than silently adopted. Existing E1/E2
+results and images remain immutable.
+
+Karmada reference: https://karmada.io/docs/v1.15/userguide/scheduling/resource-propagating/
+Ordered clusterAffinities and a single cluster spread group are used. No scheduler
+fork or direct ResourceBinding cluster assignment is introduced.

@@ -2,11 +2,13 @@ package app
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -44,14 +46,22 @@ func Run(component string, setup func(ctrl.Manager) error) {
 	if component == "spot-watcher" {
 		leader = false
 	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	managerOptions := ctrl.Options{
 		Scheme:                  scheme,
 		Metrics:                 metricsserver.Options{BindAddress: metrics},
 		HealthProbeBindAddress:  health,
 		LeaderElection:          leader,
 		LeaderElectionID:        leaderElectionID(component),
 		LeaderElectionNamespace: os.Getenv("POD_NAMESPACE"),
-	})
+	}
+	if component == "training-run-controller" || component == "training-run-checkpoint-coordinator" {
+		ns := os.Getenv("TRAINING_NAMESPACE")
+		if ns == "" {
+			must(fmt.Errorf("TRAINING_NAMESPACE is required for staged framework deployment"))
+		}
+		managerOptions.Cache.DefaultNamespaces = map[string]cache.Config{ns: {}}
+	}
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	must(err)
 	must(setup(mgr))
 	must(mgr.AddHealthzCheck("healthz", healthz.Ping))

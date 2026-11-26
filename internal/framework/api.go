@@ -11,6 +11,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,22 +75,19 @@ func decodeSpec(o *unstructured.Unstructured, into interface{}) error {
 	return json.Unmarshal(b, into)
 }
 func encode(v interface{}) map[string]interface{} {
-	b, err := json.Marshal(v)
+	value := reflect.ValueOf(v)
+	if value.Kind() != reflect.Ptr {
+		ptr := reflect.New(value.Type())
+		ptr.Elem().Set(value)
+		v = ptr.Interface()
+	}
+	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(v)
 	if err != nil {
 		panic(err)
 	}
-	var m map[string]interface{}
-	if err = json.Unmarshal(b, &m); err != nil {
-		panic(err)
-	}
-	// JSON round trips through UnstructuredJSONScheme preserve Kubernetes
-	// integer values rather than converting all numbers to float64.
-	u := &unstructured.Unstructured{}
-	if err = u.UnmarshalJSON(b); err != nil {
-		panic(err)
-	}
-	return u.Object
+	return m
 }
+
 func object(apiVersion, kind string) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{}
 	u.SetAPIVersion(apiVersion)

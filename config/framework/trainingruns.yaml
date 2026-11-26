@@ -1,0 +1,141 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: trainingruns.training.dcnlab.com
+spec:
+  group: training.dcnlab.com
+  names:
+    kind: TrainingRun
+    listKind: TrainingRunList
+    plural: trainingruns
+    singular: trainingrun
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            properties:
+              workloadRef:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 63
+                  uid:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                required:
+                - name
+              onPremiseCluster:
+                type: string
+                minLength: 1
+                maxLength: 63
+              worldSize:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 128
+              waitSeconds:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 604800
+                default: 600
+              preparationSeconds:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 86400
+                default: 600
+              checkpointSeconds:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 604800
+              runtimePort:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 65535
+                default: 8298
+              container:
+                type: string
+                maxLength: 63
+              mode:
+                type: string
+                enum:
+                - Observe
+                - Execute
+                default: Observe
+              cloud:
+                type: object
+                properties:
+                  allowed:
+                    type: boolean
+                    default: false
+                  cluster:
+                    type: string
+                    maxLength: 63
+                  templateRef:
+                    type: string
+                    maxLength: 63
+                  riskProfileRef:
+                    type: string
+                    maxLength: 63
+                  maxWorkers:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    maximum: 256
+                  deadline:
+                    type: string
+                    format: date-time
+                required:
+                - allowed
+            required:
+            - workloadRef
+            - onPremiseCluster
+            - worldSize
+            - checkpointSeconds
+            - mode
+            - cloud
+            x-kubernetes-validations:
+            - rule: self.workloadRef == oldSelf.workloadRef
+              message: workloadRef is immutable; submit a new Run
+            - rule: self.onPremiseCluster == oldSelf.onPremiseCluster
+              message: onPremiseCluster is immutable; submit a new Run
+            - rule: self.worldSize == oldSelf.worldSize
+              message: worldSize is immutable; submit a new Run
+            - rule: self.mode == oldSelf.mode
+              message: mode is immutable; submit a new Run
+            - rule: '!self.cloud.allowed || (has(self.cloud.cluster) && self.cloud.cluster
+                != self.onPremiseCluster && has(self.cloud.templateRef) && has(self.cloud.riskProfileRef)
+                && has(self.cloud.maxWorkers) && self.cloud.maxWorkers >= self.worldSize
+                && has(self.cloud.deadline))'
+              message: Cloud needs a distinct cluster, template, risk profile, capacity
+                limit and absolute deadline
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - spec

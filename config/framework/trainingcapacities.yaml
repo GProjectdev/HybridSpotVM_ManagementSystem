@@ -1,0 +1,104 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: trainingcapacities.training.dcnlab.com
+spec:
+  group: training.dcnlab.com
+  names:
+    kind: TrainingCapacity
+    listKind: TrainingCapacityList
+    plural: trainingcapacities
+    singular: trainingcapacity
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            properties:
+              runRef:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 63
+                  uid:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                required:
+                - name
+              cluster:
+                type: string
+                minLength: 1
+                maxLength: 63
+              templateRef:
+                type: string
+                minLength: 1
+                maxLength: 63
+              maxWorkers:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 256
+              deadline:
+                type: string
+                format: date-time
+              allocations:
+                type: array
+                maxItems: 256
+                x-kubernetes-list-type: map
+                x-kubernetes-list-map-keys:
+                - name
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      minLength: 1
+                      maxLength: 63
+                    market:
+                      type: string
+                      enum:
+                      - spot
+                      - on-demand
+                    state:
+                      type: string
+                      enum:
+                      - Prepare
+                      - Retain
+                      - Retire
+                  required:
+                  - name
+                  - market
+                  - state
+            required:
+            - runRef
+            - cluster
+            - templateRef
+            - maxWorkers
+            - deadline
+            - allocations
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - spec

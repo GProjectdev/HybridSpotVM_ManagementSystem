@@ -1,0 +1,88 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: trainingtransitions.training.dcnlab.com
+spec:
+  group: training.dcnlab.com
+  names:
+    kind: TrainingTransition
+    listKind: TrainingTransitionList
+    plural: trainingtransitions
+    singular: trainingtransition
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            properties:
+              runRef:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 63
+                  uid:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                required:
+                - name
+              mode:
+                type: string
+                enum:
+                - PlannedReplacement
+                - Preemption
+                - Failover
+              workloadUID:
+                type: string
+                minLength: 1
+                maxLength: 128
+              executionID:
+                type: string
+                minLength: 1
+                maxLength: 128
+              worldSize:
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 128
+              sourceCluster:
+                type: string
+                minLength: 1
+                maxLength: 63
+              targetCluster:
+                type: string
+                minLength: 1
+                maxLength: 63
+            required:
+            - runRef
+            - mode
+            - workloadUID
+            - executionID
+            - worldSize
+            - sourceCluster
+            - targetCluster
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - spec
