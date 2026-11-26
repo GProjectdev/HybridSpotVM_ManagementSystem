@@ -241,3 +241,56 @@ func TestDeletedRunRequestsCleanupInsteadOfNewCapacity(t *testing.T) {
 		t.Fatal(cap.Object["status"])
 	}
 }
+
+func TestChangedRunCannotBlockAuthorizedRetirement(t *testing.T) {
+	for _, reason := range []string{"deadline", "explicit-retire", "recreated-owner"} {
+		t.Run(reason, func(t *testing.T) {
+			r, c, _, cap, _ := readyCapacityFixture(t)
+			run := named("TrainingRun", "ns", "a")
+			_ = c.Get(context.Background(), key("ns", "a"), run)
+			if reason == "recreated-owner" {
+				_ = c.Delete(context.Background(), run)
+				run.SetUID("different-owner")
+				run.SetResourceVersion("")
+				_ = c.Create(context.Background(), run)
+			} else {
+				_ = unstructured.SetNestedField(run.Object, false, "spec", "cloud", "allowed")
+				_ = c.Update(context.Background(), run)
+				if reason == "deadline" {
+					r.Now = func() time.Time { return time.Date(2026, 11, 26, 11, 0, 0, 0, time.UTC) }
+				} else {
+					allocations, _, _ := unstructured.NestedSlice(cap.Object, "spec", "allocations")
+					allocations[0].(map[string]interface{})["state"] = "Retire"
+					_ = unstructured.SetNestedSlice(cap.Object, allocations, "spec", "allocations")
+					_ = c.Update(context.Background(), cap)
+				}
+			}
+			reconcileCapacity(t, r, 1)
+			origin := p.NewObject("NodeProvision")
+			_ = c.Get(context.Background(), key("ns", "worker"), origin)
+			if str(origin, "spec", "fence", "instanceID") != "i-owned" {
+				t.Fatal("authorized cleanup blocked by parent changes")
+			}
+			_ = c.Get(context.Background(), key("ns", "cap"), cap)
+			if str(cap, "status", "phase") != "Retiring" {
+				t.Fatal(cap.Object["status"])
+			}
+		})
+	}
+}
+
+func TestChangedRunDoesNotAuthorizeNewAllocationFromSnapshot(t *testing.T) {
+	r, c, _, cap, run := capacityFixture(t)
+	reconcileCapacity(t, r, 2) // approval and template pinned; no VM request yet
+	_ = unstructured.SetNestedField(run.Object, false, "spec", "cloud", "allowed")
+	_ = c.Update(context.Background(), run)
+	reconcileCapacity(t, r, 2)
+	nodes, _ := listItems(context.Background(), c, "ml.dcn.ssu.ac.kr/v1alpha1", "NodeProvision", "ns")
+	if len(nodes) != 0 {
+		t.Fatal("old approval authorized a fresh allocation after revocation")
+	}
+	_ = c.Get(context.Background(), key("ns", "cap"), cap)
+	if str(cap, "status", "phase") != "OwnerConflict" {
+		t.Fatal(cap.Object["status"])
+	}
+}

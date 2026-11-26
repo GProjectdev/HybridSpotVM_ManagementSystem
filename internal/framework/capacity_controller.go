@@ -71,7 +71,7 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	run := named("TrainingRun", req.Namespace, s.RunRef.Name)
 	err = r.Get(ctx, key(req.Namespace, s.RunRef.Name), run)
-	ownerGone := apierrors.IsNotFound(err)
+	ownerGone := apierrors.IsNotFound(err) || (err == nil && string(run.GetUID()) != s.RunRef.UID)
 	if ownerGone {
 		approved, ok := status["approvedRunSpec"].(map[string]interface{})
 		if !ok || status["approvedRunUID"] != s.RunRef.UID {
@@ -83,11 +83,29 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return report("OwnerUnavailable", "retained capacity requires owner inspection; no new allocation")
 	}
 	var rs RunSpec
-	if decodeSpec(run, &rs) != nil || string(run.GetUID()) != s.RunRef.UID || !owned(cap, run) || rs.Mode != "Execute" || !rs.Cloud.Allowed || !rs.ExecutionGate || rs.Cloud.Cluster != s.Cluster || s.Cluster == rs.OnPremiseCluster || rs.Cloud.TemplateRef != s.TemplateRef || s.MaxWorkers > rs.Cloud.MaxWorkers || s.Deadline != rs.Cloud.Deadline {
-		return report("OwnerConflict", "capacity is not authorized by the current UID-bound Run contract")
-	}
 	expired := !r.now().Before(deadline)
 	deleting := ownerGone || !cap.GetDeletionTimestamp().IsZero() || !run.GetDeletionTimestamp().IsZero()
+	authorized := func() bool {
+		return decodeSpec(run, &rs) == nil && string(run.GetUID()) == s.RunRef.UID && owned(cap, run) && rs.Mode == "Execute" && rs.Cloud.Allowed && rs.ExecutionGate && rs.Cloud.Cluster == s.Cluster && s.Cluster != rs.OnPremiseCluster && rs.Cloud.TemplateRef == s.TemplateRef && s.MaxWorkers <= rs.Cloud.MaxWorkers && s.Deadline == rs.Cloud.Deadline
+	}
+	cleanupOnly := false
+	if !authorized() {
+		cleanupRequested := expired || deleting
+		for _, a := range s.Allocations {
+			cleanupRequested = cleanupRequested || a.State == "Retire"
+		}
+		approved, ok := status["approvedRunSpec"].(map[string]interface{})
+		if !cleanupRequested || !ok || status["approvedRunUID"] != s.RunRef.UID {
+			return report("OwnerConflict", "capacity is not authorized by the current UID-bound Run contract")
+		}
+		// A changed parent cannot revoke cleanup of already authorized resources.
+		// This snapshot authorizes retirement only, never fresh provisioning.
+		run.Object["spec"] = approved
+		if !authorized() {
+			return report("OwnerConflict", "persisted cleanup contract does not match this capacity")
+		}
+		cleanupOnly = true
+	}
 	if !controllerutil.ContainsFinalizer(cap, Finalizer) {
 		if deleting {
 			return report("CleanupBlocked", "capacity deleted without lifecycle finalizer")
@@ -179,6 +197,11 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return report("IdentityConflict", "market cannot change within an allocation; create a replacement allocation")
 		}
 		retire := a.State == "Retire" || expired || deleting
+		if cleanupOnly && !retire {
+			// A different allocation's Retire request must not authorize replacing
+			// or terminating this retained allocation after a parent contract edit.
+			continue
+		}
 		if entry["phase"] == "Retired" {
 			if !retire {
 				return report("IdentityConflict", "retired allocation cannot be recreated")
@@ -405,7 +428,11 @@ func (r *CapacityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if ready == active {
 		return report("Ready", "all retained GPU allocations are UID-bound and Ready; workload readiness is checked separately")
 	}
-	if expired || deleting {
+	retirementRequested := expired || deleting
+	for _, a := range s.Allocations {
+		retirementRequested = retirementRequested || a.State == "Retire"
+	}
+	if retirementRequested {
 		return report("Retiring", "deadline or deletion requests provider-confirmed cleanup")
 	}
 	return report("Preparing", "waiting for allocation readiness or retirement")
