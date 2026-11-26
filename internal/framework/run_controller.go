@@ -118,6 +118,15 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return report("ObservationBlocked", err.Error())
 	}
 	status["selectedCluster"], status["gpuShortage"], status["allPodsScheduled"] = o.SelectedCluster, o.GPUShortage, o.AllPodsScheduled
+	if s.Mode == "Execute" {
+		requested, e := requestInitialReschedule(ctx, r.Client, run, work, s, o, cloudReady, r.now())
+		if e != nil {
+			return report("PlacementError", e.Error())
+		}
+		if requested {
+			return report("RecheckingPlacement", "Karmada native rescheduling requested before any execution permit")
+		}
+	}
 	if s.Mode == "Execute" && o.SelectedCluster != "" {
 		if o.SelectedCluster != s.OnPremiseCluster && (o.SelectedCluster != s.Cloud.Cluster || (committed == "" && (!cloudEligible || !cloudReady))) {
 			return report("UnsafePlacement", "Cloud is not eligible with a verified complete target world")

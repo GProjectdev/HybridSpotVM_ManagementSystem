@@ -3,6 +3,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -126,4 +127,53 @@ func ensureGateDependencyPlacement(ctx context.Context, c client.Client, run, ob
 		}
 	}
 	return ensureSpec(ctx, c, pp, run)
+}
+
+// Request a fresh native scheduling calculation after the Cloud candidate becomes
+// usable. Policy edits alone may retain a previously selected, now-full member.
+// Never rewrite spec.clusters, and never reschedule an admitted execution.
+func requestInitialReschedule(ctx context.Context, c client.Client, run, work *unstructured.Unstructured, s RunSpec, o WorkloadObservation, ready bool, now time.Time) (bool, error) {
+	if !s.ExecutionGate || !ready || !boolAt(run, "status", "cloudEligible") || str(run, "status", "committedCluster") != "" || o.AllPodsScheduled || !o.GPUShortage {
+		return false, nil
+	}
+	if _, exists, _ := unstructured.NestedMap(run.Object, "status", "executionPermit"); exists {
+		return false, nil
+	}
+	bindings, err := listItems(ctx, c, "work.karmada.io/v1alpha2", "ResourceBinding", run.GetNamespace())
+	if err != nil {
+		return false, err
+	}
+	for i := range bindings {
+		b := &bindings[i]
+		if str(b, "spec", "resource", "uid") != string(work.GetUID()) {
+			continue
+		}
+		if !b.GetDeletionTimestamp().IsZero() || str(b, "spec", "resource", "name") != work.GetName() || str(b, "spec", "resource", "kind") != "StatefulSet" {
+			return false, fmt.Errorf("binding identity changed")
+		}
+		groups, _, _ := unstructured.NestedSlice(b.Object, "spec", "placement", "clusterAffinities")
+		allowed := false
+		for _, raw := range groups {
+			g, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			names, _, _ := unstructured.NestedStringSlice(g, "clusterNames")
+			for _, n := range names {
+				if n == s.Cloud.Cluster {
+					allowed = true
+				}
+			}
+		}
+		if !allowed {
+			return false, nil
+		} // wait for Karmada to observe the policy update
+		if at, e := time.Parse(time.RFC3339Nano, str(b, "spec", "rescheduleTriggeredAt")); e == nil && now.Sub(at) < time.Minute {
+			return false, nil
+		}
+		base := b.DeepCopy()
+		_ = unstructured.SetNestedField(b.Object, now.UTC().Format(time.RFC3339), "spec", "rescheduleTriggeredAt")
+		return true, c.Patch(ctx, b, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{}))
+	}
+	return false, nil
 }
