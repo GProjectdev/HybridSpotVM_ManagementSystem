@@ -37,9 +37,13 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 		now = r.Now().UTC()
 	}
 	var intervalEvidence map[string]interface{}
+	var archiveEvidence map[string]interface{}
 	report := func(phase, msg string, interval int64) (ctrl.Result, error) {
 		base := run.DeepCopy()
 		receipt := map[string]interface{}{"phase": phase, "message": msg, "intervalSeconds": interval, "observedAt": stamp(now)}
+		if archiveEvidence != nil {
+			receipt["archiveEvidence"] = archiveEvidence
+		}
 		if intervalEvidence != nil {
 			receipt["policyEvidence"] = intervalEvidence
 		}
@@ -101,6 +105,22 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 		t := &transitions[i]
 		if owned(t, run) && str(t, "status", "phase") != "Completed" && str(t, "status", "phase") != "Cancelled" {
 			return pause("transition owns the checkpoint boundary")
+		}
+	}
+	if e := r.Get(ctx, client.ObjectKeyFromObject(schedule), schedule); e != nil && !apierrors.IsNotFound(e) {
+		return ctrl.Result{}, e
+	}
+	if schedule.GetUID() != "" {
+		reader, e := r.Members(o.SelectedCluster)
+		if e == nil {
+			archive, err := archiveCheckpoint(ctx, r.Client, reader, run, work, schedule, o.SelectedCluster, s.WorldSize, now)
+			if err != nil {
+				archiveEvidence = map[string]interface{}{"ready": false, "reason": err.Error()}
+			} else {
+				archiveEvidence = map[string]interface{}{"ready": true, "name": archive.GetName(), "uid": string(archive.GetUID()), "checkpointID": archive.GetAnnotations()["training.dcnlab.com/checkpoint-id"]}
+			}
+		} else {
+			archiveEvidence = map[string]interface{}{"ready": false, "reason": e.Error()}
 		}
 	}
 	interval, err := CheckpointInterval(s.CheckpointSeconds, 0, false, false)

@@ -131,3 +131,14 @@ func readGroupCheckpoint(cp *unstructured.Unstructured, input p.PolicyInput) (*g
 	}
 	return result, nil
 }
+
+// ValidateGroupCheckpointEvidence exposes the established full-world archive
+// validation to the TrainingRun controller family. No policy decision or resource
+// mutation is performed; callers must independently verify collection ownership.
+func ValidateGroupCheckpointEvidence(cp *unstructured.Unstructured, input p.PolicyInput) ([]interface{}, time.Time, error) {
+	round, err := readGroupCheckpoint(cp, input)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	return round.Pods, round.CompletedAt, nil
+}
