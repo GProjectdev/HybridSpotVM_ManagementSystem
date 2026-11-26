@@ -220,6 +220,11 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 	}
 	if s.ExecutionGate && s.Mode == "Execute" {
+		if status["executionPermit"] == nil {
+			if err := initialOnPremInfrastructure(ctx, r.Members, s, o); err != nil {
+				return report("InitialInfrastructureNotReady", err.Error())
+			}
+		}
 		if err := initialPermit(status, work, o, stamp(r.now())); err != nil {
 			return report("TransitionRequired", err.Error())
 		}
