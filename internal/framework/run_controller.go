@@ -220,7 +220,7 @@ func ensurePlacement(ctx context.Context, c client.Client, owner, obj *unstructu
 	for i, cluster := range clusters {
 		groups = append(groups, map[string]interface{}{"affinityName": fmt.Sprintf("priority-%d", i), "clusterNames": []interface{}{cluster}})
 	}
-	pp.Object["spec"] = map[string]interface{}{"resourceSelectors": []interface{}{map[string]interface{}{"apiVersion": obj.GetAPIVersion(), "kind": obj.GetKind(), "name": obj.GetName()}}, "placement": map[string]interface{}{"clusterAffinities": groups, "spreadConstraints": []interface{}{map[string]interface{}{"spreadByField": "cluster", "minGroups": int64(1), "maxGroups": int64(1)}}}}
+	pp.Object["spec"] = map[string]interface{}{"conflictResolution": "Abort", "resourceSelectors": []interface{}{map[string]interface{}{"apiVersion": obj.GetAPIVersion(), "kind": obj.GetKind(), "name": obj.GetName()}}, "placement": map[string]interface{}{"clusterAffinities": groups, "spreadConstraints": []interface{}{map[string]interface{}{"spreadByField": "cluster", "minGroups": int64(1), "maxGroups": int64(1)}}}}
 	return ensureSpec(ctx, c, pp, owner)
 }
 

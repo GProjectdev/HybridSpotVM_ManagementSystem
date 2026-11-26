@@ -32,6 +32,9 @@ spec:
             type: object
           spec:
             type: object
+            x-kubernetes-validations:
+            - rule: "self.runRef == oldSelf.runRef && self.cluster == oldSelf.cluster && self.templateRef == oldSelf.templateRef && self.maxWorkers == oldSelf.maxWorkers && self.deadline == oldSelf.deadline"
+              message: "capacity owner, target, template, limit and deadline are immutable"
             properties:
               runRef:
                 type: object
@@ -63,6 +66,9 @@ spec:
                 type: string
                 format: date-time
               allocations:
+                x-kubernetes-validations:
+                - rule: "oldSelf.all(o, self.exists(a, a.name == o.name && a.market == o.market && (o.state != 'Retire' || a.state == 'Retire')))"
+                  message: "preserve allocation identity, market and irreversible retirement intent"
                 type: array
                 maxItems: 256
                 x-kubernetes-list-type: map

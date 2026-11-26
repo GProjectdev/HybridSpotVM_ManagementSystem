@@ -17,12 +17,12 @@ import (
 func frameworkClient(objs ...client.Object) client.Client {
 	s := runtime.NewScheme()
 	_ = corev1.AddToScheme(s)
-	for _, pair := range [][2]string{{"training.dcnlab.com/v1alpha1", "TrainingRun"}, {"training.dcnlab.com/v1alpha1", "TrainingRuntime"}, {"training.dcnlab.com/v1alpha1", "NodeRequest"}, {"training.dcnlab.com/v1alpha1", "TrainingTransition"}, {"policy.karmada.io/v1alpha1", "PropagationPolicy"}, {"work.karmada.io/v1alpha2", "ResourceBinding"}, {"fluidcr.dcnlab.com/v1alpha1", "FluidCRMigration"}, {"apps/v1", "StatefulSet"}} {
+	for _, pair := range [][2]string{{"ml.dcn.ssu.ac.kr/v1alpha1", "NodeProvision"}, {"training.dcnlab.com/v1alpha1", "TrainingCapacity"}, {"training.dcnlab.com/v1alpha1", "TrainingRun"}, {"training.dcnlab.com/v1alpha1", "TrainingRuntime"}, {"training.dcnlab.com/v1alpha1", "NodeRequest"}, {"training.dcnlab.com/v1alpha1", "TrainingTransition"}, {"policy.karmada.io/v1alpha1", "PropagationPolicy"}, {"work.karmada.io/v1alpha2", "ResourceBinding"}, {"fluidcr.dcnlab.com/v1alpha1", "FluidCRMigration"}, {"apps/v1", "StatefulSet"}} {
 		o := object(pair[0], pair[1])
 		s.AddKnownTypeWithName(o.GroupVersionKind(), o)
 		s.AddKnownTypeWithName(o.GroupVersionKind().GroupVersion().WithKind(pair[1]+"List"), objects(pair[0], pair[1]))
 	}
-	return fake.NewClientBuilder().WithScheme(s).WithStatusSubresource(named("TrainingRun", "", ""), named("TrainingRuntime", "", "")).WithObjects(objs...).Build()
+	return fake.NewClientBuilder().WithScheme(s).WithStatusSubresource(named("TrainingCapacity", "", ""), named("TrainingRun", "", ""), named("TrainingRuntime", "", "")).WithObjects(objs...).Build()
 }
 func initialObjects(mode string) (*unstructured.Unstructured, *unstructured.Unstructured) {
 	r := named("TrainingRun", "ns", "a")
