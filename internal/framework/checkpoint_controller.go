@@ -71,6 +71,9 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 		}
 		return report("Paused", reason, 0)
 	}
+	if s.Suspend {
+		return pause("Run control actions suspended")
+	}
 	if str(run, "status", "phase") != "Running" || integer(run, "status", "observedGeneration") != run.GetGeneration() {
 		return pause("Run has no current Running observation")
 	}

@@ -3,6 +3,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"time"
 
@@ -18,8 +19,10 @@ import (
 // It never calls an EC2 API or treats a Running Pod as training progress.
 type RunReconciler struct {
 	client.Client
-	Members MemberReader
-	Now     func() time.Time
+	Members              MemberReader
+	Now                  func() time.Time
+	GateImage            string
+	GateCredentialSecret string
 }
 
 func (r *RunReconciler) now() time.Time {
@@ -53,6 +56,9 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := s.Validate(); err != nil {
 		return report("Invalid", err.Error())
 	}
+	if s.Suspend {
+		return report("Suspended", "new control actions suspended; existing workload and capacity retained")
+	}
 	work := object("apps/v1", "StatefulSet")
 	if err := r.Get(ctx, key(req.Namespace, s.WorkloadRef.Name), work); err != nil {
 		return report("WaitingWorkload", err.Error())
@@ -80,6 +86,9 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		// Until a UID-bound execution-permit backend is integrated, changing a
 		// live member is prohibited. This is a declared capability limit, not a
 		// successful Cloud activation or a simulated recovery.
+		if err := r.prepareExecutionGate(ctx, run, work, s); err != nil {
+			return report("ExecutionGateBlocked", err.Error())
+		}
 		if err := ensurePlacement(ctx, r.Client, run, work, []string{s.OnPremiseCluster}); err != nil {
 			return report("PlacementError", err.Error())
 		}
@@ -98,19 +107,28 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 	}
 	committed, _ := status["committedCluster"].(string)
-	if o.AnyPodScheduled && o.SelectedCluster != "" {
+	admitted := o.AnyPodScheduled
+	if s.ExecutionGate {
+		admitted = o.AllPodsScheduled
+	}
+	if admitted && o.SelectedCluster != "" {
 		if committed != "" && committed != o.SelectedCluster {
 			return report("UnsafePlacement", "execution member changed without a verified transition")
 		}
 		committed = o.SelectedCluster
 		status["committedCluster"] = committed
 	}
+	if s.ExecutionGate && s.Mode == "Execute" {
+		if err := initialPermit(status, work, o, stamp(r.now())); err != nil {
+			return report("TransitionRequired", err.Error())
+		}
+	}
 	if o.GPUShortage && status["shortageSince"] == nil {
 		status["shortageSince"] = stamp(r.now())
 	}
 	shortageAt, _ := time.Parse(time.RFC3339Nano, fmt.Sprint(status["shortageSince"]))
 	w, lead := s.Wait()
-	d, err := DecideActivation(ActivationObservation{Now: r.now(), ShortageAt: shortageAt, WaitSeconds: w, PreparationSeconds: lead, CloudAllowed: s.Cloud.Allowed, ResourceShortage: o.GPUShortage, OnPremAdmitted: o.AnyPodScheduled && o.SelectedCluster == s.OnPremiseCluster, CommittedCluster: committed, OnPremCluster: s.OnPremiseCluster, CloudCluster: s.Cloud.Cluster})
+	d, err := DecideActivation(ActivationObservation{Now: r.now(), ShortageAt: shortageAt, WaitSeconds: w, PreparationSeconds: lead, CloudAllowed: s.Cloud.Allowed, ResourceShortage: o.GPUShortage, OnPremAdmitted: admitted && o.SelectedCluster == s.OnPremiseCluster, CommittedCluster: committed, OnPremCluster: s.OnPremiseCluster, CloudCluster: s.Cloud.Cluster})
 	if err != nil {
 		return report("DecisionBlocked", err.Error())
 	}
@@ -225,6 +243,6 @@ func (r *RunReconciler) ensureRuntime(ctx context.Context, run, work *unstructur
 }
 
 func SetupRun(mgr ctrl.Manager) error {
-	r := &RunReconciler{Client: mgr.GetClient(), Members: configuredMembers()}
+	r := &RunReconciler{Client: mgr.GetClient(), Members: configuredMembers(), GateImage: os.Getenv("TRAINING_GATE_IMAGE"), GateCredentialSecret: os.Getenv("TRAINING_GATE_CREDENTIAL_SECRET")}
 	return ctrl.NewControllerManagedBy(mgr).For(resource.Object("TrainingRun")).WithEventFilter(predicate.GenerationChangedPredicate{}).Complete(r)
 }

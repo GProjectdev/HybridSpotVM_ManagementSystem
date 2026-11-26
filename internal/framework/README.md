@@ -40,3 +40,11 @@ results and images remain immutable.
 Karmada reference: https://karmada.io/docs/v1.15/userguide/scheduling/resource-propagating/
 Ordered clusterAffinities and a single cluster spread group are used. No scheduler
 fork or direct ResourceBinding cluster assignment is introduced.
+
+Optional executionGate injects a read-only init container before first propagation.
+The Run controller grants the exact all-rank Pod UIDs only after scheduling. An
+initial permit cannot be reassigned to replacement Pods or retrofitted after a
+ResourceBinding exists. This startup guard does not replace source fencing during
+recovery. Cloud activation remains blocked until Capacity and Transition receipt
+integration is ready. `suspend: true` pauses new control/checkpoint actions; it does
+not terminate existing workloads or retained infrastructure.

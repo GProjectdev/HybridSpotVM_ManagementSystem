@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,6 +16,7 @@ import (
 
 func frameworkClient(objs ...client.Object) client.Client {
 	s := runtime.NewScheme()
+	_ = corev1.AddToScheme(s)
 	for _, pair := range [][2]string{{"training.dcnlab.com/v1alpha1", "TrainingRun"}, {"training.dcnlab.com/v1alpha1", "TrainingRuntime"}, {"training.dcnlab.com/v1alpha1", "NodeRequest"}, {"training.dcnlab.com/v1alpha1", "TrainingTransition"}, {"policy.karmada.io/v1alpha1", "PropagationPolicy"}, {"work.karmada.io/v1alpha2", "ResourceBinding"}, {"fluidcr.dcnlab.com/v1alpha1", "FluidCRMigration"}, {"apps/v1", "StatefulSet"}} {
 		o := object(pair[0], pair[1])
 		s.AddKnownTypeWithName(o.GroupVersionKind(), o)

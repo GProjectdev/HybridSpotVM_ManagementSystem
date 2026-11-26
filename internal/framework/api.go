@@ -36,6 +36,8 @@ type RunSpec struct {
 	CheckpointSeconds  int64     `json:"checkpointSeconds"`
 	RuntimePort        int64     `json:"runtimePort,omitempty"`
 	Container          string    `json:"container,omitempty"`
+	ExecutionGate      bool      `json:"executionGate,omitempty"`
+	Suspend            bool      `json:"suspend,omitempty"`
 	// Observe is the default for staged rollout. Execute is an explicit user
 	// intent, not an annotation silently enabling mutations on old workloads.
 	Mode  string    `json:"mode"`
@@ -198,6 +200,9 @@ func (s RunSpec) Validate() error {
 	if s.Cloud.Allowed && (s.Cloud.Cluster == "" || s.Cloud.Cluster == s.OnPremiseCluster || s.Cloud.TemplateRef == "" || s.Cloud.RiskProfileRef == "" || s.Cloud.MaxWorkers < s.WorldSize) {
 		return fmt.Errorf("cloud cluster, reviewed template, risk profile and capacity limit required")
 	}
+	if s.Cloud.Allowed && s.Mode == "Execute" && !s.ExecutionGate {
+		return fmt.Errorf("Cloud execution requires a Pod-UID execution gate")
+	}
 	if s.Cloud.Allowed {
 		if _, err := time.Parse(time.RFC3339, s.Cloud.Deadline); err != nil {
 			return fmt.Errorf("absolute cloud deadline required")
@@ -214,4 +219,36 @@ func (s RunSpec) Wait() (int64, int64) {
 		p = *s.PreparationSeconds
 	}
 	return w, p
+}
+
+// containsSpec verifies every explicit field including false/zero values while
+// accepting additional API-defaulted keys. It never ignores a Boolean mismatch.
+func containsSpec(actual, expected interface{}) bool {
+	switch want := expected.(type) {
+	case map[string]interface{}:
+		got, ok := actual.(map[string]interface{})
+		if !ok {
+			return false
+		}
+		for k, v := range want {
+			a, exists := got[k]
+			if !exists || !containsSpec(a, v) {
+				return false
+			}
+		}
+		return true
+	case []interface{}:
+		got, ok := actual.([]interface{})
+		if !ok || len(got) != len(want) {
+			return false
+		}
+		for i, v := range want {
+			if !containsSpec(got[i], v) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(actual, expected)
+	}
 }

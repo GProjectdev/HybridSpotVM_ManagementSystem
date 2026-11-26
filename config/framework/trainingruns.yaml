@@ -112,6 +112,12 @@ spec:
                     format: date-time
                 required:
                 - allowed
+              executionGate:
+                type: boolean
+                default: false
+              suspend:
+                type: boolean
+                default: false
             required:
             - workloadRef
             - onPremiseCluster
@@ -134,6 +140,10 @@ spec:
                 && has(self.cloud.deadline))'
               message: Cloud needs a distinct cluster, template, risk profile, capacity
                 limit and absolute deadline
+            - rule: self.executionGate == oldSelf.executionGate
+              message: executionGate is immutable; do not retrofit a propagated workload
+            - rule: '!self.cloud.allowed || self.mode != "Execute" || self.executionGate'
+              message: Cloud execution requires the Pod-UID execution gate
           status:
             type: object
             x-kubernetes-preserve-unknown-fields: true

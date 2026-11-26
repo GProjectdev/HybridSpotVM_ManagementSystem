@@ -61,6 +61,8 @@ type WorkloadObservation struct {
 	AnyPodScheduled, AllPodsScheduled, GPUShortage bool
 	Running                                        bool
 	Runtime                                        p.RuntimeSnapshot
+	MemberWorkloadUID                              string
+	ScheduledPods                                  map[string]string
 }
 
 // ObserveWorkload rejects stale bindings and multiple target worlds. Running is
@@ -160,6 +162,8 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 	}
 	result.AnyPodScheduled = scheduled > 0
 	result.AllPodsScheduled = scheduled == s.WorldSize
+	result.MemberWorkloadUID = string(memberWork.UID)
+	result.ScheduledPods = livePods
 	rt := p.NewObject("TrainingRuntime")
 	if err = c.Get(ctx, key(run.GetNamespace(), run.GetName()+"-runtime"), rt); apierrors.IsNotFound(err) {
 		return result, nil
@@ -170,6 +174,9 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 		return result, fmt.Errorf("runtime ownership mismatch")
 	}
 	result.Runtime = p.ReadRuntimeStatus(rt, result.SelectedCluster)
+	if result.Runtime.MemberWorkloadUID == "" {
+		return result, nil
+	}
 	if result.Runtime.MemberWorkloadUID != memberWork.UID {
 		return result, fmt.Errorf("runtime belongs to a previous member workload")
 	}
