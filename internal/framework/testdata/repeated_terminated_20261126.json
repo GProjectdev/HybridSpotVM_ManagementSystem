@@ -1,0 +1,22 @@
+{
+  "name": "trainer",
+  "restartCount": 4,
+  "state": {
+    "terminated": {
+      "containerID": "cri-o://ff544dd173e964963aa3dc45b6c4ebbf67d875a2da33890d0eca39022e8a03d3",
+      "exitCode": 1,
+      "finishedAt": "2026-11-26T09:26:27Z",
+      "reason": "Error",
+      "startedAt": "2026-11-26T09:26:24Z"
+    }
+  },
+  "lastState": {
+    "terminated": {
+      "containerID": "cri-o://e7ba9fe65fa63419d3305fb113ad7e155b65faaf6cab18a75a00e7d259516bc8",
+      "exitCode": 1,
+      "finishedAt": "2026-11-26T09:25:35Z",
+      "reason": "Error",
+      "startedAt": "2026-11-26T09:25:32Z"
+    }
+  }
+}

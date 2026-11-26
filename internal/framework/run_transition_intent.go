@@ -347,10 +347,16 @@ func (r *RunReconciler) confirmedSourceFailure(ctx context.Context, cluster stri
 			if rs.Container != "" && state.Name != rs.Container {
 				continue
 			}
-			if state.State.Waiting == nil || state.State.Waiting.Reason != "CrashLoopBackOff" || int64(state.RestartCount) < restartThreshold {
+			if int64(state.RestartCount) < restartThreshold {
 				continue
 			}
-			last := state.LastTerminationState.Terminated
+			// During restart backoff some kubelet/CRI combinations retain the
+			// current Terminated state instead of publishing Waiting. Both carry
+			// direct failure evidence; an old failure while Running is insufficient.
+			last := state.State.Terminated
+			if last == nil && state.State.Waiting != nil && state.State.Waiting.Reason == "CrashLoopBackOff" {
+				last = state.LastTerminationState.Terminated
+			}
 			if last == nil || last.ExitCode == 0 || last.ExitCode == 99 || last.FinishedAt.IsZero() || last.FinishedAt.After(r.now()) {
 				continue
 			}
