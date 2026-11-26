@@ -166,3 +166,25 @@ func TestCheckpointPausesOwnedScheduleWhenTelemetryLost(t *testing.T) {
 		t.Fatal("foreign schedule changed")
 	}
 }
+
+func TestOwnedObjectPreservesServerDefaultsWithoutRewrite(t *testing.T) {
+	ctx := context.Background()
+	run, _ := initialObjects("Execute")
+	pp := object("policy.karmada.io/v1alpha1", "PropagationPolicy")
+	pp.SetNamespace("ns")
+	pp.SetName("placement")
+	setOwner(pp, run)
+	pp.Object["spec"] = map[string]interface{}{"placement": map[string]interface{}{"clusterAffinity": map[string]interface{}{"clusterNames": []interface{}{"onpre1"}}}, "activationPreference": "Immediate"}
+	c := frameworkClient(run, pp)
+	_ = c.Get(ctx, key("ns", "placement"), pp)
+	version := pp.GetResourceVersion()
+	desired := pp.DeepCopy()
+	delete(desired.Object["spec"].(map[string]interface{}), "activationPreference")
+	if err := ensureSpec(ctx, c, desired, run); err != nil {
+		t.Fatal(err)
+	}
+	_ = c.Get(ctx, key("ns", "placement"), pp)
+	if pp.GetResourceVersion() != version || str(pp, "spec", "activationPreference") != "Immediate" {
+		t.Fatal("server default removed or needless write performed")
+	}
+}

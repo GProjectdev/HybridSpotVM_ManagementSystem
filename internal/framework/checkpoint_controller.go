@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // FrameworkCheckpointReconciler is the sole schedule writer for TrainingRuns.
@@ -130,5 +131,5 @@ func (r *FrameworkCheckpointReconciler) Reconcile(ctx context.Context, req ctrl.
 
 func SetupFrameworkCheckpoint(mgr ctrl.Manager) error {
 	r := &FrameworkCheckpointReconciler{Client: mgr.GetClient(), Members: configuredMembers()}
-	return ctrl.NewControllerManagedBy(mgr).Named("training-run-checkpoint").For(resource.Object("TrainingRun")).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).Named("training-run-checkpoint").For(resource.Object("TrainingRun")).WithEventFilter(predicate.GenerationChangedPredicate{}).Complete(r)
 }

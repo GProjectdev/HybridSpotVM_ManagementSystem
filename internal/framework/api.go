@@ -130,12 +130,31 @@ func ensureSpec(ctx context.Context, c client.Client, desired, parent *unstructu
 	if !owned(old, parent) || !old.GetDeletionTimestamp().IsZero() {
 		return fmt.Errorf("%s %s ownership conflict or deletion in progress", desired.GetKind(), desired.GetName())
 	}
-	if reflect.DeepEqual(old.Object["spec"], desired.Object["spec"]) {
+	// Retain API-defaulted fields outside this controller's explicit contract.
+	// Removing those on every poll would cause needless policy propagation.
+	merged, _, _ := unstructured.NestedMap(old.Object, "spec")
+	if merged == nil {
+		merged = map[string]interface{}{}
+	}
+	overlaySpec(merged, desired.Object["spec"].(map[string]interface{}))
+	if reflect.DeepEqual(old.Object["spec"], merged) {
 		return nil
 	}
 	base := old.DeepCopy()
-	old.Object["spec"] = desired.Object["spec"]
+	old.Object["spec"] = merged
 	return c.Patch(ctx, old, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{}))
+}
+
+func overlaySpec(dst, src map[string]interface{}) {
+	for k, v := range src {
+		if child, ok := v.(map[string]interface{}); ok {
+			if existing, ok := dst[k].(map[string]interface{}); ok {
+				overlaySpec(existing, child)
+				continue
+			}
+		}
+		dst[k] = runtime.DeepCopyJSONValue(v)
+	}
 }
 func named(kind, ns, name string) *unstructured.Unstructured {
 	o := resource.Object(kind)

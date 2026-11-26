@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // RunReconciler owns only TrainingRun status, placement and runtime registration.
@@ -225,5 +226,5 @@ func (r *RunReconciler) ensureRuntime(ctx context.Context, run, work *unstructur
 
 func SetupRun(mgr ctrl.Manager) error {
 	r := &RunReconciler{Client: mgr.GetClient(), Members: configuredMembers()}
-	return ctrl.NewControllerManagedBy(mgr).For(resource.Object("TrainingRun")).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).For(resource.Object("TrainingRun")).WithEventFilter(predicate.GenerationChangedPredicate{}).Complete(r)
 }
