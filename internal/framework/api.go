@@ -39,6 +39,7 @@ type RunSpec struct {
 	Container          string             `json:"container,omitempty"`
 	ExecutionGate      bool               `json:"executionGate,omitempty"`
 	Suspend            bool               `json:"suspend,omitempty"`
+	CompletionPolicy   string             `json:"completionPolicy,omitempty"`
 	ResourcePolicy     ResourcePolicySpec `json:"resourcePolicy,omitempty"`
 	Failover           FailoverSpec       `json:"failover,omitempty"`
 	// Observe is the default for staged rollout. Execute is an explicit user
@@ -221,6 +222,12 @@ func gvk(kind string) schema.GroupVersionKind {
 }
 
 func (s RunSpec) Validate() error {
+	if s.CompletionPolicy != "" && s.CompletionPolicy != "Retain" && s.CompletionPolicy != "AllRanksSucceeded" {
+		return fmt.Errorf("completionPolicy must be Retain or AllRanksSucceeded")
+	}
+	if s.CompletionPolicy == "AllRanksSucceeded" && (!s.ExecutionGate || s.Container == "") {
+		return fmt.Errorf("automatic completion requires execution gate and explicit trainer container")
+	}
 	if s.Failover.Enabled && !s.Cloud.Allowed {
 		return fmt.Errorf("failover requires approved Cloud target")
 	}

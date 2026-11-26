@@ -22,6 +22,7 @@ import (
 )
 
 type RuntimeObservation struct {
+	Completion           *CompletionObservation `json:"completion,omitempty"`
 	GlobalStep           int64                  `json:"globalStep"`
 	CheckpointID         string                 `json:"checkpointID"`
 	Rank                 int64                  `json:"rank"`
@@ -32,6 +33,12 @@ type RuntimeObservation struct {
 	IterationMeasurement *IterationMeasurement  `json:"iterationMeasurement,omitempty"`
 	WorkerSession        string                 `json:"workerSession,omitempty"`
 	SurvivorResume       map[string]interface{} `json:"survivorResume,omitempty"`
+}
+type CompletionObservation struct {
+	PodUID     string `json:"podUID"`
+	NodeName   string `json:"nodeName"`
+	ExitCode   *int32 `json:"exitCode"`
+	FinishedAt string `json:"finishedAt"`
 }
 type RuntimeReconciler struct {
 	client.Client
@@ -138,6 +145,7 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 	timings := []RuntimeObservation{}
 	var minStep int64
 	var checkpoint string
+	completedRanks := int64(0)
 	h := r.HTTP
 	if h == nil {
 		h = &http.Client{Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
@@ -187,8 +195,19 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 		if sample.GlobalStep == 0 {
 			return fmt.Errorf("pod %s has not completed its first optimizer update", pod.Name)
 		}
-		if sample.State != "Running" || sample.WorldSize != expected || sample.Rank < 0 || sample.Rank >= expected || sample.GlobalStep < 0 || seen[sample.Rank] {
+		if (sample.State != "Running" && sample.State != "Completed") || sample.WorldSize != expected || sample.Rank < 0 || sample.Rank >= expected || sample.GlobalStep < 0 || seen[sample.Rank] {
 			return fmt.Errorf("pod %s invalid rank membership", pod.Name)
+		}
+		if sample.State == "Completed" {
+			proof := sample.Completion
+			if proof == nil || proof.ExitCode == nil || *proof.ExitCode != 0 || proof.PodUID != string(pod.UID) || proof.NodeName != pod.Spec.NodeName || proof.NodeName == "" {
+				return fmt.Errorf("pod %s missing successful completion identity", pod.Name)
+			}
+			finished, e := time.Parse(time.RFC3339Nano, proof.FinishedAt)
+			if e != nil || finished.After(stamp) || (!pod.CreationTimestamp.IsZero() && finished.Before(pod.CreationTimestamp.Time)) {
+				return fmt.Errorf("pod %s invalid completion timestamp", pod.Name)
+			}
+			completedRanks++
 		}
 		effectiveCheckpoint := sample.CheckpointID
 		if receipt := sample.SurvivorResume; receipt != nil {
@@ -219,6 +238,10 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 			entry["survivorResume"] = sample.SurvivorResume
 		}
 		entry["workerSession"] = sample.WorkerSession
+		entry["state"] = sample.State
+		if sample.Completion != nil && sample.State == "Completed" {
+			entry["completion"] = map[string]interface{}{"podUID": sample.Completion.PodUID, "nodeName": sample.Completion.NodeName, "exitCode": int64(0), "finishedAt": sample.Completion.FinishedAt}
+		}
 		if validIterationMeasurement(sample, time.Now()) {
 			entry["iterationMeasurement"] = sample.IterationMeasurement.status()
 		}
@@ -229,11 +252,17 @@ func (r *RuntimeReconciler) collect(ctx context.Context, ns, name, originUID str
 		return fmt.Errorf("expected %d ranks, observed %d", expected, len(samples))
 	}
 	status["pods"] = samples
-	status["readyRanks"] = expected
+	status["readyRanks"] = expected - completedRanks
+	status["completedRanks"] = completedRanks
 	status["worldSize"] = expected
 	status["globalStep"] = minStep
 	status["checkpointID"] = checkpoint
 	status["phase"] = "Running"
+	if completedRanks == expected {
+		status["phase"] = "Completed"
+	} else if completedRanks > 0 {
+		status["phase"] = "Completing"
+	}
 	status["workloadUID"] = originUID
 	status["memberWorkloadUID"] = string(sts.UID)
 	aggregateIterationTiming(status, timings, time.Now())

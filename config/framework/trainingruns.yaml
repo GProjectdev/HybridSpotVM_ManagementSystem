@@ -160,6 +160,14 @@ spec:
               suspend:
                 type: boolean
                 default: false
+              completionPolicy:
+                type: string
+                enum: [Retain, AllRanksSucceeded]
+                default: Retain
+                description: AllRanksSucceeded requires live UID-bound successful process exit receipts for every rank; it does not certify model quality or output persistence.
+                x-kubernetes-validations:
+                - rule: self == oldSelf
+                  message: completionPolicy is immutable; submit a new Run
             required:
             - workloadRef
             - onPremiseCluster

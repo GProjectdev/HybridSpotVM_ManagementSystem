@@ -31,6 +31,11 @@ func (r *RunReconciler) prepareExecutionGate(ctx context.Context, run, work *uns
 	if !strings.Contains(r.GateImage, "@sha256:") || r.GateCredentialSecret == "" {
 		return fmt.Errorf("pinned execution-gate image and read-only credential source required")
 	}
+	if s.CompletionPolicy == "AllRanksSucceeded" {
+		if e := r.prepareCompletionEnvironment(ctx, work, s); e != nil {
+			return e
+		}
+	}
 	source := &corev1.Secret{}
 	if err := r.Get(ctx, key(run.GetNamespace(), r.GateCredentialSecret), source); err != nil {
 		return fmt.Errorf("execution-gate credential is unavailable")

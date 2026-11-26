@@ -73,6 +73,13 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		status["workloadUID"] = string(work.GetUID())
 		return report("BindingWorkload", "workload UID persisted before any placement write")
 	}
+	if _, exists := status["completionEvidence"]; exists && s.Mode == "Execute" {
+		phase, message, e := r.finalizeSuccessfulRun(ctx, run, work, s, status)
+		if e != nil {
+			message = e.Error()
+		}
+		return report(phase, message)
+	}
 	if integer(work, "spec", "replicas") != s.WorldSize {
 		return report("Invalid", "StatefulSet replicas must equal worldSize")
 	}
@@ -154,6 +161,10 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	o, err := ObserveWorkload(ctx, r.Client, r.Members, run, work, s, r.now())
 	if err != nil {
 		return report("ObservationBlocked", err.Error())
+	}
+	if s.Mode == "Execute" && completionReady(run, work, s, o, r.now()) {
+		status["completionEvidence"] = map[string]interface{}{"runUID": string(run.GetUID()), "workloadUID": string(work.GetUID()), "memberWorkloadUID": o.MemberWorkloadUID, "cluster": o.SelectedCluster, "observedAt": stamp(r.now()), "runtime": encode(o.Runtime)}
+		return report("Completing", "live UID-bound successful completion received from every rank")
 	}
 	status["selectedCluster"], status["gpuShortage"], status["allPodsScheduled"] = o.SelectedCluster, o.GPUShortage, o.AllPodsScheduled
 	if preferredInitialCluster != "" && o.SelectedCluster != preferredInitialCluster {
