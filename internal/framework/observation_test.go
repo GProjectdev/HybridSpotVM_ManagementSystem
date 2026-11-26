@@ -4,7 +4,9 @@ import (
 	"context"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kr "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -135,5 +137,24 @@ func TestCandidateRuntimeMayMoveOnlyBeforeExecutionCommitment(t *testing.T) {
 				t.Fatal(state, o, err)
 			}
 		})
+	}
+}
+
+func TestNativeUnschedulableRequiresIndependentGPUShortage(t *testing.T) {
+	for _, available := range []string{"0", "1"} {
+		run, work := initialObjects("Execute")
+		_ = unstructured.SetNestedMap(work.Object, map[string]interface{}{"containers": []interface{}{map[string]interface{}{"name": "train", "resources": map[string]interface{}{"limits": map[string]interface{}{"nvidia.com/gpu": "1"}}}}}, "spec", "template", "spec")
+		b := object("work.karmada.io/v1alpha2", "ResourceBinding")
+		b.SetNamespace("ns")
+		b.SetName("b")
+		b.Object["spec"] = map[string]interface{}{"resource": map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "a", "namespace": "ns", "uid": "source"}}
+		b.Object["status"] = map[string]interface{}{"conditions": []interface{}{map[string]interface{}{"type": "Scheduled", "status": "False", "message": "no enough resource when selecting 1 clusters"}}}
+		n := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "node"}, Status: corev1.NodeStatus{Allocatable: corev1.ResourceList{"nvidia.com/gpu": kr.MustParse(available)}, Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}}}}
+		member := frameworkClient(n)
+		control := frameworkClient(run, work, b)
+		got, err := ObserveWorkload(context.Background(), control, func(string) (client.Reader, error) { return member, nil }, run, work, RunSpec{WorldSize: 1, OnPremiseCluster: "onpre1", Cloud: CloudSpec{Allowed: true, Cluster: "aws1"}}, time.Now())
+		if err != nil || got.GPUShortage != (available == "0") {
+			t.Fatal(got, err)
+		}
 	}
 }

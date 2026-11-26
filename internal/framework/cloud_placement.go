@@ -101,7 +101,15 @@ func ensureCloudNodePlacement(ctx context.Context, c client.Client, run, work, c
 	o := object("policy.karmada.io/v1alpha1", "OverridePolicy")
 	o.SetNamespace(run.GetNamespace())
 	o.SetName(work.GetName() + "-cloud-nodes")
-	o.Object["spec"] = map[string]interface{}{"resourceSelectors": []interface{}{map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": work.GetName()}}, "overrideRules": []interface{}{map[string]interface{}{"targetCluster": map[string]interface{}{"clusterNames": []interface{}{s.Cloud.Cluster}}, "overriders": map[string]interface{}{"plaintext": []interface{}{map[string]interface{}{"path": "/spec/template/spec/affinity", "operator": "add", "value": affinity}}}}}}
+	patches := []interface{}{map[string]interface{}{"path": "/spec/template/spec/affinity", "operator": "add", "value": affinity}}
+	if s.Cloud.RuntimeClassName != nil {
+		if *s.Cloud.RuntimeClassName != "" {
+			patches = append(patches, map[string]interface{}{"path": "/spec/template/spec/runtimeClassName", "operator": "add", "value": *s.Cloud.RuntimeClassName})
+		} else if _, found, _ := unstructured.NestedFieldNoCopy(work.Object, "spec", "template", "spec", "runtimeClassName"); found {
+			patches = append(patches, map[string]interface{}{"path": "/spec/template/spec/runtimeClassName", "operator": "remove"})
+		}
+	}
+	o.Object["spec"] = map[string]interface{}{"resourceSelectors": []interface{}{map[string]interface{}{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": work.GetName()}}, "overrideRules": []interface{}{map[string]interface{}{"targetCluster": map[string]interface{}{"clusterNames": []interface{}{s.Cloud.Cluster}}, "overriders": map[string]interface{}{"plaintext": patches}}}}
 	return ensureSpec(ctx, c, o, run)
 }
 

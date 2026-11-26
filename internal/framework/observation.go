@@ -117,6 +117,17 @@ func ObserveWorkload(ctx context.Context, c client.Reader, members MemberReader,
 		if v["type"] == "Scheduled" && v["status"] == "False" && strings.Contains(msg, "Insufficient nvidia.com/gpu") {
 			result.GPUShortage = true
 		}
+		if v["type"] == "Scheduled" && v["status"] == "False" && !result.GPUShortage && (strings.Contains(msg, "not enough") || strings.Contains(msg, "no enough resource")) && s.Cloud.Allowed {
+			reader, e := members(s.OnPremiseCluster)
+			if e != nil {
+				return result, e
+			}
+			enough, _, e := initialGPUHeadroom(ctx, reader, work, s.WorldSize)
+			if e != nil {
+				return result, e
+			}
+			result.GPUShortage = !enough
+		}
 	}
 	if result.SelectedCluster == "" {
 		return result, nil

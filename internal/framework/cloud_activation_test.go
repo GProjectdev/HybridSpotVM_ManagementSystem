@@ -247,3 +247,59 @@ func TestInitialWorkloadUsesResourceAwareSingleClusterScheduling(t *testing.T) {
 		t.Fatal("commit unexpectedly removed scheduler contract")
 	}
 }
+
+func TestCloudRuntimeMappingIsExplicitAndMemberScoped(t *testing.T) {
+	for _, mode := range []string{"preserve", "default", "named", "absent-default"} {
+		t.Run(mode, func(t *testing.T) {
+			run, work := initialObjects("Execute")
+			if mode != "absent-default" {
+				_ = unstructured.SetNestedField(work.Object, "nvidia", "spec", "template", "spec", "runtimeClassName")
+			}
+			s := RunSpec{WorldSize: 1, Cloud: CloudSpec{Cluster: "aws1"}}
+			if mode != "preserve" {
+				v := ""
+				if mode == "named" {
+					v = "gpu-cdi"
+				}
+				s.Cloud.RuntimeClassName = &v
+			}
+			cap := named("TrainingCapacity", "ns", "cap")
+			cap.Object["spec"] = encode(CapacitySpec{Allocations: []Allocation{{Name: "worker", State: "Prepare", Market: "spot"}}})
+			cap.Object["status"] = map[string]interface{}{"allocations": map[string]interface{}{"worker": map[string]interface{}{"memberUID": "uid"}}}
+			c := frameworkClient(run, work, cap)
+			if err := ensureCloudNodePlacement(context.Background(), c, run, work, cap, s); err != nil {
+				t.Fatal(err)
+			}
+			o := object("policy.karmada.io/v1alpha1", "OverridePolicy")
+			if err := c.Get(context.Background(), key("ns", "a-cloud-nodes"), o); err != nil {
+				t.Fatal(err)
+			}
+			rules, _, _ := unstructured.NestedSlice(o.Object, "spec", "overrideRules")
+			rule := rules[0].(map[string]interface{})
+			names, _, _ := unstructured.NestedStringSlice(rule, "targetCluster", "clusterNames")
+			if len(names) != 1 || names[0] != "aws1" {
+				t.Fatal(names)
+			}
+			patches, _, _ := unstructured.NestedSlice(rule, "overriders", "plaintext")
+			want := 1
+			if mode == "default" || mode == "named" {
+				want = 2
+			}
+			if len(patches) != want {
+				t.Fatal(patches)
+			}
+			if want == 2 {
+				p := patches[1].(map[string]interface{})
+				if mode == "default" && p["operator"] != "remove" {
+					t.Fatal(p)
+				}
+				if mode == "named" && p["value"] != "gpu-cdi" {
+					t.Fatal(p)
+				}
+			}
+			if mode != "absent-default" && str(work, "spec", "template", "spec", "runtimeClassName") != "nvidia" {
+				t.Fatal("source template changed")
+			}
+		})
+	}
+}

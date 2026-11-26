@@ -55,11 +55,14 @@ type ResourcePolicySpec struct {
 }
 
 type CloudSpec struct {
-	Allowed        bool   `json:"allowed"`
-	Cluster        string `json:"cluster,omitempty"`
-	TemplateRef    string `json:"templateRef,omitempty"`
-	RiskProfileRef string `json:"riskProfileRef,omitempty"`
-	MaxWorkers     int64  `json:"maxWorkers,omitempty"`
+	// nil preserves the workload runtime; empty selects the member's default
+	// runtime (for example, a reviewed CRI-O/CDI installation).
+	RuntimeClassName *string `json:"runtimeClassName,omitempty"`
+	Allowed          bool    `json:"allowed"`
+	Cluster          string  `json:"cluster,omitempty"`
+	TemplateRef      string  `json:"templateRef,omitempty"`
+	RiskProfileRef   string  `json:"riskProfileRef,omitempty"`
+	MaxWorkers       int64   `json:"maxWorkers,omitempty"`
 	// Every paid allocation has a precommitted absolute stop deadline.
 	Deadline string `json:"deadline,omitempty"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,6 +55,8 @@ func initialGPUHeadroom(ctx context.Context, reader client.Reader, work *unstruc
 	ownUID := ""
 	if err = reader.Get(ctx, client.ObjectKeyFromObject(work), member); err == nil && member.GetLabels()["training.dcnlab.com/workload-uid"] == string(work.GetUID()) {
 		ownUID = string(member.GetUID())
+	} else if err != nil && !apierrors.IsNotFound(err) {
+		return false, nil, err
 	}
 	for _, pod := range pods.Items {
 		if pod.Spec.NodeName == "" || pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {

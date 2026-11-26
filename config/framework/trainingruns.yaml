@@ -122,6 +122,10 @@ spec:
                   riskProfileRef:
                     type: string
                     maxLength: 63
+                  runtimeClassName:
+                    type: string
+                    maxLength: 253
+                    description: Explicit Cloud runtime mapping; empty selects the reviewed member default, omission preserves the workload setting.
                   maxWorkers:
                     type: integer
                     format: int64
