@@ -176,7 +176,7 @@ func (r *TransitionReconciler) Reconcile(ctx context.Context, q ctrl.Request) (c
 	if cpErr == nil && owned(cp, t) {
 		m, completed, err := management.ValidateGroupCheckpointEvidence(cp, input)
 		readyAt, _ := time.Parse(time.RFC3339Nano, fmt.Sprint(status["targetReadyAt"]))
-		if err == nil && !completed.After(r.now()) && (ts.Mode != "PlannedReplacement" || !cp.GetCreationTimestamp().Time.Before(readyAt)) {
+		if err == nil && !completed.After(r.now()) && (ts.Mode != "PlannedReplacement" || checkpointCreatedAfterPreparation(cp.GetCreationTimestamp().Time, readyAt)) {
 			chosen = cp
 			mappings = m
 		}
@@ -239,6 +239,14 @@ func (r *TransitionReconciler) Reconcile(ctx context.Context, q ctrl.Request) (c
 	status["checkpointRef"] = request.Object["spec"].(map[string]interface{})["checkpointRef"]
 	status["restoreRequestUID"] = string(request.GetUID())
 	return report("Restoring", "immutable restore request submitted to existing full-group backend")
+}
+
+// Kubernetes metadata timestamps have whole-second precision. The owned request
+// is created only after targetReadyAt has been persisted by the preceding
+// reconcile. Compare at that shared precision; comparing an API-truncated time
+// against nanoseconds incorrectly rejects requests created in the same second.
+func checkpointCreatedAfterPreparation(created, ready time.Time) bool {
+	return !created.IsZero() && !ready.IsZero() && !created.Before(ready.Truncate(time.Second))
 }
 
 func archiveMatchesSources(mappings []interface{}, sources []SourcePod) error {

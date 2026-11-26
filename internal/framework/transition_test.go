@@ -171,3 +171,23 @@ func TestRestorePhaseAloneCannotGrantExecutionOrRetire(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckpointCreationTimestampResolution(t *testing.T) {
+	ready, _ := time.Parse(time.RFC3339Nano, "2026-11-26T08:46:38.180946575Z")
+	for _, tc := range []struct {
+		at   string
+		want bool
+	}{
+		{"2026-11-26T08:46:37Z", false},
+		{"2026-11-26T08:46:38Z", true},
+		{"2026-11-26T08:46:39Z", true},
+	} {
+		at, _ := time.Parse(time.RFC3339, tc.at)
+		if checkpointCreatedAfterPreparation(at, ready) != tc.want {
+			t.Fatal(tc)
+		}
+	}
+	if checkpointCreatedAfterPreparation(time.Time{}, ready) || checkpointCreatedAfterPreparation(ready, time.Time{}) {
+		t.Fatal("missing preparation evidence accepted")
+	}
+}
