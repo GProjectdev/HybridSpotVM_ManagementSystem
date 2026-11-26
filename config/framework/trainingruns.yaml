@@ -72,6 +72,24 @@ spec:
                 format: int64
                 minimum: 1
                 maximum: 604800
+              failover:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  failureGraceSeconds:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    maximum: 86400
+                    default: 60
+                  restartThreshold:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+                    default: 3
               resourcePolicy:
                 type: object
                 properties:

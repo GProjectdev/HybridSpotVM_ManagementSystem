@@ -185,7 +185,7 @@ func (r *RunReconciler) transitionTrigger(ctx context.Context, run, work, cap *u
 			}
 		}
 	}
-	if source == rs.OnPremiseCluster {
+	if source == rs.OnPremiseCluster && rs.Failover.Enabled {
 		failed, reason, e := r.confirmedSourceFailure(ctx, source, run, work, rs)
 		if e != nil {
 			return false, e
@@ -309,6 +309,10 @@ func allocationHeld(run *unstructured.Unstructured, name string, now time.Time) 
 	return false
 }
 func (r *RunReconciler) confirmedSourceFailure(ctx context.Context, cluster string, run, work *unstructured.Unstructured, rs RunSpec) (bool, string, error) {
+	if !rs.Failover.Enabled {
+		return false, "", nil
+	}
+	grace, restartThreshold := rs.Failover.limits()
 	c := object("cluster.karmada.io/v1alpha1", "Cluster")
 	if e := r.Get(ctx, client.ObjectKey{Name: cluster}, c); e != nil {
 		return false, "", e
@@ -317,7 +321,7 @@ func (r *RunReconciler) confirmedSourceFailure(ctx context.Context, cluster stri
 	for _, raw := range conds {
 		m := &unstructured.Unstructured{Object: raw.(map[string]interface{})}
 		at, e := time.Parse(time.RFC3339Nano, str(m, "lastTransitionTime"))
-		if str(m, "type") == "Ready" && str(m, "status") != "True" && e == nil && !at.After(r.now()) && r.now().Sub(at) >= 60*time.Second {
+		if str(m, "type") == "Ready" && str(m, "status") != "True" && e == nil && !at.After(r.now()) && r.now().Sub(at) >= grace {
 			return true, "cluster-not-ready/" + string(c.GetUID()) + "/" + stamp(at), nil
 		}
 	}
@@ -337,6 +341,33 @@ func (r *RunReconciler) confirmedSourceFailure(ctx context.Context, cluster stri
 		}
 		if pod.Status.Phase == corev1.PodFailed {
 			return true, "pod-failed/" + uid, nil
+		}
+		// Waiting on image pulls, readiness, or checkpoint pause is not a crash.
+		for _, state := range pod.Status.ContainerStatuses {
+			if rs.Container != "" && state.Name != rs.Container {
+				continue
+			}
+			if state.State.Waiting == nil || state.State.Waiting.Reason != "CrashLoopBackOff" || int64(state.RestartCount) < restartThreshold {
+				continue
+			}
+			last := state.LastTerminationState.Terminated
+			if last == nil || last.ExitCode == 0 || last.ExitCode == 99 || last.FinishedAt.IsZero() || last.FinishedAt.After(r.now()) {
+				continue
+			}
+			if !pod.CreationTimestamp.IsZero() && r.now().Sub(pod.CreationTimestamp.Time) >= grace {
+				return true, "application-crash/" + uid, nil
+			}
+		}
+		node := &corev1.Node{}
+		if pod.Spec.NodeName != "" {
+			if e = reader.Get(ctx, client.ObjectKey{Name: pod.Spec.NodeName}, node); e != nil {
+				return false, "", e
+			}
+			for _, condition := range node.Status.Conditions {
+				if condition.Type == corev1.NodeReady && condition.Status != corev1.ConditionTrue && !condition.LastTransitionTime.IsZero() && !condition.LastTransitionTime.After(r.now()) && r.now().Sub(condition.LastTransitionTime.Time) >= grace {
+					return true, "node-not-ready/" + string(node.UID) + "/" + stamp(condition.LastTransitionTime.Time), nil
+				}
+			}
 		}
 	}
 	return false, "", nil

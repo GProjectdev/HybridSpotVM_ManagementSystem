@@ -40,10 +40,30 @@ type RunSpec struct {
 	ExecutionGate      bool               `json:"executionGate,omitempty"`
 	Suspend            bool               `json:"suspend,omitempty"`
 	ResourcePolicy     ResourcePolicySpec `json:"resourcePolicy,omitempty"`
+	Failover           FailoverSpec       `json:"failover,omitempty"`
 	// Observe is the default for staged rollout. Execute is an explicit user
 	// intent, not an annotation silently enabling mutations on old workloads.
 	Mode  string    `json:"mode"`
 	Cloud CloudSpec `json:"cloud"`
+}
+
+// Failover is an explicit opt-in separate from Cloud overflow permission.
+// Grace and repeated failures avoid migrating on transient runtime observations.
+type FailoverSpec struct {
+	Enabled             bool  `json:"enabled"`
+	FailureGraceSeconds int64 `json:"failureGraceSeconds,omitempty"`
+	RestartThreshold    int64 `json:"restartThreshold,omitempty"`
+}
+
+func (f FailoverSpec) limits() (time.Duration, int64) {
+	grace, restarts := f.FailureGraceSeconds, f.RestartThreshold
+	if grace == 0 {
+		grace = 60
+	}
+	if restarts == 0 {
+		restarts = 3
+	}
+	return time.Duration(grace) * time.Second, restarts
 }
 
 // ResourcePolicySpec configures the existing paper-eq6-7 policy. It is part of
@@ -201,6 +221,12 @@ func gvk(kind string) schema.GroupVersionKind {
 }
 
 func (s RunSpec) Validate() error {
+	if s.Failover.Enabled && !s.Cloud.Allowed {
+		return fmt.Errorf("failover requires approved Cloud target")
+	}
+	if s.Failover.FailureGraceSeconds < 0 || s.Failover.FailureGraceSeconds > 86400 || s.Failover.RestartThreshold < 0 || s.Failover.RestartThreshold > 100 {
+		return fmt.Errorf("invalid failure confirmation limits")
+	}
 	if s.WorkloadRef.Name == "" || s.OnPremiseCluster == "" || s.WorldSize < 1 || s.WorldSize > 128 || s.CheckpointSeconds <= 0 {
 		return fmt.Errorf("workload, cluster, worldSize and checkpointSeconds are required")
 	}
