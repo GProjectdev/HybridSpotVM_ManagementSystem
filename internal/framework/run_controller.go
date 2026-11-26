@@ -90,6 +90,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	cloudReady := capacityReady(capacity, s.WorldSize, r.now())
 	cloudEligible, _ := status["cloudEligible"].(bool)
+	preferredInitialCluster := ""
 	if s.Mode == "Execute" {
 		if err := r.labelWorkload(ctx, run, work); err != nil {
 			return report("OwnershipConflict", err.Error())
@@ -107,7 +108,21 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			if err := ensureCloudNodePlacement(ctx, r.Client, run, work, capacity, s); err != nil {
 				return report("CloudPlacementBlocked", err.Error())
 			}
-			clusters = append(clusters, s.Cloud.Cluster)
+			reader, e := r.Members(s.OnPremiseCluster)
+			if e != nil {
+				return report("PlacementObservationBlocked", e.Error())
+			}
+			hasRoom, evidence, e := initialGPUHeadroom(ctx, reader, work, s.WorldSize)
+			if e != nil {
+				return report("PlacementObservationBlocked", e.Error())
+			}
+			evidence["observedAt"] = stamp(r.now())
+			status["onPremGPUHeadroom"] = evidence
+			preferredInitialCluster = s.OnPremiseCluster
+			if !hasRoom {
+				clusters = []string{s.Cloud.Cluster}
+				preferredInitialCluster = s.Cloud.Cluster
+			}
 		}
 		if err := ensureWorkloadPlacement(ctx, r.Client, run, work, clusters, committed == ""); err != nil {
 			return report("PlacementError", err.Error())
@@ -118,6 +133,9 @@ func (r *RunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return report("ObservationBlocked", err.Error())
 	}
 	status["selectedCluster"], status["gpuShortage"], status["allPodsScheduled"] = o.SelectedCluster, o.GPUShortage, o.AllPodsScheduled
+	if preferredInitialCluster != "" && o.SelectedCluster != preferredInitialCluster {
+		return report("AwaitingNativePlacement", "waiting for Karmada to apply the current pre-admission capacity eligibility")
+	}
 	if s.Mode == "Execute" {
 		requested, e := requestInitialReschedule(ctx, r.Client, run, work, s, o, cloudReady, r.now())
 		if e != nil {
