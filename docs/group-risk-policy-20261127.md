@@ -2,10 +2,11 @@
 
 `TrainingRun.spec.resourcePolicy.method: group-risk-v1` selects a bounded Spot
 count for a fixed DDP world. Omission still selects `paper-eq6-7`. Existing
-NodeRequest policies, frozen experiments, manifests and running services are
-unchanged. This change has CPU validation only; it does not install a CRD or deploy
-a controller. Roll out the reviewed CRD and controller version together before
-using the new fields (an old schema could prune them).
+NodeRequest policies and frozen experiments/manifests keep their existing
+behavior. Roll out the reviewed CRD and controller version together before using
+the new fields (an old schema could prune them). The validation deployment on
+2026-11-27 installed this CRD and TrainingRun Controller version `1e1e6c5`;
+other deployments must verify their own schema and image versions.
 
 ```yaml
 # Fragment for a NEW reviewed TrainingRun, not a patch to a frozen experiment.
@@ -82,6 +83,28 @@ not access AWS or a cluster. Its current 168-hour trace comparison still produce
 no composition difference for 2/4 ranks at q=.8 versus paper alpha=.8: intermediate
 risk bands have no samples. Preserve that negative result. Synthetic risk sweeps
 demonstrate software behavior, not a measured benefit.
+
+Deployment and live integration evidence (2026-11-27):
+
+- TrainingRun Controller image:
+  `docker.io/jeongseungjun/hybrid-spot-vm-system@sha256:257bd33c7fed23274bbb92634507268dd6d9e1e7cc453e3514d9cb0ed84eee33`.
+- One approved synthetic four-rank run used Seoul2c `g5.2xlarge`, q=.8,
+  H=1 hour, minOD=0. Controlled lambda .05 selected four Spot instances;
+  lambda .10 selected two On-Demand and two Spot instances.
+- The existing Transition path added two OD nodes, verified target readiness,
+  requested a fresh checkpoint, restored all four ranks and retired two source
+  Spot VMs. Two original Spot instance IDs were retained. Continued rank progress
+  and positive provider termination evidence were required before accepting the
+  replacement.
+- GPU validation uses a short synthetic workload and a 60-second checkpoint
+  fixture. It is neither a GPT-2/ResNet benchmark nor a natural interruption
+  measurement. It establishes this planned-replacement path, not every recovery
+  or failover case.
+- Preflight exposed expired cross-cluster credentials after a failed rotation.
+  Credentials were rotated before GPU launch; failed rotation now retries after
+  60 seconds. See `credential-rotation-operations.md`.
+- Local raw receipts and final cleanup/cost audit are under
+  `/home/ubuntu/graduate/Final/rank_group_policy_20261127/`.
 
 Paper reference: Desai et al., *Cost-Efficient Training and Checkpointing for Large
 Models on Preemptible Cloud VMs*, Section 4.3, equations 6–7,
