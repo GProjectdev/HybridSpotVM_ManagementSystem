@@ -19,6 +19,9 @@ import (
 const initialPolicyAnnotation = "training.dcnlab.com/initial-policy-evidence"
 
 func resourcePolicyInput(run, template *unstructured.Unstructured, s RunSpec) (p.PolicyInput, error) {
+	if err := s.ResourcePolicy.validateMethod(s.WorldSize); err != nil {
+		return p.PolicyInput{}, err
+	}
 	alpha := p.DefaultAlpha
 	if s.ResourcePolicy.Alpha != nil {
 		alpha = *s.ResourcePolicy.Alpha
@@ -31,7 +34,7 @@ func resourcePolicyInput(run, template *unstructured.Unstructured, s RunSpec) (p
 		return p.PolicyInput{}, fmt.Errorf("invalid alpha, forecast horizon or minimum On-Demand workers")
 	}
 	return p.PolicyInput{Namespace: run.GetNamespace(), PolicyName: run.GetName(), PolicyUID: run.GetUID(), Generation: run.GetGeneration(),
-		TargetWorkers: s.WorldSize, MinOnDemand: s.ResourcePolicy.MinOnDemand, Alpha: alpha, ForecastSeconds: horizon, VMPolicyMethod: "paper-eq6-7",
+		TargetWorkers: s.WorldSize, MinOnDemand: s.ResourcePolicy.MinOnDemand, Alpha: alpha, ForecastSeconds: horizon, VMPolicyMethod: s.ResourcePolicy.method(), GroupRisk: s.ResourcePolicy.GroupRisk,
 		Capacity:   p.CapacityDefaults{AWSCluster: s.Cloud.Cluster, Region: str(template, "spec", "region"), AvailabilityZone: str(template, "spec", "awsConfig", "availabilityZone"), InstanceType: str(template, "spec", "instanceType")},
 		Checkpoint: p.CheckpointPolicy{Resume: true, MinIntervalSeconds: 1, MaxIntervalSeconds: min(s.CheckpointSeconds, MaximumCheckpointSeconds)}}, nil
 }

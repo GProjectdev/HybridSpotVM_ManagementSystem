@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"time"
 
+	p "github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/policy"
 	"github.com/GProjectdev/HybridSpotVM_ManagementSystem/internal/resource"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,12 +68,33 @@ func (f FailoverSpec) limits() (time.Duration, int64) {
 	return time.Duration(grace) * time.Second, restarts
 }
 
-// ResourcePolicySpec configures the existing paper-eq6-7 policy. It is part of
+// ResourcePolicySpec defaults to paper-eq6-7; group-risk-v1 is explicit opt-in. It is part of
 // the training request, not a replacement for Karmada placement policy.
 type ResourcePolicySpec struct {
-	Alpha           *float64 `json:"alpha,omitempty"`
-	MinOnDemand     int64    `json:"minOnDemand,omitempty"`
-	ForecastSeconds int64    `json:"forecastSeconds,omitempty"`
+	Method          string             `json:"method,omitempty"`
+	GroupRisk       *p.GroupRiskPolicy `json:"groupRisk,omitempty"`
+	Alpha           *float64           `json:"alpha,omitempty"`
+	MinOnDemand     int64              `json:"minOnDemand,omitempty"`
+	ForecastSeconds int64              `json:"forecastSeconds,omitempty"`
+}
+
+func (s ResourcePolicySpec) method() string {
+	if s.Method == "" {
+		return "paper-eq6-7"
+	}
+	return s.Method
+}
+
+func (s ResourcePolicySpec) validateMethod(world int64) error {
+	method := s.method()
+	if method != "paper-eq6-7" && method != p.GroupRiskMethod {
+		return fmt.Errorf("unsupported resourcePolicy.method")
+	}
+	horizon := s.ForecastSeconds
+	if horizon == 0 {
+		horizon = p.DefaultForecastHorizonSeconds
+	}
+	return p.ValidateFixedComposition(p.PolicyInput{VMPolicyMethod: method, GroupRisk: s.GroupRisk, TargetWorkers: world, MinOnDemand: s.MinOnDemand, ForecastSeconds: horizon})
 }
 
 type CloudSpec struct {
@@ -245,6 +267,9 @@ func (s RunSpec) Validate() error {
 	}
 	if s.ResourcePolicy.MinOnDemand < 0 || s.ResourcePolicy.MinOnDemand > s.WorldSize || s.ResourcePolicy.ForecastSeconds < 0 || s.ResourcePolicy.ForecastSeconds > 86400 {
 		return fmt.Errorf("invalid resourcePolicy worker minimum or forecast horizon")
+	}
+	if err := s.ResourcePolicy.validateMethod(s.WorldSize); err != nil {
+		return err
 	}
 	w, p := s.Wait()
 	if _, err := PreparationAt(time.Now(), w, p); err != nil {

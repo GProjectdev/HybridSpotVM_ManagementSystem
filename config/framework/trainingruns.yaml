@@ -93,6 +93,25 @@ spec:
               resourcePolicy:
                 type: object
                 properties:
+                  method:
+                    type: string
+                    enum: [paper-eq6-7, group-risk-v1]
+                    default: paper-eq6-7
+                    description: group-risk-v1 is an explicit independent per-instance hazard model, not Desai throughput alpha or a measured cost optimizer.
+                  groupRisk:
+                    type: object
+                    required: [minimumSurvivalProbability, hazardBasis]
+                    properties:
+                      minimumSurvivalProbability:
+                        type: number
+                        minimum: 0
+                        exclusiveMinimum: true
+                        maximum: 1
+                        description: Explicit group no-Spot-interruption probability floor over forecastSeconds. No implicit alpha mapping.
+                      hazardBasis:
+                        type: string
+                        enum: [per-instance-independent]
+                        description: Declares the modelling assumption; does not certify that a proxy is a measured per-VM hazard. Never pass an aggregate group rate here.
                   alpha:
                     type: number
                     minimum: 0
@@ -110,6 +129,9 @@ spec:
                     minimum: 1
                     maximum: 86400
                     default: 3600
+                x-kubernetes-validations:
+                - rule: '(has(self.method) && self.method == "group-risk-v1") == has(self.groupRisk)'
+                  message: group-risk-v1 requires groupRisk; other methods must omit it
               runtimePort:
                 type: integer
                 format: int64

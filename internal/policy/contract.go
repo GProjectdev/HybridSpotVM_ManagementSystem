@@ -169,6 +169,7 @@ type PolicyInput struct {
 	Checkpoint      CheckpointPolicy
 	Economics       EconomicsPolicy
 	VMPolicyMethod  string
+	GroupRisk       *GroupRiskPolicy
 }
 
 type Decision struct {
@@ -190,6 +191,7 @@ type Decision struct {
 	VMPolicySource            string
 	VMPolicyStage             string
 	OnDemandHoldUntil         string
+	GroupRisk                 *GroupRiskDecision `json:"groupRisk,omitempty"`
 }
 
 func ReadPolicySpec(obj *unstructured.Unstructured) PolicyInput {
@@ -360,7 +362,10 @@ func Decide(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot) Decis
 }
 
 func ValidateFixedComposition(input PolicyInput) error {
-	if input.VMPolicyMethod != "" && input.VMPolicyMethod != "legacy-survival" && input.VMPolicyMethod != "paper-eq6-7" {
+	if err := validateGroupRisk(input); err != nil {
+		return err
+	}
+	if input.VMPolicyMethod != "" && input.VMPolicyMethod != "legacy-survival" && input.VMPolicyMethod != "paper-eq6-7" && input.VMPolicyMethod != GroupRiskMethod {
 		return fmt.Errorf("unsupported spec.policy.method")
 	}
 	if input.VMPolicyMethod == "paper-eq6-7" && (input.MinOnDemand < 0 || input.MinOnDemand > input.TargetWorkers || input.Economics.OnDemandDurationSeconds < 0 || input.Economics.OnDemandDurationSeconds > 86400) {
@@ -386,6 +391,9 @@ func DecideAt(input PolicyInput, runtime RuntimeSnapshot, risk RiskSnapshot, now
 	riskKnown := risk.Ready && finite(risk.LambdaPerHour) && risk.LambdaPerHour >= 0
 	if !riskKnown {
 		return Decision{DesiredWorkers: desired, Alpha: alpha, ForecastHorizonSeconds: horizonSeconds, LambdaPerHour: risk.LambdaPerHour, CheckpointIntervalSeconds: applyIntervalBounds(conservativeInterval(input.Checkpoint), input.Checkpoint), CostEvaluated: false, ProvisioningBlocked: true, Reason: "risk_unavailable"}
+	}
+	if input.VMPolicyMethod == GroupRiskMethod {
+		return decideGroupRisk(input, runtime, risk, now)
 	}
 	spot := maxStableSpotWorkers(desired, risk.LambdaPerHour, float64(horizonSeconds)/3600, alpha)
 	if input.VMPolicyMethod == "paper-eq6-7" {

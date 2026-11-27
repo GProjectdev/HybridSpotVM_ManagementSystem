@@ -405,6 +405,9 @@ func (r *RunReconciler) operatingCloudDecision(ctx context.Context, run, work, c
 	if !p.RiskFreshForPolicy(in, risk, r.now()) {
 		return d, nil, fmt.Errorf("risk changed or expired during policy evaluation")
 	}
+	if receipt["riskUID"] != string(riskObj.GetUID()) || receipt["riskGeneration"] != riskObj.GetGeneration() || receipt["riskResourceVersion"] != riskObj.GetResourceVersion() {
+		return d, nil, fmt.Errorf("risk snapshot changed during policy evaluation; retry with consistent evidence")
+	}
 	schedule := p.NewObject("FluidCRMigration")
 	if e = r.Get(ctx, key(run.GetNamespace(), run.GetName()+"-periodic"), schedule); e == nil {
 		reader, err := r.Members(o.SelectedCluster)
@@ -418,10 +421,16 @@ func (r *RunReconciler) operatingCloudDecision(ctx context.Context, run, work, c
 			receipt["checkpointCosts"] = encode(costs)
 		}
 	}
-	if e = management.ApplyVerifiedRecoveryEconomics(ctx, r.Client, &in, o.Runtime, risk, r.now()); e != nil {
-		return d, nil, e
+	// Group-risk-v1 is risk-only; per-VM loss calibration is not a group cost model.
+	if in.VMPolicyMethod != p.GroupRiskMethod {
+		if e = management.ApplyVerifiedRecoveryEconomics(ctx, r.Client, &in, o.Runtime, risk, r.now()); e != nil {
+			return d, nil, e
+		}
 	}
 	d = p.DecideAt(in, o.Runtime, risk, r.now())
+	if d.ProvisioningBlocked || d.SpotWorkers+d.OnDemandWorkers != s.WorldSize {
+		return d, nil, fmt.Errorf("operating policy blocks allocation: %s", d.Reason)
+	}
 	receipt["decision"] = encode(d)
 	receipt["observedAt"] = stamp(r.now())
 	return d, receipt, nil

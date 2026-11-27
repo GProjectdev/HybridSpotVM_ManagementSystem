@@ -9,7 +9,10 @@ Cloud activation now submits a UID-bound TrainingCapacity after the preparation
 lead time. Karmada receives the Cloud candidate only after all owned GPU nodes are
 ready and the user wait has elapsed. An On-Premise commitment retires unused Cloud
 capacity. Initial market composition uses the existing paper-eq6-7 calculation and
-fresh market-matched risk/prices. Periodic Cloud checkpoint intervals use actual
+fresh market-matched risk/prices. A new Run can explicitly select `group-risk-v1`
+with a separate group probability floor and declared per-instance-independent
+hazard assumption; see `docs/group-risk-policy-20261127.md`. The existing paper
+policy remains the default. Periodic Cloud checkpoint intervals use actual
 active Spot count and identity-verified member-local checkpoint cost receipts.
 
 TrainingTransition now has a reconciler for target GPU/image/shared-storage probes,
